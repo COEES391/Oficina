@@ -9,6 +9,7 @@ import {
   LineChart,
   LogOut,
   User as UserIcon,
+  Shield,
 } from "lucide-react";
 
 import {
@@ -85,6 +86,10 @@ export default function DashboardLayout({
 
   const logo = placeholderImages.find(p => p.id === "logo-dark");
 
+  const isAdminRoute = pathname.startsWith('/dashboard/admin');
+  const isUserRoute = !isAdminRoute;
+
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -98,7 +103,7 @@ export default function DashboardLayout({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={pathname === "/dashboard"}
+                isActive={pathname === "/dashboard" && isUserRoute}
                 onClick={() => router.push("/dashboard")}
                 tooltip={{ children: "Asistencia", side: "right" }}
               >
@@ -108,12 +113,22 @@ export default function DashboardLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={pathname === "/dashboard/reports"}
+                isActive={pathname === "/dashboard/reports" && isUserRoute}
                 onClick={() => router.push("/dashboard/reports")}
                 tooltip={{ children: "Reportes", side: "right" }}
               >
                 <LineChart />
                 Reportes
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={isAdminRoute}
+                onClick={() => router.push("/dashboard/admin")}
+                tooltip={{ children: "Admin", side: "right" }}
+              >
+                <Shield />
+                Administrador
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 import {
   Card,
@@ -29,6 +30,8 @@ import {
 } from "@/components/ui/table";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { attendanceRecords, courses } from "@/lib/data";
 
 export default function ReportsPage() {
@@ -46,6 +49,22 @@ export default function ReportsPage() {
       })
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }, [filterDate, filterCourse, filterRfc]);
+
+  const handleDownloadExcel = () => {
+    const dataToExport = filteredRecords.map(record => ({
+      RFC: record.rfc,
+      Usuario: record.userName,
+      Curso: record.course,
+      Fecha: format(record.timestamp, "d MMM yyyy", { locale: es }),
+      Hora: format(record.timestamp, "HH:mm:ss"),
+      Tipo: record.type,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+    XLSX.writeFile(workbook, "ReporteAsistencia.xlsx");
+  };
 
   return (
     <div className="grid gap-8">
@@ -79,8 +98,17 @@ export default function ReportsPage() {
         </Card>
         
         <Card>
-            <CardHeader>
-                <CardTitle>Resultados</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className="grid gap-1">
+                    <CardTitle>Resultados</CardTitle>
+                    <CardDescription>
+                        Se encontraron {filteredRecords.length} registros.
+                    </CardDescription>
+                </div>
+                <Button onClick={handleDownloadExcel} size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar Excel
+                </Button>
             </CardHeader>
             <CardContent>
                 <Table>
