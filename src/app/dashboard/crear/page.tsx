@@ -19,6 +19,15 @@ const courses = [
   'Tic y Tac: usando las herramientas clave',
 ]
 
+type Registration = {
+  rfc: string;
+  course: string;
+  registrationDate: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  id: string;
+};
+
 export default function CoursesPage() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const { toast } = useToast()
@@ -34,26 +43,53 @@ export default function CoursesPage() {
   const handleRegister = () => {
     const userRfc = localStorage.getItem('userRfc')
     if (selectedCourses.length > 0 && userRfc) {
-      const registration = {
-        rfc: userRfc,
-        courses: selectedCourses,
-        date: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      
+      const existingRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]')
+      const newRegistrations: Registration[] = [];
+
+      selectedCourses.forEach(course => {
+        // Check if user is already registered for this course
+        const isAlreadyRegistered = existingRegistrations.some(reg => reg.rfc === userRfc && reg.course === course);
+
+        if (!isAlreadyRegistered) {
+          const registration: Registration = {
+            rfc: userRfc,
+            course: course,
+            registrationDate: new Date().toISOString(),
+            checkIn: null,
+            checkOut: null,
+            id: `${userRfc}-${course}-${new Date().getTime()}` // Unique ID
+          }
+          newRegistrations.push(registration);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Inscripción Omitida',
+            description: `Ya estabas inscrito en el curso: ${course}.`,
+          })
+        }
+      });
+      
+      if(newRegistrations.length > 0) {
+        const allRegistrations = [...existingRegistrations, ...newRegistrations];
+        localStorage.setItem('registrations', JSON.stringify(allRegistrations));
+        
+        toast({
+          title: 'Registro Exitoso',
+          description: `Te has inscrito a ${newRegistrations.length} nuevo(s) curso(s).`,
+        })
+        setSelectedCourses([])
+
+        // Trigger storage event to update other tabs/components
+        window.dispatchEvent(new Event('storage'));
       }
-      
-      // Get existing registrations or initialize empty array
-      const existingRegistrations = JSON.parse(localStorage.getItem('registrations') || '[]')
-      
-      // Add new registration
-      existingRegistrations.push(registration)
-      
-      // Save back to localStorage
-      localStorage.setItem('registrations', JSON.stringify(existingRegistrations))
-      
-      toast({
-        title: 'Registro Exitoso',
-        description: `Te has inscrito a ${selectedCourses.length} curso(s).`,
+
+    } else if (!userRfc) {
+       toast({
+        variant: 'destructive',
+        title: 'Error de autenticación',
+        description: 'No se ha encontrado tu RFC. Por favor, inicia sesión de nuevo.',
       })
-      setSelectedCourses([])
     } else {
       toast({
         variant: 'destructive',
@@ -66,7 +102,7 @@ export default function CoursesPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cursos Disponibles</CardTitle>
+        <CardTitle>Inscripción a Cursos Disponibles</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {courses.map((course) => (
@@ -83,7 +119,7 @@ export default function CoursesPage() {
         ))}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleRegister}>Inscribirse</Button>
+        <Button onClick={handleRegister}>Inscribirse a cursos seleccionados</Button>
       </CardFooter>
     </Card>
   )
