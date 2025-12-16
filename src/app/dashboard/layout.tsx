@@ -67,11 +67,6 @@ export default function DashboardLayout({
                 Inicio
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard/crear" leftIcon={<Book />}>
-                Cursos
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             {isAdmin && (
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -106,7 +101,7 @@ export default function DashboardLayout({
            <SidebarTrigger className="lg:hidden">
             <PanelLeft />
           </SidebarTrigger>
-          <h1 className="text-xl font-semibold">CCT Asistencia</h1>
+          <h1 className="text-xl font-semibold">Panel de Asistencia - Secundarias Edomex</h1>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
