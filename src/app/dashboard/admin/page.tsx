@@ -6,42 +6,50 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import * as XLSX from 'xlsx'
 import { format } from 'date-fns'
+import { teachers, type Teacher } from '@/lib/data'
 
-type Registration = {
-  rfc: string;
-  course: string;
-  registrationDate: string;
-  checkIn: string | null;
-  checkOut: string | null;
-  id: string;
-};
+type AttendanceRecord = {
+  id: string
+  teacherRfc: string
+  grade: string
+  group: string
+  checkIn: string | null
+  checkOut: string | null
+}
 
 export default function AdminPage() {
   const router = useRouter()
-  const [registrations, setRegistrations] = useState<Registration[]>([])
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [teacherData] = useState<Teacher[]>(teachers)
 
   useEffect(() => {
     const rfc = localStorage.getItem('userRfc')
     if (rfc !== 'ADMIN') {
       router.push('/dashboard')
     } else {
-      const storedRegistrations = JSON.parse(localStorage.getItem('registrations') || '[]')
-      setRegistrations(storedRegistrations)
+      const storedAttendance = JSON.parse(localStorage.getItem('attendance') || '[]')
+      setAttendance(storedAttendance)
     }
   }, [router])
 
+  const getTeacherName = (rfc: string) => {
+    const teacher = teacherData.find(t => t.rfc === rfc);
+    return teacher ? teacher.name : rfc;
+  }
+
   const downloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
-      registrations.map(reg => ({
-        RFC: reg.rfc,
-        Curso: reg.course,
-        'Fecha de Inscripción': format(new Date(reg.registrationDate), 'yyyy-MM-dd HH:mm:ss'),
-        'Hora de Entrada': reg.checkIn ? format(new Date(reg.checkIn), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
-        'Hora de Salida': reg.checkOut ? format(new Date(reg.checkOut), 'yyyy-MM-dd HH:mm:ss') : 'N/A'
+      attendance.map(rec => ({
+        Profesor: getTeacherName(rec.teacherRfc),
+        RFC: rec.teacherRfc,
+        Grado: rec.grade,
+        Grupo: rec.group,
+        'Hora de Entrada': rec.checkIn ? format(new Date(rec.checkIn), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
+        'Hora de Salida': rec.checkOut ? format(new Date(rec.checkOut), 'yyyy-MM-dd HH:mm:ss') : 'N/A'
       }))
     );
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Registros de Asistencia");
     XLSX.writeFile(workbook, "reporte_asistencia_completo.xlsx");
   };
 
@@ -50,7 +58,7 @@ export default function AdminPage() {
       <CardHeader>
         <CardTitle>Panel de Administrador</CardTitle>
         <CardDescription>
-          Aquí puedes ver y descargar todos los registros de asistencia.
+          Aquí puedes ver y descargar todos los registros de asistencia de los profesores.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -61,24 +69,24 @@ export default function AdminPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>RFC</TableHead>
-                <TableHead>Curso</TableHead>
+                <TableHead>Profesor</TableHead>
+                <TableHead>Grupo</TableHead>
                 <TableHead>Entrada</TableHead>
                 <TableHead>Salida</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {registrations.length > 0 ? registrations.map((reg) => (
-                <TableRow key={reg.id}>
-                  <TableCell className="font-medium">{reg.rfc}</TableCell>
-                  <TableCell>{reg.course}</TableCell>
-                  <TableCell>{reg.checkIn ? format(new Date(reg.checkIn), 'dd/MM/yy HH:mm') : '-'}</TableCell>
-                  <TableCell>{reg.checkOut ? format(new Date(reg.checkOut), 'dd/MM/yy HH:mm') : '-'}</TableCell>
+              {attendance.length > 0 ? attendance.map((rec) => (
+                <TableRow key={rec.id}>
+                  <TableCell className="font-medium">{getTeacherName(rec.teacherRfc)}</TableCell>
+                  <TableCell>{rec.grade}° {rec.group}</TableCell>
+                  <TableCell>{rec.checkIn ? format(new Date(rec.checkIn), 'dd/MM/yy HH:mm') : '-'}</TableCell>
+                  <TableCell>{rec.checkOut ? format(new Date(rec.checkOut), 'dd/MM/yy HH:mm') : '-'}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">
-                    No hay registros.
+                    No hay registros de asistencia.
                   </TableCell>
                 </TableRow>
               )}

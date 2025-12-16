@@ -1,209 +1,160 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { teachers, type Teacher, type Group } from '@/lib/data';
 
-type Registration = {
-  rfc: string;
-  course: string;
-  registrationDate: string;
+type AttendanceRecord = {
+  id: string; // Unique ID for the record, e.g., 'RFC-1-A-2023-10-27'
+  teacherRfc: string;
+  grade: string;
+  group: string;
   checkIn: string | null;
   checkOut: string | null;
-  id: string;
 };
 
-const allCourses = [
-  'ChatGPT: En el Aprendizaje',
-  'ChatPDF: El asistente Virtual para tu Material Educativo',
-  'Kahoot! Diviertete evaluando',
-  'Canva: Presentaciones visuales y creativas',
-  'Excel en línea para la gestión educativa',
-  'Recursos Tecnologicos para transformar la evaluación y creatividad en el aula',
-  'Potencia tu procuntividad digital con Microsoft Office 365',
-  'Microsoft 365: operaciones básicas',
-  'Tic y Tac: usando las herramientas clave',
-]
-
 export default function DashboardPage() {
-  const [userRegistrations, setUserRegistrations] = useState<Registration[]>([]);
-  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
-  const [userRfc, setUserRfc] = useState<string | null>(null);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const { toast } = useToast();
 
-  const loadUserData = () => {
+  const loadTeacherData = () => {
     const rfc = localStorage.getItem('userRfc');
-    setUserRfc(rfc);
     if (rfc) {
-      const allRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]');
-      const filteredRegistrations = allRegistrations.filter(reg => reg.rfc === rfc);
-      setUserRegistrations(filteredRegistrations);
+      const currentTeacher = teachers.find(t => t.rfc.toUpperCase() === rfc.toUpperCase());
+      setTeacher(currentTeacher || null);
+      
+      const allAttendance: AttendanceRecord[] = JSON.parse(localStorage.getItem('attendance') || '[]');
+      // Filter records for the current teacher and for today only
+      const todayRecords = allAttendance.filter(rec => rec.teacherRfc === rfc && isToday(new Date(rec.checkIn || new Date())));
+      setAttendanceRecords(todayRecords);
     }
   };
-
+  
   useEffect(() => {
-    loadUserData();
-    const handleStorageChange = () => loadUserData();
+    loadTeacherData();
+    // Listen for storage changes to update UI across tabs
+    const handleStorageChange = () => loadTeacherData();
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const handleTimeRecord = (registrationId: string, type: 'checkIn' | 'checkOut') => {
-    const allRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]');
-    const now = new Date().toISOString();
+  const getRecordForGroup = (grade: string, group: string) => {
+    return attendanceRecords.find(rec => rec.grade === grade && rec.group === group);
+  };
+
+  const handleTimeRecord = (grade: string, group: string, type: 'checkIn' | 'checkOut') => {
+    if (!teacher) return;
+
+    const allAttendance: AttendanceRecord[] = JSON.parse(localStorage.getItem('attendance') || '[]');
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const recordId = `${teacher.rfc}-${grade}-${group}-${todayStr}`;
     
-    const updatedRegistrations = allRegistrations.map(reg => {
-      if (reg.id === registrationId) {
-        if (type === 'checkIn' && reg.checkIn) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu entrada.' });
-            return reg;
-        }
-        if (type === 'checkOut' && reg.checkOut) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu salida.' });
-            return reg;
-        }
-        if (type === 'checkOut' && !reg.checkIn) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Debes registrar tu entrada primero.' });
-          return reg;
-        }
-        
-        toast({ title: 'Éxito', description: `Registro de ${type === 'checkIn' ? 'entrada' : 'salida'} exitoso.` });
-        return { ...reg, [type]: now };
+    let existingRecord = allAttendance.find(rec => rec.id === recordId);
+
+    if (type === 'checkIn') {
+      if (existingRecord?.checkIn) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu entrada para este grupo hoy.' });
+        return;
       }
-      return reg;
-    });
-
-    localStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const handleCheckboxChange = (course: string) => {
-    setSelectedCourses((prev) =>
-      prev.includes(course)
-        ? prev.filter((c) => c !== course)
-        : [...prev, course]
-    );
-  };
-
-  const handleRegister = () => {
-    if (selectedCourses.length > 0 && userRfc) {
-      const existingRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]');
-      const newRegistrations: Registration[] = [];
-
-      selectedCourses.forEach(course => {
-        const isAlreadyRegistered = existingRegistrations.some(reg => reg.rfc === userRfc && reg.course === course);
-        if (!isAlreadyRegistered) {
-          newRegistrations.push({
-            rfc: userRfc,
-            course: course,
-            registrationDate: new Date().toISOString(),
-            checkIn: null,
-            checkOut: null,
-            id: `${userRfc}-${course}-${new Date().getTime()}`
-          });
-        }
-      });
-      
-      if(newRegistrations.length > 0) {
-        const allRegistrations = [...existingRegistrations, ...newRegistrations];
-        localStorage.setItem('registrations', JSON.stringify(allRegistrations));
-        
-        toast({
-          title: 'Registro Exitoso',
-          description: `Te has inscrito a ${newRegistrations.length} nuevo(s) curso(s).`,
-        });
-        setSelectedCourses([]);
-        window.dispatchEvent(new Event('storage'));
+      if (!existingRecord) {
+        existingRecord = {
+            id: recordId,
+            teacherRfc: teacher.rfc,
+            grade,
+            group,
+            checkIn: today.toISOString(),
+            checkOut: null
+        };
+        allAttendance.push(existingRecord);
       } else {
-         toast({
-            title: 'Información',
-            description: `Ya estabas inscrito en los cursos seleccionados.`,
-          })
+        existingRecord.checkIn = today.toISOString();
       }
+      toast({ title: 'Éxito', description: `Entrada registrada para el grupo ${grade}° ${group}.` });
+
+    } else { // checkOut
+      if (!existingRecord?.checkIn) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Debes registrar tu entrada primero.' });
+        return;
+      }
+      if (existingRecord.checkOut) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu salida para este grupo hoy.' });
+        return;
+      }
+      existingRecord.checkOut = today.toISOString();
+      toast({ title: 'Éxito', description: `Salida registrada para el grupo ${grade}° ${group}.` });
     }
+    
+    const updatedAttendance = existingRecord.checkIn ? allAttendance.map(rec => rec.id === recordId ? existingRecord! : rec) : [...allAttendance];
+
+    localStorage.setItem('attendance', JSON.stringify(updatedAttendance));
+    window.dispatchEvent(new Event('storage')); // Notify other tabs
   };
 
-  const availableCourses = allCourses.filter(course => !userRegistrations.some(reg => reg.course === course));
+
+  if (!teacher) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Acceso no autorizado</CardTitle>
+          <CardDescription>
+            Tu RFC no está asignado a ningún grupo. Por favor, contacta al administrador.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <div className="grid gap-6">
        <Card>
         <CardHeader>
-          <CardTitle>Mis Cursos - Registro de Asistencia</CardTitle>
+          <CardTitle>Mis Grupos - Registro de Asistencia</CardTitle>
           <CardDescription>
-            Registra tu entrada y salida a los cursos en los que te has inscrito.
+            Hola, {teacher.name}. Registra tu entrada y salida para cada uno de tus grupos asignados.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {userRegistrations.length > 0 ? (
+          {teacher.groups.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {userRegistrations.map(reg => (
-                <Card key={reg.id}>
-                  <CardHeader>
-                    <CardTitle className="text-xl">{reg.course}</CardTitle>
-                    <CardDescription>Inscrito el: {format(new Date(reg.registrationDate), 'dd/MM/yyyy')}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-semibold">Entrada:</h4>
-                      <p>{reg.checkIn ? format(new Date(reg.checkIn), 'dd/MM/yy HH:mm:ss') : 'Pendiente'}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Salida:</h4>
-                      <p>{reg.checkOut ? format(new Date(reg.checkOut), 'dd/MM/yy HH:mm:ss') : 'Pendiente'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => handleTimeRecord(reg.id, 'checkIn')} disabled={!!reg.checkIn} className="w-full">
-                        Entrada
-                      </Button>
-                      <Button onClick={() => handleTimeRecord(reg.id, 'checkOut')} disabled={!reg.checkIn || !!reg.checkOut} className="w-full" variant="outline">
-                        Salida
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {teacher.groups.map(g => {
+                const record = getRecordForGroup(g.grade, g.group);
+                return (
+                  <Card key={`${g.grade}-${g.group}`}>
+                    <CardHeader>
+                      <CardTitle className="text-xl">Grupo: {g.grade}° {g.group}</CardTitle>
+                      <CardDescription>Asistencia para hoy: {format(new Date(), 'dd/MM/yyyy')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold">Entrada:</h4>
+                        <p>{record?.checkIn ? format(new Date(record.checkIn), 'HH:mm:ss') : 'Pendiente'}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">Salida:</h4>
+                        <p>{record?.checkOut ? format(new Date(record.checkOut), 'HH:mm:ss') : 'Pendiente'}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleTimeRecord(g.grade, g.group, 'checkIn')} disabled={!!record?.checkIn} className="w-full">
+                          Registrar Entrada
+                        </Button>
+                        <Button onClick={() => handleTimeRecord(g.grade, g.group, 'checkOut')} disabled={!record?.checkIn || !!record?.checkOut} className="w-full" variant="outline">
+                          Registrar Salida
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-4">Aún no estás inscrito en ningún curso.</p>
+            <p className="text-center text-muted-foreground py-4">No tienes grupos asignados.</p>
           )}
         </CardContent>
       </Card>
-      
-      {availableCourses.length > 0 && (
-        <>
-          <Separator />
-          <Card>
-            <CardHeader>
-              <CardTitle>Inscripción a Cursos Disponibles</CardTitle>
-              <CardDescription>Selecciona los cursos a los que deseas inscribirte. Aparecerán en la sección "Mis Cursos".</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {availableCourses.map((course) => (
-                <div key={course} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={course}
-                    checked={selectedCourses.includes(course)}
-                    onCheckedChange={() => handleCheckboxChange(course)}
-                  />
-                  <Label htmlFor={course} className="text-sm font-medium leading-none">
-                    {course}
-                  </Label>
-                </div>
-              ))}
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleRegister} disabled={selectedCourses.length === 0}>
-                Inscribirse a cursos seleccionados
-              </Button>
-            </CardFooter>
-          </Card>
-        </>
-      )}
     </div>
   );
 }
