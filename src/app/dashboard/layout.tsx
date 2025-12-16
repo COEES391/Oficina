@@ -13,7 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
-import { Book, Download, Home, LogOut, PanelLeft, User } from 'lucide-react'
+import { Book, BookCopy, Download, Home, LogOut, PanelLeft, User } from 'lucide-react'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 
@@ -24,7 +24,6 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const [userRfc, setUserRfc] = useState<string | null>(null)
-  const logo = placeholderImages.find((img) => img.id === 'logo-dark')
 
   useEffect(() => {
     const rfc = localStorage.getItem('userRfc')
@@ -47,16 +46,9 @@ export default function DashboardLayout({
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            {logo && (
-              <Image
-                src={logo.imageUrl}
-                alt={logo.description}
-                width={40}
-                height={40}
-                className="rounded-md"
-                data-ai-hint={logo.imageHint}
-              />
-            )}
+            <div className="bg-primary text-primary-foreground rounded-md h-8 w-8 flex items-center justify-center">
+              <BookCopy className="h-5 w-5" />
+            </div>
             <span className="text-lg font-semibold">CCT Asistencia</span>
           </div>
         </SidebarHeader>

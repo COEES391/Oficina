@@ -6,14 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import Image from 'next/image'
-import { placeholderImages } from '@/lib/placeholder-images'
+import { BookCopy } from 'lucide-react'
 
 export default function LoginPage() {
   const [rfc, setRfc] = useState('')
   const router = useRouter()
   const { toast } = useToast()
-  const logo = placeholderImages.find((img) => img.id === 'logo-dark');
 
   const handleLogin = () => {
     if (rfc.trim()) {
@@ -33,17 +31,9 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-           {logo && (
-              <Image
-                src={logo.imageUrl}
-                alt={logo.description}
-                width={150}
-                height={150}
-                className="mx-auto rounded-full"
-                data-ai-hint={logo.imageHint}
-                priority
-              />
-            )}
+           <div className="mx-auto bg-primary text-primary-foreground rounded-full h-24 w-24 flex items-center justify-center">
+            <BookCopy className="h-12 w-12" />
+          </div>
           <CardTitle className="text-2xl font-bold mt-4">CCT Asistencia</CardTitle>
           <CardDescription>Inicia sesión con tu RFC para continuar</CardDescription>
         </CardHeader>
