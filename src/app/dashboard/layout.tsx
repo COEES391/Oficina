@@ -57,7 +57,7 @@ export default function DashboardLayout({
                 data-ai-hint={logo.imageHint}
               />
             )}
-            <span className="text-lg font-semibold">Asistencia App</span>
+            <span className="text-lg font-semibold">CCT Asistencia</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -106,7 +106,7 @@ export default function DashboardLayout({
            <SidebarTrigger className="lg:hidden">
             <PanelLeft />
           </SidebarTrigger>
-          <h1 className="text-xl font-semibold">Panel de Asistencia</h1>
+          <h1 className="text-xl font-semibold">CCT Asistencia</h1>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>

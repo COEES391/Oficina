@@ -43,7 +43,7 @@ export default function LoginPage() {
                 data-ai-hint={logo.imageHint}
               />
             )}
-          <CardTitle className="text-2xl font-bold mt-4">Bienvenido</CardTitle>
+          <CardTitle className="text-2xl font-bold mt-4">CCT Asistencia</CardTitle>
           <CardDescription>Inicia sesión con tu RFC para continuar</CardDescription>
         </CardHeader>
         <CardContent>
