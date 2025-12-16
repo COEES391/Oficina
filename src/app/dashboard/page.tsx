@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const [userRfc, setUserRfc] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadUserRegistrations = () => {
     const rfc = localStorage.getItem('userRfc');
     setUserRfc(rfc);
     if (rfc) {
@@ -28,17 +28,16 @@ export default function DashboardPage() {
       const filteredRegistrations = allRegistrations.filter(reg => reg.rfc === rfc);
       setUserRegistrations(filteredRegistrations);
     }
+  };
+
+  useEffect(() => {
+    loadUserRegistrations();
   }, []);
   
   // A effect to re-render component when registrations change in localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      const rfc = localStorage.getItem('userRfc');
-      if (rfc) {
-        const allRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]');
-        const filteredRegistrations = allRegistrations.filter(reg => reg.rfc === rfc);
-        setUserRegistrations(filteredRegistrations);
-      }
+      loadUserRegistrations();
     };
     window.addEventListener('storage', handleStorageChange);
     return () => {
@@ -49,18 +48,26 @@ export default function DashboardPage() {
 
   const handleTimeRecord = (registrationId: string, type: 'checkIn' | 'checkOut') => {
     const allRegistrations: Registration[] = JSON.parse(localStorage.getItem('registrations') || '[]');
-    const now = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+    const now = new Date().toISOString();
     
+    let registrationFound = false;
     const updatedRegistrations = allRegistrations.map(reg => {
       if (reg.id === registrationId) {
-        // Prevent re-recording
+        registrationFound = true;
+        // Prevent re-recording check-in
         if (type === 'checkIn' && reg.checkIn) {
             toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu entrada.' });
             return reg;
         }
+        // Prevent re-recording check-out
         if (type === 'checkOut' && reg.checkOut) {
             toast({ variant: 'destructive', title: 'Error', description: 'Ya has registrado tu salida.' });
             return reg;
+        }
+        // Prevent checking out before checking in
+        if (type === 'checkOut' && !reg.checkIn) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Debes registrar tu entrada primero.' });
+          return reg;
         }
         
         toast({ title: 'Éxito', description: `Se ha registrado tu ${type === 'checkIn' ? 'entrada' : 'salida'}.` });
@@ -69,11 +76,10 @@ export default function DashboardPage() {
       return reg;
     });
 
-    localStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
-    
-    // Force re-render
-    const filtered = updatedRegistrations.filter(reg => reg.rfc === userRfc);
-    setUserRegistrations(filtered);
+    if (registrationFound) {
+      localStorage.setItem('registrations', JSON.stringify(updatedRegistrations));
+      window.dispatchEvent(new Event('storage')); // Trigger update
+    }
   };
 
   return (
@@ -100,7 +106,7 @@ export default function DashboardPage() {
           userRegistrations.map(reg => (
             <Card key={reg.id}>
               <CardHeader>
-                <CardTitle className="text-lg">{reg.course}</CardTitle>
+                <CardTitle className="text-xl">{reg.course}</CardTitle>
                 <CardDescription>Inscrito el: {format(new Date(reg.registrationDate), 'dd/MM/yyyy')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -112,7 +118,7 @@ export default function DashboardPage() {
                   <h4 className="font-semibold">Salida:</h4>
                   <p>{reg.checkOut ? format(new Date(reg.checkOut), 'dd/MM/yyyy HH:mm:ss') : 'Pendiente'}</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-2">
                   <Button onClick={() => handleTimeRecord(reg.id, 'checkIn')} disabled={!!reg.checkIn} className="w-full">
                     Registrar Entrada
                   </Button>
@@ -124,7 +130,11 @@ export default function DashboardPage() {
             </Card>
           ))
         ) : (
-          <p>No estás inscrito en ningún curso todavía.</p>
+          <Card className="md:col-span-2 lg:col-span-3">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">No estás inscrito en ningún curso todavía.</p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -53,6 +53,7 @@ export default function DashboardLayout({
                 alt={logo.description}
                 width={40}
                 height={40}
+                className="rounded-md"
                 data-ai-hint={logo.imageHint}
               />
             )}
@@ -84,7 +85,7 @@ export default function DashboardLayout({
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 p-2">
             <User className="h-6 w-6" />
             <span>{userRfc}</span>
           </div>
@@ -101,13 +102,13 @@ export default function DashboardLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-12 items-center justify-between border-b px-4">
-          <SidebarTrigger>
+        <header className="flex h-14 items-center justify-between border-b px-4 lg:justify-end">
+           <SidebarTrigger className="lg:hidden">
             <PanelLeft />
           </SidebarTrigger>
           <h1 className="text-xl font-semibold">Panel de Asistencia</h1>
         </header>
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

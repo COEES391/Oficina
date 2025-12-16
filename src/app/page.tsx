@@ -17,8 +17,8 @@ export default function LoginPage() {
 
   const handleLogin = () => {
     if (rfc.trim()) {
-      // For now, any RFC is valid
-      localStorage.setItem('userRfc', rfc)
+      // For now, any RFC is valid, ADMIN is a special user
+      localStorage.setItem('userRfc', rfc.toUpperCase())
       router.push('/dashboard')
     } else {
       toast({
@@ -30,7 +30,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
            {logo && (
@@ -39,11 +39,11 @@ export default function LoginPage() {
                 alt={logo.description}
                 width={150}
                 height={150}
-                className="mx-auto"
+                className="mx-auto rounded-full"
                 data-ai-hint={logo.imageHint}
               />
             )}
-          <CardTitle className="text-2xl font-bold">Bienvenido</CardTitle>
+          <CardTitle className="text-2xl font-bold mt-4">Bienvenido</CardTitle>
           <CardDescription>Inicia sesión con tu RFC para continuar</CardDescription>
         </CardHeader>
         <CardContent>

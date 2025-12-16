@@ -1,11 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { format } from 'date-fns'
 
 const courses = [
   'ChatGPT: En el Aprendizaje',
@@ -102,24 +101,27 @@ export default function CoursesPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Inscripción a Cursos Disponibles</CardTitle>
+        <CardTitle>Inscripción a Cursos</CardTitle>
+        <CardDescription>Selecciona los cursos a los que deseas inscribirte.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="grid gap-4">
         {courses.map((course) => (
-          <div key={course} className="flex items-center space-x-2">
+          <div key={course} className="flex items-center space-x-3">
             <Checkbox
               id={course}
               checked={selectedCourses.includes(course)}
               onCheckedChange={() => handleCheckboxChange(course)}
             />
-            <Label htmlFor={course} className="text-sm font-medium leading-none">
+            <Label htmlFor={course} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {course}
             </Label>
           </div>
         ))}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleRegister}>Inscribirse a cursos seleccionados</Button>
+        <Button onClick={handleRegister} disabled={selectedCourses.length === 0}>
+          Inscribirse a cursos seleccionados
+        </Button>
       </CardFooter>
     </Card>
   )
