@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "logo-dark",
-      "description": "A dark, abstract logo for a tech company.",
-      "imageUrl": "https://images.unsplash.com/photo-1744390166851-82056c6552d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhYnN0cmFjdCUyMGxvZ298ZW58MHx8fHwxNzY1Nzk1NDA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract logo"
+      "description": "An abstract logo representing planning and education.",
+      "imageUrl": "https://images.unsplash.com/photo-1580582932707-520aed93a94d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxlZHVjYXRpb258ZW58MHx8fHwxNzY1Nzk1NDA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "education logo"
     }
   ]
 }
