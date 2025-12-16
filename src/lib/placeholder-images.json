@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "logo-dark",
-      "description": "Un logo representativo para Computación Electrónica en la Educación Secundaria (COEES).",
-      "imageUrl": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjB0ZWNobm9sb2d5fGVufDB8fHx8MTcyMTg2NTg0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "education technology"
+      "description": "Logo representativo para la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA).",
+      "imageUrl": "https://images.unsplash.com/photo-1556761175-577380e25948?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxnb3Zlcm5tZW50JTIwYnVpbGRpbmd8ZW58MHx8fHwxNzIyMzA0MDQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "government building"
     }
   ]
 }
