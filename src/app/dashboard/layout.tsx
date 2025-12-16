@@ -11,6 +11,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarProvider,
 } from '@/components/ui/sidebar'
 import { Book, Download, Home, LogOut, PanelLeft, User } from 'lucide-react'
 import Image from 'next/image'
@@ -42,7 +43,7 @@ export default function DashboardLayout({
   const isAdmin = userRfc === 'ADMIN'
 
   return (
-    <div>
+    <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
@@ -108,6 +109,6 @@ export default function DashboardLayout({
         </header>
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
-    </div>
+    </SidebarProvider>
   )
 }
