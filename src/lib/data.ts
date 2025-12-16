@@ -46,17 +46,15 @@ export const teachers: Teacher[] = [
     ],
   },
   {
-    rfc: 'RFCPROFESOR2',
-    name: 'Profa. María García',
+    rfc: 'GBN2B',
+    name: 'Prof. Gustavo Bello Nogueda',
     groups: [
       { 
         grade: '2', 
-        group: 'A',
+        group: 'B',
         students: [
-          { id: '2A01', name: 'Hernández Castillo, Regina' },
-          { id: '2A02', name: 'Vargas Mendoza, Matías' },
-          { id: '2A03', name: 'Jiménez Ortiz, Ximena' },
-          { id: '2A04', name: 'Torres Ruiz, Diego' },
+          { id: '2B01', name: 'Alberto García Barreto' },
+          { id: '2B02', name: 'Felipe Otoniel Chimal Sánchez' },
         ]
       },
     ],
