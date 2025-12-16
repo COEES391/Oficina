@@ -41,6 +41,7 @@ export default function LoginPage() {
                 height={150}
                 className="mx-auto rounded-full"
                 data-ai-hint={logo.imageHint}
+                priority
               />
             )}
           <CardTitle className="text-2xl font-bold mt-4">CCT Asistencia</CardTitle>
