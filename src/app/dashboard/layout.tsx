@@ -1,92 +1,113 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  BookMarked,
-  FilePlus,
-  Home,
-} from "lucide-react";
-
-import {
-  SidebarProvider,
   Sidebar,
-  SidebarHeader,
   SidebarContent,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarInset,
   SidebarTrigger,
-} from "@/components/ui/sidebar";
-
-function Header() {
-  return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-      <div className="flex items-center gap-2 md:hidden">
-        <SidebarTrigger />
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <BookMarked className="h-6 w-6 text-primary" />
-            <span className="sr-only">Planeación NEM</span>
-        </Link>
-      </div>
-      <div className="flex w-full items-center justify-end">
-        <h1 className="text-lg font-semibold">Panel de Planeación Didáctica</h1>
-      </div>
-    </header>
-  );
-}
+  SidebarInset,
+} from '@/components/ui/sidebar'
+import { Book, Download, Home, LogOut, PanelLeft, User } from 'lucide-react'
+import Image from 'next/image'
+import { placeholderImages } from '@/lib/placeholder-images'
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const router = useRouter()
+  const [userRfc, setUserRfc] = useState<string | null>(null)
+  const logo = placeholderImages.find((img) => img.id === 'logo-dark')
+
+  useEffect(() => {
+    const rfc = localStorage.getItem('userRfc')
+    if (!rfc) {
+      router.push('/')
+    } else {
+      setUserRfc(rfc)
+    }
+  }, [router])
+
+  const handleLogout = () => {
+    localStorage.removeItem('userRfc')
+    router.push('/')
+  }
+
+  const isAdmin = userRfc === 'ADMIN'
 
   return (
-    <SidebarProvider>
+    <div>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <BookMarked className="h-7 w-7 text-primary" />
-            <span className="font-semibold text-lg">Planeación NEM</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {logo && (
+              <Image
+                src={logo.imageUrl}
+                alt={logo.description}
+                width={40}
+                height={40}
+                data-ai-hint={logo.imageHint}
+              />
+            )}
+            <span className="text-lg font-semibold">Asistencia App</span>
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={pathname === "/dashboard"}
-                onClick={() => router.push("/dashboard")}
-                tooltip={{ children: "Mis Planeaciones", side: "right" }}
-              >
-                <Home />
-                Mis Planeaciones
+              <SidebarMenuButton href="/dashboard" leftIcon={<Home />}>
+                Inicio
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
+              <SidebarMenuButton href="/dashboard/crear" leftIcon={<Book />}>
+                Cursos
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  href="/dashboard/admin"
+                  leftIcon={<Download />}
+                >
+                  Administrador
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+          <div className="flex items-center gap-2">
+            <User className="h-6 w-6" />
+            <span>{userRfc}</span>
+          </div>
+          <SidebarMenu>
+            <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={pathname.startsWith("/dashboard/crear")}
-                onClick={() => router.push("/dashboard/crear")}
-                tooltip={{ children: "Nueva Planeación", side: "right" }}
+                onClick={handleLogout}
+                leftIcon={<LogOut />}
               >
-                <FilePlus />
-                Nueva Planeación
+                Cerrar Sesión
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter/>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <Header />
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-            {children}
-        </main>
+        <header className="flex h-12 items-center justify-between border-b px-4">
+          <SidebarTrigger>
+            <PanelLeft />
+          </SidebarTrigger>
+          <h1 className="text-xl font-semibold">Panel de Asistencia</h1>
+        </header>
+        <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
-    </SidebarProvider>
-  );
+    </div>
+  )
 }

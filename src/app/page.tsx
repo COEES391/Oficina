@@ -1,47 +1,71 @@
-"use client";
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import Image from 'next/image'
+import { placeholderImages } from '@/lib/placeholder-images'
 
-import { useRouter } from "next/navigation";
-import { BookMarked } from "lucide-react";
+export default function LoginPage() {
+  const [rfc, setRfc] = useState('')
+  const router = useRouter()
+  const { toast } = useToast()
+  const logo = placeholderImages.find((img) => img.id === 'logo-dark');
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
-export default function HomePage() {
-  const router = useRouter();
+  const handleLogin = () => {
+    if (rfc.trim()) {
+      // For now, any RFC is valid
+      localStorage.setItem('userRfc', rfc)
+      router.push('/dashboard')
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor, introduce tu RFC.",
+      })
+    }
+  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="flex flex-col items-center justify-center text-center mb-8">
-        <div className="bg-primary/20 text-primary p-3 rounded-full mb-4">
-            <BookMarked className="h-12 w-12" />
-        </div>
-        <h1 className="text-4xl font-bold tracking-tighter text-foreground sm:text-5xl">
-          Planeación Didáctica NEM
-        </h1>
-        <p className="text-muted-foreground mt-3 max-w-md md:text-lg">
-          Crea tus planeaciones didácticas para secundaria siguiendo los lineamientos de la Nueva Escuela Mexicana.
-        </p>
-      </div>
-
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Bienvenido, Docente</CardTitle>
-          <CardDescription>
-            Comienza a estructurar tus proyectos y secuencias didácticas de forma sencilla e intuitiva.
-          </CardDescription>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+           {logo && (
+              <Image
+                src={logo.imageUrl}
+                alt={logo.description}
+                width={150}
+                height={150}
+                className="mx-auto"
+                data-ai-hint={logo.imageHint}
+              />
+            )}
+          <CardTitle className="text-2xl font-bold">Bienvenido</CardTitle>
+          <CardDescription>Inicia sesión con tu RFC para continuar</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => router.push('/dashboard')} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-            Ir al Panel de Planeación
-          </Button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rfc">RFC</Label>
+              <Input
+                id="rfc"
+                placeholder="Introduce tu RFC"
+                value={rfc}
+                onChange={(e) => setRfc(e.target.value.toUpperCase())}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+          </div>
         </CardContent>
+        <CardFooter>
+          <Button className="w-full" onClick={handleLogin}>
+            Iniciar Sesión
+          </Button>
+        </CardFooter>
       </Card>
-    </main>
-  );
+    </div>
+  )
 }
