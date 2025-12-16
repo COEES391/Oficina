@@ -46,7 +46,7 @@ export const teachers: Teacher[] = [
     ],
   },
   {
-    rfc: 'GBN2B',
+    rfc: 'BENG8009206U6',
     name: 'Prof. Gustavo Bello Nogueda',
     groups: [
       { 
