@@ -10,10 +10,11 @@ import {
   LayoutGrid, 
   Search, 
   FileText, 
-  Image as ImageIcon, 
   Eye, 
   Filter, 
-  RefreshCcw 
+  RefreshCcw,
+  PieChart as PieChartIcon,
+  BarChart3
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -24,6 +25,9 @@ import {
   Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   Cell,
+  PieChart,
+  Pie,
+  Legend
 } from 'recharts'
 import { supportData, type SupportTicket } from '@/lib/planning-data'
 import { schoolsDirectory } from '@/lib/schools-directory'
@@ -55,7 +59,7 @@ export default function DashboardPage() {
 
   // Opciones de filtros dinámicas basadas en el catálogo con lógica en cascada
   const filterOptions = useMemo(() => {
-    // 1. Valles únicos (Siempre disponibles)
+    // 1. Valles únicos
     const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
 
     // 2. Modalidades según Valle seleccionado
@@ -75,7 +79,7 @@ export default function DashboardPage() {
     return { valles, modalidades, municipios };
   }, [valleFilter, modalidadFilter]);
 
-  // Resetear filtros dependientes si dejan de ser válidos al cambiar el padre
+  // Resetear filtros dependientes
   useEffect(() => {
     if (modalidadFilter !== 'all' && !filterOptions.modalidades.includes(modalidadFilter)) {
       setModalidadFilter('all');
@@ -96,12 +100,39 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
 
-  // Estadísticas del Informe Ejecutivo
-  const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
-  const totalLocal = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length
-  const totalPrev = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length
-  const totalCorr = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length
-  
+  // Estadísticas para Gráficos
+  const stats = useMemo(() => {
+    const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
+    const totalLocal = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length
+    const totalPrev = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length
+    const totalCorr = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length
+
+    const resueltos = filteredTickets.filter(t => t.status === 'resuelto').length
+    const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
+    const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
+
+    const ticketsMexico = filteredTickets.filter(t => t.valle.toUpperCase() === 'MEXICO' || t.valle.toUpperCase() === 'M').length
+    const ticketsToluca = filteredTickets.filter(t => t.valle.toUpperCase() === 'TOLUCA' || t.valle.toUpperCase() === 'T').length
+
+    return {
+      serviceData: [
+        { name: 'Edusat', value: totalEdusat, fill: '#3b82f6' },
+        { name: 'Red Local', value: totalLocal, fill: '#10b981' },
+        { name: 'M. Prev', value: totalPrev, fill: '#eab308' },
+        { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
+      ],
+      statusData: [
+        { name: 'Resueltos', value: resueltos, fill: '#10b981' },
+        { name: 'Proceso', value: enProceso, fill: '#eab308' },
+        { name: 'Pendiente', value: pendientes, fill: '#ef4444' },
+      ],
+      valleData: [
+        { name: 'MÉXICO', value: ticketsMexico, fill: '#6366f1' },
+        { name: 'TOLUCA', value: ticketsToluca, fill: '#ec4899' },
+      ]
+    }
+  }, [filteredTickets]);
+
   const totalAlumnos = filteredTickets.reduce((acc, curr) => acc + (curr.alumnosBeneficiados || 0), 0)
   const totalDocentes = filteredTickets.reduce((acc, curr) => acc + (curr.docentesBeneficiados || 0), 0)
 
@@ -110,14 +141,6 @@ export default function DashboardPage() {
     setFilteredEvidence(results)
   }
 
-  const chartData = [
-    { name: 'Edusat', value: totalEdusat, fill: '#3b82f6' },
-    { name: 'Red Local', value: totalLocal, fill: '#10b981' },
-    { name: 'M. Prev', value: totalPrev, fill: '#eab308' },
-    { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
-  ]
-
-  // Universo de atención dinámico basado en el catálogo completo
   const UNIVERSE_STATS = useMemo(() => {
     const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
     const stats: { modalidad: string, valle: string, total: number, atendidos: number }[] = [];
@@ -128,7 +151,6 @@ export default function DashboardPage() {
         const total = schoolsDirectory.filter(s => s.modalidad === mod && (s.valle === valleRaw || s.valle === valleLabel)).length;
         if (total > 0) {
           const atendidos = tickets.filter(t => t.modalidad === mod && (t.valle.toUpperCase() === valleLabel || t.valle.toUpperCase() === valleRaw)).length;
-          // Evitar duplicados en el renderizado final si ya existe la combinación modalidad-valleLabel
           const existingIdx = stats.findIndex(s => s.modalidad === mod && s.valle === valleLabel);
           if (existingIdx >= 0) {
              stats[existingIdx].total += total;
@@ -215,6 +237,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-6">
@@ -222,8 +245,8 @@ export default function DashboardPage() {
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
               <Network className="h-5 w-5 text-blue-500" />
             </div>
-            <div className="text-2xl font-black">{totalEdusat + totalLocal}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">{totalEdusat} Edusat / {totalLocal} Locales</p>
+            <div className="text-2xl font-black">{filteredTickets.filter(t => ['red edusat', 'red local', 'instalación red local'].includes(t.tipoIncidencia)).length}</div>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Casos Registrados</p>
           </CardContent>
         </Card>
 
@@ -233,8 +256,8 @@ export default function DashboardPage() {
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mantenimientos</span>
               <Wrench className="h-5 w-5 text-emerald-500" />
             </div>
-            <div className="text-2xl font-black">{totalPrev + totalCorr}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">{totalPrev} Prev / {totalCorr} Corr</p>
+            <div className="text-2xl font-black">{filteredTickets.filter(t => ['mantenimiento preventivo', 'mantenimiento correctivo'].includes(t.tipoIncidencia)).length}</div>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Servicios Técnicos</p>
           </CardContent>
         </Card>
 
@@ -261,100 +284,151 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* Gráficos Analíticos */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="shadow-md border-t-2 border-t-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
+              <PieChartIcon className="h-4 w-4 text-primary" /> Estatus Operativo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {stats.statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md border-t-2 border-t-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
+              <LayoutGrid className="h-4 w-4 text-primary" /> Servicios por Tipo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.serviceData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10, fontWeight: 700 }} />
+                <RechartsTooltip cursor={{ fill: 'transparent' }} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={25} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md border-t-2 border-t-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
+              <BarChart3 className="h-4 w-4 text-primary" /> Atención por Valle
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.valleData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <RechartsTooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                   {stats.valleData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Universo Escolar */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura de Atención</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Análisis Dinámico Basado en el Catálogo de la Oficina</CardDescription>
+              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase">Análisis Dinámico por Modalidad y Región</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid lg:grid-cols-5 divide-x">
-            <div className="lg:col-span-3">
-              <Table>
-                <TableHeader className="bg-slate-100">
-                  <TableRow>
-                    <TableHead className="font-black text-xs uppercase">Modalidad</TableHead>
-                    <TableHead className="font-black text-xs uppercase">Valle</TableHead>
-                    <TableHead className="font-black text-xs uppercase text-center">Universo CCT</TableHead>
-                    <TableHead className="font-black text-xs uppercase text-center">Atendidas</TableHead>
-                    <TableHead className="font-black text-xs uppercase w-[150px]">Avance (%)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {UNIVERSE_STATS.map((row, idx) => {
-                    const percent = row.total > 0 ? Math.min(Math.round((row.atendidos / row.total) * 100), 100) : 0;
-                    return (
-                      <TableRow key={idx} className="hover:bg-slate-50/50">
-                        <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
-                        <TableCell className="text-xs font-medium">{row.valle}</TableCell>
-                        <TableCell className="text-center font-black">{row.total}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={row.atendidos > 0 ? "default" : "outline"} className="font-mono">{row.atendidos}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-bold">
-                              <span>{percent}%</span>
-                              <span className="text-muted-foreground">{row.atendidos}/{row.total}</span>
-                            </div>
-                            <Progress value={percent} className="h-1.5" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                  <TableRow className="bg-primary/5 font-black">
-                    <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
-                    <TableCell className="text-center text-lg">{schoolsDirectory.length}</TableCell>
-                    <TableCell className="text-center text-lg">{tickets.length}</TableCell>
+          <Table>
+            <TableHeader className="bg-slate-100">
+              <TableRow>
+                <TableHead className="font-black text-xs uppercase">Modalidad</TableHead>
+                <TableHead className="font-black text-xs uppercase">Valle</TableHead>
+                <TableHead className="font-black text-xs uppercase text-center">Universo CCT</TableHead>
+                <TableHead className="font-black text-xs uppercase text-center">Atendidas</TableHead>
+                <TableHead className="font-black text-xs uppercase w-[200px]">Avance Operativo (%)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {UNIVERSE_STATS.map((row, idx) => {
+                const percent = row.total > 0 ? Math.min(Math.round((row.atendidos / row.total) * 100), 100) : 0;
+                return (
+                  <TableRow key={idx} className="hover:bg-slate-50/50">
+                    <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
+                    <TableCell className="text-xs font-medium">{row.valle}</TableCell>
+                    <TableCell className="text-center font-black">{row.total}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={row.atendidos > 0 ? "default" : "outline"} className="font-mono">{row.atendidos}</Badge>
+                    </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                         <div className="flex justify-between text-[10px]">
-                            <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Global</span>
-                         </div>
-                         <Progress value={(tickets.length / schoolsDirectory.length) * 100} className="h-2" />
+                        <div className="flex justify-between text-[10px] font-bold">
+                          <span>{percent}%</span>
+                          <span className="text-muted-foreground">{row.atendidos}/{row.total}</span>
+                        </div>
+                        <Progress value={percent} className="h-1.5" />
                       </div>
                     </TableCell>
                   </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="lg:col-span-2 p-6 bg-slate-50/30">
-              <h4 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-primary" /> Eficiencia por Servicio
-              </h4>
-              <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} width={80} />
-                    <RechartsTooltip cursor={{ fill: 'transparent' }} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+                )
+              })}
+              <TableRow className="bg-primary/5 font-black">
+                <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
+                <TableCell className="text-center text-lg">{schoolsDirectory.length}</TableCell>
+                <TableCell className="text-center text-lg">{tickets.length}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                     <div className="flex justify-between text-[10px]">
+                        <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Cobertura Global</span>
+                     </div>
+                     <Progress value={(tickets.length / schoolsDirectory.length) * 100} className="h-2" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
+      {/* Expedientes Digitales */}
       <Card className="shadow-md border-none overflow-hidden">
         <CardHeader className="bg-slate-900 text-white">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <Search className="h-5 w-5 text-blue-400" /> Consulta de Expedientes por CCT
+            <Search className="h-5 w-5 text-blue-400" /> Auditoría de Expedientes por CCT
           </CardTitle>
           <CardDescription className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">
-            Auditoría de reportes y fotografías de mantenimiento
+            Consulta de reportes técnicos y evidencias fotográficas
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
