@@ -109,7 +109,6 @@ export default function SupportPage() {
         return
       }
       newPhotos.forEach(file => {
-        const reader = new FileReader()
         reader.onloadend = () => {
           setFormData(prev => ({
             ...prev,
@@ -321,30 +320,33 @@ export default function SupportPage() {
                   </TableCell>
                   <TableCell className="capitalize text-[11px] font-semibold text-slate-600">{t.tipoIncidencia}</TableCell>
                   <TableCell>
-                     <div className="flex flex-col gap-2">
-                        <Badge className={cn("text-[9px] font-black uppercase tracking-wider w-fit", 
-                          t.status === 'atendido' ? 'bg-emerald-500 hover:bg-emerald-600' : 
-                          t.status === 'en proceso' ? 'bg-amber-500 hover:bg-amber-600' : 
-                          'bg-rose-500 hover:bg-rose-600')}>
-                          {t.status}
-                        </Badge>
-                        <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
-                          <SelectTrigger className="h-7 w-32 text-[8px] font-black uppercase bg-white/50">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pendiente" className="text-[9px] font-bold text-rose-600">
-                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-rose-500" /> PENDIENTE</div>
-                            </SelectItem>
-                            <SelectItem value="en proceso" className="text-[9px] font-bold text-amber-600">
-                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-amber-500" /> EN PROCESO</div>
-                            </SelectItem>
-                            <SelectItem value="atendido" className="text-[9px] font-bold text-emerald-600">
-                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-emerald-500" /> ATENDIDO</div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                     </div>
+                    <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
+                      <SelectTrigger className={cn(
+                        "h-8 w-36 text-[10px] font-black uppercase border-2 transition-colors",
+                        t.status === 'atendido' ? 'border-emerald-500 text-emerald-700 bg-emerald-50' : 
+                        t.status === 'en proceso' ? 'border-amber-500 text-amber-700 bg-amber-50' : 
+                        'border-rose-500 text-rose-700 bg-rose-50'
+                      )}>
+                        <div className="flex items-center gap-1.5">
+                          <Circle className={cn("h-2 w-2 fill-current", 
+                            t.status === 'atendido' ? 'text-emerald-500' : 
+                            t.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'
+                          )} />
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">
+                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-rose-500" /> PENDIENTE</div>
+                        </SelectItem>
+                        <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">
+                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-amber-500" /> EN PROCESO</div>
+                        </SelectItem>
+                        <SelectItem value="atendido" className="text-[10px] font-bold text-emerald-600">
+                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-emerald-500" /> ATENDIDO</div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-center gap-1">
