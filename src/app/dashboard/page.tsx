@@ -76,10 +76,8 @@ export default function DashboardPage() {
   const [trainings, setTrainings] = useState<TrainingRecord[]>([])
   const [programs, setPrograms] = useState<ProgramStatus[]>([])
   
-  // Estado para visor de evidencias
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
-  // Filtros Globales
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
@@ -106,7 +104,6 @@ export default function DashboardPage() {
     return { valles, modalidades, municipios };
   }, [valleFilter, modalidadFilter]);
 
-  // Filtrado de Soporte
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || t.valle?.toUpperCase() === valleFilter.toUpperCase();
@@ -118,7 +115,6 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, cctFilter]);
 
-  // Filtrado de Capacitación
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
       const matchValle = valleFilter === 'all' || tr.asistenteValle?.toUpperCase() === valleFilter.toUpperCase();
@@ -174,7 +170,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header y Selector de Reporte Principal */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -199,7 +194,6 @@ export default function DashboardPage() {
           </Tabs>
         </div>
 
-        {/* Barra de Filtros Globales */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -271,7 +265,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Contenido Dinámico por Reporte */}
       <div className="w-full">
         {activeReport === 'soporte' && (
           <div className="space-y-6 animate-in fade-in duration-500">
@@ -310,7 +303,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus Operativo (Semáforo)</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus Operativo</CardTitle></CardHeader>
                 <CardContent className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -371,7 +364,7 @@ export default function DashboardPage() {
                       <TableRow key={t.id}>
                         <TableCell className="text-[10px] font-bold">{t.id}</TableCell>
                         <TableCell className="text-[10px] font-mono">{t.cct}</TableCell>
-                        <TableCell className="text-[10px] capitalize">{t.tipoIncidencia}</TableCell>
+                        <TableCell className="text-[10px] capitalize">{t.tipoIncidencia || 'Sin especificar'}</TableCell>
                         <TableCell>
                            <div className="flex items-center gap-1.5">
                               <Circle className={cn("h-2 w-2 fill-current", 
@@ -384,12 +377,12 @@ export default function DashboardPage() {
                         <TableCell>
                           <div className="flex justify-center gap-2">
                             {t.reportPdf && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte Soporte - ${t.id}` })}>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte Soporte - ${t.id} (${t.tipoIncidencia})` })}>
                                 <FileText className="h-3 w-3 text-blue-500" />
                               </Button>
                             )}
                             {t.evidencePhotos && t.evidencePhotos.length > 0 && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería Soporte - ${t.id}` })}>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería Soporte - ${t.id} (${t.tipoIncidencia})` })}>
                                 <ImageIcon className="h-3 w-3 text-pink-500" />
                               </Button>
                             )}
@@ -480,7 +473,7 @@ export default function DashboardPage() {
                           <TableCell>
                             <div className="flex justify-center gap-2">
                               {tr.reportPdf && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id}` })}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id} (${tr.cursoNombre})` })}>
                                   <FileText className="h-3 w-3 text-blue-500" />
                                 </Button>
                               )}
@@ -565,7 +558,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* DIÁLOGO VISOR DE EVIDENCIAS */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-2 border-b">

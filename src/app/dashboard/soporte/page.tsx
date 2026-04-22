@@ -26,7 +26,6 @@ export default function SupportPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   
-  // Estado para visor de evidencias
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
@@ -122,8 +121,8 @@ export default function SupportPage() {
   }
 
   const handleSave = () => {
-    if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "Folio y CCT son obligatorios." })
+    if (!formData.id || !formData.cct || !formData.tipoIncidencia) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "Folio, CCT y Tipo de Servicio son obligatorios." })
       return
     }
 
@@ -202,7 +201,7 @@ export default function SupportPage() {
                   </div>
                   {searchTerm && (
                     <div className="max-h-40 overflow-auto bg-white border rounded shadow-lg">
-                      {schoolsDirectory.filter(s => s.nombre.includes(searchTerm.toUpperCase()) || s.cct.includes(searchTerm.toUpperCase())).map(s => (
+                      {schoolsDirectory.filter(s => s.nombre.toUpperCase().includes(searchTerm.toUpperCase()) || s.cct.includes(searchTerm.toUpperCase())).map(s => (
                         <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0 flex justify-between items-center" onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}>
                           <div>
                             <span className="font-bold text-primary">{s.cct}</span> - {s.nombre}
@@ -219,7 +218,7 @@ export default function SupportPage() {
                   <div className="space-y-1">
                     <Label className="text-xs font-bold uppercase">Tipo de Servicio</Label>
                     <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar servicio..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="red edusat">Red Edusat</SelectItem>
                         <SelectItem value="red local">Red Local</SelectItem>
@@ -319,7 +318,9 @@ export default function SupportPage() {
                       <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[200px]">{t.schoolName}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="capitalize text-[11px] font-semibold text-slate-600">{t.tipoIncidencia}</TableCell>
+                  <TableCell className="capitalize text-[11px] font-semibold text-slate-600">
+                    {t.tipoIncidencia || 'Sin especificar'}
+                  </TableCell>
                   <TableCell>
                     <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
                       <SelectTrigger className={cn(
@@ -355,7 +356,7 @@ export default function SupportPage() {
                         <Button variant="outline" size="icon" className="h-7 w-7 border-blue-200 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte ${t.id} - ${t.cct}` })}>
                           <FileText className="h-3.5 w-3.5 text-blue-600" />
                         </Button>
-                      ) : <Circle className="h-1.5 w-1.5 text-slate-200" />}
+                      ) : (t.evidencePhotos && t.evidencePhotos.length > 0) ? null : <Circle className="h-1.5 w-1.5 text-slate-200" />}
                       {t.evidencePhotos && t.evidencePhotos.length > 0 ? (
                         <Button variant="outline" size="icon" className="h-7 w-7 border-pink-200 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería ${t.id} - ${t.cct}` })}>
                           <ImageIcon className="h-3.5 w-3.5 text-pink-600" />
@@ -387,7 +388,6 @@ export default function SupportPage() {
         </CardContent>
       </Card>
 
-      {/* DIÁLOGO VISOR DE EVIDENCIAS */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
