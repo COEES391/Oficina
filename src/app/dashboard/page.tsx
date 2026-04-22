@@ -13,7 +13,8 @@ import {
   Wrench,
   Filter,
   Globe,
-  LayoutGrid
+  LayoutGrid,
+  RefreshCcw
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -26,22 +27,23 @@ import {
   Cell,
 } from 'recharts'
 import { supportData, type SupportTicket } from '@/lib/planning-data'
+import { schoolsDirectory } from '@/lib/schools-directory'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Image from 'next/image'
 
 // Datos del Universo proporcionados en la imagen
 const UNIVERSE_STATS = [
-  { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175 },
-  { modalidad: 'SECUNDARIA GENERAL', valle: 'TOLUCA', total: 77 },
-  { modalidad: 'SECUNDARIA TECNICA', valle: 'MEXICO', total: 128 },
-  { modalidad: 'SECUNDARIA TECNICA', valle: 'TOLUCA', total: 112 },
+  { modalidad: 'GENERAL', valle: 'MEXICO', total: 175 },
+  { modalidad: 'GENERAL', valle: 'TOLUCA', total: 77 },
+  { modalidad: 'TECNICA', valle: 'MEXICO', total: 128 },
+  { modalidad: 'TECNICA', valle: 'TOLUCA', total: 112 },
   { modalidad: 'TELESECUNDARIA', valle: 'MEXICO', total: 144 },
   { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194 },
 ];
@@ -52,21 +54,28 @@ export default function DashboardPage() {
   const [filteredEvidence, setFilteredEvidence] = useState<SupportTicket[]>([])
   
   // Filtros
-  const [municipioFilter, setMunicipioFilter] = useState('')
+  const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
-  const [cctFilter, setCctFilter] = useState('')
+  const [cctFilter, setCctFilter] = useState('all')
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
     setTickets(stored.length > 0 ? stored : supportData)
   }, [])
 
+  // Extraer opciones únicas del catálogo para los filtros
+  const filterOptions = useMemo(() => {
+    const uniqueMunicipios = Array.from(new Set(schoolsDirectory.map(s => s.municipio))).sort();
+    const uniqueCCTs = Array.from(new Set(schoolsDirectory.map(s => s.cct))).sort();
+    return { municipios: uniqueMunicipios, ccts: uniqueCCTs };
+  }, []);
+
   // Datos filtrados para el informe
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
-      const matchMunicipio = municipioFilter === '' || t.municipio.toUpperCase().includes(municipioFilter.toUpperCase());
+      const matchMunicipio = municipioFilter === 'all' || t.municipio.toUpperCase() === municipioFilter.toUpperCase();
       const matchModalidad = modalidadFilter === 'all' || t.modalidad.toUpperCase() === modalidadFilter.toUpperCase();
-      const matchCCT = cctFilter === '' || t.cct.includes(cctFilter.toUpperCase());
+      const matchCCT = cctFilter === 'all' || t.cct === cctFilter;
       return matchMunicipio && matchModalidad && matchCCT;
     });
   }, [tickets, municipioFilter, modalidadFilter, cctFilter]);
@@ -100,6 +109,12 @@ export default function DashboardPage() {
     ).length;
   };
 
+  const clearFilters = () => {
+    setMunicipioFilter('all');
+    setCctFilter('all');
+    setModalidadFilter('all');
+  };
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -110,28 +125,41 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Barra de Filtros */}
-        <Card className="p-2 border-primary/20 bg-primary/5">
+        {/* Barra de Filtros Desplegables */}
+        <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-bold uppercase text-primary">Filtros:</span>
+              <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
-            <Input 
-              placeholder="Municipio..." 
-              className="h-8 text-xs w-[140px] bg-white" 
-              value={municipioFilter}
-              onChange={e => setMunicipioFilter(e.target.value)}
-            />
-            <Input 
-              placeholder="CCT..." 
-              className="h-8 text-xs w-[120px] bg-white uppercase" 
-              value={cctFilter}
-              onChange={e => setCctFilter(e.target.value)}
-            />
+            
+            <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
+              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+                <SelectValue placeholder="Seleccionar Municipio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Municipios</SelectItem>
+                {filterOptions.municipios.map(m => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={cctFilter} onValueChange={setCctFilter}>
+              <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20 font-mono">
+                <SelectValue placeholder="Seleccionar CCT" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las CCT</SelectItem>
+                {filterOptions.ccts.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
-              <SelectTrigger className="h-8 text-xs w-[160px] bg-white">
-                <SelectValue placeholder="Modalidad" />
+              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+                <SelectValue placeholder="Seleccionar Modalidad" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las Modalidades</SelectItem>
@@ -140,11 +168,15 @@ export default function DashboardPage() {
                 <SelectItem value="TELESECUNDARIA">Telesecundaria</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold" onClick={() => {
-              setMunicipioFilter('');
-              setCctFilter('');
-              setModalidadFilter('all');
-            }}>LIMPIAR</Button>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 px-3 text-[10px] font-black bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+              onClick={clearFilters}
+            >
+              <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
+            </Button>
           </div>
         </Card>
       </div>
@@ -196,14 +228,14 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Universo de Atención (Basado en la tabla de la imagen) */}
+      {/* Universo de Atención */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
               <CardTitle className="text-xl font-black uppercase">Universo de Atención por Modalidad y Valle</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional vs Universo Programado</CardDescription>
+              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional vs Universo Programado (830 CCT)</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -251,7 +283,7 @@ export default function DashboardPage() {
                     <TableCell>
                       <div className="space-y-1">
                          <div className="flex justify-between text-[10px]">
-                            <span>{Math.round((tickets.length / 830) * 100)}% Cobertura</span>
+                            <span>{Math.round((tickets.length / 830) * 100)}% Cobertura Global</span>
                          </div>
                          <Progress value={(tickets.length / 830) * 100} className="h-2" />
                       </div>
@@ -289,9 +321,9 @@ export default function DashboardPage() {
       <Card className="shadow-md border-none overflow-hidden">
         <CardHeader className="bg-slate-900 text-white">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <Search className="h-5 w-5 text-blue-400" /> Consulta de Evidencias Digitales por CCT
+            <Search className="h-5 w-5 text-blue-400" /> Consulta de Expedientes por CCT
           </CardTitle>
-          <CardDescription className="text-slate-400 text-[10px] uppercase font-bold">
+          <CardDescription className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">
             Auditoría de reportes y fotografías de mantenimiento
           </CardDescription>
         </CardHeader>
@@ -301,10 +333,10 @@ export default function DashboardPage() {
               placeholder="Ingrese CCT (ejem: 15EES0001Z)" 
               value={cctSearch} 
               onChange={e => setCctSearch(e.target.value.toUpperCase())}
-              className="uppercase font-mono border-2 focus:border-primary"
+              className="uppercase font-mono border-2 focus:border-primary h-11"
             />
-            <Button onClick={handleSearchEvidence} className="gap-2 bg-primary hover:bg-primary/90">
-              <Eye className="h-4 w-4" /> Consultar Expediente
+            <Button onClick={handleSearchEvidence} className="gap-2 bg-primary hover:bg-primary/90 px-6 font-bold uppercase">
+              <Eye className="h-4 w-4" /> Consultar
             </Button>
           </div>
 
@@ -312,14 +344,14 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredEvidence.length > 0 ? filteredEvidence.map((item, idx) => (
-              <Card key={idx} className="group hover:border-primary transition-all shadow-sm">
+              <Card key={idx} className="group hover:border-primary transition-all shadow-sm bg-slate-50/50">
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-start">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                         <FileText className="h-6 w-6" />
                       </div>
-                      <Badge variant="outline" className="text-[9px] font-mono">{item.fechaEntrada}</Badge>
+                      <Badge variant="outline" className="text-[9px] font-mono bg-white">{item.fechaEntrada}</Badge>
                     </div>
                     <div>
                       <h4 className="font-black text-xs text-primary truncate uppercase">{item.cct}</h4>
@@ -338,19 +370,19 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Archivos: {item.reportPdf ? 1 : 0} PDF / {item.evidencePhotos?.length || 0} JPG</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Expediente Digital: {item.reportPdf ? 'PDF' : ''} {item.evidencePhotos?.length ? `+ ${item.evidencePhotos.length} FOTOS` : ''}</span>
                     </div>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold uppercase mt-2 group-hover:bg-primary group-hover:text-white">
-                          Ver Evidencia
+                        <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase mt-2 group-hover:bg-primary group-hover:text-white">
+                          Abrir Documentación
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0">
                         <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
                           <DialogTitle className="uppercase font-black flex items-center gap-2">
                             <FileText className="h-5 w-5 text-primary" /> 
-                            Expediente Digital: {item.id} - {item.cct}
+                            Expediente: {item.id} - {item.cct}
                           </DialogTitle>
                         </DialogHeader>
                         <div className="flex-1 overflow-auto px-8 py-6 space-y-8">
@@ -362,7 +394,7 @@ export default function DashboardPage() {
                           )}
                           {item.evidencePhotos && item.evidencePhotos.length > 0 && (
                             <div className="space-y-3 pb-8">
-                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Galería de Evidencias Fotográficas</h4>
+                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Galería Fotográfica de Campo</h4>
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {item.evidencePhotos.map((foto, fIdx) => (
                                   <div key={fIdx} className="relative aspect-video border rounded-xl overflow-hidden shadow-md hover:scale-[1.02] transition-transform">
@@ -382,7 +414,7 @@ export default function DashboardPage() {
               <div className="col-span-full text-center py-16 border-2 border-dashed rounded-2xl bg-slate-50/50">
                 <Search className="h-10 w-10 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-400 font-bold uppercase text-sm">
-                  {cctSearch ? 'No se encontraron registros para este CCT.' : 'Ingrese una Clave de Centro de Trabajo para auditar evidencias.'}
+                  {cctSearch ? 'No se encontraron registros para este CCT.' : 'Ingrese una CCT para auditar evidencias digitales.'}
                 </p>
               </div>
             )}
