@@ -19,7 +19,10 @@ import {
   GraduationCap,
   Briefcase,
   TrendingUp,
-  Clock
+  Clock,
+  Image as ImageIcon,
+  ExternalLink,
+  X
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -40,11 +43,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import Image from 'next/image'
 
 const TARGET_UNIVERSE_DATA = [
   { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
@@ -69,6 +74,9 @@ export default function DashboardPage() {
   const [trainings, setTrainings] = useState<TrainingRecord[]>([])
   const [programs, setPrograms] = useState<ProgramStatus[]>([])
   
+  // Estado para visor de evidencias
+  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
+
   // Filtros Globales
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
@@ -339,6 +347,51 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase">Atenciones de Soporte y Evidencias</CardTitle>
+                <CardDescription>Detalle de intervenciones técnicas con archivos adjuntos.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead className="text-[10px] font-black">Folio</TableHead>
+                      <TableHead className="text-[10px] font-black">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black">Incidencia</TableHead>
+                      <TableHead className="text-[10px] font-black">Oficina</TableHead>
+                      <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTickets.slice(0, 10).map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="text-[10px] font-bold">{t.id}</TableCell>
+                        <TableCell className="text-[10px] font-mono">{t.cct}</TableCell>
+                        <TableCell className="text-[10px] capitalize">{t.tipoIncidencia}</TableCell>
+                        <TableCell className="text-[10px]">{t.oficinaRegionalAtencion?.replace("Oficina de ", "") || "N/A"}</TableCell>
+                        <TableCell>
+                          <div className="flex justify-center gap-2">
+                            {t.reportPdf && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte Soporte - ${t.id}` })}>
+                                <FileText className="h-3 w-3 text-blue-500" />
+                              </Button>
+                            )}
+                            {t.evidencePhotos && t.evidencePhotos.length > 0 && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería Soporte - ${t.id}` })}>
+                                <ImageIcon className="h-3 w-3 text-pink-500" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredTickets.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-10 text-[10px]">Sin registros encontrados.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -405,8 +458,8 @@ export default function DashboardPage() {
                     <TableHeader className="bg-slate-50"><TableRow>
                       <TableHead className="text-[10px] font-black">Folio</TableHead>
                       <TableHead className="text-[10px] font-black">Curso</TableHead>
-                      <TableHead className="text-[10px] font-black">Participante</TableHead>
-                      <TableHead className="text-[10px] font-black">Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black">Asistente</TableHead>
+                      <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {filteredTrainings.slice(0, 5).map((tr) => (
@@ -414,7 +467,20 @@ export default function DashboardPage() {
                           <TableCell className="text-[10px] font-bold">{tr.id}</TableCell>
                           <TableCell className="text-[10px] truncate max-w-[150px]">{tr.cursoNombre}</TableCell>
                           <TableCell className="text-[10px]">{tr.asistenteNombres} {tr.asistentePaterno}</TableCell>
-                          <TableCell className="text-[10px] font-mono">{tr.asistenteCCT}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-2">
+                              {tr.reportPdf && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id}` })}>
+                                  <FileText className="h-3 w-3 text-blue-500" />
+                                </Button>
+                              )}
+                              {tr.evidencePhotos && tr.evidencePhotos.length > 0 && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: tr.evidencePhotos!, title: `Galería Capacitación - ${tr.id}` })}>
+                                  <ImageIcon className="h-3 w-3 text-pink-500" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {filteredTrainings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[10px] py-4">No hay datos para estos filtros.</TableCell></TableRow>}
@@ -457,14 +523,26 @@ export default function DashboardPage() {
             </div>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Metas por Programa</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Metas por Programa y Evidencias</CardTitle></CardHeader>
               <CardContent className="space-y-6">
                 {programs.map(p => (
-                  <div key={p.id} className="space-y-2">
+                  <div key={p.id} className="space-y-2 p-4 border rounded-lg hover:bg-slate-50 transition-colors">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black uppercase">{p.name}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs font-black uppercase w-48">{p.name}</span>
                         <Badge className="text-[9px] uppercase">{p.status}</Badge>
+                        <div className="flex gap-2 ml-4">
+                          {p.reportPdf && (
+                            <Button variant="outline" size="sm" className="h-7 gap-1 text-[9px]" onClick={() => setEvidenceToView({ type: 'pdf', data: p.reportPdf!, title: p.name })}>
+                              <FileText className="h-3 w-3" /> PDF
+                            </Button>
+                          )}
+                          {p.evidencePhotos && p.evidencePhotos.length > 0 && (
+                            <Button variant="outline" size="sm" className="h-7 gap-1 text-[9px]" onClick={() => setEvidenceToView({ type: 'gallery', data: p.evidencePhotos!, title: p.name })}>
+                              <ImageIcon className="h-3 w-3" /> FOTOS ({p.evidencePhotos.length})
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <span className="text-xs font-bold">{p.progress}%</span>
                     </div>
@@ -476,6 +554,37 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* DIÁLOGO VISOR DE EVIDENCIAS */}
+      <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2 border-b">
+            <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
+              {evidenceToView?.type === 'pdf' ? <FileText className="h-5 w-5" /> : <ImageIcon className="h-5 w-5" />}
+              {evidenceToView?.title}
+            </DialogTitle>
+            <DialogDescription>Previsualización de documentos y fotos institucionales.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-slate-100 relative">
+             {evidenceToView?.type === 'pdf' ? (
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none" />
+             ) : (
+                <ScrollArea className="h-full w-full p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(evidenceToView?.data as string[])?.map((img, idx) => (
+                      <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border-2 border-white shadow-md">
+                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+             )}
+          </div>
+          <div className="p-4 border-t bg-white flex justify-end">
+            <Button variant="secondary" onClick={() => setEvidenceToView(null)}>Cerrar Visor</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
