@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -13,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, FileSpreadsheet, Users, BookOpen, MapPin, FileText, Image as ImageIcon, X, Search, Pencil, Upload } from "lucide-react"
+import { PlusCircle, GraduationCap, FileSpreadsheet, Users, BookOpen, MapPin, FileText, Image as ImageIcon, X, Search, Pencil, Upload, FileUp } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -192,46 +193,9 @@ export default function TrainingPage() {
       setRecords(newRecords)
       localStorage.setItem('training_records_full', JSON.stringify(newRecords))
       toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} registros de asistentes.` })
+      setIsDialogOpen(false) // Cerramos después de importar masivamente
     }
     reader.readAsBinaryString(file)
-  }
-
-  const exportToExcel = () => {
-    const exportData = records.map(r => ({
-      'No.': r.id,
-      'Grupo': r.cursoGrupo,
-      'Nombre Curso': r.cursoNombre,
-      'Duración Horas': r.duracionHoras,
-      'Fecha Inicio': r.fechaInicio,
-      'Fecha Término': r.fechaTermino,
-      'Instructor 1': r.instructores[0],
-      'Instructor 2': r.instructores[1],
-      'Instructor 3': r.instructores[2],
-      'No. Oficio': r.numeroOficio,
-      'Material Utilizado': r.materialUtilizado,
-      'Apellido Paterno': r.asistentePaterno,
-      'Apellido Materno': r.asistenteMaterno,
-      'Nombre(s)': r.asistenteNombres,
-      'RFC': r.asistenteRFC,
-      'Función': r.asistenteFuncion,
-      'Email': r.asistenteEmail,
-      'CCT Plantel': r.asistenteCCT,
-      'Nombre C.T.': r.asistenteNombreCT,
-      'ZE': r.asistenteZE,
-      'Sector': r.asistenteSector,
-      'Modalidad': r.asistenteModalidad,
-      'Municipio': r.asistenteMunicipio,
-      'Región': r.asistenteRegion,
-      'Valle': r.asistenteValle,
-      'CCT Sede': r.cctSede,
-      'SETES': r.setes === 'S' ? 'Sí' : 'No',
-      'Observaciones': r.observaciones
-    }))
-    
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Capacitación");
-    XLSX.writeFile(workbook, `Reporte_Capacitacion_Asistentes.xlsx`);
   }
 
   const filteredSchools = schoolsDirectory.filter(s => 
@@ -247,23 +211,6 @@ export default function TrainingPage() {
           <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">Seguimiento de personal capacitado y cursos.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <div className="relative">
-            <Input
-              type="file"
-              accept=".xlsx, .xls"
-              className="hidden"
-              id="excel-import"
-              onChange={handleImportExcel}
-            />
-            <Button variant="outline" asChild className="gap-2 font-bold uppercase text-xs">
-              <label htmlFor="excel-import" className="cursor-pointer">
-                <Upload className="h-4 w-4" /> Importar Lista Excel
-              </label>
-            </Button>
-          </div>
-          <Button variant="outline" onClick={exportToExcel} className="gap-2 font-bold uppercase text-xs">
-            <FileSpreadsheet className="h-4 w-4" /> Reporte Excel
-          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open)
             if (!open) {
@@ -273,8 +220,8 @@ export default function TrainingPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button className="gap-2 font-black uppercase text-xs">
-                <PlusCircle className="h-4 w-4" /> Registrar Asistente
+              <Button className="gap-2 font-black uppercase text-xs px-8 h-12">
+                <PlusCircle className="h-5 w-5" /> Registrar Asistente
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0">
@@ -321,7 +268,7 @@ export default function TrainingPage() {
                   <TabsList className="w-full justify-start rounded-none bg-transparent h-auto p-0">
                     <TabsTrigger value="curso" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Datos del Curso</TabsTrigger>
                     <TabsTrigger value="asistente" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Datos del Asistente</TabsTrigger>
-                    <TabsTrigger value="evidencia" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Evidencias</TabsTrigger>
+                    <TabsTrigger value="evidencia" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Evidencias y Carga Masiva</TabsTrigger>
                   </TabsList>
                 </div>
                 
@@ -389,23 +336,50 @@ export default function TrainingPage() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="evidencia" className="space-y-6 mt-0">
+                    <TabsContent value="evidencia" className="space-y-8 mt-0">
+                      <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 border-dashed">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                          <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
+                            <FileSpreadsheet className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-black uppercase text-xs text-primary">Carga Masiva de Asistentes</h4>
+                            <p className="text-[10px] font-bold text-muted-foreground mt-1">Si tienes una lista de asistentes en Excel, cárgala aquí para realizar un registro múltiple automático.</p>
+                          </div>
+                          <div className="relative">
+                            <Input
+                              type="file"
+                              accept=".xlsx, .xls"
+                              className="hidden"
+                              id="excel-import-dialog"
+                              onChange={handleImportExcel}
+                            />
+                            <Button asChild className="gap-2 font-black uppercase text-xs px-6">
+                              <label htmlFor="excel-import-dialog" className="cursor-pointer">
+                                <FileUp className="h-4 w-4" /> Importar Lista desde Excel
+                              </label>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label className="text-xs font-black uppercase text-primary">Reporte PDF / Lista de Asistencia</Label>
-                          <Input type="file" accept=".pdf" onChange={e => handleFileChange(e, 'pdf')} className="cursor-pointer" />
+                          <Label className="text-xs font-black uppercase text-primary">Lista de Asistencia (PDF o Imagen)</Label>
+                          <Input type="file" accept=".pdf,image/*" onChange={e => handleFileChange(e, 'pdf')} className="cursor-pointer" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs font-black uppercase text-primary">Fotografías de Evidencia</Label>
                           <Input type="file" multiple accept="image/*" onChange={e => handleFileChange(e, 'photo')} className="cursor-pointer" />
                         </div>
                       </div>
+
                       <div className="p-4 bg-muted/50 rounded-lg border border-dashed text-xs font-bold">
                         <p className="text-primary mb-2 uppercase">Archivos Adjuntos:</p>
                         <ul className="space-y-1">
                           <li className="flex items-center gap-2">
                              <FileText className={`h-4 w-4 ${formData.reportPdf ? 'text-blue-600' : 'text-slate-300'}`} />
-                             {formData.reportPdf ? 'PDF cargado correctamente' : 'Sin lista de asistencia PDF'}
+                             {formData.reportPdf ? 'Lista de asistencia cargada correctamente' : 'Sin lista de asistencia adjunta'}
                           </li>
                           <li className="flex items-center gap-2">
                              <ImageIcon className={`h-4 w-4 ${formData.evidencePhotos?.length ? 'text-pink-600' : 'text-slate-300'}`} />
