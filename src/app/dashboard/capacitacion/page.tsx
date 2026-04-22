@@ -24,7 +24,7 @@ export default function TrainingPage() {
   const [records, setRecords] = useState<TrainingRecord[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [targetType, setTargetType] = useState<'instructor' | 'sede'>('instructor')
+  const [targetType, setTargetType] = useState<'asistente' | 'sede'>('asistente')
   const [editingId, setEditingId] = useState<string | null>(null)
   
   const initialFormState: Omit<TrainingRecord, 'status'> = {
@@ -73,7 +73,7 @@ export default function TrainingPage() {
   const handleSelectSchool = (cct: string) => {
     const school = schoolsDirectory.find(s => s.cct === cct);
     if (school) {
-      if (targetType === 'instructor') {
+      if (targetType === 'asistente') {
         setFormData({
           ...formData,
           asistenteCCT: school.cct,
@@ -85,7 +85,7 @@ export default function TrainingPage() {
           asistenteRegion: school.region,
           asistenteValle: school.valle
         });
-        toast({ title: "Datos del Instructor autocompletados" });
+        toast({ title: "Datos del Asistente autocompletados" });
       } else {
         setFormData({ ...formData, cctSede: school.cct });
         toast({ title: "CCT Sede actualizado" });
@@ -126,17 +126,17 @@ export default function TrainingPage() {
 
   const handleSave = () => {
     if (!formData.id || !formData.cursoNombre || !formData.asistenteRFC) {
-      toast({ variant: "destructive", title: "Campos incompletos" })
+      toast({ variant: "destructive", title: "Campos incompletos", description: "RFC, Folio y Curso son obligatorios." })
       return
     }
 
     let updated: TrainingRecord[];
     if (editingId) {
       updated = records.map(r => r.id === editingId ? (formData as TrainingRecord) : r)
-      toast({ title: "Registro actualizado" })
+      toast({ title: "Registro actualizado con éxito" })
     } else {
       updated = [formData as TrainingRecord, ...records]
-      toast({ title: "Registro exitoso" })
+      toast({ title: "Registro de asistente exitoso" })
     }
 
     setRecords(updated)
@@ -191,7 +191,7 @@ export default function TrainingPage() {
       const newRecords = [...importedRecords, ...records]
       setRecords(newRecords)
       localStorage.setItem('training_records_full', JSON.stringify(newRecords))
-      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} instructores.` })
+      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} registros de asistentes.` })
     }
     reader.readAsBinaryString(file)
   }
@@ -231,7 +231,7 @@ export default function TrainingPage() {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Capacitación");
-    XLSX.writeFile(workbook, `Reporte_Capacitacion_Instructores.xlsx`);
+    XLSX.writeFile(workbook, `Reporte_Capacitacion_Asistentes.xlsx`);
   }
 
   const filteredSchools = schoolsDirectory.filter(s => 
@@ -243,8 +243,8 @@ export default function TrainingPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-primary">Capacitación</h2>
-          <p className="text-muted-foreground">Control y seguimiento de instructores y cursos impartidos.</p>
+          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Capacitación Institucional</h2>
+          <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">Seguimiento de personal capacitado y cursos.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
@@ -255,14 +255,14 @@ export default function TrainingPage() {
               id="excel-import"
               onChange={handleImportExcel}
             />
-            <Button variant="outline" asChild className="gap-2">
+            <Button variant="outline" asChild className="gap-2 font-bold uppercase text-xs">
               <label htmlFor="excel-import" className="cursor-pointer">
-                <Upload className="h-4 w-4" /> Importar Excel
+                <Upload className="h-4 w-4" /> Importar Lista Excel
               </label>
             </Button>
           </div>
-          <Button variant="outline" onClick={exportToExcel} className="gap-2">
-            <FileSpreadsheet className="h-4 w-4" /> Exportar Reporte
+          <Button variant="outline" onClick={exportToExcel} className="gap-2 font-bold uppercase text-xs">
+            <FileSpreadsheet className="h-4 w-4" /> Reporte Excel
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open)
@@ -273,32 +273,32 @@ export default function TrainingPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <PlusCircle className="h-4 w-4" /> Registrar Instructor
+              <Button className="gap-2 font-black uppercase text-xs">
+                <PlusCircle className="h-4 w-4" /> Registrar Asistente
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0">
               <DialogHeader className="p-6 pb-2">
-                <DialogTitle>{editingId ? 'Editar Instructor' : 'Registrar Instructor Capacitado'}</DialogTitle>
-                <DialogDescription>
-                  Formato oficial para el seguimiento de la capacitación institucional.
+                <DialogTitle className="uppercase font-black text-primary">{editingId ? 'Editar Registro' : 'Registrar Asistente Capacitado'}</DialogTitle>
+                <DialogDescription className="font-bold text-xs">
+                  Ingrese la información del asistente y del curso impartido.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="px-6 py-2 bg-muted/20 border-b">
                  <div className="flex flex-col gap-2">
-                    <Label className="text-xs font-bold text-primary flex items-center gap-1"><Search className="h-3 w-3"/> Autocompletar datos del catálogo:</Label>
+                    <Label className="text-[10px] font-black text-primary flex items-center gap-1 uppercase"><Search className="h-3 w-3"/> Autocompletar desde catálogo:</Label>
                     <div className="flex gap-2">
                       <Select value={targetType} onValueChange={(val: any) => setTargetType(val)}>
-                        <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-40 h-8 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="instructor">Para Instructor</SelectItem>
+                          <SelectItem value="asistente">Para Asistente</SelectItem>
                           <SelectItem value="sede">Para CCT Sede</SelectItem>
                         </SelectContent>
                       </Select>
                       <Input 
                         placeholder="Buscar plantel..." 
-                        className="h-8 text-xs" 
+                        className="h-8 text-[10px]" 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)}
                       />
@@ -306,8 +306,9 @@ export default function TrainingPage() {
                     {searchTerm && (
                       <div className="absolute z-50 bg-white border rounded shadow-lg max-h-40 overflow-auto w-[400px] mt-16 ml-44">
                         {filteredSchools.map(s => (
-                          <div key={s.cct} className="p-2 hover:bg-muted text-xs cursor-pointer border-b" onClick={() => handleSelectSchool(s.cct)}>
-                            <span className="font-bold">{s.cct}</span> - {s.nombre}
+                          <div key={s.cct} className="p-2 hover:bg-muted text-[10px] cursor-pointer border-b flex justify-between" onClick={() => handleSelectSchool(s.cct)}>
+                            <span className="font-bold">{s.cct}</span>
+                            <span>{s.nombre}</span>
                           </div>
                         ))}
                       </div>
@@ -318,9 +319,9 @@ export default function TrainingPage() {
               <Tabs defaultValue="curso" className="flex-1 flex flex-col overflow-hidden">
                 <div className="px-6 border-b">
                   <TabsList className="w-full justify-start rounded-none bg-transparent h-auto p-0">
-                    <TabsTrigger value="curso" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2">Datos del Curso</TabsTrigger>
-                    <TabsTrigger value="instructor" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2">Datos del Instructor</TabsTrigger>
-                    <TabsTrigger value="evidencia" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2">Evidencias</TabsTrigger>
+                    <TabsTrigger value="curso" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Datos del Curso</TabsTrigger>
+                    <TabsTrigger value="asistente" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Datos del Asistente</TabsTrigger>
+                    <TabsTrigger value="evidencia" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-2 text-[10px] font-black uppercase tracking-wider">Evidencias</TabsTrigger>
                   </TabsList>
                 </div>
                 
@@ -328,22 +329,22 @@ export default function TrainingPage() {
                   <div className="py-6">
                     <TabsContent value="curso" className="space-y-6 mt-0">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-1"><Label>No. (Folio)</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
-                        <div className="space-y-1"><Label>Grupo</Label><Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
-                        <div className="md:col-span-2 space-y-1"><Label>Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Folio Registro</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Grupo</Label><Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
+                        <div className="md:col-span-2 space-y-1"><Label className="text-xs font-bold uppercase">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="space-y-1"><Label>Horas</Label><Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
-                        <div className="space-y-1"><Label>Fecha Inicio</Label><Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Fecha Término</Label><Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>No. Oficio</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Horas Duración</Label><Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Fecha Inicio</Label><Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Fecha Término</Label><Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">No. Oficio</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} /></div>
                       </div>
                       <div className="space-y-4">
-                        <h3 className="text-sm font-bold border-b pb-1">Instructores Ponentes</h3>
+                        <h3 className="text-[10px] font-black uppercase text-primary border-b pb-1">Instructores Ponentes</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {[0, 1, 2].map(idx => (
                             <div key={idx} className="space-y-1">
-                              <Label>Ponente {idx + 1}</Label>
+                              <Label className="text-[10px] font-bold">Ponente {idx + 1}</Label>
                               <Input value={formData.instructores[idx]} onChange={e => {
                                 const newInst = [...formData.instructores];
                                 newInst[idx] = e.target.value;
@@ -354,9 +355,9 @@ export default function TrainingPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2 space-y-1"><Label>Sede (CCT)</Label><Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} /></div>
+                        <div className="md:col-span-2 space-y-1"><Label className="text-xs font-bold uppercase">CCT Sede</Label><Input className="font-mono uppercase" value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} /></div>
                         <div className="space-y-1">
-                          <Label>SETES</Label>
+                          <Label className="text-xs font-bold uppercase">SETES</Label>
                           <Select value={formData.setes} onValueChange={(val:any) => setFormData({...formData, setes: val})}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent><SelectItem value="S">Sí</SelectItem><SelectItem value="N">No</SelectItem></SelectContent>
@@ -365,45 +366,51 @@ export default function TrainingPage() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="instructor" className="space-y-6 mt-0">
+                    <TabsContent value="asistente" className="space-y-6 mt-0">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-1"><Label>Ap. Paterno</Label><Input value={formData.asistentePaterno} onChange={e => setFormData({...formData, asistentePaterno: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Ap. Materno</Label><Input value={formData.asistenteMaterno} onChange={e => setFormData({...formData, asistenteMaterno: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Nombre(s)</Label><Input value={formData.asistenteNombres} onChange={e => setFormData({...formData, asistenteNombres: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Apellido Paterno</Label><Input value={formData.asistentePaterno} onChange={e => setFormData({...formData, asistentePaterno: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Apellido Materno</Label><Input value={formData.asistenteMaterno} onChange={e => setFormData({...formData, asistenteMaterno: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Nombre(s)</Label><Input value={formData.asistenteNombres} onChange={e => setFormData({...formData, asistenteNombres: e.target.value})} /></div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-1"><Label>RFC</Label><Input className="uppercase" value={formData.asistenteRFC} onChange={e => setFormData({...formData, asistenteRFC: e.target.value.toUpperCase()})} /></div>
-                        <div className="space-y-1"><Label>CCT Plantel Instructor</Label><Input className="uppercase" value={formData.asistenteCCT} onChange={e => setFormData({...formData, asistenteCCT: e.target.value.toUpperCase()})} /></div>
-                        <div className="space-y-1"><Label>Nombre C.T. Instructor</Label><Input value={formData.asistenteNombreCT} onChange={e => setFormData({...formData, asistenteNombreCT: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">RFC</Label><Input className="uppercase font-mono" value={formData.asistenteRFC} onChange={e => setFormData({...formData, asistenteRFC: e.target.value.toUpperCase()})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">CCT Plantel Origen</Label><Input className="uppercase font-mono" value={formData.asistenteCCT} onChange={e => setFormData({...formData, asistenteCCT: e.target.value.toUpperCase()})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Nombre C.T.</Label><Input value={formData.asistenteNombreCT} onChange={e => setFormData({...formData, asistenteNombreCT: e.target.value})} /></div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="space-y-1"><Label>ZE</Label><Input value={formData.asistenteZE} onChange={e => setFormData({...formData, asistenteZE: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Sector</Label><Input value={formData.asistenteSector} onChange={e => setFormData({...formData, asistenteSector: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Región</Label><Input value={formData.asistenteRegion} onChange={e => setFormData({...formData, asistenteRegion: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Valle</Label><Input value={formData.asistenteValle} onChange={e => setFormData({...formData, asistenteValle: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold uppercase">ZE</Label><Input value={formData.asistenteZE} readOnly className="bg-muted/50" /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold uppercase">Sector</Label><Input value={formData.asistenteSector} readOnly className="bg-muted/50" /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold uppercase">Región</Label><Input value={formData.asistenteRegion} readOnly className="bg-muted/50" /></div>
+                        <div className="space-y-1"><Label className="text-[10px] font-bold uppercase">Valle</Label><Input value={formData.asistenteValle} readOnly className="bg-muted/50" /></div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1"><Label>Función</Label><Input value={formData.asistenteFuncion} onChange={e => setFormData({...formData, asistenteFuncion: e.target.value})} /></div>
-                        <div className="space-y-1"><Label>Email</Label><Input type="email" value={formData.asistenteEmail} onChange={e => setFormData({...formData, asistenteEmail: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Función</Label><Input value={formData.asistenteFuncion} onChange={e => setFormData({...formData, asistenteFuncion: e.target.value})} /></div>
+                        <div className="space-y-1"><Label className="text-xs font-bold uppercase">Correo Electrónico</Label><Input type="email" value={formData.asistenteEmail} onChange={e => setFormData({...formData, asistenteEmail: e.target.value})} /></div>
                       </div>
                     </TabsContent>
 
                     <TabsContent value="evidencia" className="space-y-6 mt-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-2">
-                          <Label>Reporte PDF / Lista de Asistencia</Label>
-                          <Input type="file" accept=".pdf" onChange={e => handleFileChange(e, 'pdf')} />
+                          <Label className="text-xs font-black uppercase text-primary">Reporte PDF / Lista de Asistencia</Label>
+                          <Input type="file" accept=".pdf" onChange={e => handleFileChange(e, 'pdf')} className="cursor-pointer" />
                         </div>
                         <div className="space-y-2">
-                          <Label>Fotos Evidencia</Label>
-                          <Input type="file" multiple accept="image/*" onChange={e => handleFileChange(e, 'photo')} />
+                          <Label className="text-xs font-black uppercase text-primary">Fotografías de Evidencia</Label>
+                          <Input type="file" multiple accept="image/*" onChange={e => handleFileChange(e, 'photo')} className="cursor-pointer" />
                         </div>
                       </div>
-                      <div className="p-4 bg-muted rounded-md text-xs font-medium">
-                        <p className="text-primary mb-2">Resumen de Evidencias:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>{formData.reportPdf ? '✓ PDF cargado correctamente' : 'No hay PDF cargado'}</li>
-                          <li>{formData.evidencePhotos?.length || 0} fotos seleccionadas</li>
+                      <div className="p-4 bg-muted/50 rounded-lg border border-dashed text-xs font-bold">
+                        <p className="text-primary mb-2 uppercase">Archivos Adjuntos:</p>
+                        <ul className="space-y-1">
+                          <li className="flex items-center gap-2">
+                             <FileText className={`h-4 w-4 ${formData.reportPdf ? 'text-blue-600' : 'text-slate-300'}`} />
+                             {formData.reportPdf ? 'PDF cargado correctamente' : 'Sin lista de asistencia PDF'}
+                          </li>
+                          <li className="flex items-center gap-2">
+                             <ImageIcon className={`h-4 w-4 ${formData.evidencePhotos?.length ? 'text-pink-600' : 'text-slate-300'}`} />
+                             {formData.evidencePhotos?.length || 0} fotos de evidencia
+                          </li>
                         </ul>
                       </div>
                     </TabsContent>
@@ -411,58 +418,86 @@ export default function TrainingPage() {
                 </ScrollArea>
               </Tabs>
 
-              <DialogFooter className="p-6 border-t">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={handleSave}>{editingId ? 'Actualizar' : 'Guardar'} Instructor</Button>
+              <DialogFooter className="p-6 border-t bg-slate-50">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-bold uppercase text-xs">Cancelar</Button>
+                <Button onClick={handleSave} className="font-black uppercase text-xs px-8">
+                  {editingId ? 'Actualizar Asistente' : 'Guardar Asistente'}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <Card className="shadow-md border-t-4 border-t-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            Personal e Instructores Capacitados
+      <Card className="shadow-md border-t-4 border-t-primary overflow-hidden">
+        <CardHeader className="bg-slate-50/50">
+          <CardTitle className="flex items-center gap-2 text-primary uppercase font-black text-lg">
+            <GraduationCap className="h-6 w-6" />
+            Control Escolar de Capacitación
           </CardTitle>
-          <CardDescription>Resumen del historial de capacitación ciclo escolar actual.</CardDescription>
+          <CardDescription className="font-bold text-xs uppercase tracking-tight">Historial de personal capacitado por plantel y región.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-muted/50">
+              <TableHeader className="bg-slate-100">
                 <TableRow>
-                  <TableHead className="w-[80px]">No.</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead>Instructor</TableHead>
-                  <TableHead>CCT Plantel</TableHead>
-                  <TableHead>Sede</TableHead>
-                  <TableHead className="text-center">Evidencias</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">No.</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">Curso</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">Nombre del Asistente</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">RFC</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">Plantel Origen</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {records.length > 0 ? records.map((record) => (
-                  <TableRow key={record.id} className="hover:bg-muted/30">
-                    <TableCell className="font-bold text-xs">{record.id}</TableCell>
-                    <TableCell><div className="flex flex-col"><span className="font-medium text-sm">{record.cursoNombre}</span></div></TableCell>
-                    <TableCell className="text-sm">{record.asistenteNombres} {record.asistentePaterno}</TableCell>
-                    <TableCell className="text-xs">{record.asistenteCCT}</TableCell>
-                    <TableCell className="text-xs">{record.cctSede}</TableCell>
+                  <TableRow key={record.id} className="hover:bg-slate-50 transition-colors">
+                    <TableCell className="font-black text-xs text-primary">{record.id}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs text-slate-700">{record.cursoNombre}</span>
+                        <span className="text-[9px] text-muted-foreground uppercase">{record.cursoGrupo}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold">
+                      {record.asistenteNombres} {record.asistentePaterno} {record.asistenteMaterno}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs uppercase text-muted-foreground">{record.asistenteRFC}</TableCell>
+                    <TableCell className="text-[10px] font-bold">
+                       <div className="flex flex-col">
+                          <span>{record.asistenteCCT}</span>
+                          <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{record.asistenteNombreCT}</span>
+                       </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
                         {record.reportPdf && <FileText className="h-4 w-4 text-blue-500" />}
-                        {record.evidencePhotos && record.evidencePhotos.length > 0 && <span className="text-[10px] font-bold"><ImageIcon className="h-3 w-3 inline" /> {record.evidencePhotos.length}</span>}
+                        {record.evidencePhotos && record.evidencePhotos.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <ImageIcon className="h-4 w-4 text-pink-500" />
+                            <span className="text-[9px] font-bold">({record.evidencePhotos.length})</span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(record)}>
-                        <Pencil className="h-4 w-4 text-primary" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => handleEdit(record)}>
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={7} className="text-center py-10">No hay registros de capacitación.</TableCell></TableRow>}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-20 bg-slate-50/20">
+                      <div className="flex flex-col items-center gap-2 opacity-50">
+                        <GraduationCap className="h-10 w-10 text-primary" />
+                        <p className="font-black text-xs uppercase">Sin registros de capacitación disponibles.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
