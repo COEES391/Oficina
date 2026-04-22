@@ -12,9 +12,9 @@ export type SupportTicket = {
   oficinaRegionalAtencion?: string;
   numeroOficio: string;
   alumnosBeneficiados: number;
-  docentesBeneficiados: number; // Nuevo campo
+  docentesBeneficiados: number;
   numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'otro'; // Nuevo campo
+  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'otro';
   materialUtilizado: string;
   setes: 'S' | 'N';
   observaciones: string;
@@ -23,7 +23,7 @@ export type SupportTicket = {
   fechaSalida: string;
   serviciosMC: number;
   serviciosMP: number;
-  status: 'pendiente' | 'en proceso' | 'resuelto';
+  status: 'pendiente' | 'en proceso' | 'atendido';
   reportPdf?: string;
   evidencePhotos?: string[];
 };
@@ -94,7 +94,7 @@ export const supportData: SupportTicket[] = [
     fechaSalida: '2024-05-20',
     serviciosMC: 0,
     serviciosMP: 15,
-    status: 'resuelto', 
+    status: 'atendido', 
   },
 ];
 

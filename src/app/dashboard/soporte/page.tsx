@@ -166,6 +166,7 @@ export default function SupportPage() {
     const updated = tickets.map(t => t.id === id ? { ...t, status: newStatus } : t);
     setTickets(updated);
     localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    toast({ title: `Estatus actualizado a ${newStatus.toUpperCase()}` });
   }
 
   return (
@@ -303,7 +304,7 @@ export default function SupportPage() {
                 <TableHead className="font-black text-[10px] uppercase">Folio</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">CCT / Plantel</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">Servicio</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Estatus</TableHead>
+                <TableHead className="font-black text-[10px] uppercase">Estatus (Semáforo)</TableHead>
                 <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
                 <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
               </TableRow>
@@ -320,12 +321,30 @@ export default function SupportPage() {
                   </TableCell>
                   <TableCell className="capitalize text-[11px] font-semibold text-slate-600">{t.tipoIncidencia}</TableCell>
                   <TableCell>
-                    <Badge className={cn("text-[9px] font-black uppercase tracking-wider", 
-                      t.status === 'resuelto' ? 'bg-emerald-500 hover:bg-emerald-600' : 
-                      t.status === 'en proceso' ? 'bg-amber-500 hover:bg-amber-600' : 
-                      'bg-rose-500 hover:bg-rose-600')}>
-                      {t.status}
-                    </Badge>
+                     <div className="flex flex-col gap-2">
+                        <Badge className={cn("text-[9px] font-black uppercase tracking-wider w-fit", 
+                          t.status === 'atendido' ? 'bg-emerald-500 hover:bg-emerald-600' : 
+                          t.status === 'en proceso' ? 'bg-amber-500 hover:bg-amber-600' : 
+                          'bg-rose-500 hover:bg-rose-600')}>
+                          {t.status}
+                        </Badge>
+                        <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
+                          <SelectTrigger className="h-7 w-32 text-[8px] font-black uppercase bg-white/50">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendiente" className="text-[9px] font-bold text-rose-600">
+                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-rose-500" /> PENDIENTE</div>
+                            </SelectItem>
+                            <SelectItem value="en proceso" className="text-[9px] font-bold text-amber-600">
+                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-amber-500" /> EN PROCESO</div>
+                            </SelectItem>
+                            <SelectItem value="atendido" className="text-[9px] font-bold text-emerald-600">
+                               <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-emerald-500" /> ATENDIDO</div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-center gap-1">
@@ -346,16 +365,6 @@ export default function SupportPage() {
                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEdit(t)}>
                           <Pencil className="h-4 w-4" />
                        </Button>
-                       <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
-                        <SelectTrigger className="h-8 w-28 text-[9px] font-black uppercase">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendiente" className="text-[10px] font-bold">Pendiente</SelectItem>
-                          <SelectItem value="en proceso" className="text-[10px] font-bold">En Proceso</SelectItem>
-                          <SelectItem value="resuelto" className="text-[10px] font-bold">Resuelto</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </TableCell>
                 </TableRow>

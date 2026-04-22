@@ -22,7 +22,8 @@ import {
   Clock,
   Image as ImageIcon,
   ExternalLink,
-  X
+  X,
+  Circle
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -50,6 +51,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 const TARGET_UNIVERSE_DATA = [
   { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
@@ -128,15 +130,15 @@ export default function DashboardPage() {
   }, [trainings, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
 
   const stats = useMemo(() => {
-    const resueltos = filteredTickets.filter(t => t.status === 'resuelto').length
+    const atendidos = filteredTickets.filter(t => t.status === 'atendido').length
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
 
     return {
       statusData: [
-        { name: 'Resueltos', value: resueltos, fill: '#10b981' },
-        { name: 'Proceso', value: enProceso, fill: '#eab308' },
-        { name: 'Pendiente', value: pendientes, fill: '#ef4444' },
+        { name: 'Atendidos', value: atendidos, fill: '#10b981' },
+        { name: 'En Proceso', value: enProceso, fill: '#f59e0b' },
+        { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
       ],
       serviceData: [
         { name: 'Red Edusat', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length },
@@ -299,7 +301,7 @@ export default function DashboardPage() {
                 <CardContent className="p-6">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia</span>
                   <div className="text-2xl font-black">
-                    {Math.round((filteredTickets.filter(t => t.status === 'resuelto').length / (filteredTickets.length || 1)) * 100)}%
+                    {Math.round((filteredTickets.filter(t => t.status === 'atendido').length / (filteredTickets.length || 1)) * 100)}%
                   </div>
                   <CheckCircle2 className="h-4 w-4 text-orange-500 mt-1" />
                 </CardContent>
@@ -308,7 +310,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Servicios</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus Operativo (Semáforo)</CardTitle></CardHeader>
                 <CardContent className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -351,7 +353,7 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-black uppercase">Atenciones de Soporte y Evidencias</CardTitle>
-                <CardDescription>Detalle de intervenciones técnicas con archivos adjuntos.</CardDescription>
+                <CardDescription>Detalle de intervenciones técnicas con semáforo de estatus.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -360,7 +362,7 @@ export default function DashboardPage() {
                       <TableHead className="text-[10px] font-black">Folio</TableHead>
                       <TableHead className="text-[10px] font-black">CCT</TableHead>
                       <TableHead className="text-[10px] font-black">Servicio</TableHead>
-                      <TableHead className="text-[10px] font-black">Oficina</TableHead>
+                      <TableHead className="text-[10px] font-black">Estatus</TableHead>
                       <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -370,7 +372,15 @@ export default function DashboardPage() {
                         <TableCell className="text-[10px] font-bold">{t.id}</TableCell>
                         <TableCell className="text-[10px] font-mono">{t.cct}</TableCell>
                         <TableCell className="text-[10px] capitalize">{t.tipoIncidencia}</TableCell>
-                        <TableCell className="text-[10px]">{t.oficinaRegionalAtencion?.replace("Oficina de ", "") || "N/A"}</TableCell>
+                        <TableCell>
+                           <div className="flex items-center gap-1.5">
+                              <Circle className={cn("h-2 w-2 fill-current", 
+                                t.status === 'atendido' ? 'text-emerald-500' : 
+                                t.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'
+                              )} />
+                              <span className="text-[10px] font-bold uppercase">{t.status}</span>
+                           </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
                             {t.reportPdf && (
