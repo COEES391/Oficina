@@ -17,6 +17,14 @@ import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
+const REGIONAL_OFFICES = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
+];
+
 export default function SupportPage() {
   const { toast } = useToast()
   const [tickets, setTickets] = useState<SupportTicket[]>([])
@@ -392,7 +400,7 @@ export default function SupportPage() {
               {evidenceToView?.title}
               <ExternalLink className="h-3 w-3 text-muted-foreground ml-2" />
             </DialogTitle>
-            <DialogDescription className="font-black text-xs">Visor de evidencias oficiales Oficina de Planeación.</DialogDescription>
+            <DialogDescription className="font-bold text-xs">Visor de evidencias oficiales Oficina de Planeación.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 relative">
              {evidenceToView?.type === 'pdf' ? (
