@@ -1,10 +1,10 @@
 {
   "placeholderImages": [
     {
-      "id": "logo-dark",
-      "description": "Logo representativo para la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA).",
-      "imageUrl": "https://images.unsplash.com/photo-1588592552434-318105741897?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxnb3Zlcm5tZW50JTIwZWR1Y2F0aW9ufGVufDB8fHx8MTcyMjMwNDc4OXww&ixlib=rb-4.0.3&q=80&w=1080",
-      "imageHint": "government education"
+      "id": "desysa-logo",
+      "description": "Logo oficial de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA).",
+      "imageUrl": "https://images.unsplash.com/photo-1594608661623-aa0bd3a69d98?q=80&w=500&auto=format&fit=crop",
+      "imageHint": "education logo"
     }
   ]
 }
