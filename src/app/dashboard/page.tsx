@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [filteredEvidence, setFilteredEvidence] = useState<SupportTicket[]>([])
   
   // Filtros
+  const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
   const [cctFilter, setCctFilter] = useState('all')
@@ -52,47 +53,58 @@ export default function DashboardPage() {
     setTickets(stored.length > 0 ? stored : supportData)
   }, [])
 
-  // Opciones de filtros dinámicas basadas en el catálogo
+  // Opciones de filtros dinámicas basadas en el catálogo con lógica en cascada
   const filterOptions = useMemo(() => {
-    // 1. Modalidades únicas
-    const modalidades = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
-    
-    // 2. Municipios disponibles según la modalidad seleccionada
-    const listByModalidad = modalidadFilter === 'all' 
+    // 1. Valles únicos (Siempre disponibles)
+    const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
+
+    // 2. Modalidades según Valle seleccionado
+    const listByValle = valleFilter === 'all' 
       ? schoolsDirectory 
-      : schoolsDirectory.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
+      : schoolsDirectory.filter(s => s.valle.toUpperCase() === valleFilter.toUpperCase());
+    
+    const modalidades = Array.from(new Set(listByValle.map(s => s.modalidad))).sort();
+    
+    // 3. Municipios según Valle y Modalidad seleccionados
+    const listByModalidad = modalidadFilter === 'all'
+      ? listByValle
+      : listByValle.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
     
     const municipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
     
-    // 3. CCTs disponibles según modalidad y municipio seleccionados
+    // 4. CCTs según Valle, Modalidad y Municipio seleccionados
     const listByMunicipio = municipioFilter === 'all'
       ? listByModalidad
       : listByModalidad.filter(s => s.municipio.toUpperCase() === municipioFilter.toUpperCase());
 
     const ccts = listByMunicipio.map(s => s.cct).sort();
     
-    return { modalidades, municipios, ccts };
-  }, [modalidadFilter, municipioFilter]);
+    return { valles, modalidades, municipios, ccts };
+  }, [valleFilter, modalidadFilter, municipioFilter]);
 
   // Resetear filtros dependientes si dejan de ser válidos al cambiar el padre
   useEffect(() => {
+    if (modalidadFilter !== 'all' && !filterOptions.modalidades.includes(modalidadFilter)) {
+      setModalidadFilter('all');
+    }
     if (municipioFilter !== 'all' && !filterOptions.municipios.includes(municipioFilter)) {
       setMunicipioFilter('all');
     }
     if (cctFilter !== 'all' && !filterOptions.ccts.includes(cctFilter)) {
       setCctFilter('all');
     }
-  }, [filterOptions.municipios, filterOptions.ccts, municipioFilter, cctFilter]);
+  }, [filterOptions.modalidades, filterOptions.municipios, filterOptions.ccts, modalidadFilter, municipioFilter, cctFilter]);
 
   // Datos filtrados para el informe ejecutivo
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
+      const matchValle = valleFilter === 'all' || t.valle.toUpperCase() === valleFilter.toUpperCase();
       const matchMunicipio = municipioFilter === 'all' || t.municipio.toUpperCase() === municipioFilter.toUpperCase();
       const matchModalidad = modalidadFilter === 'all' || t.modalidad.toUpperCase() === modalidadFilter.toUpperCase();
       const matchCCT = cctFilter === 'all' || t.cct.toUpperCase() === cctFilter.toUpperCase();
-      return matchMunicipio && matchModalidad && matchCCT;
+      return matchValle && matchMunicipio && matchModalidad && matchCCT;
     });
-  }, [tickets, municipioFilter, modalidadFilter, cctFilter]);
+  }, [tickets, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
 
   // Estadísticas del Informe Ejecutivo
   const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
@@ -115,14 +127,14 @@ export default function DashboardPage() {
     { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
   ]
 
-  // Universo de atención dinámico basado en el catálogo actual
+  // Universo de atención dinámico basado en el catálogo completo
   const UNIVERSE_STATS = useMemo(() => {
     const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
     const stats: { modalidad: string, valle: string, total: number, atendidos: number }[] = [];
 
     allModalities.forEach(mod => {
       ['MEXICO', 'TOLUCA'].forEach(valle => {
-        const total = schoolsDirectory.filter(s => s.modalidad === mod && s.valle === valle).length;
+        const total = schoolsDirectory.filter(s => s.modalidad === mod && s.valle.toUpperCase() === valle).length;
         if (total > 0) {
           const atendidos = tickets.filter(t => t.modalidad === mod && t.valle.toUpperCase() === valle).length;
           stats.push({ modalidad: mod, valle, total, atendidos });
@@ -133,6 +145,7 @@ export default function DashboardPage() {
   }, [tickets]);
 
   const clearFilters = () => {
+    setValleFilter('all');
     setMunicipioFilter('all');
     setCctFilter('all');
     setModalidadFilter('all');
@@ -154,6 +167,18 @@ export default function DashboardPage() {
               <Filter className="h-4 w-4 text-primary" />
               <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
+
+            <Select value={valleFilter} onValueChange={setValleFilter}>
+              <SelectTrigger className="h-9 text-xs w-[120px] bg-white border-primary/20">
+                <SelectValue placeholder="Valle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Valles (Todos)</SelectItem>
+                {filterOptions.valles.map(v => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
               <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20">
@@ -171,7 +196,7 @@ export default function DashboardPage() {
               <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
                 <SelectValue placeholder="Municipio" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px]">
                 <SelectItem value="all">Municipio (Todos)</SelectItem>
                 {filterOptions.municipios.map(m => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
