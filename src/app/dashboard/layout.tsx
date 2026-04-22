@@ -1,7 +1,6 @@
-
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
-import { Download, Home, LogOut, PanelLeft, User } from 'lucide-react'
+import { LayoutDashboard, LifeBuoy, GraduationCap, Briefcase, LogOut, PanelLeft, User } from 'lucide-react'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 
@@ -24,6 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [userRfc, setUserRfc] = useState<string | null>(null)
 
   const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
@@ -42,56 +42,54 @@ export default function DashboardLayout({
     router.push('/')
   }
 
-  const isAdmin = userRfc === 'ADMIN'
+  const menuItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
+    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-4 w-4" /> },
+    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" /> },
+    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-4 w-4" /> },
+  ]
 
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2">
-          <div className="flex items-center gap-3 px-2 py-2">
-            <div className="relative h-10 w-10 flex-shrink-0 bg-white rounded-md p-1 shadow-sm">
+        <SidebarHeader className="border-b pb-4 mb-2">
+          <div className="flex items-center gap-3 px-2 py-4">
+            <div className="relative h-10 w-10 flex-shrink-0 bg-white rounded-md p-1 shadow-sm border">
               <Image 
                 src={logoData.imageUrl} 
                 alt="DESySA" 
                 fill 
                 className="object-contain"
-                data-ai-hint="education logo"
+                data-ai-hint="office logo"
               />
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-bold leading-none text-primary truncate">DESySA</span>
-              <span className="text-[10px] text-muted-foreground truncate uppercase font-semibold">CCT Asistencia</span>
+              <span className="text-sm font-bold leading-none text-primary truncate uppercase">Planeación</span>
+              <span className="text-[10px] text-muted-foreground truncate uppercase font-semibold">DESySA Edomex</span>
             </div>
           </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => router.push('/dashboard')}
-                leftIcon={<Home className="h-4 w-4" />}
-              >
-                Inicio
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {isAdmin && (
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => router.push('/dashboard/admin')}
-                  leftIcon={<Download className="h-4 w-4" />}
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton 
+                  onClick={() => router.push(item.path)}
+                  isActive={pathname === item.path}
+                  leftIcon={item.icon}
                 >
-                  Reportes Administrador
+                  {item.name}
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )}
+            ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border/50 pt-2">
+        <SidebarFooter className="border-t pt-2">
           <div className="flex items-center gap-2 p-2 mb-2 bg-muted/50 rounded-md">
             <User className="h-5 w-5 text-primary" />
             <div className="flex flex-col overflow-hidden">
               <span className="text-xs font-bold truncate">{userRfc}</span>
-              <span className="text-[10px] text-muted-foreground">Sesión Activa</span>
+              <span className="text-[10px] text-muted-foreground">Analista</span>
             </div>
           </div>
           <SidebarMenu>
@@ -109,20 +107,17 @@ export default function DashboardLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30">
+        <header className="flex h-14 items-center justify-between border-b px-4 bg-background sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="lg:hidden">
               <PanelLeft className="h-5 w-5" />
             </SidebarTrigger>
-            <h1 className="text-lg font-bold text-primary hidden sm:block">
-              Control de Asistencia - Secundarias Edomex
-            </h1>
-            <h1 className="text-lg font-bold text-primary sm:hidden">
-              CCT Asistencia
+            <h1 className="text-lg font-bold text-primary">
+              Sistema de Gestión - Oficina de Planeación
             </h1>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 bg-gray-50/30">{children}</main>
+        <main className="flex-1 p-4 md:p-6 bg-slate-50/50">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

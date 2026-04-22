@@ -1,4 +1,3 @@
-
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -25,39 +24,39 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Por favor, introduce tu RFC.",
+        description: "Por favor, introduce tu RFC para acceder.",
       })
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto relative h-24 w-24 overflow-hidden rounded-full border-2 border-primary/20 bg-white flex items-center justify-center p-2">
+          <div className="mx-auto relative h-28 w-28 overflow-hidden rounded-xl border-2 border-primary/10 bg-white flex items-center justify-center p-2 shadow-sm">
             <Image 
               src={logoData.imageUrl} 
               alt="Logo DESySA" 
               fill
               className="object-contain"
-              data-ai-hint="education logo"
+              data-ai-hint="planning logo"
             />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-3xl font-bold tracking-tight text-primary">CCT Asistencia</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight text-primary">Oficina de Planeación</CardTitle>
             <CardDescription className="text-muted-foreground font-medium">
-              Dirección de Educación Secundaria y Servicios de Apoyo (DESySA)
+              Soporte, Capacitación y Programas Educativos
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rfc" className="text-sm font-semibold">RFC del Docente</Label>
+              <Label htmlFor="rfc" className="text-sm font-semibold">RFC de Usuario</Label>
               <Input
                 id="rfc"
                 placeholder="Ingresa tu RFC"
-                className="h-11 uppercase"
+                className="h-11 uppercase font-mono"
                 value={rfc}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
@@ -67,7 +66,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter>
           <Button className="w-full h-11 text-base font-semibold" onClick={handleLogin}>
-            Iniciar Sesión
+            Ingresar al Sistema
           </Button>
         </CardFooter>
       </Card>

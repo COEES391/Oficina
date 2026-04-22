@@ -1,87 +1,57 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { teachers, type Teacher } from '@/lib/data';
-import { School } from 'lucide-react';
+import { LifeBuoy, GraduationCap, Briefcase, TrendingUp } from 'lucide-react';
+import { supportData, trainingData, programsData } from '@/lib/planning-data';
 
 export default function DashboardPage() {
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const router = useRouter();
+  const pendingSupport = supportData.filter(s => s.status !== 'resuelto').length;
+  const totalTrained = trainingData.reduce((acc, curr) => acc + curr.attendees, 0);
+  const activePrograms = programsData.filter(p => p.status === 'activo').length;
 
-  useEffect(() => {
-    const rfc = localStorage.getItem('userRfc');
-    if (rfc) {
-      const currentTeacher = teachers.find(t => t.rfc.toUpperCase() === rfc.toUpperCase());
-      setTeacher(currentTeacher || null);
-    }
-  }, []);
-
-  if (!teacher) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Cargando datos del profesor...</CardTitle>
-          <CardDescription>
-            Por favor, espera un momento.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-  
-  if (teacher.rfc !== 'ADMIN' && teacher.groups.length === 0) {
-     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Acceso no autorizado</CardTitle>
-          <CardDescription>
-            Tu RFC no está asignado a ningún grupo. Por favor, contacta al administrador.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const stats = [
+    { title: 'Soporte Pendiente', value: pendingSupport, icon: <LifeBuoy className="h-8 w-8 text-orange-500" />, desc: 'Reportes por atender' },
+    { title: 'Docentes Capacitados', value: totalTrained, icon: <GraduationCap className="h-8 w-8 text-blue-500" />, desc: 'Total acumulado ciclo' },
+    { title: 'Programas Activos', value: activePrograms, icon: <Briefcase className="h-8 w-8 text-green-500" />, desc: 'En fase de ejecución' },
+    { title: 'Eficiencia Planeación', value: '92%', icon: <TrendingUp className="h-8 w-8 text-purple-500" />, desc: 'Metas alcanzadas' },
+  ];
 
   return (
     <div className="grid gap-6">
-       <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, i) => (
+          <Card key={i} className="hover:shadow-md transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              {stat.icon}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1">{stat.desc}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
         <CardHeader>
-          <CardTitle>Mis Grupos Asignados</CardTitle>
-          <CardDescription>
-            Hola, {teacher.name}. Selecciona un grupo para pasar lista.
-          </CardDescription>
+          <CardTitle>Estado de Movimientos Actuales</CardTitle>
+          <CardDescription>Resumen ejecutivo de la operación de planeación.</CardDescription>
         </CardHeader>
         <CardContent>
-          {teacher.groups.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {teacher.groups.map(g => (
-                  <Card 
-                    key={`${g.grade}-${g.group}`} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => router.push(`/dashboard/attendance/${g.grade}/${g.group}`)}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-2xl font-bold">
-                        {g.grade}° {g.group}
-                      </CardTitle>
-                      <School className="h-6 w-6 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">
-                        {g.students.length} alumnos en este grupo.
-                      </p>
-                    </CardContent>
-                  </Card>
-              ))}
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-white">
+              <h3 className="font-bold mb-2 flex items-center gap-2">
+                <LifeBuoy className="h-4 w-4" /> Soporte Reciente
+              </h3>
+              <p className="text-sm text-muted-foreground">Se han detectado incrementos en reportes de conectividad en la zona norte.</p>
             </div>
-          ) : (
-             <p className="text-center text-muted-foreground py-4">
-              {teacher.rfc === 'ADMIN' 
-                ? 'Como administrador, puedes ver los reportes en la sección "Administrador".' 
-                : 'No tienes grupos asignados.'}
-            </p>
-          )}
+            <div className="p-4 border rounded-lg bg-white">
+              <h3 className="font-bold mb-2 flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" /> Próxima Capacitación
+              </h3>
+              <p className="text-sm text-muted-foreground">Taller de Ciberseguridad programado para el 25 de mayo para directivos.</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
