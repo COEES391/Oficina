@@ -141,22 +141,24 @@ export default function TrainingPage() {
 
   const downloadTemplate = () => {
     const headers = [
-      'Grupo', 'Nombre Curso', 'Duración Horas', 'Fecha Inicio', 'Fecha Término',
-      'Instructor 1', 'Instructor 2', 'Instructor 3', 'No. de Oficio',
       'Apellido Paterno', 'Apellido Materno', 'Nombre(s)', 'RFC', 'Función', 'Correo electrónico',
-      'CCT Plantel', 'Nombre C.T.', 'ZE', 'Sector', 'Modalidad', 'Municipio', 'Región', 'Valle',
-      'CCT Sede', 'SETES (S/N)', 'Observaciones'
+      'CCT Plantel', 'Nombre C.T.', 'ZE', 'Sector', 'Modalidad', 'Municipio', 'Región', 'Valle'
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Plantilla Capacitación");
+    XLSX.utils.book_append_sheet(wb, ws, "Plantilla Asistentes");
     XLSX.writeFile(wb, "plantilla_importacion_asistentes.xlsx");
-    toast({ title: "Plantilla descargada", description: "Completa los datos y súbela en la pestaña de Evidencias." });
+    toast({ title: "Plantilla descargada", description: "Completa los datos de los asistentes y súbela en la pestaña de Evidencias." });
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (!formData.cursoNombre || !formData.id) {
+      toast({ variant: "destructive", title: "Datos del Curso faltantes", description: "Primero llena el Folio y Nombre del Curso para asociar a los asistentes." });
+      return;
+    }
 
     const reader = new FileReader()
     reader.onload = (evt) => {
@@ -167,15 +169,18 @@ export default function TrainingPage() {
       const data: any[] = XLSX.utils.sheet_to_json(ws)
 
       const importedRecords: TrainingRecord[] = data.map((row, idx) => ({
-        id: (row['No.'] || row['ID'] || `IMP-${Date.now()}-${idx}`).toString(),
-        cursoGrupo: (row['Grupo'] || '').toString(),
-        cursoNombre: (row['Nombre Curso'] || row['Curso'] || '').toString(),
-        duracionHoras: parseInt(row['Duración Horas'] || row['Horas'] || '0'),
-        fechaInicio: row['Fecha Inicio'] || format(new Date(), 'yyyy-MM-dd'),
-        fechaTermino: row['Fecha Término'] || format(new Date(), 'yyyy-MM-dd'),
-        instructores: [row['Instructor 1'] || '', row['Instructor 2'] || '', row['Instructor 3'] || ''],
-        numeroOficio: (row['No. Oficio'] || row['Oficio'] || '').toString(),
-        materialUtilizado: (row['Material Utilizado'] || row['Material'] || '').toString(),
+        id: `${formData.id}-${idx}-${Date.now()}`,
+        cursoGrupo: formData.cursoGrupo,
+        cursoNombre: formData.cursoNombre,
+        duracionHoras: formData.duracionHoras,
+        fechaInicio: formData.fechaInicio,
+        fechaTermino: formData.fechaTermino,
+        instructores: formData.instructores,
+        numeroOficio: formData.numeroOficio,
+        materialUtilizado: formData.materialUtilizado,
+        cctSede: formData.cctSede,
+        setes: formData.setes,
+        observaciones: formData.observaciones,
         asistentePaterno: (row['Apellido Paterno'] || '').toString(),
         asistenteMaterno: (row['Apellido Materno'] || '').toString(),
         asistenteNombres: (row['Nombre(s)'] || '').toString(),
@@ -190,16 +195,14 @@ export default function TrainingPage() {
         asistenteMunicipio: (row['Municipio'] || '').toString(),
         asistenteRegion: (row['Región'] || '').toString(),
         asistenteValle: (row['Valle'] || '').toString(),
-        cctSede: (row['CCT Sede'] || '').toString().toUpperCase(),
-        setes: (row['SETES (S/N)'] === 'S' || row['SETES'] === 'Sí') ? 'S' : 'N',
-        observaciones: (row['Observaciones'] || '').toString(),
         evidencePhotos: [],
       }))
 
       const newRecords = [...importedRecords, ...records]
       setRecords(newRecords)
       localStorage.setItem('training_records_full', JSON.stringify(newRecords))
-      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} registros.` })
+      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} asistentes al curso ${formData.cursoNombre}.` })
+      setIsDialogOpen(false)
     }
     reader.readAsBinaryString(file)
   }
@@ -350,7 +353,7 @@ export default function TrainingPage() {
                         <div className="space-y-2">
                           <h4 className="font-black uppercase text-sm text-primary">Gestión Masiva de Asistentes</h4>
                           <p className="text-xs font-bold text-muted-foreground max-w-md mx-auto">
-                            Descarga nuestra plantilla oficial, complétala con la información de los asistentes y súbela para realizar un registro múltiple automático.
+                            Descarga la plantilla con los campos requeridos, complétala con la información de los asistentes y súbela para realizar un registro múltiple automático para este curso.
                           </p>
                         </div>
                         <div className="flex flex-wrap justify-center gap-4">
@@ -375,15 +378,15 @@ export default function TrainingPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <Label className="text-xs font-black uppercase text-primary">Fotografías de Evidencia (Opcional)</Label>
-                        <Input type="file" multiple accept="image/*" onChange={handleFileChange} className="cursor-pointer" />
+                        <Label className="text-xs font-black uppercase text-primary">Reporte PDF / Lista de Asistencia y Evidencias</Label>
+                        <Input type="file" multiple accept="image/*,.pdf" onChange={handleFileChange} className="cursor-pointer" />
                         
                         <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-4">
                            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                            <div>
                               <p className="text-[10px] font-black uppercase text-emerald-800">Control de Evidencias</p>
                               <p className="text-[9px] font-bold text-emerald-600 mt-1">
-                                Las evidencias fotográficas se asocian al registro del curso para auditorías y reportes ejecutivos.
+                                Las evidencias fotográficas y el reporte PDF se asocian al registro del curso para auditorías y reportes ejecutivos.
                               </p>
                            </div>
                         </div>
@@ -429,7 +432,7 @@ export default function TrainingPage() {
               <TableBody>
                 {records.length > 0 ? records.map((record) => (
                   <TableRow key={record.id} className="hover:bg-slate-50 transition-colors">
-                    <TableCell className="font-black text-xs text-primary">{record.id}</TableCell>
+                    <TableCell className="font-black text-xs text-primary">{record.id.split('-')[0]}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold text-xs text-slate-700">{record.cursoNombre}</span>
