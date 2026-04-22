@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, FileSpreadsheet, Users, BookOpen, MapPin, FileText, Image as ImageIcon, X, Search, Pencil, Upload, FileUp } from "lucide-react"
+import { PlusCircle, GraduationCap, FileSpreadsheet, Users, Search, Pencil, Image as ImageIcon, FileUp, Download, CheckCircle2 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -95,28 +95,21 @@ export default function TrainingPage() {
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
 
-    if (type === 'pdf') {
-      const file = files[0]
+    const newPhotos = Array.from(files)
+    newPhotos.forEach(file => {
       const reader = new FileReader()
-      reader.onloadend = () => setFormData({ ...formData, reportPdf: reader.result as string })
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
+        }))
+      }
       reader.readAsDataURL(file)
-    } else {
-      const newPhotos = Array.from(files)
-      newPhotos.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setFormData(prev => ({
-            ...prev,
-            evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
-          }))
-        }
-        reader.readAsDataURL(file)
-      })
-    }
+    })
   }
 
   const handleEdit = (record: TrainingRecord) => {
@@ -147,6 +140,21 @@ export default function TrainingPage() {
     setEditingId(null)
   }
 
+  const downloadTemplate = () => {
+    const headers = [
+      'No.', 'Grupo', 'Nombre Curso', 'Duración Horas', 'Fecha Inicio', 'Fecha Término',
+      'Instructor 1', 'Instructor 2', 'Instructor 3', 'No. de Oficio', 'Material Utilizado',
+      'Apellido Paterno', 'Apellido Materno', 'Nombre(s)', 'RFC', 'Función', 'Correo electrónico',
+      'CCT Plantel', 'Nombre C.T.', 'ZE', 'Sector', 'Modalidad', 'Municipio', 'Región', 'Valle',
+      'CCT Sede', 'SETES (S/N)', 'Observaciones'
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plantilla Capacitación");
+    XLSX.writeFile(wb, "plantilla_importacion_asistentes.xlsx");
+    toast({ title: "Plantilla descargada", description: "Completa los datos y súbela en la pestaña de Evidencias." });
+  };
+
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -163,19 +171,19 @@ export default function TrainingPage() {
         id: (row['No.'] || row['ID'] || `IMP-${Date.now()}-${idx}`).toString(),
         cursoGrupo: (row['Grupo'] || '').toString(),
         cursoNombre: (row['Nombre Curso'] || row['Curso'] || '').toString(),
-        duracionHoras: parseInt(row['Horas'] || row['Duración'] || '0'),
+        duracionHoras: parseInt(row['Duración Horas'] || row['Horas'] || '0'),
         fechaInicio: row['Fecha Inicio'] || format(new Date(), 'yyyy-MM-dd'),
         fechaTermino: row['Fecha Término'] || format(new Date(), 'yyyy-MM-dd'),
         instructores: [row['Instructor 1'] || '', row['Instructor 2'] || '', row['Instructor 3'] || ''],
         numeroOficio: (row['No. Oficio'] || row['Oficio'] || '').toString(),
-        materialUtilizado: (row['Material'] || '').toString(),
-        asistentePaterno: (row['Apellido Paterno'] || row['Paterno'] || '').toString(),
-        asistenteMaterno: (row['Apellido Materno'] || row['Materno'] || '').toString(),
-        asistenteNombres: (row['Nombre(s)'] || row['Nombres'] || '').toString(),
+        materialUtilizado: (row['Material Utilizado'] || row['Material'] || '').toString(),
+        asistentePaterno: (row['Apellido Paterno'] || '').toString(),
+        asistenteMaterno: (row['Apellido Materno'] || '').toString(),
+        asistenteNombres: (row['Nombre(s)'] || '').toString(),
         asistenteRFC: (row['RFC'] || '').toString().toUpperCase(),
         asistenteFuncion: (row['Función'] || '').toString(),
-        asistenteEmail: (row['Email'] || '').toString(),
-        asistenteCCT: (row['CCT Plantel'] || '').toString().toUpperCase(),
+        asistenteEmail: (row['Correo electrónico'] || row['Email'] || '').toString(),
+        asistenteCCT: (row['CCT Plantel'] || row['CCT'] || '').toString().toUpperCase(),
         asistenteNombreCT: (row['Nombre C.T.'] || '').toString(),
         asistenteZE: (row['ZE'] || '').toString(),
         asistenteSector: (row['Sector'] || '').toString(),
@@ -184,7 +192,7 @@ export default function TrainingPage() {
         asistenteRegion: (row['Región'] || '').toString(),
         asistenteValle: (row['Valle'] || '').toString(),
         cctSede: (row['CCT Sede'] || '').toString().toUpperCase(),
-        setes: (row['SETES'] === 'S' || row['SETES'] === 'Sí') ? 'S' : 'N',
+        setes: (row['SETES (S/N)'] === 'S' || row['SETES'] === 'Sí') ? 'S' : 'N',
         observaciones: (row['Observaciones'] || '').toString(),
         evidencePhotos: [],
       }))
@@ -192,8 +200,7 @@ export default function TrainingPage() {
       const newRecords = [...importedRecords, ...records]
       setRecords(newRecords)
       localStorage.setItem('training_records_full', JSON.stringify(newRecords))
-      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} registros de asistentes.` })
-      setIsDialogOpen(false) // Cerramos después de importar masivamente
+      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} registros.` })
     }
     reader.readAsBinaryString(file)
   }
@@ -337,15 +344,20 @@ export default function TrainingPage() {
                     </TabsContent>
 
                     <TabsContent value="evidencia" className="space-y-8 mt-0">
-                      <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 border-dashed">
-                        <div className="flex flex-col items-center gap-4 text-center">
-                          <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <FileSpreadsheet className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="font-black uppercase text-xs text-primary">Carga Masiva de Asistentes</h4>
-                            <p className="text-[10px] font-bold text-muted-foreground mt-1">Si tienes una lista de asistentes en Excel, cárgala aquí para realizar un registro múltiple automático.</p>
-                          </div>
+                      <div className="bg-slate-50 p-8 rounded-xl border-2 border-primary/20 border-dashed flex flex-col items-center text-center gap-6">
+                        <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
+                          <FileSpreadsheet className="h-8 w-8 text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-black uppercase text-sm text-primary">Gestión Masiva de Asistentes</h4>
+                          <p className="text-xs font-bold text-muted-foreground max-w-md mx-auto">
+                            Descarga nuestra plantilla oficial, complétala con la información de los asistentes y súbela para realizar un registro múltiple automático.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-4">
+                          <Button variant="outline" onClick={downloadTemplate} className="gap-2 font-black uppercase text-[10px] px-6 border-primary/30 hover:bg-primary/5">
+                            <Download className="h-4 w-4" /> Descargar Plantilla Excel
+                          </Button>
                           <div className="relative">
                             <Input
                               type="file"
@@ -354,7 +366,7 @@ export default function TrainingPage() {
                               id="excel-import-dialog"
                               onChange={handleImportExcel}
                             />
-                            <Button asChild className="gap-2 font-black uppercase text-xs px-6">
+                            <Button asChild className="gap-2 font-black uppercase text-[10px] px-6">
                               <label htmlFor="excel-import-dialog" className="cursor-pointer">
                                 <FileUp className="h-4 w-4" /> Importar Lista desde Excel
                               </label>
@@ -363,29 +375,19 @@ export default function TrainingPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-black uppercase text-primary">Lista de Asistencia (PDF o Imagen)</Label>
-                          <Input type="file" accept=".pdf,image/*" onChange={e => handleFileChange(e, 'pdf')} className="cursor-pointer" />
+                      <div className="space-y-4">
+                        <Label className="text-xs font-black uppercase text-primary">Fotografías de Evidencia (Opcional)</Label>
+                        <Input type="file" multiple accept="image/*" onChange={handleFileChange} className="cursor-pointer" />
+                        
+                        <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center gap-4">
+                           <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                           <div>
+                              <p className="text-[10px] font-black uppercase text-emerald-800">Control de Evidencias</p>
+                              <p className="text-[9px] font-bold text-emerald-600 mt-1">
+                                Las evidencias fotográficas se asocian al registro del curso para auditorías y reportes ejecutivos.
+                              </p>
+                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-black uppercase text-primary">Fotografías de Evidencia</Label>
-                          <Input type="file" multiple accept="image/*" onChange={e => handleFileChange(e, 'photo')} className="cursor-pointer" />
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-muted/50 rounded-lg border border-dashed text-xs font-bold">
-                        <p className="text-primary mb-2 uppercase">Archivos Adjuntos:</p>
-                        <ul className="space-y-1">
-                          <li className="flex items-center gap-2">
-                             <FileText className={`h-4 w-4 ${formData.reportPdf ? 'text-blue-600' : 'text-slate-300'}`} />
-                             {formData.reportPdf ? 'Lista de asistencia cargada correctamente' : 'Sin lista de asistencia adjunta'}
-                          </li>
-                          <li className="flex items-center gap-2">
-                             <ImageIcon className={`h-4 w-4 ${formData.evidencePhotos?.length ? 'text-pink-600' : 'text-slate-300'}`} />
-                             {formData.evidencePhotos?.length || 0} fotos de evidencia
-                          </li>
-                        </ul>
                       </div>
                     </TabsContent>
                   </div>
@@ -447,7 +449,6 @@ export default function TrainingPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
-                        {record.reportPdf && <FileText className="h-4 w-4 text-blue-500" />}
                         {record.evidencePhotos && record.evidencePhotos.length > 0 && (
                           <div className="flex items-center gap-1">
                             <ImageIcon className="h-4 w-4 text-pink-500" />
@@ -480,3 +481,4 @@ export default function TrainingPage() {
     </div>
   )
 }
+    
