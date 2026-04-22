@@ -8,7 +8,7 @@ export type SupportTicket = {
   municipio: string;
   region: string;
   valle: string;
-  responsables: string[]; // Hasta 6 responsables
+  responsables: string[];
   numeroOficio: string;
   alumnosBeneficiados: number;
   numeroEquipos: number;
@@ -21,6 +21,8 @@ export type SupportTicket = {
   serviciosMC: number;
   serviciosMP: number;
   status: 'pendiente' | 'en proceso' | 'resuelto';
+  reportPdf?: string; // Base64 or URL
+  evidencePhotos?: string[]; // Array of Base64 or URLs
 };
 
 export type TrainingRecord = {
@@ -30,7 +32,7 @@ export type TrainingRecord = {
   duracionHoras: number;
   fechaInicio: string;
   fechaTermino: string;
-  instructores: string[]; // Hasta 3
+  instructores: string[];
   numeroOficio: string;
   materialUtilizado: string;
   asistentePaterno: string;
@@ -50,6 +52,17 @@ export type TrainingRecord = {
   cctSede: string;
   setes: 'S' | 'N';
   observaciones: string;
+  reportPdf?: string;
+  evidencePhotos?: string[];
+};
+
+export type ProgramStatus = {
+  id: string;
+  name: string;
+  progress: number;
+  status: 'activo' | 'planeacion' | 'concluido';
+  reportPdf?: string;
+  evidencePhotos?: string[];
 };
 
 export const supportData: SupportTicket[] = [
@@ -109,13 +122,6 @@ export const trainingRecords: TrainingRecord[] = [
     observaciones: 'Participación destacada',
   }
 ];
-
-export type ProgramStatus = {
-  id: string;
-  name: string;
-  progress: number;
-  status: 'activo' | 'planeacion' | 'concluido';
-};
 
 export const programsData: ProgramStatus[] = [
   { id: 'P001', name: 'Conectividad Escolar 2024', progress: 75, status: 'activo' },

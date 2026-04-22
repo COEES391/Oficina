@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
-import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
+import Image from 'next/image'
 
 export default function SupportPage() {
   const { toast } = useToast()
@@ -42,6 +43,8 @@ export default function SupportPage() {
     fechaSalida: '',
     serviciosMC: 0,
     serviciosMP: 0,
+    reportPdf: '',
+    evidencePhotos: [],
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -55,6 +58,49 @@ export default function SupportPage() {
       setTickets(stored)
     }
   }, [])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
+    const files = e.target.files
+    if (!files) return
+
+    if (type === 'pdf') {
+      const file = files[0]
+      if (file.type !== 'application/pdf') {
+        toast({ variant: "destructive", title: "Error", description: "Solo se permiten archivos PDF." })
+        return
+      }
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData({ ...formData, reportPdf: reader.result as string })
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const newPhotos = Array.from(files)
+      if (formData.evidencePhotos!.length + newPhotos.length > 5) {
+        toast({ variant: "destructive", title: "Límite excedido", description: "Máximo 5 fotos de evidencia." })
+        return
+      }
+
+      newPhotos.forEach(file => {
+        if (!file.type.startsWith('image/')) return
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setFormData(prev => ({
+            ...prev,
+            evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
+          }))
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+  }
+
+  const removePhoto = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidencePhotos: prev.evidencePhotos?.filter((_, i) => i !== index)
+    }))
+  }
 
   const handleSave = () => {
     if (!formData.cct || !formData.schoolName) {
@@ -176,19 +222,9 @@ export default function SupportPage() {
                         <Input id="municipio" value={formData.municipio} onChange={(e) => setFormData({...formData, municipio: e.target.value})} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="region">Región</Label>
-                        <Input id="region" value={formData.region} onChange={(e) => setFormData({...formData, region: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="valle">Valle</Label>
-                        <Input id="valle" value={formData.valle} onChange={(e) => setFormData({...formData, valle: e.target.value})} />
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Sección 2: Responsables */}
+                  {/* Sección Responsables */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
                       <Users className="h-4 w-4 text-primary" /> Responsable(s) (Técnicos)
@@ -211,10 +247,10 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Sección 3: Detalles del Servicio */}
+                  {/* Sección Detalles */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <Monitor className="h-4 w-4 text-primary" /> Detalles Técnicos y Equipamiento
+                      <Monitor className="h-4 w-4 text-primary" /> Detalles Técnicos
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
@@ -226,61 +262,74 @@ export default function SupportPage() {
                         <Input type="number" id="alumnos" value={formData.alumnosBeneficiados} onChange={(e) => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="equipos">No. de Equipos</Label>
-                        <Input type="number" id="equipos" value={formData.numeroEquipos} onChange={(e) => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="descEquipo">Descripción del Equipo</Label>
-                      <Input id="descEquipo" value={formData.descripcionEquipo} onChange={(e) => setFormData({...formData, descripcionEquipo: e.target.value})} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="material">Material Utilizado</Label>
-                      <Textarea id="material" className="h-20" value={formData.materialUtilizado} onChange={(e) => setFormData({...formData, materialUtilizado: e.target.value})} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
                         <Label htmlFor="setes">SETES (S/N)</Label>
                         <Select value={formData.setes} onValueChange={(val) => setFormData({...formData, setes: val as 'S' | 'N'})}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="S">Sí (S)</SelectItem>
                             <SelectItem value="N">No (N)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="mc">No. Servicios M.C.</Label>
-                        <Input type="number" id="mc" value={formData.serviciosMC} onChange={(e) => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} />
+                    </div>
+                  </div>
+
+                  {/* SECCIÓN NUEVA: Archivos y Evidencia */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
+                      <FileText className="h-4 w-4 text-primary" /> Evidencias y Documentación
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="pdfReport" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" /> Reporte en PDF
+                        </Label>
+                        <Input 
+                          id="pdfReport" 
+                          type="file" 
+                          accept=".pdf" 
+                          onChange={(e) => handleFileChange(e, 'pdf')}
+                          className="cursor-pointer"
+                        />
+                        {formData.reportPdf && (
+                          <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+                            ✓ PDF cargado correctamente
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="mp">No. Servicios M.P.</Label>
-                        <Input type="number" id="mp" value={formData.serviciosMP} onChange={(e) => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} />
+                      <div className="space-y-2">
+                        <Label htmlFor="photos" className="flex items-center gap-2">
+                          <ImageIcon className="h-4 w-4" /> Fotos de Evidencia (Máx. 5)
+                        </Label>
+                        <Input 
+                          id="photos" 
+                          type="file" 
+                          accept="image/*" 
+                          multiple 
+                          onChange={(e) => handleFileChange(e, 'photo')}
+                          disabled={formData.evidencePhotos!.length >= 5}
+                          className="cursor-pointer"
+                        />
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {formData.evidencePhotos?.map((photo, idx) => (
+                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border">
+                              <Image src={photo} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
+                              <button 
+                                onClick={() => removePhoto(idx)}
+                                className="absolute top-0 right-0 bg-destructive text-white p-0.5 rounded-bl-md"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Sección 4: Observaciones y Fechas */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <Calendar className="h-4 w-4 text-primary" /> Seguimiento y Fechas
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="fechaE">Fecha de Entrada</Label>
-                        <Input type="date" id="fechaE" value={formData.fechaEntrada} onChange={(e) => setFormData({...formData, fechaEntrada: e.target.value})} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="fechaS">Fecha de Salida</Label>
-                        <Input type="date" id="fechaS" value={formData.fechaSalida} onChange={(e) => setFormData({...formData, fechaSalida: e.target.value})} />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="obs">Observaciones</Label>
-                      <Textarea id="obs" className="h-20" value={formData.observaciones} onChange={(e) => setFormData({...formData, observaciones: e.target.value})} />
-                    </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="obs">Observaciones Finales</Label>
+                    <Textarea id="obs" className="h-20" value={formData.observaciones} onChange={(e) => setFormData({...formData, observaciones: e.target.value})} />
                   </div>
                 </div>
               </ScrollArea>
@@ -309,12 +358,7 @@ export default function SupportPage() {
                   <TableHead className="w-[100px]">Folio</TableHead>
                   <TableHead className="w-[120px]">C.C.T.</TableHead>
                   <TableHead>Nombre CT</TableHead>
-                  <TableHead>Municipio</TableHead>
-                  <TableHead>Z.E./Sec</TableHead>
-                  <TableHead>Oficio</TableHead>
-                  <TableHead>Entrada</TableHead>
-                  <TableHead className="text-center">M.C.</TableHead>
-                  <TableHead className="text-center">M.P.</TableHead>
+                  <TableHead>Archivos</TableHead>
                   <TableHead>Estatus</TableHead>
                 </TableRow>
               </TableHeader>
@@ -323,23 +367,27 @@ export default function SupportPage() {
                   <TableRow key={ticket.id}>
                     <TableCell className="font-mono text-xs font-bold">{ticket.id}</TableCell>
                     <TableCell className="font-mono text-xs">{ticket.cct}</TableCell>
-                    <TableCell className="max-w-[180px] truncate" title={ticket.schoolName}>{ticket.schoolName}</TableCell>
-                    <TableCell>{ticket.municipio}</TableCell>
-                    <TableCell className="text-xs">{ticket.zonaEscolar} / {ticket.sector}</TableCell>
-                    <TableCell className="text-xs">{ticket.numeroOficio}</TableCell>
-                    <TableCell className="text-xs whitespace-nowrap">{ticket.fechaEntrada}</TableCell>
-                    <TableCell className="text-center font-bold text-orange-600">{ticket.serviciosMC}</TableCell>
-                    <TableCell className="text-center font-bold text-blue-600">{ticket.serviciosMP}</TableCell>
+                    <TableCell className="max-w-[180px] truncate">{ticket.schoolName}</TableCell>
                     <TableCell>
-                      <Badge variant={ticket.status === 'resuelto' ? 'default' : ticket.status === 'pendiente' ? 'destructive' : 'outline'}>
+                      <div className="flex gap-2">
+                        {ticket.reportPdf && <FileText className="h-4 w-4 text-blue-500" title="PDF disponible" />}
+                        {ticket.evidencePhotos && ticket.evidencePhotos.length > 0 && (
+                          <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                            <ImageIcon className="h-3 w-3" /> {ticket.evidencePhotos.length}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={ticket.status === 'resuelto' ? 'default' : 'destructive'}>
                         {ticket.status}
                       </Badge>
                     </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-20 text-muted-foreground">
-                      No hay registros detallados de soporte técnico.
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
+                      No hay registros detallados.
                     </TableCell>
                   </TableRow>
                 )}
