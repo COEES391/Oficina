@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -142,8 +141,8 @@ export default function TrainingPage() {
 
   const downloadTemplate = () => {
     const headers = [
-      'No.', 'Grupo', 'Nombre Curso', 'Duración Horas', 'Fecha Inicio', 'Fecha Término',
-      'Instructor 1', 'Instructor 2', 'Instructor 3', 'No. de Oficio', 'Material Utilizado',
+      'Grupo', 'Nombre Curso', 'Duración Horas', 'Fecha Inicio', 'Fecha Término',
+      'Instructor 1', 'Instructor 2', 'Instructor 3', 'No. de Oficio',
       'Apellido Paterno', 'Apellido Materno', 'Nombre(s)', 'RFC', 'Función', 'Correo electrónico',
       'CCT Plantel', 'Nombre C.T.', 'ZE', 'Sector', 'Modalidad', 'Municipio', 'Región', 'Valle',
       'CCT Sede', 'SETES (S/N)', 'Observaciones'
@@ -481,4 +480,3 @@ export default function TrainingPage() {
     </div>
   )
 }
-    
