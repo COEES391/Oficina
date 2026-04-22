@@ -20,7 +20,8 @@ import {
   Building2,
   Settings2,
   Target,
-  CalendarDays
+  BarChart3,
+  PieChart as PieChartIcon
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -154,6 +155,15 @@ export default function DashboardPage() {
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
 
+    // Grouping helper
+    const groupBy = (arr: any[], key: string) => {
+      return Object.entries(arr.reduce((acc, obj) => {
+        const val = obj[key] || 'Sin Dato';
+        acc[val] = (acc[val] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }));
+    };
+
     return {
       statusData: [
         { name: 'Atendidos', value: atendidos, fill: '#10b981' },
@@ -168,7 +178,15 @@ export default function DashboardPage() {
       trainingByValle: [
         { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#6366f1' },
         { name: 'TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#ec4899' },
-      ]
+      ],
+      trainingByGender: [
+        { name: 'MASCULINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#0ea5e9' },
+        { name: 'FEMENINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'FEMENINO').length, fill: '#f43f5e' },
+      ],
+      trainingBySector: groupBy(filteredTrainings, 'asistenteSector').sort((a, b) => b.value - a.value).slice(0, 8),
+      trainingByZE: groupBy(filteredTrainings, 'asistenteZE').sort((a, b) => b.value - a.value).slice(0, 8),
+      trainingByCourse: groupBy(filteredTrainings, 'cursoNombre').sort((a, b) => b.value - a.value).slice(0, 5),
+      trainingByCCT: groupBy(filteredTrainings, 'asistenteCCT').sort((a, b) => b.value - a.value).slice(0, 8),
     }
   }, [filteredTickets, filteredTrainings]);
 
@@ -495,8 +513,31 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-              <Card className="md:col-span-1">
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Capacitación por Valle</CardTitle></CardHeader>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
+                    <PieChartIcon className="h-4 w-4 text-primary" /> Distribución por Género
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={stats.trainingByGender} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
+                        {stats.trainingByGender.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-primary" /> Capacitación por Valle
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.trainingByValle}>
@@ -511,44 +552,93 @@ export default function DashboardPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              <Card className="md:col-span-2">
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Seguimiento de Cursos e Instructores</CardTitle></CardHeader>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xs font-black uppercase flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" /> Personal por Sector
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.trainingBySector} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10 }} />
+                      <YAxis dataKey="name" type="category" tick={{ fontSize: 9, fontWeight: 700 }} width={40} />
+                      <RechartsTooltip />
+                      <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={15} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader><CardTitle className="text-xs font-black uppercase">Cursos con Mayor Impacto (Asistentes)</CardTitle></CardHeader>
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader className="bg-slate-50"><TableRow>
-                      <TableHead className="text-[10px] font-black">Folio</TableHead>
-                      <TableHead className="text-[10px] font-black">Curso</TableHead>
-                      <TableHead className="text-[10px] font-black">Asistente</TableHead>
-                      <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Nombre del Curso</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-center">Total</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {filteredTrainings.slice(0, 10).map((tr) => (
-                        <TableRow key={tr.id}>
-                          <TableCell className="text-[10px] font-bold">{tr.id}</TableCell>
-                          <TableCell className="text-[10px] truncate max-w-[150px] font-semibold">{tr.cursoNombre}</TableCell>
-                          <TableCell className="text-[10px]">{tr.asistenteNombres} {tr.asistentePaterno}</TableCell>
-                          <TableCell>
-                            <div className="flex justify-center gap-2">
-                              {tr.reportPdf && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id} (${tr.cursoNombre})` })}>
-                                  <FileText className="h-3.5 w-3.5 text-blue-500" />
-                                </Button>
-                              )}
-                              {tr.evidencePhotos && tr.evidencePhotos.length > 0 && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'gallery', data: tr.evidencePhotos!, title: `Galería Capacitación - ${tr.id}` })}>
-                                  <ImageIcon className="h-3.5 w-3.5 text-pink-500" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
+                      {stats.trainingByCourse.map((row, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="text-[10px] font-bold py-2">{row.name}</TableCell>
+                          <TableCell className="text-center"><Badge variant="outline" className="font-black">{row.value}</Badge></TableCell>
                         </TableRow>
                       ))}
-                      {filteredTrainings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[10px] py-4">No hay datos para estos filtros.</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-xs font-black uppercase">Zonas Escolares Atendidas</CardTitle></CardHeader>
+                <CardContent className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.trainingByZE}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 700 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <RechartsTooltip />
+                      <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xs font-black uppercase">Planteles con Mayor Participación (CCT)</CardTitle>
+                <CardDescription>Escuelas que han enviado a más asistentes a procesos de capacitación.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead className="text-[10px] font-black">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black">Valle / Municipio</TableHead>
+                      <TableHead className="text-center text-[10px] font-black">Participantes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stats.trainingByCCT.map((row, idx) => {
+                      const school = schoolsDirectory.find(s => s.cct === row.name);
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell className="text-[10px] font-bold font-mono">{row.name}</TableCell>
+                          <TableCell className="text-[9px] uppercase font-medium">{school?.valle} / {school?.municipio}</TableCell>
+                          <TableCell className="text-center font-black text-primary">{row.value}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         )}
 
