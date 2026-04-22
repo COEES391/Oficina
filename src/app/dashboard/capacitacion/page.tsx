@@ -91,19 +91,31 @@ export default function TrainingPage() {
     const newAssistants = [...assistants]
     newAssistants[index] = { ...newAssistants[index], [field]: value }
 
-    if (field === 'cct' && value.length === 10) {
-      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === value.toUpperCase())
-      if (school) {
-        newAssistants[index] = {
-          ...newAssistants[index],
-          cct: school.cct,
-          nombreCT: school.nombre,
-          ze: school.zonaEscolar,
-          sector: school.sector,
-          modalidad: school.modalidad,
-          municipio: school.municipio,
-          region: school.region,
-          valle: school.valle
+    if (field === 'cct') {
+      const cleanValue = value.trim().toUpperCase()
+      if (cleanValue.length === 10) {
+        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+        if (school) {
+          newAssistants[index] = {
+            ...newAssistants[index],
+            cct: school.cct,
+            nombreCT: school.nombre,
+            ze: school.zonaEscolar,
+            sector: school.sector,
+            modalidad: school.modalidad,
+            municipio: school.municipio,
+            region: school.region,
+            valle: school.valle
+          }
+        } else {
+          // Reset fields if school not found
+          newAssistants[index].nombreCT = ''
+          newAssistants[index].ze = ''
+          newAssistants[index].sector = ''
+          newAssistants[index].modalidad = ''
+          newAssistants[index].municipio = ''
+          newAssistants[index].region = ''
+          newAssistants[index].valle = ''
         }
       }
     }
@@ -291,7 +303,7 @@ export default function TrainingPage() {
                   <div className="flex justify-between items-center mb-4">
                     <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
                       <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                      <p className="text-[10px] font-bold text-blue-800 uppercase">Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos del plantel.</p>
+                      <p className="text-[10px] font-bold text-blue-800 uppercase">Al ingresar el CCT de 10 dígitos, se autocompletarán Nombre C.T., ZE y datos geográficos.</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleAddRow} className="gap-2 font-black uppercase text-[10px] border-primary text-primary hover:bg-primary/5">
                       <Plus className="h-4 w-4" /> Añadir Fila
