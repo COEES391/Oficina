@@ -66,7 +66,7 @@ export default function DashboardPage() {
   // Extraer opciones únicas del catálogo para los filtros (Cascada Inteligente)
   const filterOptions = useMemo(() => {
     // 1. Municipios disponibles según la modalidad seleccionada
-    const municipiosParaModalidad = ModalidadFilter === 'all' 
+    const municipiosParaModalidad = modalidadFilter === 'all' 
       ? schoolsDirectory 
       : schoolsDirectory.filter(s => s.modalidad === modalidadFilter);
     
