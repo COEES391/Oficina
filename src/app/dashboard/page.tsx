@@ -17,7 +17,10 @@ import {
   Circle,
   ExternalLink,
   Search,
-  Building2
+  Building2,
+  Settings2,
+  Target,
+  CalendarDays
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -37,8 +40,9 @@ import { schoolsDirectory } from '@/lib/schools-directory'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -63,6 +67,14 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
+type DashboardGoals = {
+  periodType: 'Ciclo Escolar' | 'Año Fiscal';
+  periodName: string;
+  supportGoal: number;
+  trainingGoal: number;
+  programsGoal: number;
+}
+
 export default function DashboardPage() {
   const [activeReport, setActiveReport] = useState('soporte')
   const [tickets, setTickets] = useState<SupportTicket[]>([])
@@ -71,6 +83,17 @@ export default function DashboardPage() {
   
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
+  // Meta Settings
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [goals, setGoals] = useState<DashboardGoals>({
+    periodType: 'Ciclo Escolar',
+    periodName: '2024-2025',
+    supportGoal: 100,
+    trainingGoal: 50,
+    programsGoal: 10
+  })
+
+  // Filters
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
@@ -86,11 +109,19 @@ export default function DashboardPage() {
 
     const storedPrograms = JSON.parse(localStorage.getItem('programs_full') || '[]')
     setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
+
+    const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
+    if (storedGoals) setGoals(storedGoals)
   }, [])
+
+  const saveGoals = () => {
+    localStorage.setItem('dashboard_goals', JSON.stringify(goals))
+    setIsSettingsOpen(false)
+  }
 
   const filterOptions = useMemo(() => {
     const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
-    const listByValle = valleFilter === 'all' ? schoolsDirectory : schoolsDirectory.filter(s => s.valle?.toUpperCase() === valleFilter.toUpperCase());
+    const listByValle = valleFilter === 'all' ? schoolsDirectory : schoolsDirectory.filter(s => (s.valle || '').toUpperCase() === valleFilter.toUpperCase());
     const modalidades = Array.from(new Set(listByValle.map(s => s.modalidad))).sort();
     const listByModalidad = modalidadFilter === 'all' ? listByValle : listByValle.filter(s => s.modalidad === modalidadFilter);
     const municipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
@@ -130,9 +161,9 @@ export default function DashboardPage() {
         { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
       ],
       serviceData: [
-        { name: 'Red Edusat', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length },
-        { name: 'Red Local', value: filteredTickets.filter(t => t.tipoIncidencia === 'red local').length },
-        { name: 'Mantenimiento', value: filteredTickets.filter(t => t.tipoIncidencia?.includes('mantenimiento')).length },
+        { name: 'Red Edusat', value: filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red edusat')).length },
+        { name: 'Red Local', value: filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red local')).length },
+        { name: 'Mantenimiento', value: filteredTickets.filter(t => (t.tipoIncidencia || '').includes('mantenimiento')).length },
       ],
       trainingByValle: [
         { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#6366f1' },
@@ -167,9 +198,14 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Centro de Mando Ejecutivo</h2>
-            <p className="text-muted-foreground font-bold text-xs tracking-widest uppercase">
-              Oficina de Planeación • Gestión de Datos e Impacto
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-muted-foreground font-bold text-xs tracking-widest uppercase">
+                Oficina de Planeación • {goals.periodType}: {goals.periodName}
+              </p>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsSettingsOpen(true)}>
+                <Settings2 className="h-3.5 w-3.5 text-primary" />
+              </Button>
+            </div>
           </div>
           
           <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:w-auto">
@@ -267,15 +303,24 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-4">
               <Card className="shadow-sm border-l-4 border-l-blue-500">
                 <CardContent className="p-6">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
-                  <div className="text-2xl font-black">{filteredTickets.filter(t => t.tipoIncidencia?.includes('red')).length}</div>
-                  <Network className="h-4 w-4 text-blue-500 mt-1" />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
+                      <div className="text-2xl font-black">{filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red')).length}</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] font-bold text-primary uppercase">Avance Meta</span>
+                      <span className="text-xs font-black">{Math.round((filteredTickets.filter(t => t.status === 'atendido').length / goals.supportGoal) * 100)}%</span>
+                    </div>
+                  </div>
+                  <Progress value={(filteredTickets.filter(t => t.status === 'atendido').length / goals.supportGoal) * 100} className="h-1 mt-2" />
+                  <Network className="h-4 w-4 text-blue-500 mt-2" />
                 </CardContent>
               </Card>
               <Card className="shadow-sm border-l-4 border-l-emerald-500">
                 <CardContent className="p-6">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mantenimientos</span>
-                  <div className="text-2xl font-black">{filteredTickets.filter(t => t.tipoIncidencia?.includes('mantenimiento')).length}</div>
+                  <div className="text-2xl font-black">{filteredTickets.filter(t => (t.tipoIncidencia || '').includes('mantenimiento')).length}</div>
                   <Wrench className="h-4 w-4 text-emerald-500 mt-1" />
                 </CardContent>
               </Card>
@@ -288,7 +333,7 @@ export default function DashboardPage() {
               </Card>
               <Card className="shadow-sm border-l-4 border-l-orange-500">
                 <CardContent className="p-6">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia Operativa</span>
                   <div className="text-2xl font-black">
                     {Math.round((filteredTickets.filter(t => t.status === 'atendido').length / (filteredTickets.length || 1)) * 100)}%
                   </div>
@@ -406,9 +451,18 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-4">
               <Card className="shadow-sm border-l-4 border-l-blue-600">
                 <CardContent className="p-6">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Personal Capacitado</span>
-                  <div className="text-2xl font-black">{filteredTrainings.length}</div>
-                  <Users className="h-4 w-4 text-blue-600 mt-1" />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Personal Capacitado</span>
+                      <div className="text-2xl font-black">{filteredTrainings.length}</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] font-bold text-primary uppercase">Meta: {goals.trainingGoal}</span>
+                      <span className="text-xs font-black">{Math.round((filteredTrainings.length / goals.trainingGoal) * 100)}%</span>
+                    </div>
+                  </div>
+                  <Progress value={(filteredTrainings.length / goals.trainingGoal) * 100} className="h-1 mt-2" />
+                  <Users className="h-4 w-4 text-blue-600 mt-2" />
                 </CardContent>
               </Card>
               <Card className="shadow-sm border-l-4 border-l-indigo-600">
@@ -503,9 +557,18 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="shadow-sm border-l-4 border-l-cyan-600">
                 <CardContent className="p-6">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Programas Totales</span>
-                  <div className="text-2xl font-black">{programs.length}</div>
-                  <Briefcase className="h-4 w-4 text-cyan-600 mt-1" />
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Programas Totales</span>
+                      <div className="text-2xl font-black">{programs.length}</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] font-bold text-primary uppercase">Meta: {goals.programsGoal}</span>
+                      <span className="text-xs font-black">{Math.round((programs.length / goals.programsGoal) * 100)}%</span>
+                    </div>
+                  </div>
+                  <Progress value={(programs.length / goals.programsGoal) * 100} className="h-1 mt-2" />
+                  <Briefcase className="h-4 w-4 text-cyan-600 mt-2" />
                 </CardContent>
               </Card>
               <Card className="shadow-sm border-l-4 border-l-green-600">
@@ -561,6 +624,84 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Settings Dialog (Goals) */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 uppercase font-black">
+              <Settings2 className="h-5 w-5 text-primary" />
+              Configuración de Metas
+            </DialogTitle>
+            <DialogDescription className="font-bold text-xs">
+              Defina los objetivos institucionales para el periodo vigente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase">Tipo de Periodo</Label>
+                <Select value={goals.periodType} onValueChange={(val: any) => setGoals({...goals, periodType: val})}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ciclo Escolar">Ciclo Escolar</SelectItem>
+                    <SelectItem value="Año Fiscal">Año Fiscal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase">Nombre del Periodo</Label>
+                <Input 
+                  className="h-9 text-xs font-bold" 
+                  value={goals.periodName} 
+                  onChange={e => setGoals({...goals, periodName: e.target.value})}
+                  placeholder="Ej: 2024-2025"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-4 border-t pt-4">
+               <Label className="text-xs font-black uppercase text-primary flex items-center gap-2">
+                 <Target className="h-4 w-4" /> Metas Numéricas (Cantidades)
+               </Label>
+               <div className="grid grid-cols-3 gap-4">
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase">Soporte</Label>
+                   <Input 
+                      type="number" 
+                      className="h-9 text-xs" 
+                      value={goals.supportGoal} 
+                      onChange={e => setGoals({...goals, supportGoal: parseInt(e.target.value) || 0})}
+                    />
+                 </div>
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase">Capacitación</Label>
+                   <Input 
+                      type="number" 
+                      className="h-9 text-xs" 
+                      value={goals.trainingGoal} 
+                      onChange={e => setGoals({...goals, trainingGoal: parseInt(e.target.value) || 0})}
+                    />
+                 </div>
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-bold uppercase">Programas</Label>
+                   <Input 
+                      type="number" 
+                      className="h-9 text-xs" 
+                      value={goals.programsGoal} 
+                      onChange={e => setGoals({...goals, programsGoal: parseInt(e.target.value) || 0})}
+                    />
+                 </div>
+               </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setIsSettingsOpen(false)} className="font-bold uppercase text-[10px]">Cancelar</Button>
+            <Button size="sm" onClick={saveGoals} className="font-black uppercase text-[10px]">Guardar Configuración</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Evidence Viewer Dialog */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
