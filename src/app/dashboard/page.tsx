@@ -14,7 +14,8 @@ import {
   Filter, 
   RefreshCcw,
   PieChart as PieChartIcon,
-  BarChart3
+  BarChart3,
+  Building2
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -41,7 +42,7 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Image from 'next/image'
 
-// Metas del Universo según imagen proporcionada
+// Metas del Universo según imagen proporcionada (Total 830)
 const TARGET_UNIVERSE_DATA = [
   { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
   { modalidad: 'SECUNDARIA GENERAL', valle: 'TOLUCA', total: 77, codes: ['DES', 'DSN'] },
@@ -49,6 +50,14 @@ const TARGET_UNIVERSE_DATA = [
   { modalidad: 'SECUNDARIA TECNICA', valle: 'TOLUCA', total: 112, codes: ['DST'] },
   { modalidad: 'TELESECUNDARIA', valle: 'MEXICO', total: 144, codes: ['DTV', 'FTV'] },
   { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
+];
+
+const REGIONAL_OFFICES = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
 ];
 
 export default function DashboardPage() {
@@ -60,6 +69,7 @@ export default function DashboardPage() {
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
+  const [oficinaFilter, setOficinaFilter] = useState('all')
   const [cctFilter, setCctFilter] = useState('')
 
   useEffect(() => {
@@ -69,17 +79,14 @@ export default function DashboardPage() {
 
   // Opciones de filtros dinámicas basadas en el catálogo con lógica en cascada
   const filterOptions = useMemo(() => {
-    // 1. Valles únicos
     const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
-
-    // 2. Modalidades según Valle seleccionado
+    
     const listByValle = valleFilter === 'all' 
       ? schoolsDirectory 
       : schoolsDirectory.filter(s => s.valle.toUpperCase() === valleFilter.toUpperCase());
     
     const modalidades = Array.from(new Set(listByValle.map(s => s.modalidad))).sort();
     
-    // 3. Municipios según Valle y Modalidad seleccionados
     const listByModalidad = modalidadFilter === 'all'
       ? listByValle
       : listByValle.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
@@ -89,26 +96,17 @@ export default function DashboardPage() {
     return { valles, modalidades, municipios };
   }, [valleFilter, modalidadFilter]);
 
-  // Resetear filtros dependientes
-  useEffect(() => {
-    if (modalidadFilter !== 'all' && !filterOptions.modalidades.includes(modalidadFilter)) {
-      setModalidadFilter('all');
-    }
-    if (municipioFilter !== 'all' && !filterOptions.municipios.includes(municipioFilter)) {
-      setMunicipioFilter('all');
-    }
-  }, [filterOptions.modalidades, filterOptions.municipios, modalidadFilter, municipioFilter]);
-
   // Datos filtrados para el informe ejecutivo
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || t.valle.toUpperCase() === valleFilter.toUpperCase();
       const matchMunicipio = municipioFilter === 'all' || t.municipio.toUpperCase() === municipioFilter.toUpperCase();
       const matchModalidad = modalidadFilter === 'all' || t.modalidad.toUpperCase() === modalidadFilter.toUpperCase();
+      const matchOficina = oficinaFilter === 'all' || t.oficinaRegionalAtencion === oficinaFilter;
       const matchCCT = cctFilter === '' || t.cct.toUpperCase().includes(cctFilter.toUpperCase());
-      return matchValle && matchMunicipio && matchModalidad && matchCCT;
+      return matchValle && matchMunicipio && matchModalidad && matchOficina && matchCCT;
     });
-  }, [tickets, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
+  }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, cctFilter]);
 
   // Estadísticas para Gráficos
   const stats = useMemo(() => {
@@ -126,7 +124,7 @@ export default function DashboardPage() {
 
     return {
       serviceData: [
-        { name: 'Edusat', value: totalEdusat, fill: '#3b82f6' },
+        { name: 'Red Edusat', value: totalEdusat, fill: '#3b82f6' },
         { name: 'Red Local', value: totalLocal, fill: '#10b981' },
         { name: 'M. Prev', value: totalPrev, fill: '#eab308' },
         { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
@@ -151,11 +149,10 @@ export default function DashboardPage() {
     setFilteredEvidence(results)
   }
 
-  // Análisis dinámico basado en las metas del universo escolar (830 planteles)
+  // Análisis de Cobertura basado en el Universo de 830
   const UNIVERSE_STATS = useMemo(() => {
     return TARGET_UNIVERSE_DATA.map(target => {
-      // Filtrar tickets que coincidan con los códigos de esta categoría y el valle
-      const atendidas = tickets.filter(t => {
+      const atendidas = filteredTickets.filter(t => {
         const matchValle = (target.valle === 'MEXICO' && (t.valle.toUpperCase() === 'MEXICO' || t.valle.toUpperCase() === 'M')) ||
                           (target.valle === 'TOLUCA' && (t.valle.toUpperCase() === 'TOLUCA' || t.valle.toUpperCase() === 'T'));
         const matchModalidad = target.codes.some(code => t.modalidad.toUpperCase() === code.toUpperCase());
@@ -169,13 +166,14 @@ export default function DashboardPage() {
         atendidas: atendidas
       };
     });
-  }, [tickets]);
+  }, [filteredTickets]);
 
   const clearFilters = () => {
     setValleFilter('all');
     setMunicipioFilter('all');
-    setCctFilter('');
     setModalidadFilter('all');
+    setOficinaFilter('all');
+    setCctFilter('');
   };
 
   return (
@@ -194,6 +192,19 @@ export default function DashboardPage() {
               <Filter className="h-4 w-4 text-primary" />
               <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
+
+            <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
+              <SelectTrigger className="h-9 text-xs w-[200px] bg-white border-primary/20 font-bold">
+                <Building2 className="h-3 w-3 mr-2 text-primary" />
+                <SelectValue placeholder="Oficina Regional" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las Oficinas</SelectItem>
+                {REGIONAL_OFFICES.map(off => (
+                  <SelectItem key={off} value={off}>{off.replace("Oficina de ", "")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select value={valleFilter} onValueChange={setValleFilter}>
               <SelectTrigger className="h-9 text-xs w-[120px] bg-white border-primary/20">
@@ -219,21 +230,9 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
-              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
-                <SelectValue placeholder="Municipio" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">Municipio (Todos)</SelectItem>
-                {filterOptions.municipios.map(m => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Input 
               placeholder="Escribir CCT..." 
-              className="h-9 text-xs w-[180px] bg-white border-primary/20 font-mono uppercase"
+              className="h-9 text-xs w-[150px] bg-white border-primary/20 font-mono uppercase"
               value={cctFilter}
               onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
             />
@@ -336,7 +335,7 @@ export default function DashboardPage() {
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10, fontWeight: 700 }} />
                 <RechartsTooltip cursor={{ fill: 'transparent' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={25} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={25} fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -366,14 +365,14 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Universo Escolar y Cobertura (Basado en 830 planteles) */}
+      {/* Cobertura del Universo Escolar */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
               <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura (Ciclo Actual)</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Metas institucionales por Valle y Modalidad</CardDescription>
+              <CardDescription className="text-xs font-bold uppercase">Meta institucional de 830 planteles programados</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -414,13 +413,13 @@ export default function DashboardPage() {
               <TableRow className="bg-primary/5 font-black">
                 <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
                 <TableCell className="text-center text-lg">830</TableCell>
-                <TableCell className="text-center text-lg">{tickets.length}</TableCell>
+                <TableCell className="text-center text-lg">{filteredTickets.length}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
                      <div className="flex justify-between text-[10px]">
-                        <span>{Math.round((tickets.length / 830) * 100)}% Cobertura Global</span>
+                        <span>{Math.round((filteredTickets.length / 830) * 100)}% Cobertura Global</span>
                      </div>
-                     <Progress value={(tickets.length / 830) * 100} className="h-2" />
+                     <Progress value={(filteredTickets.length / 830) * 100} className="h-2" />
                   </div>
                 </TableCell>
               </TableRow>
