@@ -41,6 +41,16 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Image from 'next/image'
 
+// Metas del Universo según imagen proporcionada
+const TARGET_UNIVERSE_DATA = [
+  { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
+  { modalidad: 'SECUNDARIA GENERAL', valle: 'TOLUCA', total: 77, codes: ['DES', 'DSN'] },
+  { modalidad: 'SECUNDARIA TECNICA', valle: 'MEXICO', total: 128, codes: ['DST'] },
+  { modalidad: 'SECUNDARIA TECNICA', valle: 'TOLUCA', total: 112, codes: ['DST'] },
+  { modalidad: 'TELESECUNDARIA', valle: 'MEXICO', total: 144, codes: ['DTV', 'FTV'] },
+  { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
+];
+
 export default function DashboardPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [cctSearch, setCctSearch] = useState('')
@@ -141,26 +151,24 @@ export default function DashboardPage() {
     setFilteredEvidence(results)
   }
 
+  // Análisis dinámico basado en las metas del universo escolar (830 planteles)
   const UNIVERSE_STATS = useMemo(() => {
-    const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
-    const stats: { modalidad: string, valle: string, total: number, atendidos: number }[] = [];
+    return TARGET_UNIVERSE_DATA.map(target => {
+      // Filtrar tickets que coincidan con los códigos de esta categoría y el valle
+      const atendidas = tickets.filter(t => {
+        const matchValle = (target.valle === 'MEXICO' && (t.valle.toUpperCase() === 'MEXICO' || t.valle.toUpperCase() === 'M')) ||
+                          (target.valle === 'TOLUCA' && (t.valle.toUpperCase() === 'TOLUCA' || t.valle.toUpperCase() === 'T'));
+        const matchModalidad = target.codes.some(code => t.modalidad.toUpperCase() === code.toUpperCase());
+        return matchValle && matchModalidad;
+      }).length;
 
-    allModalities.forEach(mod => {
-      ['MEXICO', 'TOLUCA', 'M', 'T'].forEach(valleRaw => {
-        const valleLabel = (valleRaw === 'M' || valleRaw === 'MEXICO') ? 'MEXICO' : 'TOLUCA';
-        const total = schoolsDirectory.filter(s => s.modalidad === mod && (s.valle === valleRaw || s.valle === valleLabel)).length;
-        if (total > 0) {
-          const atendidos = tickets.filter(t => t.modalidad === mod && (t.valle.toUpperCase() === valleLabel || t.valle.toUpperCase() === valleRaw)).length;
-          const existingIdx = stats.findIndex(s => s.modalidad === mod && s.valle === valleLabel);
-          if (existingIdx >= 0) {
-             stats[existingIdx].total += total;
-          } else {
-             stats.push({ modalidad: mod, valle: valleLabel, total, atendidos });
-          }
-        }
-      });
+      return {
+        modalidad: target.modalidad,
+        valle: target.valle,
+        total: target.total,
+        atendidas: atendidas
+      };
     });
-    return stats;
   }, [tickets]);
 
   const clearFilters = () => {
@@ -358,14 +366,14 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Universo Escolar */}
+      {/* Universo Escolar y Cobertura (Basado en 830 planteles) */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Análisis Dinámico por Modalidad y Región</CardDescription>
+              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura (Ciclo Actual)</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase">Metas institucionales por Valle y Modalidad</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -375,27 +383,27 @@ export default function DashboardPage() {
               <TableRow>
                 <TableHead className="font-black text-xs uppercase">Modalidad</TableHead>
                 <TableHead className="font-black text-xs uppercase">Valle</TableHead>
-                <TableHead className="font-black text-xs uppercase text-center">Universo CCT</TableHead>
+                <TableHead className="font-black text-xs uppercase text-center">Meta Universo</TableHead>
                 <TableHead className="font-black text-xs uppercase text-center">Atendidas</TableHead>
                 <TableHead className="font-black text-xs uppercase w-[200px]">Avance Operativo (%)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {UNIVERSE_STATS.map((row, idx) => {
-                const percent = row.total > 0 ? Math.min(Math.round((row.atendidos / row.total) * 100), 100) : 0;
+                const percent = row.total > 0 ? Math.min(Math.round((row.atendidas / row.total) * 100), 100) : 0;
                 return (
                   <TableRow key={idx} className="hover:bg-slate-50/50">
                     <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
                     <TableCell className="text-xs font-medium">{row.valle}</TableCell>
                     <TableCell className="text-center font-black">{row.total}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={row.atendidos > 0 ? "default" : "outline"} className="font-mono">{row.atendidos}</Badge>
+                      <Badge variant={row.atendidas > 0 ? "default" : "outline"} className="font-mono">{row.atendidas}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex justify-between text-[10px] font-bold">
                           <span>{percent}%</span>
-                          <span className="text-muted-foreground">{row.atendidos}/{row.total}</span>
+                          <span className="text-muted-foreground">{row.atendidas}/{row.total}</span>
                         </div>
                         <Progress value={percent} className="h-1.5" />
                       </div>
@@ -405,14 +413,14 @@ export default function DashboardPage() {
               })}
               <TableRow className="bg-primary/5 font-black">
                 <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
-                <TableCell className="text-center text-lg">{schoolsDirectory.length}</TableCell>
+                <TableCell className="text-center text-lg">830</TableCell>
                 <TableCell className="text-center text-lg">{tickets.length}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
                      <div className="flex justify-between text-[10px]">
-                        <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Cobertura Global</span>
+                        <span>{Math.round((tickets.length / 830) * 100)}% Cobertura Global</span>
                      </div>
-                     <Progress value={(tickets.length / schoolsDirectory.length) * 100} className="h-2" />
+                     <Progress value={(tickets.length / 830) * 100} className="h-2" />
                   </div>
                 </TableCell>
               </TableRow>
