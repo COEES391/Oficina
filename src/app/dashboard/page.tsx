@@ -6,24 +6,18 @@ import {
   Wrench, 
   Users, 
   CheckCircle2, 
-  Globe, 
-  LayoutGrid, 
-  Search, 
-  FileText, 
-  Eye, 
   Filter, 
   RefreshCcw,
-  PieChart as PieChartIcon,
-  BarChart3,
-  Building2,
   GraduationCap,
   Briefcase,
   TrendingUp,
   Clock,
   Image as ImageIcon,
+  FileText,
+  Circle,
   ExternalLink,
-  X,
-  Circle
+  Search,
+  Building2
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -44,8 +38,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -198,7 +191,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-black uppercase text-primary">Filtrar Todo por:</span>
+              <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
 
             <Select value={valleFilter} onValueChange={setValleFilter}>
@@ -251,12 +244,15 @@ export default function DashboardPage() {
               </Select>
             )}
 
-            <Input 
-              placeholder="Escribir CCT..." 
-              className="h-9 text-xs w-[140px] bg-white border-primary/20 font-mono uppercase"
-              value={cctFilter}
-              onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
-            />
+            <div className="relative w-[180px]">
+               <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+               <Input 
+                  placeholder="Escribir CCT..." 
+                  className="h-9 text-xs pl-8 bg-white border-primary/20 font-mono uppercase"
+                  value={cctFilter}
+                  onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
+                />
+            </div>
 
             <Button variant="ghost" size="sm" className="h-9 px-3 text-[10px] font-black" onClick={clearFilters}>
               <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
@@ -345,26 +341,33 @@ export default function DashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-black uppercase">Atenciones de Soporte y Evidencias</CardTitle>
-                <CardDescription>Detalle de intervenciones técnicas con semáforo de estatus.</CardDescription>
+                <CardTitle className="text-sm font-black uppercase">Reporte Detallado de Servicios y Evidencias</CardTitle>
+                <CardDescription>Auditoría de intervenciones técnicas con acceso a documentación oficial.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader className="bg-slate-50">
                     <TableRow>
                       <TableHead className="text-[10px] font-black">Folio</TableHead>
-                      <TableHead className="text-[10px] font-black">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black">CCT / Plantel</TableHead>
                       <TableHead className="text-[10px] font-black">Servicio</TableHead>
                       <TableHead className="text-[10px] font-black">Estatus</TableHead>
                       <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTickets.slice(0, 10).map((t) => (
+                    {filteredTickets.slice(0, 15).map((t) => (
                       <TableRow key={t.id}>
                         <TableCell className="text-[10px] font-bold">{t.id}</TableCell>
-                        <TableCell className="text-[10px] font-mono">{t.cct}</TableCell>
-                        <TableCell className="text-[10px] capitalize">{t.tipoIncidencia || 'Sin especificar'}</TableCell>
+                        <TableCell>
+                           <div className="flex flex-col">
+                              <span className="text-[10px] font-mono font-bold">{t.cct}</span>
+                              <span className="text-[9px] text-muted-foreground truncate max-w-[180px]">{t.schoolName}</span>
+                           </div>
+                        </TableCell>
+                        <TableCell className="text-[10px] font-semibold capitalize text-primary">
+                          {t.tipoIncidencia || 'Sin especificar'}
+                        </TableCell>
                         <TableCell>
                            <div className="flex items-center gap-1.5">
                               <Circle className={cn("h-2 w-2 fill-current", 
@@ -377,13 +380,13 @@ export default function DashboardPage() {
                         <TableCell>
                           <div className="flex justify-center gap-2">
                             {t.reportPdf && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte Soporte - ${t.id} (${t.tipoIncidencia})` })}>
-                                <FileText className="h-3 w-3 text-blue-500" />
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte Soporte - ${t.id} (${t.tipoIncidencia})` })}>
+                                <FileText className="h-3.5 w-3.5 text-blue-500" />
                               </Button>
                             )}
                             {t.evidencePhotos && t.evidencePhotos.length > 0 && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería Soporte - ${t.id} (${t.tipoIncidencia})` })}>
-                                <ImageIcon className="h-3 w-3 text-pink-500" />
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería Soporte - ${t.id} (${t.tipoIncidencia})` })}>
+                                <ImageIcon className="h-3.5 w-3.5 text-pink-500" />
                               </Button>
                             )}
                           </div>
@@ -455,7 +458,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
               <Card className="md:col-span-2">
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Últimos Registros de Capacitación</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm font-black uppercase">Seguimiento de Cursos e Instructores</CardTitle></CardHeader>
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader className="bg-slate-50"><TableRow>
@@ -465,21 +468,21 @@ export default function DashboardPage() {
                       <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {filteredTrainings.slice(0, 5).map((tr) => (
+                      {filteredTrainings.slice(0, 10).map((tr) => (
                         <TableRow key={tr.id}>
                           <TableCell className="text-[10px] font-bold">{tr.id}</TableCell>
-                          <TableCell className="text-[10px] truncate max-w-[150px]">{tr.cursoNombre}</TableCell>
+                          <TableCell className="text-[10px] truncate max-w-[150px] font-semibold">{tr.cursoNombre}</TableCell>
                           <TableCell className="text-[10px]">{tr.asistenteNombres} {tr.asistentePaterno}</TableCell>
                           <TableCell>
                             <div className="flex justify-center gap-2">
                               {tr.reportPdf && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id} (${tr.cursoNombre})` })}>
-                                  <FileText className="h-3 w-3 text-blue-500" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'pdf', data: tr.reportPdf!, title: `Reporte Capacitación - ${tr.id} (${tr.cursoNombre})` })}>
+                                  <FileText className="h-3.5 w-3.5 text-blue-500" />
                                 </Button>
                               )}
                               {tr.evidencePhotos && tr.evidencePhotos.length > 0 && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEvidenceToView({ type: 'gallery', data: tr.evidencePhotos!, title: `Galería Capacitación - ${tr.id}` })}>
-                                  <ImageIcon className="h-3 w-3 text-pink-500" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEvidenceToView({ type: 'gallery', data: tr.evidencePhotos!, title: `Galería Capacitación - ${tr.id}` })}>
+                                  <ImageIcon className="h-3.5 w-3.5 text-pink-500" />
                                 </Button>
                               )}
                             </div>
@@ -560,22 +563,23 @@ export default function DashboardPage() {
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-2 border-b">
+          <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
             <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
-              {evidenceToView?.type === 'pdf' ? <FileText className="h-5 w-5" /> : <ImageIcon className="h-5 w-5" />}
+              {evidenceToView?.type === 'pdf' ? <FileText className="h-5 w-5 text-blue-600" /> : <ImageIcon className="h-5 w-5 text-pink-600" />}
               {evidenceToView?.title}
+              <ExternalLink className="h-3 w-3 text-muted-foreground ml-2" />
             </DialogTitle>
-            <DialogDescription>Previsualización de documentos y fotos institucionales.</DialogDescription>
+            <DialogDescription className="font-bold text-xs uppercase text-slate-500">Documentación de Respaldo Oficina de Planeación</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 relative">
              {evidenceToView?.type === 'pdf' ? (
-                <iframe src={evidenceToView.data as string} className="w-full h-full border-none" />
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none shadow-inner" />
              ) : (
                 <ScrollArea className="h-full w-full p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {(evidenceToView?.data as string[])?.map((img, idx) => (
-                      <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border-2 border-white shadow-md">
-                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                      <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border-4 border-white shadow-xl group">
+                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover transition-transform group-hover:scale-105" />
                       </div>
                     ))}
                   </div>
@@ -583,7 +587,7 @@ export default function DashboardPage() {
              )}
           </div>
           <div className="p-4 border-t bg-white flex justify-end">
-            <Button variant="secondary" onClick={() => setEvidenceToView(null)}>Cerrar Visor</Button>
+            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs">Cerrar Visor Ejecutivo</Button>
           </div>
         </DialogContent>
       </Dialog>
