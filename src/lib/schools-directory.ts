@@ -32,10 +32,10 @@ const rawData: any[][] = [
   ['15ADG0041R', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0042Q', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0043P', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15ADG0044O', '', '', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15ADG0045N', '', '', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15ADG0046M', '', '', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15ADG0047L', '', '', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
+  ['15ADG0044O', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
+  ['15ADG0045N', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
+  ['15ADG0046M', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
+  ['15ADG0047L', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0048K', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0049J', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0050Z', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
@@ -66,7 +66,7 @@ const rawData: any[][] = [
   ['15ADG0075H', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0076G', '00', '000', 'T', 'ADG', '400', '054', 'METEPEC', 'TOLUCA'],
   ['15ADG0077F', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15ADG0078E', '', '', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
+  ['15ADG0078E', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0079D', '00', '000', 'T', 'ADG', '400', '054', 'METEPEC', 'TOLUCA'],
   ['15ADG0080T', '00', '000', 'T', 'ADG', '400', '054', 'METEPEC', 'TOLUCA'],
   ['15ADG0081S', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
@@ -93,7 +93,7 @@ const rawData: any[][] = [
   ['15ADG0104M', '00', '000', 'M', 'ADG', '400', '109', 'TULTITLAN', 'TULTITLAN'],
   ['15ADG0105L', '00', '000', 'M', 'ADG', '400', '109', 'TULTITLAN', 'TULTITLAN'],
   ['15ADG0106K', '00', '000', 'M', 'ADG', '400', '109', 'TULTITLAN', 'TULTITLAN'],
-  ['15ADG0107J', '', '', 'T', 'ADG', '400', '076', 'SAN MATEO ATENCO', 'LERMA'],
+  ['15ADG0107J', '00', '000', 'T', 'ADG', '400', '076', 'SAN MATEO ATENCO', 'LERMA'],
   ['15ADG0108I', '00', '000', 'T', 'ADG', '400', '106', 'TOLUCA', 'TOLUCA'],
   ['15ADG0109H', '00', '000', 'M', 'ADG', '400', '109', 'TULTITLAN', 'TULTITLAN'],
   ['15ADG0110X', '00', '000', 'M', 'ADG', '400', '109', 'TULTITLAN', 'TULTITLAN'],
@@ -449,7 +449,7 @@ const rawData: any[][] = [
   ['15DST0084I', '07', '020', 'M', 'DST', '120', '031', 'CHIMALHUACAN', 'CHIMALHUACAN'],
   ['15DST0085H', '07', '020', 'M', 'DST', '100', '058', 'NEZAHUALCOYOTL', 'NEZAHUALCOYOTL'],
   ['15DST0086G', '04', '033', 'M', 'DST', '120', '013', 'ATIZAPAN DE ZARAGOZA', 'TLALNEPANTLA'],
-  ['15DST0087F', '03', '008', 'T', 'DST', '100', '026', 'CHAPA DE MOTA', 'ATLACOMULCO'],
+  ['15DST0087F', '03', '008', 'T', 'DST', '100', '045', 'JILOTEPEC', 'ATLACOMULCO'],
   ['15DST0088E', '09', '005', 'T', 'DST', '100', '047', 'JIQUIPILCO', 'LERMA'],
   ['15DST0090T', '02', '003', 'T', 'DST', '120', '062', 'OCOYOACAC', 'LERMA'],
   ['15DST0091S', '05', '034', 'M', 'DST', '100', '053', 'MELCHOR OCAMPO', 'TULTITLAN'],
@@ -620,14 +620,14 @@ const rawData: any[][] = [
   ['15FTV0011B', '04', '011', 'T', 'FTV', '100', '106', 'TOLUCA', 'TOLUCA'],
   ['15FZF0001Y', '00', '001', 'T', 'FZF', '400', '014', 'ATLACOMULCO', 'ATLACOMULCO'],
   ['15FZT0001R', '01', '001', 'T', 'FZT', '400', '106', 'TOLUCA', 'TOLUCA'],
-  ['15FZT0010Z', '04', '010', 'M', 'FZT', '400', '057', 'NAUCALPAN DE JUAREZ', 'NAUCALPAN']
+  ['15FZT0010Z', '04', '010', 'M', 'FZT', '400', '057', 'NAUCALPAN DE JUAREZ', 'NAUCALPAN'],
 ];
 
 export const schoolsDirectory: SchoolInfo[] = rawData.map(row => ({
   cct: row[0] as string,
-  nombre: `${row[4] || ''} ${row[0] || ''}`, // Modalidad + CCT como identificador de nombre
+  nombre: `${row[4] || ''} ${row[0] || ''}`, // Modalidad + CCT como identificador único de Nombre CT
   sector: (row[1] as string) || '00',
-  zonaEscolar: (row[2] as string) || '000', // Mapeo directo a la columna Z E
+  zonaEscolar: (row[2] as string) || '000', 
   valle: row[3] === 'T' ? 'TOLUCA' : row[3] === 'M' ? 'MEXICO' : (row[3] as string || ''),
   modalidad: (row[4] as string) || '',
   municipio: (row[7] as string) || '',
