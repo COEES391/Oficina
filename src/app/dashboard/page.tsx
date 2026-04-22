@@ -38,7 +38,7 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Image from 'next/image'
 
-// Datos del Universo proporcionados en la imagen
+// Datos del Universo proporcionados
 const UNIVERSE_STATS = [
   { modalidad: 'GENERAL', valle: 'MEXICO', total: 175 },
   { modalidad: 'GENERAL', valle: 'TOLUCA', total: 77 },
@@ -65,7 +65,7 @@ export default function DashboardPage() {
 
   // Extraer opciones únicas del catálogo para los filtros (Cascada)
   const filterOptions = useMemo(() => {
-    // Los municipios siempre se muestran todos para poder iniciar la búsqueda
+    // Municipios únicos del catálogo para el selector principal
     const uniqueMunicipios = Array.from(new Set(schoolsDirectory.map(s => s.municipio))).sort();
     
     // Los CCT dependen de la Modalidad y el Municipio seleccionados
@@ -142,7 +142,7 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Barra de Filtros Desplegables Inteligentes */}
+        {/* Barra de Filtros Inteligentes con Desplegables */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
