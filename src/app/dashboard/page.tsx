@@ -63,12 +63,16 @@ export default function DashboardPage() {
     setTickets(stored.length > 0 ? stored : supportData)
   }, [])
 
-  // Extraer opciones únicas del catálogo para los filtros (Cascada)
+  // Extraer opciones únicas del catálogo para los filtros (Cascada Inteligente)
   const filterOptions = useMemo(() => {
-    // Municipios únicos del catálogo para el selector principal
-    const uniqueMunicipios = Array.from(new Set(schoolsDirectory.map(s => s.municipio))).sort();
+    // 1. Municipios disponibles según la modalidad seleccionada
+    const municipiosParaModalidad = ModalidadFilter === 'all' 
+      ? schoolsDirectory 
+      : schoolsDirectory.filter(s => s.modalidad === modalidadFilter);
     
-    // Los CCT dependen de la Modalidad y el Municipio seleccionados
+    const uniqueMunicipios = Array.from(new Set(municipiosParaModalidad.map(s => s.municipio))).sort();
+    
+    // 2. CCTs disponibles según la Modalidad Y el Municipio seleccionados
     const filteredForCCT = schoolsDirectory.filter(s => {
       const matchMunicipio = municipioFilter === 'all' || s.municipio === municipioFilter;
       const matchModalidad = modalidadFilter === 'all' || s.modalidad === modalidadFilter;
@@ -80,12 +84,15 @@ export default function DashboardPage() {
     return { municipios: uniqueMunicipios, ccts: uniqueCCTs };
   }, [municipioFilter, modalidadFilter]);
 
-  // Resetear CCT si deja de ser válido para los nuevos filtros
+  // Resetear filtros si dejan de ser válidos para las nuevas selecciones
   useEffect(() => {
+    if (municipioFilter !== 'all' && !filterOptions.municipios.includes(municipioFilter)) {
+      setMunicipioFilter('all');
+    }
     if (cctFilter !== 'all' && !filterOptions.ccts.includes(cctFilter)) {
       setCctFilter('all');
     }
-  }, [filterOptions.ccts, cctFilter]);
+  }, [filterOptions.municipios, filterOptions.ccts, municipioFilter, cctFilter]);
 
   // Datos filtrados para el informe ejecutivo
   const filteredTickets = useMemo(() => {
@@ -142,7 +149,7 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Barra de Filtros Inteligentes con Desplegables */}
+        {/* Barra de Filtros Inteligentes en Cascada */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -150,6 +157,7 @@ export default function DashboardPage() {
               <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
             
+            {/* 1. Modalidad (Filtro Padre) */}
             <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
               <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
                 <SelectValue placeholder="Seleccionar Modalidad" />
@@ -162,6 +170,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
+            {/* 2. Municipio (Filtrado por Modalidad) */}
             <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
               <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
                 <SelectValue placeholder="Seleccionar Municipio" />
@@ -174,6 +183,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
+            {/* 3. CCT (Filtrado por Modalidad y Municipio) */}
             <Select value={cctFilter} onValueChange={setCctFilter}>
               <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20 font-mono">
                 <SelectValue placeholder="Seleccionar CCT" />
@@ -245,7 +255,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Universo de Atención */}
+      {/* Universo de Atención por Modalidad */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
@@ -334,7 +344,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Buscador de Evidencias */}
+      {/* Consulta de Expedientes Digitales */}
       <Card className="shadow-md border-none overflow-hidden">
         <CardHeader className="bg-slate-900 text-white">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
