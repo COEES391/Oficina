@@ -17,7 +17,7 @@ const mapModalidad = (m: string) => {
   return m;
 };
 
-// Catálogo masivo basado en la tabla proporcionada por el usuario
+// Catálogo completo basado en la tabla proporcionada por el usuario
 export const schoolsDirectory: SchoolInfo[] = [
   // ADG
   { cct: '15ADG0001Q', nombre: 'CCT 15ADG0001Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
@@ -41,7 +41,8 @@ export const schoolsDirectory: SchoolInfo[] = [
   { cct: '15ADG0041R', nombre: 'CCT 15ADG0041R', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0042Q', nombre: 'CCT 15ADG0042Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0043P', nombre: 'CCT 15ADG0043P', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
-  { cct: '15ADG0061E', nombre: 'CCT 15ADG0107J', municipio: 'SAN MATEO ATENCO', zonaEscolar: '000', sector: '00', region: 'LERMA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0048K', nombre: 'CCT 15ADG0048K', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0061E', nombre: 'CCT 15ADG0061E', municipio: 'SAN MATEO ATENCO', zonaEscolar: '000', sector: '00', region: 'LERMA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0076G', nombre: 'CCT 15ADG0076G', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0079D', nombre: 'CCT 15ADG0079D', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0080T', nombre: 'CCT 15ADG0080T', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
@@ -50,6 +51,7 @@ export const schoolsDirectory: SchoolInfo[] = [
   { cct: '15ADG0085O', nombre: 'CCT 15ADG0085O', municipio: 'TLALNEPANTLA DE BAZ', zonaEscolar: '000', sector: '00', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'ADG' },
   { cct: '15ADG0086N', nombre: 'CCT 15ADG0086N', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '000', sector: '00', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'ADG' },
   { cct: '15ADG0087M', nombre: 'CCT 15ADG0087M', municipio: 'ECATEPEC', zonaEscolar: '000', sector: '00', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0107J', nombre: 'CCT 15ADG0107J', municipio: 'SAN MATEO ATENCO', zonaEscolar: '000', sector: '00', region: 'LERMA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0112V', nombre: 'CCT 15ADG0112V', municipio: 'NAUCALPAN DE JUAREZ', zonaEscolar: '000', sector: '00', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'ADG' },
   { cct: '15ADG0118P', nombre: 'CCT 15ADG0118P', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
   { cct: '15ADG0119O', nombre: 'CCT 15ADG0119O', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
@@ -102,4 +104,13 @@ export const schoolsDirectory: SchoolInfo[] = [
   { cct: '15DTV0002W', nombre: 'CCT 15DTV0002W', municipio: 'ATENCO', zonaEscolar: '004', sector: '06', region: 'TEXCOCO', valle: 'MEXICO', modalidad: 'TELESECUNDARIA' },
   { cct: '15DTV0014A', nombre: 'CCT 15DTV0014A', municipio: 'ZINACANTEPEC', zonaEscolar: '027', sector: '09', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
   { cct: '15DTV0025G', nombre: 'CCT 15DTV0025G', municipio: 'TOLUCA', zonaEscolar: '028', sector: '09', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
+  
+  // FIS, FJE, FJT, FTS, FTV, FZF, FZT (Otros servicios)
+  { cct: '15FIS0001L', nombre: 'CCT 15FIS0001L', municipio: 'ATIZAPAN DE ZARAGOZA', zonaEscolar: '009', sector: '02', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'FIS' },
+  { cct: '15FJE0009Q', nombre: 'CCT 15FJE0009Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '06', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'FJE' },
+  { cct: '15FJT0001Q', nombre: 'CCT 15FJT0001Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '01', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'FJT' },
+  { cct: '15FTS0001H', nombre: 'CCT 15FTS0001H', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '000', sector: '01', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'FTS' },
+  { cct: '15FTV0001V', nombre: 'CCT 15FTV0001V', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '001', sector: '02', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'FTV' },
+  { cct: '15FZF0001Y', nombre: 'CCT 15FZF0001Y', municipio: 'ATLACOMULCO', zonaEscolar: '001', sector: '00', region: 'ATLACOMULCO', valle: 'TOLUCA', modalidad: 'FZF' },
+  { cct: '15FZT0001R', nombre: 'CCT 15FZT0001R', municipio: 'TOLUCA', zonaEscolar: '001', sector: '01', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'FZT' },
 ];

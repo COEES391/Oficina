@@ -94,15 +94,17 @@ export default function DashboardPage() {
     });
   }, [tickets, municipioFilter, modalidadFilter, cctFilter]);
 
-  // Universo calculado dinámicamente desde el catálogo
+  // Universo calculado dinámicamente desde el catálogo completo
   const UNIVERSE_STATS = useMemo(() => {
-    const mainModalities = ['GENERAL', 'TECNICA', 'TELESECUNDARIA'];
+    const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
     const results: { modalidad: string, valle: string, total: number }[] = [];
     
-    mainModalities.forEach(mod => {
+    allModalities.forEach(mod => {
       ['MEXICO', 'TOLUCA'].forEach(valle => {
         const count = schoolsDirectory.filter(s => s.modalidad === mod && s.valle === valle).length;
-        results.push({ modalidad: mod, valle, total: count });
+        if (count > 0) {
+          results.push({ modalidad: mod, valle, total: count });
+        }
       });
     });
     return results;
@@ -253,8 +255,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-black uppercase">Universo de Atención por Modalidad y Valle</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional Basada en Catálogo Actual</CardDescription>
+              <CardTitle className="text-xl font-black uppercase">Universo de Atención Dinámico por Modalidad y Valle</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional Basada en el Catálogo Extendido</CardDescription>
             </div>
           </div>
         </CardHeader>
