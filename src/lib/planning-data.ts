@@ -1,14 +1,54 @@
 export type SupportTicket = {
   id: string;
   cct: string;
+  schoolName: string;
+  zonaEscolar: string;
   sector: string;
-  zona: string;
-  school: string;
-  issue: 'Red Local' | 'Instalación de Red Local' | 'Red Edusat' | 'Mantenimiento Preventivo' | 'Mantenimiento Correctivo';
+  modalidad: string;
+  municipio: string;
+  region: string;
+  valle: string;
+  responsables: string[]; // Hasta 6 responsables
+  numeroOficio: string;
+  alumnosBeneficiados: number;
+  numeroEquipos: number;
+  materialUtilizado: string;
+  betes: 'S' | 'N';
+  observaciones: string;
+  descripcionEquipo: string;
+  fechaEntrada: string;
+  fechaSalida: string;
+  serviciosMC: number;
+  serviciosMP: number;
   status: 'pendiente' | 'en proceso' | 'resuelto';
-  date: string;
-  technician?: string;
 };
+
+export const supportData: SupportTicket[] = [
+  { 
+    id: 'S001', 
+    cct: '15EES0001Z', 
+    schoolName: 'Secundaria Fed. 1',
+    zonaEscolar: '12',
+    sector: '01', 
+    modalidad: 'General',
+    municipio: 'Toluca',
+    region: 'I',
+    valle: 'Toluca',
+    responsables: ['Ing. Carlos Ruiz', 'Lic. Ana Soto'],
+    numeroOficio: 'OF-2024-001',
+    alumnosBeneficiados: 450,
+    numeroEquipos: 15,
+    materialUtilizado: 'Cable UTP Cat6, Conectores RJ45',
+    betes: 'S',
+    observaciones: 'Pendiente configuración de switch',
+    descripcionEquipo: 'Servidor Dell PowerEdge y 14 terminales',
+    fechaEntrada: '2024-05-20',
+    fechaSalida: '',
+    serviciosMC: 1,
+    serviciosMP: 0,
+    status: 'pendiente', 
+  },
+];
 
 export type TrainingSession = {
   id: string;
@@ -24,31 +64,6 @@ export type ProgramStatus = {
   progress: number;
   status: 'activo' | 'planeacion' | 'concluido';
 };
-
-export const supportData: SupportTicket[] = [
-  { 
-    id: 'S001', 
-    cct: '15EES0001Z', 
-    sector: '01', 
-    zona: '12', 
-    school: 'Secundaria Fed. 1', 
-    issue: 'Red Local', 
-    status: 'pendiente', 
-    date: '2024-05-20',
-    technician: 'Pendiente de asignar'
-  },
-  { 
-    id: 'S002', 
-    cct: '15DST0015A', 
-    sector: '03', 
-    zona: '05', 
-    school: 'Secundaria Tec. 15', 
-    issue: 'Mantenimiento Correctivo', 
-    status: 'resuelto', 
-    date: '2024-05-18',
-    technician: 'Ing. Carlos Ruiz'
-  },
-];
 
 export const trainingData: TrainingSession[] = [
   { id: 'C001', title: 'Uso de Herramientas Digitales', instructors: 'Gustavo Bello', attendees: 45, date: '2024-05-15' },
