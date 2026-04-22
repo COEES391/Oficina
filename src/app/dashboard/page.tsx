@@ -63,14 +63,31 @@ export default function DashboardPage() {
     setTickets(stored.length > 0 ? stored : supportData)
   }, [])
 
-  // Extraer opciones únicas del catálogo para los filtros
+  // Extraer opciones únicas del catálogo para los filtros (Cascada)
   const filterOptions = useMemo(() => {
+    // Los municipios siempre se muestran todos para poder iniciar la búsqueda
     const uniqueMunicipios = Array.from(new Set(schoolsDirectory.map(s => s.municipio))).sort();
-    const uniqueCCTs = Array.from(new Set(schoolsDirectory.map(s => s.cct))).sort();
-    return { municipios: uniqueMunicipios, ccts: uniqueCCTs };
-  }, []);
+    
+    // Los CCT dependen de la Modalidad y el Municipio seleccionados
+    const filteredForCCT = schoolsDirectory.filter(s => {
+      const matchMunicipio = municipioFilter === 'all' || s.municipio === municipioFilter;
+      const matchModalidad = modalidadFilter === 'all' || s.modalidad === modalidadFilter;
+      return matchMunicipio && matchModalidad;
+    });
 
-  // Datos filtrados para el informe
+    const uniqueCCTs = Array.from(new Set(filteredForCCT.map(s => s.cct))).sort();
+    
+    return { municipios: uniqueMunicipios, ccts: uniqueCCTs };
+  }, [municipioFilter, modalidadFilter]);
+
+  // Resetear CCT si deja de ser válido para los nuevos filtros
+  useEffect(() => {
+    if (cctFilter !== 'all' && !filterOptions.ccts.includes(cctFilter)) {
+      setCctFilter('all');
+    }
+  }, [filterOptions.ccts, cctFilter]);
+
+  // Datos filtrados para el informe ejecutivo
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchMunicipio = municipioFilter === 'all' || t.municipio.toUpperCase() === municipioFilter.toUpperCase();
@@ -125,7 +142,7 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Barra de Filtros Desplegables */}
+        {/* Barra de Filtros Desplegables Inteligentes */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -133,6 +150,18 @@ export default function DashboardPage() {
               <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
             
+            <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
+              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+                <SelectValue placeholder="Seleccionar Modalidad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las Modalidades</SelectItem>
+                <SelectItem value="GENERAL">Secundaria General</SelectItem>
+                <SelectItem value="TECNICA">Secundaria Técnica</SelectItem>
+                <SelectItem value="TELESECUNDARIA">Telesecundaria</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
               <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
                 <SelectValue placeholder="Seleccionar Municipio" />
@@ -150,22 +179,10 @@ export default function DashboardPage() {
                 <SelectValue placeholder="Seleccionar CCT" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las CCT</SelectItem>
+                <SelectItem value="all">Todas las CCT ({filterOptions.ccts.length})</SelectItem>
                 {filterOptions.ccts.map(c => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
-              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
-                <SelectValue placeholder="Seleccionar Modalidad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las Modalidades</SelectItem>
-                <SelectItem value="GENERAL">Secundaria General</SelectItem>
-                <SelectItem value="TECNICA">Secundaria Técnica</SelectItem>
-                <SelectItem value="TELESECUNDARIA">Telesecundaria</SelectItem>
               </SelectContent>
             </Select>
 
