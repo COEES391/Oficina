@@ -23,6 +23,35 @@ export type SupportTicket = {
   status: 'pendiente' | 'en proceso' | 'resuelto';
 };
 
+export type TrainingRecord = {
+  id: string;
+  cursoGrupo: string;
+  cursoNombre: string;
+  duracionHoras: number;
+  fechaInicio: string;
+  fechaTermino: string;
+  instructores: string[]; // Hasta 3
+  numeroOficio: string;
+  materialUtilizado: string;
+  asistentePaterno: string;
+  asistenteMaterno: string;
+  asistenteNombres: string;
+  asistenteRFC: string;
+  asistenteFuncion: string;
+  asistenteEmail: string;
+  asistenteCCT: string;
+  asistenteNombreCT: string;
+  asistenteZE: string;
+  asistenteSector: string;
+  asistenteModalidad: string;
+  asistenteMunicipio: string;
+  asistenteRegion: string;
+  asistenteValle: string;
+  cctSede: string;
+  setes: 'S' | 'N';
+  observaciones: string;
+};
+
 export const supportData: SupportTicket[] = [
   { 
     id: 'S001', 
@@ -50,13 +79,36 @@ export const supportData: SupportTicket[] = [
   },
 ];
 
-export type TrainingSession = {
-  id: string;
-  title: string;
-  instructors: string;
-  attendees: number;
-  date: string;
-};
+export const trainingRecords: TrainingRecord[] = [
+  {
+    id: 'C001',
+    cursoGrupo: 'Secundarias Generales',
+    cursoNombre: 'Manejo de Herramientas de Colaboración',
+    duracionHoras: 20,
+    fechaInicio: '2024-05-01',
+    fechaTermino: '2024-05-05',
+    instructores: ['Gustavo Bello', '', ''],
+    numeroOficio: 'OF-CAP-001',
+    materialUtilizado: 'Guías digitales, proyector',
+    asistentePaterno: 'García',
+    asistenteMaterno: 'López',
+    asistenteNombres: 'Juan',
+    asistenteRFC: 'GALJ800101H12',
+    asistenteFuncion: 'Docente',
+    asistenteEmail: 'juan.garcia@edomex.gob.mx',
+    asistenteCCT: '15EES0123A',
+    asistenteNombreCT: 'Sec. Ofic. 12',
+    asistenteZE: '05',
+    asistenteSector: '02',
+    asistenteModalidad: 'General',
+    asistenteMunicipio: 'Metepec',
+    asistenteRegion: 'I',
+    asistenteValle: 'Toluca',
+    cctSede: '15EES0001Z',
+    setes: 'S',
+    observaciones: 'Participación destacada',
+  }
+];
 
 export type ProgramStatus = {
   id: string;
@@ -64,11 +116,6 @@ export type ProgramStatus = {
   progress: number;
   status: 'activo' | 'planeacion' | 'concluido';
 };
-
-export const trainingData: TrainingSession[] = [
-  { id: 'C001', title: 'Uso de Herramientas Digitales', instructors: 'Gustavo Bello', attendees: 45, date: '2024-05-15' },
-  { id: 'C002', title: 'Gestión de Microsoft 365', instructors: 'Juan Pérez', attendees: 30, date: '2024-05-19' },
-];
 
 export const programsData: ProgramStatus[] = [
   { id: 'P001', name: 'Conectividad Escolar 2024', progress: 75, status: 'activo' },
