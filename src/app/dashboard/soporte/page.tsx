@@ -35,7 +35,7 @@ export default function SupportPage() {
     alumnosBeneficiados: 0,
     numeroEquipos: 0,
     materialUtilizado: '',
-    betes: 'N',
+    setes: 'N',
     observaciones: '',
     descripcionEquipo: '',
     fechaEntrada: format(new Date(), 'yyyy-MM-dd'),
@@ -101,7 +101,7 @@ export default function SupportPage() {
       'Alumnos Beneficiados': t.alumnosBeneficiados,
       'No. Equipos': t.numeroEquipos,
       'Material Utilizado': t.materialUtilizado,
-      'BETES (S/N)': t.betes,
+      'SETES (S/N)': t.setes,
       'Observaciones': t.observaciones,
       'Descripción Equipo': t.descripcionEquipo,
       'Fecha Entrada': t.fechaEntrada,
@@ -240,8 +240,8 @@ export default function SupportPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
-                        <Label htmlFor="betes">BETES (S/N)</Label>
-                        <Select value={formData.betes} onValueChange={(val) => setFormData({...formData, betes: val as 'S' | 'N'})}>
+                        <Label htmlFor="setes">SETES (S/N)</Label>
+                        <Select value={formData.setes} onValueChange={(val) => setFormData({...formData, setes: val as 'S' | 'N'})}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>

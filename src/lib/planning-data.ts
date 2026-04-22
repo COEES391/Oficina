@@ -13,7 +13,7 @@ export type SupportTicket = {
   alumnosBeneficiados: number;
   numeroEquipos: number;
   materialUtilizado: string;
-  betes: 'S' | 'N';
+  setes: 'S' | 'N';
   observaciones: string;
   descripcionEquipo: string;
   fechaEntrada: string;
@@ -39,7 +39,7 @@ export const supportData: SupportTicket[] = [
     alumnosBeneficiados: 450,
     numeroEquipos: 15,
     materialUtilizado: 'Cable UTP Cat6, Conectores RJ45',
-    betes: 'S',
+    setes: 'S',
     observaciones: 'Pendiente configuración de switch',
     descripcionEquipo: 'Servidor Dell PowerEdge y 14 terminales',
     fechaEntrada: '2024-05-20',
