@@ -109,6 +109,7 @@ export default function SupportPage() {
         return
       }
       newPhotos.forEach(file => {
+        const reader = new FileReader()
         reader.onloadend = () => {
           setFormData(prev => ({
             ...prev,
@@ -303,7 +304,7 @@ export default function SupportPage() {
                 <TableHead className="font-black text-[10px] uppercase">Folio</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">CCT / Plantel</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">Servicio</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Estatus (Semáforo)</TableHead>
+                <TableHead className="font-black text-[10px] uppercase">ESTATUS</TableHead>
                 <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
                 <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
               </TableRow>
