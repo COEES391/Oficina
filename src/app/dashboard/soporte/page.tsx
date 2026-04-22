@@ -23,7 +23,8 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   
-  const initialFormState: Omit<SupportTicket, 'id' | 'status'> = {
+  const initialFormState: Omit<SupportTicket, 'status'> = {
+    id: '',
     cct: '',
     schoolName: '',
     zonaEscolar: '',
@@ -104,18 +105,27 @@ export default function SupportPage() {
   }
 
   const handleSave = () => {
-    if (!formData.cct || !formData.schoolName) {
+    if (!formData.id || !formData.cct || !formData.schoolName) {
       toast({
         variant: "destructive",
         title: "Campos incompletos",
-        description: "El CCT y el Nombre de la Escuela son obligatorios.",
+        description: "El Folio, CCT y el Nombre de la Escuela son obligatorios.",
+      })
+      return
+    }
+
+    // Verificar si el folio ya existe
+    if (tickets.some(t => t.id === formData.id)) {
+      toast({
+        variant: "destructive",
+        title: "Folio duplicado",
+        description: "Este número de folio ya ha sido registrado anteriormente.",
       })
       return
     }
 
     const newTicket: SupportTicket = {
       ...formData,
-      id: `S${Math.floor(1000 + Math.random() * 9000)}`,
       status: 'pendiente',
       responsables: formData.responsables.filter(r => r.trim() !== ''),
     }
@@ -206,6 +216,33 @@ export default function SupportPage() {
               </DialogHeader>
               <ScrollArea className="flex-1 px-6">
                 <div className="grid gap-6 py-4">
+                  {/* Sección 0: Identificación Oficial */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
+                      <FileText className="h-4 w-4" /> Identificación del Reporte
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="folio" className="text-primary font-bold">No. de Folio</Label>
+                        <Input 
+                          id="folio" 
+                          placeholder="Ejem: S-2024-001"
+                          className="border-primary/50 focus:border-primary uppercase font-bold"
+                          value={formData.id} 
+                          onChange={(e) => setFormData({...formData, id: e.target.value.toUpperCase()})} 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="oficio">No. de Oficio</Label>
+                        <Input id="oficio" value={formData.numeroOficio} onChange={(e) => setFormData({...formData, numeroOficio: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="fechaEntrada">Fecha de Entrada</Label>
+                        <Input type="date" id="fechaEntrada" value={formData.fechaEntrada} onChange={(e) => setFormData({...formData, fechaEntrada: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Sección 1: Datos del Centro de Trabajo */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
@@ -270,10 +307,6 @@ export default function SupportPage() {
                       <Monitor className="h-4 w-4" /> Detalles Técnicos
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="oficio">No. de Oficio</Label>
-                        <Input id="oficio" value={formData.numeroOficio} onChange={(e) => setFormData({...formData, numeroOficio: e.target.value})} />
-                      </div>
                       <div className="space-y-1">
                         <Label htmlFor="alumnos">Alumnos Beneficiados</Label>
                         <Input type="number" id="alumnos" value={formData.alumnosBeneficiados} onChange={(e) => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
@@ -379,7 +412,7 @@ export default function SupportPage() {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead className="w-[100px]">Folio</TableHead>
+                  <TableHead className="w-[120px]">Folio</TableHead>
                   <TableHead className="w-[110px]">C.C.T.</TableHead>
                   <TableHead>Escuela</TableHead>
                   <TableHead>Municipio</TableHead>
