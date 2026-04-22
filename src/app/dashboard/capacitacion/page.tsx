@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Search, Plus } from "lucide-react"
+import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 
@@ -21,6 +20,7 @@ type AssistantEntry = {
   materno: string;
   nombres: string;
   rfc: string;
+  genero: 'MASCULINO' | 'FEMENINO' | '';
   funcion: string;
   email: string;
   cct: string;
@@ -56,7 +56,7 @@ export default function TrainingPage() {
 
   const [courseData, setCourseData] = useState(initialCourseData)
   const [assistants, setAssistants] = useState<AssistantEntry[]>([
-    { paterno: '', materno: '', nombres: '', rfc: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
+    { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
   ])
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function TrainingPage() {
   }, [])
 
   const handleAddRow = () => {
-    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
   }
 
   const handleRemoveRow = (index: number) => {
@@ -115,11 +115,12 @@ export default function TrainingPage() {
 
     const newRecords: TrainingRecord[] = validAssistants.map((ast, idx) => ({
       ...courseData,
-      id: `${courseData.id}-${idx}-${Date.now()}`,
+      id: editingId ? (editingId.includes('-') ? editingId.split('-')[0] + `-${idx}-${Date.now()}` : `${editingId}-${idx}-${Date.now()}`) : `${courseData.id}-${idx}-${Date.now()}`,
       asistentePaterno: ast.paterno,
       asistenteMaterno: ast.materno,
       asistenteNombres: ast.nombres,
       asistenteRFC: ast.rfc.toUpperCase(),
+      asistenteGenero: ast.genero,
       asistenteFuncion: ast.funcion,
       asistenteEmail: ast.email,
       asistenteCCT: ast.cct.toUpperCase(),
@@ -133,7 +134,14 @@ export default function TrainingPage() {
       evidencePhotos: [],
     }))
 
-    const updated = [...newRecords, ...records]
+    let updated;
+    if (editingId) {
+      // For simplicity, we replace or append. In a real scenario we'd match the course ID.
+      updated = [...newRecords, ...records.filter(r => !r.id.startsWith(editingId.split('-')[0]))]
+    } else {
+      updated = [...newRecords, ...records]
+    }
+
     setRecords(updated)
     localStorage.setItem('training_records_full', JSON.stringify(updated))
     setIsDialogOpen(false)
@@ -143,7 +151,7 @@ export default function TrainingPage() {
 
   const resetForm = () => {
     setCourseData(initialCourseData)
-    setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+    setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
     setEditingId(null)
   }
 
@@ -162,11 +170,33 @@ export default function TrainingPage() {
       setes: record.setes,
       observaciones: record.observaciones,
     })
-    setAssistants([{
+    
+    // Get all assistants for this specific course folio
+    const folio = record.id.split('-')[0];
+    const relatedAssistants = records.filter(r => r.id.startsWith(folio)).map(r => ({
+      paterno: r.asistentePaterno,
+      materno: r.asistenteMaterno,
+      nombres: r.asistenteNombres,
+      rfc: r.asistenteRFC,
+      genero: (r.asistenteGenero || '') as 'MASCULINO' | 'FEMENINO' | '',
+      funcion: r.asistenteFuncion,
+      email: r.asistenteEmail,
+      cct: r.asistenteCCT,
+      nombreCT: r.asistenteNombreCT,
+      ze: r.asistenteZE,
+      sector: r.asistenteSector,
+      modalidad: r.asistenteModalidad,
+      municipio: r.asistenteMunicipio,
+      region: r.asistenteRegion,
+      valle: r.asistenteValle,
+    }));
+
+    setAssistants(relatedAssistants.length > 0 ? relatedAssistants : [{
       paterno: record.asistentePaterno,
       materno: record.asistenteMaterno,
       nombres: record.asistenteNombres,
       rfc: record.asistenteRFC,
+      genero: (record.asistenteGenero || '') as 'MASCULINO' | 'FEMENINO' | '',
       funcion: record.asistenteFuncion,
       email: record.asistenteEmail,
       cct: record.asistenteCCT,
@@ -177,7 +207,8 @@ export default function TrainingPage() {
       municipio: record.asistenteMunicipio,
       region: record.asistenteRegion,
       valle: record.asistenteValle,
-    }])
+    }]);
+
     setEditingId(record.id)
     setIsDialogOpen(true)
   }
@@ -254,7 +285,7 @@ export default function TrainingPage() {
                     <div className="flex justify-between items-center mb-4">
                       <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                        <p className="text-[10px] font-bold text-blue-800 uppercase">Captura directa: Al ingresar los 10 dígitos del CCT, los datos geográficos se llenarán automáticamente.</p>
+                        <p className="text-[10px] font-bold text-blue-800 uppercase">Captura directa: Al ingresar el CCT, los datos se cargarán por automático.</p>
                       </div>
                       <Button variant="outline" size="sm" onClick={handleAddRow} className="gap-2 font-black uppercase text-[10px] border-primary text-primary hover:bg-primary/5">
                         <Plus className="h-4 w-4" /> Añadir Fila
@@ -265,11 +296,12 @@ export default function TrainingPage() {
                       <Table>
                         <TableHeader className="bg-slate-100">
                           <TableRow>
-                            <TableHead className="w-10"></TableHead>
+                            <TableHead className="w-10 text-[10px] font-black uppercase">#</TableHead>
                             <TableHead className="text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">RFC / Función</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">CCT Plantel (10 dígitos)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Información Geográfica (Auto)</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">RFC</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">Función</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">Género</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">CCT Plantel</TableHead>
                             <TableHead className="w-10"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -285,30 +317,32 @@ export default function TrainingPage() {
                                 </div>
                               </TableCell>
                               <TableCell className="p-2">
+                                <Input placeholder="RFC" className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input placeholder="Función" className="h-8 text-[10px]" value={ast.funcion} onChange={e => updateAssistant(idx, 'funcion', e.target.value)} />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Select value={ast.genero} onValueChange={(val: any) => updateAssistant(idx, 'genero', val)}>
+                                  <SelectTrigger className="h-8 text-[10px] border-primary/20">
+                                    <SelectValue placeholder="Género" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="MASCULINO">MASCULINO</SelectItem>
+                                    <SelectItem value="FEMENINO">FEMENINO</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2">
                                 <div className="space-y-1">
-                                  <Input placeholder="RFC" className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} />
-                                  <Input placeholder="Función" className="h-8 text-[10px]" value={ast.funcion} onChange={e => updateAssistant(idx, 'funcion', e.target.value)} />
-                                  <Input placeholder="Email" className="h-8 text-[10px]" type="email" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value)} />
-                                </div>
-                              </TableCell>
-                              <TableCell className="p-2">
-                                <Input placeholder="15DESXXXXX" className="h-10 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                              </TableCell>
-                              <TableCell className="p-2">
-                                {ast.nombreCT ? (
-                                  <div className="space-y-1 p-2 bg-emerald-50 rounded border border-emerald-100 min-w-[200px]">
-                                    <p className="text-[9px] font-black text-emerald-800 uppercase truncate">{ast.nombreCT}</p>
-                                    <div className="flex gap-2">
-                                      <span className="text-[8px] font-bold text-emerald-600 bg-white px-1 border border-emerald-100">ZE: {ast.ze}</span>
-                                      <span className="text-[8px] font-bold text-emerald-600 bg-white px-1 border border-emerald-100">SEC: {ast.sector}</span>
+                                  <Input placeholder="15DESXXXXX" className="h-8 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                  {ast.nombreCT && (
+                                    <div className="flex items-center gap-1 p-1 bg-emerald-50 rounded border border-emerald-100">
+                                      <School className="h-3 w-3 text-emerald-600" />
+                                      <span className="text-[8px] font-black text-emerald-800 uppercase truncate max-w-[120px]">{ast.nombreCT}</span>
                                     </div>
-                                    <p className="text-[8px] font-medium text-emerald-600 truncate">{ast.municipio}, {ast.region}</p>
-                                  </div>
-                                ) : (
-                                  <div className="p-2 bg-slate-50 rounded border border-dashed flex items-center justify-center min-h-[60px]">
-                                    <span className="text-[9px] text-muted-foreground uppercase font-bold italic">Esperando CCT...</span>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="p-2">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveRow(idx)} disabled={assistants.length === 1}>
@@ -357,6 +391,7 @@ export default function TrainingPage() {
                   <TableHead className="font-black text-[10px] uppercase">Curso / Grupo</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">Asistente Capacitado</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">RFC</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">Género</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">Plantel de Origen</TableHead>
                   <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
                 </TableRow>
@@ -375,6 +410,7 @@ export default function TrainingPage() {
                       {record.asistenteNombres} {record.asistentePaterno} {record.asistenteMaterno}
                     </TableCell>
                     <TableCell className="font-mono text-xs uppercase text-muted-foreground">{record.asistenteRFC}</TableCell>
+                    <TableCell className="text-[10px] font-bold uppercase">{record.asistenteGenero || '-'}</TableCell>
                     <TableCell className="text-[10px] font-bold">
                        <div className="flex flex-col">
                           <span>{record.asistenteCCT}</span>
@@ -389,7 +425,7 @@ export default function TrainingPage() {
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-20 bg-slate-50/20">
+                    <TableCell colSpan={7} className="text-center py-20 bg-slate-50/20">
                       <div className="flex flex-col items-center gap-2 opacity-50">
                         <GraduationCap className="h-10 w-10 text-primary" />
                         <p className="font-black text-xs uppercase">Sin registros de capacitación disponibles.</p>

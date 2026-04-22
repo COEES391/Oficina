@@ -42,6 +42,7 @@ export type TrainingRecord = {
   asistenteMaterno: string;
   asistenteNombres: string;
   asistenteRFC: string;
+  asistenteGenero?: 'MASCULINO' | 'FEMENINO' | '';
   asistenteFuncion: string;
   asistenteEmail: string;
   asistenteCCT: string;
