@@ -7,6 +7,7 @@ export type SupportTicket = {
   issue: 'Red Local' | 'Instalación de Red Local' | 'Red Edusat' | 'Mantenimiento Preventivo' | 'Mantenimiento Correctivo';
   status: 'pendiente' | 'en proceso' | 'resuelto';
   date: string;
+  technician?: string;
 };
 
 export type TrainingSession = {
@@ -33,7 +34,8 @@ export const supportData: SupportTicket[] = [
     school: 'Secundaria Fed. 1', 
     issue: 'Red Local', 
     status: 'pendiente', 
-    date: '2024-05-20' 
+    date: '2024-05-20',
+    technician: 'Pendiente de asignar'
   },
   { 
     id: 'S002', 
@@ -43,7 +45,8 @@ export const supportData: SupportTicket[] = [
     school: 'Secundaria Tec. 15', 
     issue: 'Mantenimiento Correctivo', 
     status: 'resuelto', 
-    date: '2024-05-18' 
+    date: '2024-05-18',
+    technician: 'Ing. Carlos Ruiz'
   },
 ];
 

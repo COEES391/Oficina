@@ -23,6 +23,7 @@ export default function SupportPage() {
     zona: '',
     school: '',
     issue: '' as SupportTicket['issue'] | '',
+    technician: '',
   })
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function SupportPage() {
       toast({
         variant: "destructive",
         title: "Campos incompletos",
-        description: "Por favor llena todos los campos del reporte.",
+        description: "Por favor llena todos los campos obligatorios del reporte.",
       })
       return
     }
@@ -54,13 +55,14 @@ export default function SupportPage() {
       issue: formData.issue as SupportTicket['issue'],
       status: 'pendiente',
       date: format(new Date(), 'yyyy-MM-dd'),
+      technician: formData.technician || 'No asignado',
     }
 
     const updated = [newTicket, ...tickets]
     setTickets(updated)
     localStorage.setItem('support_tickets', JSON.stringify(updated))
     setIsDialogOpen(false)
-    setFormData({ cct: '', sector: '', zona: '', school: '', issue: '' })
+    setFormData({ cct: '', sector: '', zona: '', school: '', issue: '', technician: '' })
     
     toast({
       title: "Reporte registrado",
@@ -72,8 +74,8 @@ export default function SupportPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Soporte Técnico</h2>
-          <p className="text-muted-foreground">Gestión de incidencias y mantenimiento tecnológico.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-primary">Soporte Técnico</h2>
+          <p className="text-muted-foreground">Gestión de incidencias y mantenimiento tecnológico de planteles.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -85,7 +87,7 @@ export default function SupportPage() {
             <DialogHeader>
               <DialogTitle>Registrar Incidencia</DialogTitle>
               <DialogDescription>
-                Ingresa los datos del plantel y el tipo de soporte requerido.
+                Ingresa los datos del plantel y el personal técnico asignado.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -140,9 +142,18 @@ export default function SupportPage() {
                     <SelectItem value="Instalación de Red Local">Instalación de Red Local</SelectItem>
                     <SelectItem value="Red Edusat">Red Edusat</SelectItem>
                     <SelectItem value="Mantenimiento Preventivo">Mantenimiento Equipo de Cómputo (Preventivo)</SelectItem>
-                    <SelectItem value="Mantenimiento Corrective">Mantenimiento Equipo de Cómputo (Correctivo)</SelectItem>
+                    <SelectItem value="Mantenimiento Correctivo">Mantenimiento Equipo de Cómputo (Correctivo)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="technician">Técnico(s) que atendieron</Label>
+                <Input 
+                  id="technician" 
+                  placeholder="Nombre del personal técnico" 
+                  value={formData.technician} 
+                  onChange={(e) => setFormData({...formData, technician: e.target.value})}
+                />
               </div>
             </div>
             <DialogFooter>
@@ -159,7 +170,7 @@ export default function SupportPage() {
             <LifeBuoy className="h-5 w-5 text-primary" />
             <CardTitle>Historial de Movimientos</CardTitle>
           </div>
-          <CardDescription>Seguimiento detallado por CCT, Sector y Zona.</CardDescription>
+          <CardDescription>Seguimiento detallado por plantel y personal técnico.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -170,6 +181,7 @@ export default function SupportPage() {
                 <TableHead>Sec/Zona</TableHead>
                 <TableHead>Escuela</TableHead>
                 <TableHead>Incidencia</TableHead>
+                <TableHead>Técnico</TableHead>
                 <TableHead>Estatus</TableHead>
                 <TableHead>Fecha</TableHead>
               </TableRow>
@@ -182,6 +194,7 @@ export default function SupportPage() {
                   <TableCell>{ticket.sector} / {ticket.zona}</TableCell>
                   <TableCell className="max-w-[150px] truncate" title={ticket.school}>{ticket.school}</TableCell>
                   <TableCell className="text-xs font-medium">{ticket.issue}</TableCell>
+                  <TableCell className="text-xs">{ticket.technician || 'No asignado'}</TableCell>
                   <TableCell>
                     <Badge variant={ticket.status === 'resuelto' ? 'default' : ticket.status === 'pendiente' ? 'destructive' : 'outline'}>
                       {ticket.status}
@@ -191,7 +204,7 @@ export default function SupportPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                     No hay registros de soporte técnico.
                   </TableCell>
                 </TableRow>
