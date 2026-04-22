@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, Image as ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, Image as ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -76,6 +76,17 @@ export default function SupportPage() {
     }
   }, [])
 
+  // Auto-lookup when typing CCT
+  useEffect(() => {
+    if (searchTerm.length === 10) {
+      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === searchTerm.toUpperCase());
+      if (match) {
+        handleSelectSchool(match.cct);
+        setSearchTerm(''); // Clear search term after auto-filling
+      }
+    }
+  }, [searchTerm]);
+
   const handleSelectSchool = (cct: string) => {
     const school = schoolsDirectory.find(s => s.cct === cct);
     if (school) {
@@ -91,8 +102,8 @@ export default function SupportPage() {
         valle: school.valle
       });
       toast({
-        title: "Plantel seleccionado",
-        description: `Se han autocompletado los datos para ${school.nombre}`,
+        title: "Datos del Plantel Autocompletados",
+        description: `Se han configurado automáticamente: Sector ${school.sector}, Zona ${school.zonaEscolar}, Municipio ${school.municipio}, entre otros.`,
       });
     }
   }
@@ -186,6 +197,7 @@ export default function SupportPage() {
           if (!open) {
             setFormData(initialFormState);
             setEditingTicketId(null);
+            setSearchTerm('');
           }
         }}>
           <DialogTrigger asChild>
@@ -196,26 +208,76 @@ export default function SupportPage() {
               <DialogTitle className="uppercase font-black text-primary">
                 {editingTicketId ? `Editar Reporte: ${editingTicketId}` : "Nuevo Formato de Reporte Técnico"}
               </DialogTitle>
-              <DialogDescription className="font-bold text-xs">Complete todos los campos obligatorios para el seguimiento institucional.</DialogDescription>
+              <DialogDescription className="font-bold text-xs">Complete el CCT para autocompletar la información geográfica del plantel.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 px-6">
               <div className="grid gap-6 py-4">
-                <div className="p-4 bg-muted/30 rounded-lg space-y-3 border border-primary/10">
-                  <Label className="text-xs font-black uppercase">1. Búsqueda de Plantel por CCT o Nombre</Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Escribir CCT o Nombre del Plantel..." className="pl-8 bg-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                {/* School Lookup Section */}
+                <div className="p-4 bg-muted/30 rounded-lg space-y-4 border border-primary/10">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-xs font-black uppercase flex items-center gap-2">
+                      <Search className="h-4 w-4 text-primary" /> Búsqueda por CCT o Nombre del Plantel
+                    </Label>
+                    <div className="relative">
+                      <Input 
+                        placeholder="Escribir CCT (10 caracteres) para autocompletar..." 
+                        className="pl-4 bg-white font-mono uppercase" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                        maxLength={10}
+                      />
+                    </div>
                   </div>
-                  {searchTerm && (
+                  
+                  {searchTerm && searchTerm.length < 10 && (
                     <div className="max-h-40 overflow-auto bg-white border rounded shadow-lg">
-                      {schoolsDirectory.filter(s => s.nombre.toUpperCase().includes(searchTerm.toUpperCase()) || s.cct.includes(searchTerm.toUpperCase())).map(s => (
+                      {schoolsDirectory.filter(s => s.nombre.toUpperCase().includes(searchTerm.toUpperCase()) || s.cct.includes(searchTerm.toUpperCase())).slice(0, 10).map(s => (
                         <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0 flex justify-between items-center" onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}>
                           <div>
                             <span className="font-bold text-primary">{s.cct}</span> - {s.nombre}
                           </div>
-                          <Badge variant="outline" className="text-[9px]">{s.municipio}</Badge>
+                          <Badge variant="outline" className="text-[9px] uppercase">{s.municipio}</Badge>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Auto-populated fields display */}
+                  {formData.cct && (
+                    <div className="grid grid-cols-1 gap-4 animate-in fade-in duration-300">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-md border shadow-sm">
+                        <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center">
+                          <School className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-primary uppercase leading-none mb-1">Plantel Seleccionado</p>
+                          <p className="text-sm font-bold truncate max-w-[400px]">{formData.schoolName}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{formData.cct}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Sector</Label>
+                          <Input value={formData.sector} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Zona</Label>
+                          <Input value={formData.zonaEscolar} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Región</Label>
+                          <Input value={formData.region} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Municipio</Label>
+                          <Input value={formData.municipio} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Valle</Label>
+                          <Input value={formData.valle} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -291,7 +353,7 @@ export default function SupportPage() {
               </div>
             </ScrollArea>
             <DialogFooter className="p-6 border-t bg-slate-50">
-              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setEditingTicketId(null); }} className="font-bold uppercase text-xs">Cancelar</Button>
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setEditingTicketId(null); setSearchTerm(''); }} className="font-bold uppercase text-xs">Cancelar</Button>
               <Button onClick={handleSave} className="font-black uppercase text-xs px-10">
                 {editingTicketId ? "Actualizar Servicio" : "Guardar Servicio Técnico"}
               </Button>
