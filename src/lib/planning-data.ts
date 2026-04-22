@@ -9,10 +9,12 @@ export type SupportTicket = {
   region: string;
   valle: string;
   responsables: string[];
-  oficinaRegionalAtencion?: string; // Nueva propiedad
+  oficinaRegionalAtencion?: string;
   numeroOficio: string;
   alumnosBeneficiados: number;
+  docentesBeneficiados: number; // Nuevo campo
   numeroEquipos: number;
+  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'otro'; // Nuevo campo
   materialUtilizado: string;
   setes: 'S' | 'N';
   observaciones: string;
@@ -22,8 +24,8 @@ export type SupportTicket = {
   serviciosMC: number;
   serviciosMP: number;
   status: 'pendiente' | 'en proceso' | 'resuelto';
-  reportPdf?: string; // Base64 or URL
-  evidencePhotos?: string[]; // Array of Base64 or URLs
+  reportPdf?: string;
+  evidencePhotos?: string[];
 };
 
 export type TrainingRecord = {
@@ -81,52 +83,20 @@ export const supportData: SupportTicket[] = [
     oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Toluca',
     numeroOficio: 'OF-2024-001',
     alumnosBeneficiados: 450,
+    docentesBeneficiados: 25,
     numeroEquipos: 15,
-    materialUtilizado: 'Cable UTP Cat6',
+    tipoIncidencia: 'mantenimiento preventivo',
+    materialUtilizado: 'Aire comprimido, alcohol isopropílico',
     setes: 'S',
-    observaciones: 'Pendiente configuración',
-    descripcionEquipo: 'Servidor Dell',
+    observaciones: 'Limpieza física realizada',
+    descripcionEquipo: '15 Computadoras HP',
     fechaEntrada: '2024-05-20',
-    fechaSalida: '',
-    serviciosMC: 1,
-    serviciosMP: 0,
-    status: 'pendiente', 
+    fechaSalida: '2024-05-20',
+    serviciosMC: 0,
+    serviciosMP: 15,
+    status: 'resuelto', 
   },
 ];
 
-export const trainingRecords: TrainingRecord[] = [
-  {
-    id: 'C001',
-    cursoGrupo: 'Secundarias Generales',
-    cursoNombre: 'Manejo de Herramientas de Colaboración',
-    duracionHoras: 20,
-    fechaInicio: '2024-05-01',
-    fechaTermino: '2024-05-05',
-    instructores: ['Gustavo Bello', '', ''],
-    numeroOficio: 'OF-CAP-001',
-    materialUtilizado: 'Guías digitales',
-    asistentePaterno: 'García',
-    asistenteMaterno: 'López',
-    asistenteNombres: 'Juan',
-    asistenteRFC: 'GALJ800101H12',
-    asistenteFuncion: 'Docente',
-    asistenteEmail: 'juan.garcia@edomex.gob.mx',
-    asistenteCCT: '15EES0123A',
-    asistenteNombreCT: 'Sec. Ofic. 12',
-    asistenteZE: '05',
-    asistenteSector: '02',
-    asistenteModalidad: 'General',
-    asistenteMunicipio: 'Metepec',
-    asistenteRegion: 'I',
-    asistenteValle: 'Toluca',
-    cctSede: '15EES0001Z',
-    setes: 'S',
-    observaciones: 'Participación destacada',
-  }
-];
-
-export const programsData: ProgramStatus[] = [
-  { id: 'P001', name: 'Conectividad Escolar 2024', progress: 75, status: 'activo' },
-  { id: 'P002', name: 'Renovación de Equipamiento', progress: 40, status: 'planeacion' },
-  { id: 'P003', name: 'Cero Rezago Digital', progress: 100, status: 'concluido' },
-];
+export const trainingRecords: TrainingRecord[] = [];
+export const programsData: ProgramStatus[] = [];
