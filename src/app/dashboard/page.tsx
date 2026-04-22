@@ -167,7 +167,7 @@ export default function DashboardPage() {
                 <SelectValue placeholder="Seleccionar Municipio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los Municipios</SelectItem>
+                <SelectItem value="all">Todos los Municipios ({filterOptions.municipios.length})</SelectItem>
                 {filterOptions.municipios.map(m => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
