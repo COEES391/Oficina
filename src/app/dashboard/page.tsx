@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
-  const [cctFilter, setCctFilter] = useState('all')
+  const [cctFilter, setCctFilter] = useState('')
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
@@ -72,15 +72,8 @@ export default function DashboardPage() {
     
     const municipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
     
-    // 4. CCTs según Valle, Modalidad y Municipio seleccionados
-    const listByMunicipio = municipioFilter === 'all'
-      ? listByModalidad
-      : listByModalidad.filter(s => s.municipio.toUpperCase() === municipioFilter.toUpperCase());
-
-    const ccts = listByMunicipio.map(s => s.cct).sort();
-    
-    return { valles, modalidades, municipios, ccts };
-  }, [valleFilter, modalidadFilter, municipioFilter]);
+    return { valles, modalidades, municipios };
+  }, [valleFilter, modalidadFilter]);
 
   // Resetear filtros dependientes si dejan de ser válidos al cambiar el padre
   useEffect(() => {
@@ -90,10 +83,7 @@ export default function DashboardPage() {
     if (municipioFilter !== 'all' && !filterOptions.municipios.includes(municipioFilter)) {
       setMunicipioFilter('all');
     }
-    if (cctFilter !== 'all' && !filterOptions.ccts.includes(cctFilter)) {
-      setCctFilter('all');
-    }
-  }, [filterOptions.modalidades, filterOptions.municipios, filterOptions.ccts, modalidadFilter, municipioFilter, cctFilter]);
+  }, [filterOptions.modalidades, filterOptions.municipios, modalidadFilter, municipioFilter]);
 
   // Datos filtrados para el informe ejecutivo
   const filteredTickets = useMemo(() => {
@@ -101,7 +91,7 @@ export default function DashboardPage() {
       const matchValle = valleFilter === 'all' || t.valle.toUpperCase() === valleFilter.toUpperCase();
       const matchMunicipio = municipioFilter === 'all' || t.municipio.toUpperCase() === municipioFilter.toUpperCase();
       const matchModalidad = modalidadFilter === 'all' || t.modalidad.toUpperCase() === modalidadFilter.toUpperCase();
-      const matchCCT = cctFilter === 'all' || t.cct.toUpperCase() === cctFilter.toUpperCase();
+      const matchCCT = cctFilter === '' || t.cct.toUpperCase().includes(cctFilter.toUpperCase());
       return matchValle && matchMunicipio && matchModalidad && matchCCT;
     });
   }, [tickets, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
@@ -133,11 +123,18 @@ export default function DashboardPage() {
     const stats: { modalidad: string, valle: string, total: number, atendidos: number }[] = [];
 
     allModalities.forEach(mod => {
-      ['MEXICO', 'TOLUCA'].forEach(valle => {
-        const total = schoolsDirectory.filter(s => s.modalidad === mod && s.valle.toUpperCase() === valle).length;
+      ['MEXICO', 'TOLUCA', 'M', 'T'].forEach(valleRaw => {
+        const valleLabel = (valleRaw === 'M' || valleRaw === 'MEXICO') ? 'MEXICO' : 'TOLUCA';
+        const total = schoolsDirectory.filter(s => s.modalidad === mod && (s.valle === valleRaw || s.valle === valleLabel)).length;
         if (total > 0) {
-          const atendidos = tickets.filter(t => t.modalidad === mod && t.valle.toUpperCase() === valle).length;
-          stats.push({ modalidad: mod, valle, total, atendidos });
+          const atendidos = tickets.filter(t => t.modalidad === mod && (t.valle.toUpperCase() === valleLabel || t.valle.toUpperCase() === valleRaw)).length;
+          // Evitar duplicados en el renderizado final si ya existe la combinación modalidad-valleLabel
+          const existingIdx = stats.findIndex(s => s.modalidad === mod && s.valle === valleLabel);
+          if (existingIdx >= 0) {
+             stats[existingIdx].total += total;
+          } else {
+             stats.push({ modalidad: mod, valle: valleLabel, total, atendidos });
+          }
         }
       });
     });
@@ -147,7 +144,7 @@ export default function DashboardPage() {
   const clearFilters = () => {
     setValleFilter('all');
     setMunicipioFilter('all');
-    setCctFilter('all');
+    setCctFilter('');
     setModalidadFilter('all');
   };
 
@@ -175,7 +172,7 @@ export default function DashboardPage() {
               <SelectContent>
                 <SelectItem value="all">Valles (Todos)</SelectItem>
                 {filterOptions.valles.map(v => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                  <SelectItem key={v} value={v}>{v === 'T' ? 'TOLUCA' : v === 'M' ? 'MÉXICO' : v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -204,17 +201,12 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
-            <Select value={cctFilter} onValueChange={setCctFilter}>
-              <SelectTrigger className="h-9 text-xs w-[200px] bg-white border-primary/20 font-mono">
-                <SelectValue placeholder="Seleccionar CCT" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                <SelectItem value="all">CCT (Todas - {filterOptions.ccts.length})</SelectItem>
-                {filterOptions.ccts.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input 
+              placeholder="Escribir CCT..." 
+              className="h-9 text-xs w-[180px] bg-white border-primary/20 font-mono uppercase"
+              value={cctFilter}
+              onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
+            />
 
             <Button variant="outline" size="sm" className="h-9 px-3 text-[10px] font-black bg-white" onClick={clearFilters}>
               <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
