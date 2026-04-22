@@ -54,32 +54,32 @@ export default function DashboardPage() {
 
   // Opciones de filtros dinámicas basadas en el catálogo
   const filterOptions = useMemo(() => {
-    // Lista de modalidades únicas del catálogo
-    const uniqueModalidades = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
+    // 1. Modalidades únicas
+    const modalidades = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
     
-    // Filtrar catálogo por modalidad para obtener municipios válidos
+    // 2. Municipios disponibles según la modalidad seleccionada
     const listByModalidad = modalidadFilter === 'all' 
       ? schoolsDirectory 
       : schoolsDirectory.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
     
-    const uniqueMunicipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
+    const municipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
     
-    // Filtrar catálogo por municipio para obtener CCTs válidos
+    // 3. CCTs disponibles según modalidad y municipio seleccionados
     const listByMunicipio = municipioFilter === 'all'
       ? listByModalidad
       : listByModalidad.filter(s => s.municipio.toUpperCase() === municipioFilter.toUpperCase());
 
-    const uniqueCCTs = Array.from(new Set(listByMunicipio.map(s => s.cct))).sort();
+    const ccts = listByMunicipio.map(s => s.cct).sort();
     
-    return { modalidades: uniqueModalidades, municipios: uniqueMunicipios, ccts: uniqueCCTs };
-  }, [municipioFilter, modalidadFilter]);
+    return { modalidades, municipios, ccts };
+  }, [modalidadFilter, municipioFilter]);
 
-  // Resetear filtros dependientes si dejan de ser válidos
+  // Resetear filtros dependientes si dejan de ser válidos al cambiar el padre
   useEffect(() => {
-    if (municipioFilter !== 'all' && !filterOptions.municipios.some(m => m.toUpperCase() === municipioFilter.toUpperCase())) {
+    if (municipioFilter !== 'all' && !filterOptions.municipios.includes(municipioFilter)) {
       setMunicipioFilter('all');
     }
-    if (cctFilter !== 'all' && !filterOptions.ccts.some(c => c.toUpperCase() === cctFilter.toUpperCase())) {
+    if (cctFilter !== 'all' && !filterOptions.ccts.includes(cctFilter)) {
       setCctFilter('all');
     }
   }, [filterOptions.municipios, filterOptions.ccts, municipioFilter, cctFilter]);
@@ -93,22 +93,6 @@ export default function DashboardPage() {
       return matchMunicipio && matchModalidad && matchCCT;
     });
   }, [tickets, municipioFilter, modalidadFilter, cctFilter]);
-
-  // Universo calculado dinámicamente desde el catálogo completo
-  const UNIVERSE_STATS = useMemo(() => {
-    const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
-    const results: { modalidad: string, valle: string, total: number }[] = [];
-    
-    allModalities.forEach(mod => {
-      ['MEXICO', 'TOLUCA'].forEach(valle => {
-        const count = schoolsDirectory.filter(s => s.modalidad === mod && s.valle === valle).length;
-        if (count > 0) {
-          results.push({ modalidad: mod, valle, total: count });
-        }
-      });
-    });
-    return results;
-  }, []);
 
   // Estadísticas del Informe Ejecutivo
   const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
@@ -131,12 +115,22 @@ export default function DashboardPage() {
     { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
   ]
 
-  const getAtendidos = (modalidad: string, valle: string) => {
-    return tickets.filter(t => 
-      t.modalidad.toUpperCase() === modalidad.toUpperCase() && 
-      t.valle.toUpperCase() === valle.toUpperCase()
-    ).length;
-  };
+  // Universo de atención dinámico basado en el catálogo actual
+  const UNIVERSE_STATS = useMemo(() => {
+    const allModalities = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
+    const stats: { modalidad: string, valle: string, total: number, atendidos: number }[] = [];
+
+    allModalities.forEach(mod => {
+      ['MEXICO', 'TOLUCA'].forEach(valle => {
+        const total = schoolsDirectory.filter(s => s.modalidad === mod && s.valle === valle).length;
+        if (total > 0) {
+          const atendidos = tickets.filter(t => t.modalidad === mod && t.valle.toUpperCase() === valle).length;
+          stats.push({ modalidad: mod, valle, total, atendidos });
+        }
+      });
+    });
+    return stats;
+  }, [tickets]);
 
   const clearFilters = () => {
     setMunicipioFilter('all');
@@ -148,9 +142,9 @@ export default function DashboardPage() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Informe Ejecutivo: Soporte Técnico</h2>
+          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Informe Ejecutivo de Soporte</h2>
           <p className="text-muted-foreground font-bold text-xs tracking-widest uppercase">
-            Oficina de Planeación • Operatividad y Cobertura Estatal
+            Oficina de Planeación • Cobertura y Operatividad
           </p>
         </div>
         
@@ -166,7 +160,7 @@ export default function DashboardPage() {
                 <SelectValue placeholder="Modalidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Modalidad (Todas)</SelectItem>
+                <SelectItem value="all">Todas las Modalidades</SelectItem>
                 {filterOptions.modalidades.map(m => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
@@ -174,11 +168,11 @@ export default function DashboardPage() {
             </Select>
 
             <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
-              <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20">
+              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
                 <SelectValue placeholder="Municipio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Municipio ({filterOptions.municipios.length})</SelectItem>
+                <SelectItem value="all">Municipio (Todos)</SelectItem>
                 {filterOptions.municipios.map(m => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
@@ -186,11 +180,11 @@ export default function DashboardPage() {
             </Select>
 
             <Select value={cctFilter} onValueChange={setCctFilter}>
-              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20 font-mono">
+              <SelectTrigger className="h-9 text-xs w-[200px] bg-white border-primary/20 font-mono">
                 <SelectValue placeholder="Seleccionar CCT" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">CCT ({filterOptions.ccts.length})</SelectItem>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="all">CCT (Todas - {filterOptions.ccts.length})</SelectItem>
                 {filterOptions.ccts.map(c => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
@@ -230,22 +224,22 @@ export default function DashboardPage() {
         <Card className="shadow-sm border-l-4 border-l-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Estudiantil</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Alumnos</span>
               <Users className="h-5 w-5 text-purple-500" />
             </div>
             <div className="text-2xl font-black">{totalAlumnos.toLocaleString()}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Alumnos Beneficiados</p>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Beneficiados</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-l-4 border-l-orange-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Docente</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Docentes</span>
               <CheckCircle2 className="h-5 w-5 text-orange-500" />
             </div>
             <div className="text-2xl font-black">{totalDocentes.toLocaleString()}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Docentes Atendidos</p>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Atendidos</p>
           </CardContent>
         </Card>
       </div>
@@ -255,8 +249,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-black uppercase">Universo de Atención Dinámico por Modalidad y Valle</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional Basada en el Catálogo Extendido</CardDescription>
+              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura de Atención</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase">Análisis Dinámico Basado en el Catálogo de la Oficina</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -269,27 +263,26 @@ export default function DashboardPage() {
                     <TableHead className="font-black text-xs uppercase">Modalidad</TableHead>
                     <TableHead className="font-black text-xs uppercase">Valle</TableHead>
                     <TableHead className="font-black text-xs uppercase text-center">Universo CCT</TableHead>
-                    <TableHead className="font-black text-xs uppercase text-center">Atendidos</TableHead>
+                    <TableHead className="font-black text-xs uppercase text-center">Atendidas</TableHead>
                     <TableHead className="font-black text-xs uppercase w-[150px]">Avance (%)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {UNIVERSE_STATS.map((row, idx) => {
-                    const atendidos = getAtendidos(row.modalidad, row.valle);
-                    const percent = row.total > 0 ? Math.min(Math.round((atendidos / row.total) * 100), 100) : 0;
+                    const percent = row.total > 0 ? Math.min(Math.round((row.atendidos / row.total) * 100), 100) : 0;
                     return (
                       <TableRow key={idx} className="hover:bg-slate-50/50">
                         <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
                         <TableCell className="text-xs font-medium">{row.valle}</TableCell>
                         <TableCell className="text-center font-black">{row.total}</TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={atendidos > 0 ? "default" : "outline"} className="font-mono">{atendidos}</Badge>
+                          <Badge variant={row.atendidos > 0 ? "default" : "outline"} className="font-mono">{row.atendidos}</Badge>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex justify-between text-[10px] font-bold">
                               <span>{percent}%</span>
-                              <span className="text-muted-foreground">{atendidos}/{row.total}</span>
+                              <span className="text-muted-foreground">{row.atendidos}/{row.total}</span>
                             </div>
                             <Progress value={percent} className="h-1.5" />
                           </div>
@@ -304,7 +297,7 @@ export default function DashboardPage() {
                     <TableCell>
                       <div className="space-y-1">
                          <div className="flex justify-between text-[10px]">
-                            <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Cobertura</span>
+                            <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Global</span>
                          </div>
                          <Progress value={(tickets.length / schoolsDirectory.length) * 100} className="h-2" />
                       </div>
@@ -316,7 +309,7 @@ export default function DashboardPage() {
             
             <div className="lg:col-span-2 p-6 bg-slate-50/30">
               <h4 className="text-sm font-black uppercase mb-4 flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-primary" /> Eficiencia por Tipo de Servicio
+                <LayoutGrid className="h-4 w-4 text-primary" /> Eficiencia por Servicio
               </h4>
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -350,7 +343,7 @@ export default function DashboardPage() {
         <CardContent className="p-6 space-y-4">
           <div className="flex gap-2">
             <Input 
-              placeholder="Ingrese CCT (ejem: 15EES0001Z)" 
+              placeholder="Ingrese CCT para buscar evidencias..." 
               value={cctSearch} 
               onChange={e => setCctSearch(e.target.value.toUpperCase())}
               className="uppercase font-mono border-2 focus:border-primary h-11"
@@ -377,21 +370,6 @@ export default function DashboardPage() {
                       <h4 className="font-black text-xs text-primary truncate uppercase">{item.cct}</h4>
                       <p className="text-[10px] font-bold truncate text-muted-foreground uppercase">{item.schoolName}</p>
                     </div>
-                    <div className="flex items-center gap-2 pt-2">
-                      <div className="flex -space-x-2">
-                        {item.reportPdf && (
-                          <div className="h-6 w-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center" title="PDF Disponible">
-                            <FileText className="h-3 w-3 text-blue-600" />
-                          </div>
-                        )}
-                        {item.evidencePhotos && item.evidencePhotos.length > 0 && (
-                          <div className="h-6 w-6 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center" title={`${item.evidencePhotos.length} Fotos`}>
-                            <ImageIcon className="h-3 w-3 text-emerald-600" />
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Expediente Digital</span>
-                    </div>
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase mt-2 group-hover:bg-primary group-hover:text-white">
@@ -402,7 +380,7 @@ export default function DashboardPage() {
                         <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
                           <DialogTitle className="uppercase font-black flex items-center gap-2">
                             <FileText className="h-5 w-5 text-primary" /> 
-                            Expediente: {item.id} - {item.cct}
+                            Expediente Digital: {item.id}
                           </DialogTitle>
                         </DialogHeader>
                         <div className="flex-1 overflow-auto px-8 py-6 space-y-8">
@@ -414,7 +392,7 @@ export default function DashboardPage() {
                           )}
                           {item.evidencePhotos && item.evidencePhotos.length > 0 && (
                             <div className="space-y-3 pb-8">
-                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Galería Fotográfica de Campo</h4>
+                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Galería Fotográfica</h4>
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {item.evidencePhotos.map((foto, fIdx) => (
                                   <div key={fIdx} className="relative aspect-video border rounded-xl overflow-hidden shadow-md">
@@ -434,7 +412,7 @@ export default function DashboardPage() {
               <div className="col-span-full text-center py-16 border-2 border-dashed rounded-2xl bg-slate-50/50">
                 <Search className="h-10 w-10 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-400 font-bold uppercase text-sm">
-                  {cctSearch ? 'No se encontraron registros.' : 'Ingrese una CCT para consultar.'}
+                  {cctSearch ? 'No hay evidencias para este CCT.' : 'Ingrese una CCT para consultar su expediente.'}
                 </p>
               </div>
             )}
