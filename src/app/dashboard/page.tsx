@@ -15,7 +15,11 @@ import {
   RefreshCcw,
   PieChart as PieChartIcon,
   BarChart3,
-  Building2
+  Building2,
+  GraduationCap,
+  Briefcase,
+  TrendingUp,
+  Clock
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -30,7 +34,7 @@ import {
   Pie,
   Legend
 } from 'recharts'
-import { supportData, type SupportTicket } from '@/lib/planning-data'
+import { supportData, type SupportTicket, type TrainingRecord, type ProgramStatus, programsData } from '@/lib/planning-data'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,9 +44,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Image from 'next/image'
 
-// Metas del Universo según imagen proporcionada (Total 830)
 const TARGET_UNIVERSE_DATA = [
   { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
   { modalidad: 'SECUNDARIA GENERAL', valle: 'TOLUCA', total: 77, codes: ['DES', 'DSN'] },
@@ -61,11 +65,14 @@ const REGIONAL_OFFICES = [
 ];
 
 export default function DashboardPage() {
+  const [activeReport, setActiveReport] = useState('soporte')
   const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [trainings, setTrainings] = useState<TrainingRecord[]>([])
+  const [programs, setPrograms] = useState<ProgramStatus[]>([])
   const [cctSearch, setCctSearch] = useState('')
   const [filteredEvidence, setFilteredEvidence] = useState<SupportTicket[]>([])
   
-  // Filtros
+  // Filtros Globales
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
@@ -73,30 +80,26 @@ export default function DashboardPage() {
   const [cctFilter, setCctFilter] = useState('')
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
-    setTickets(stored.length > 0 ? stored : supportData)
+    const storedTickets = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
+    setTickets(storedTickets.length > 0 ? storedTickets : supportData)
+
+    const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
+    setTrainings(storedTrainings)
+
+    const storedPrograms = JSON.parse(localStorage.getItem('programs_full') || '[]')
+    setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
   }, [])
 
-  // Opciones de filtros dinámicas basadas en el catálogo con lógica en cascada
   const filterOptions = useMemo(() => {
     const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
-    
-    const listByValle = valleFilter === 'all' 
-      ? schoolsDirectory 
-      : schoolsDirectory.filter(s => s.valle.toUpperCase() === valleFilter.toUpperCase());
-    
+    const listByValle = valleFilter === 'all' ? schoolsDirectory : schoolsDirectory.filter(s => s.valle.toUpperCase() === valleFilter.toUpperCase());
     const modalidades = Array.from(new Set(listByValle.map(s => s.modalidad))).sort();
-    
-    const listByModalidad = modalidadFilter === 'all'
-      ? listByValle
-      : listByValle.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
-    
+    const listByModalidad = modalidadFilter === 'all' ? listByValle : listByValle.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
     const municipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
-    
     return { valles, modalidades, municipios };
   }, [valleFilter, modalidadFilter]);
 
-  // Datos filtrados para el informe ejecutivo
+  // Filtrado de Soporte
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || t.valle.toUpperCase() === valleFilter.toUpperCase();
@@ -108,48 +111,40 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, cctFilter]);
 
-  // Estadísticas para Gráficos
-  const stats = useMemo(() => {
-    const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
-    const totalLocal = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length
-    const totalPrev = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length
-    const totalCorr = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length
+  // Filtrado de Capacitación
+  const filteredTrainings = useMemo(() => {
+    return trainings.filter(tr => {
+      const matchValle = valleFilter === 'all' || tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase();
+      const matchMunicipio = municipioFilter === 'all' || tr.asistenteMunicipio.toUpperCase() === municipioFilter.toUpperCase();
+      const matchModalidad = modalidadFilter === 'all' || tr.asistenteModalidad.toUpperCase() === modalidadFilter.toUpperCase();
+      const matchCCT = cctFilter === '' || tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase());
+      return matchValle && matchMunicipio && matchModalidad && matchCCT;
+    });
+  }, [trainings, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
 
+  const stats = useMemo(() => {
     const resueltos = filteredTickets.filter(t => t.status === 'resuelto').length
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
 
-    const ticketsMexico = filteredTickets.filter(t => t.valle.toUpperCase() === 'MEXICO' || t.valle.toUpperCase() === 'M').length
-    const ticketsToluca = filteredTickets.filter(t => t.valle.toUpperCase() === 'TOLUCA' || t.valle.toUpperCase() === 'T').length
-
     return {
-      serviceData: [
-        { name: 'Red Edusat', value: totalEdusat, fill: '#3b82f6' },
-        { name: 'Red Local', value: totalLocal, fill: '#10b981' },
-        { name: 'M. Prev', value: totalPrev, fill: '#eab308' },
-        { name: 'M. Corr', value: totalCorr, fill: '#ef4444' },
-      ],
       statusData: [
         { name: 'Resueltos', value: resueltos, fill: '#10b981' },
         { name: 'Proceso', value: enProceso, fill: '#eab308' },
         { name: 'Pendiente', value: pendientes, fill: '#ef4444' },
       ],
-      valleData: [
-        { name: 'MÉXICO', value: ticketsMexico, fill: '#6366f1' },
-        { name: 'TOLUCA', value: ticketsToluca, fill: '#ec4899' },
+      serviceData: [
+        { name: 'Red Edusat', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length },
+        { name: 'Red Local', value: filteredTickets.filter(t => t.tipoIncidencia === 'red local').length },
+        { name: 'Mantenimiento', value: filteredTickets.filter(t => t.tipoIncidencia.includes('mantenimiento')).length },
+      ],
+      trainingByValle: [
+        { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#6366f1' },
+        { name: 'TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#ec4899' },
       ]
     }
-  }, [filteredTickets]);
+  }, [filteredTickets, filteredTrainings]);
 
-  const totalAlumnos = filteredTickets.reduce((acc, curr) => acc + (curr.alumnosBeneficiados || 0), 0)
-  const totalDocentes = filteredTickets.reduce((acc, curr) => acc + (curr.docentesBeneficiados || 0), 0)
-
-  const handleSearchEvidence = () => {
-    const results = tickets.filter(t => t.cct.toUpperCase().includes(cctSearch.toUpperCase()) && (t.reportPdf || (t.evidencePhotos && t.evidencePhotos.length > 0)))
-    setFilteredEvidence(results)
-  }
-
-  // Análisis de Cobertura basado en el Universo de 830
   const UNIVERSE_STATS = useMemo(() => {
     return TARGET_UNIVERSE_DATA.map(target => {
       const atendidas = filteredTickets.filter(t => {
@@ -158,13 +153,7 @@ export default function DashboardPage() {
         const matchModalidad = target.codes.some(code => t.modalidad.toUpperCase() === code.toUpperCase());
         return matchValle && matchModalidad;
       }).length;
-
-      return {
-        modalidad: target.modalidad,
-        valle: target.valle,
-        total: target.total,
-        atendidas: atendidas
-      };
+      return { ...target, atendidas };
     });
   }, [filteredTickets]);
 
@@ -177,34 +166,39 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Informe Ejecutivo de Soporte</h2>
-          <p className="text-muted-foreground font-bold text-xs tracking-widest uppercase">
-            Oficina de Planeación • Cobertura y Operatividad
-          </p>
+    <div className="space-y-6 pb-10">
+      {/* Header y Selector de Reporte Principal */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Centro de Mando Ejecutivo</h2>
+            <p className="text-muted-foreground font-bold text-xs tracking-widest uppercase">
+              Oficina de Planeación • Gestión de Datos e Impacto
+            </p>
+          </div>
+          
+          <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:w-auto">
+            <TabsList className="grid grid-cols-3 w-full md:w-[450px] bg-slate-200/50 p-1 h-11">
+              <TabsTrigger value="soporte" className="gap-2 text-[10px] font-black uppercase">
+                <Wrench className="h-3 w-3" /> Soporte
+              </TabsTrigger>
+              <TabsTrigger value="capacitacion" className="gap-2 text-[10px] font-black uppercase">
+                <GraduationCap className="h-3 w-3" /> Capacitación
+              </TabsTrigger>
+              <TabsTrigger value="programas" className="gap-2 text-[10px] font-black uppercase">
+                <Briefcase className="h-3 w-3" /> Programas
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        
+
+        {/* Barra de Filtros Globales */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
+              <span className="text-[10px] font-black uppercase text-primary">Filtrar Todo por:</span>
             </div>
-
-            <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
-              <SelectTrigger className="h-9 text-xs w-[200px] bg-white border-primary/20 font-bold">
-                <Building2 className="h-3 w-3 mr-2 text-primary" />
-                <SelectValue placeholder="Oficina Regional" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las Oficinas</SelectItem>
-                {REGIONAL_OFFICES.map(off => (
-                  <SelectItem key={off} value={off}>{off.replace("Oficina de ", "")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
             <Select value={valleFilter} onValueChange={setValleFilter}>
               <SelectTrigger className="h-9 text-xs w-[120px] bg-white border-primary/20">
@@ -217,7 +211,7 @@ export default function DashboardPage() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
               <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20">
                 <SelectValue placeholder="Modalidad" />
@@ -230,293 +224,258 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
+            <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
+              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+                <SelectValue placeholder="Municipio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los Municipios</SelectItem>
+                {filterOptions.municipios.map(m => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {activeReport === 'soporte' && (
+              <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
+                <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+                  <SelectValue placeholder="Oficina Regional" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las Oficinas</SelectItem>
+                  {REGIONAL_OFFICES.map(off => (
+                    <SelectItem key={off} value={off}>{off.replace("Oficina de ", "")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Input 
-              placeholder="Escribir CCT..." 
-              className="h-9 text-xs w-[150px] bg-white border-primary/20 font-mono uppercase"
+              placeholder="CCT..." 
+              className="h-9 text-xs w-[120px] bg-white border-primary/20 font-mono uppercase"
               value={cctFilter}
               onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
             />
 
-            <Button variant="outline" size="sm" className="h-9 px-3 text-[10px] font-black bg-white" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-9 px-3 text-[10px] font-black" onClick={clearFilters}>
               <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
             </Button>
           </div>
         </Card>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm border-l-4 border-l-blue-500">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
-              <Network className="h-5 w-5 text-blue-500" />
-            </div>
-            <div className="text-2xl font-black">{filteredTickets.filter(t => ['red edusat', 'red local', 'instalación red local'].includes(t.tipoIncidencia)).length}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Casos Registrados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-emerald-500">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mantenimientos</span>
-              <Wrench className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div className="text-2xl font-black">{filteredTickets.filter(t => ['mantenimiento preventivo', 'mantenimiento correctivo'].includes(t.tipoIncidencia)).length}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Servicios Técnicos</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-purple-500">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Alumnos</span>
-              <Users className="h-5 w-5 text-purple-500" />
-            </div>
-            <div className="text-2xl font-black">{totalAlumnos.toLocaleString()}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Beneficiados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-orange-500">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Impacto Docentes</span>
-              <CheckCircle2 className="h-5 w-5 text-orange-500" />
-            </div>
-            <div className="text-2xl font-black">{totalDocentes.toLocaleString()}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Atendidos</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráficos Analíticos */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="shadow-md border-t-2 border-t-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
-              <PieChartIcon className="h-4 w-4 text-primary" /> Estatus Operativo
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats.statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {stats.statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md border-t-2 border-t-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
-              <LayoutGrid className="h-4 w-4 text-primary" /> Servicios por Tipo
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.serviceData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10, fontWeight: 700 }} />
-                <RechartsTooltip cursor={{ fill: 'transparent' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={25} fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md border-t-2 border-t-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black flex items-center gap-2 uppercase">
-              <BarChart3 className="h-4 w-4 text-primary" /> Atención por Valle
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.valleData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <RechartsTooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
-                   {stats.valleData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cobertura del Universo Escolar */}
-      <Card className="shadow-lg border-t-4 border-t-primary">
-        <CardHeader className="bg-slate-50/50 pb-4">
-          <div className="flex items-center gap-3">
-            <Globe className="h-6 w-6 text-primary" />
-            <div>
-              <CardTitle className="text-xl font-black uppercase">Universo Escolar y Cobertura (Ciclo Actual)</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Meta institucional de 830 planteles programados</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-100">
-              <TableRow>
-                <TableHead className="font-black text-xs uppercase">Modalidad</TableHead>
-                <TableHead className="font-black text-xs uppercase">Valle</TableHead>
-                <TableHead className="font-black text-xs uppercase text-center">Meta Universo</TableHead>
-                <TableHead className="font-black text-xs uppercase text-center">Atendidas</TableHead>
-                <TableHead className="font-black text-xs uppercase w-[200px]">Avance Operativo (%)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {UNIVERSE_STATS.map((row, idx) => {
-                const percent = row.total > 0 ? Math.min(Math.round((row.atendidas / row.total) * 100), 100) : 0;
-                return (
-                  <TableRow key={idx} className="hover:bg-slate-50/50">
-                    <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
-                    <TableCell className="text-xs font-medium">{row.valle}</TableCell>
-                    <TableCell className="text-center font-black">{row.total}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={row.atendidas > 0 ? "default" : "outline"} className="font-mono">{row.atendidas}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-bold">
-                          <span>{percent}%</span>
-                          <span className="text-muted-foreground">{row.atendidas}/{row.total}</span>
-                        </div>
-                        <Progress value={percent} className="h-1.5" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-              <TableRow className="bg-primary/5 font-black">
-                <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
-                <TableCell className="text-center text-lg">830</TableCell>
-                <TableCell className="text-center text-lg">{filteredTickets.length}</TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                     <div className="flex justify-between text-[10px]">
-                        <span>{Math.round((filteredTickets.length / 830) * 100)}% Cobertura Global</span>
-                     </div>
-                     <Progress value={(filteredTickets.length / 830) * 100} className="h-2" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Expedientes Digitales */}
-      <Card className="shadow-md border-none overflow-hidden">
-        <CardHeader className="bg-slate-900 text-white">
-          <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <Search className="h-5 w-5 text-blue-400" /> Auditoría de Expedientes por CCT
-          </CardTitle>
-          <CardDescription className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">
-            Consulta de reportes técnicos y evidencias fotográficas
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6 space-y-4">
-          <div className="flex gap-2">
-            <Input 
-              placeholder="Ingrese CCT para buscar evidencias..." 
-              value={cctSearch} 
-              onChange={e => setCctSearch(e.target.value.toUpperCase())}
-              className="uppercase font-mono border-2 focus:border-primary h-11"
-            />
-            <Button onClick={handleSearchEvidence} className="gap-2 bg-primary hover:bg-primary/90 px-6 font-bold uppercase">
-              <Eye className="h-4 w-4" /> Consultar
-            </Button>
+      {/* Contenido Dinámico por Reporte */}
+      <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full">
+        {/* REPORTE DE SOPORTE TÉCNICO */}
+        <TabsContent value="soporte" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="shadow-sm border-l-4 border-l-blue-500">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
+                <div className="text-2xl font-black">{filteredTickets.filter(t => t.tipoIncidencia.includes('red')).length}</div>
+                <Network className="h-4 w-4 text-blue-500 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-emerald-500">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mantenimientos</span>
+                <div className="text-2xl font-black">{filteredTickets.filter(t => t.tipoIncidencia.includes('mantenimiento')).length}</div>
+                <Wrench className="h-4 w-4 text-emerald-500 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-purple-500">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Beneficiarios</span>
+                <div className="text-2xl font-black">{(filteredTickets.reduce((a, b) => a + (b.alumnosBeneficiados || 0), 0)).toLocaleString()}</div>
+                <Users className="h-4 w-4 text-purple-500 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-orange-500">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia</span>
+                <div className="text-2xl font-black">
+                  {Math.round((filteredTickets.filter(t => t.status === 'resuelto').length / (filteredTickets.length || 1)) * 100)}%
+                </div>
+                <CheckCircle2 className="h-4 w-4 text-orange-500 mt-1" />
+              </CardContent>
+            </Card>
           </div>
 
-          <Separator className="my-6" />
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Incidencias</CardTitle></CardHeader>
+              <CardContent className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats.statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                      {stats.statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-sm font-black uppercase">Universo Escolar y Cobertura</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50"><TableRow>
+                    <TableHead className="text-[10px] font-black">Modalidad</TableHead>
+                    <TableHead className="text-[10px] font-black">Valle</TableHead>
+                    <TableHead className="text-[10px] font-black text-center">Meta</TableHead>
+                    <TableHead className="text-[10px] font-black text-center">Atención</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {UNIVERSE_STATS.map((row, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-[10px] font-bold">{row.modalidad}</TableCell>
+                        <TableCell className="text-[10px] font-medium">{row.valle}</TableCell>
+                        <TableCell className="text-center text-[10px] font-black">{row.total}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={row.atendidas > 0 ? "default" : "outline"} className="text-[9px]">{row.atendidas}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredEvidence.length > 0 ? filteredEvidence.map((item, idx) => (
-              <Card key={idx} className="group hover:border-primary transition-all shadow-sm bg-slate-50/50">
-                <CardContent className="p-4">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-start">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                        <FileText className="h-6 w-6" />
-                      </div>
-                      <Badge variant="outline" className="text-[9px] font-mono bg-white">{item.fechaEntrada}</Badge>
+        {/* REPORTE DE CAPACITACIÓN */}
+        <TabsContent value="capacitacion" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="shadow-sm border-l-4 border-l-blue-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Personal Capacitado</span>
+                <div className="text-2xl font-black">{filteredTrainings.length}</div>
+                <Users className="h-4 w-4 text-blue-600 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-indigo-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Cursos Únicos</span>
+                <div className="text-2xl font-black">
+                  {new Set(filteredTrainings.map(t => t.cursoNombre)).size}
+                </div>
+                <GraduationCap className="h-4 w-4 text-indigo-600 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-pink-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Horas</span>
+                <div className="text-2xl font-black">
+                  {filteredTrainings.reduce((a, b) => a + (b.duracionHoras || 0), 0)}
+                </div>
+                <Clock className="h-4 w-4 text-pink-600 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-amber-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Planteles Sede</span>
+                <div className="text-2xl font-black">
+                  {new Set(filteredTrainings.map(t => t.cctSede)).size}
+                </div>
+                <Building2 className="h-4 w-4 text-amber-600 mt-1" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="md:col-span-1">
+              <CardHeader><CardTitle className="text-sm font-black uppercase">Capacitación por Valle</CardTitle></CardHeader>
+              <CardContent className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.trainingByValle}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <RechartsTooltip />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                      {stats.trainingByValle.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card className="md:col-span-2">
+              <CardHeader><CardTitle className="text-sm font-black uppercase">Últimos Registros de Capacitación</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-slate-50"><TableRow>
+                    <TableHead className="text-[10px] font-black">Folio</TableHead>
+                    <TableHead className="text-[10px] font-black">Curso</TableHead>
+                    <TableHead className="text-[10px] font-black">Participante</TableHead>
+                    <TableHead className="text-[10px] font-black">Plantel</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {filteredTrainings.slice(0, 5).map((tr) => (
+                      <TableRow key={tr.id}>
+                        <TableCell className="text-[10px] font-bold">{tr.id}</TableCell>
+                        <TableCell className="text-[10px] truncate max-w-[150px]">{tr.cursoNombre}</TableCell>
+                        <TableCell className="text-[10px]">{tr.asistenteNombres} {tr.asistentePaterno}</TableCell>
+                        <TableCell className="text-[10px] font-mono">{tr.asistenteCCT}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredTrainings.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[10px] py-4">No hay datos para estos filtros.</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* REPORTE DE PROGRAMAS */}
+        <TabsContent value="programas" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="shadow-sm border-l-4 border-l-cyan-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Programas Totales</span>
+                <div className="text-2xl font-black">{programs.length}</div>
+                <Briefcase className="h-4 w-4 text-cyan-600 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-green-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Avance Promedio</span>
+                <div className="text-2xl font-black">
+                  {Math.round(programs.reduce((a, b) => a + (b.progress || 0), 0) / (programs.length || 1))}%
+                </div>
+                <TrendingUp className="h-4 w-4 text-green-600 mt-1" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm border-l-4 border-l-indigo-600">
+              <CardContent className="p-6">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Concluidos</span>
+                <div className="text-2xl font-black">
+                  {programs.filter(p => p.status === 'concluido').length}
+                </div>
+                <CheckCircle2 className="h-4 w-4 text-indigo-600 mt-1" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Metas por Programa</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              {programs.map(p => (
+                <div key={p.id} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase">{p.name}</span>
+                      <Badge className="text-[9px] uppercase">{p.status}</Badge>
                     </div>
-                    <div>
-                      <h4 className="font-black text-xs text-primary truncate uppercase">{item.cct}</h4>
-                      <p className="text-[10px] font-bold truncate text-muted-foreground uppercase">{item.schoolName}</p>
-                    </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-black uppercase mt-2 group-hover:bg-primary group-hover:text-white">
-                          Abrir Documentación
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0">
-                        <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
-                          <DialogTitle className="uppercase font-black flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-primary" /> 
-                            Expediente Digital: {item.id}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="flex-1 overflow-auto px-8 py-6 space-y-8">
-                          {item.reportPdf && (
-                            <div className="space-y-3">
-                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Reporte Oficial PDF</h4>
-                              <iframe src={item.reportPdf} className="w-full h-[500px] border rounded-xl shadow-inner" />
-                            </div>
-                          )}
-                          {item.evidencePhotos && item.evidencePhotos.length > 0 && (
-                            <div className="space-y-3 pb-8">
-                              <h4 className="text-xs font-black uppercase text-primary border-l-4 border-primary pl-2">Galería Fotográfica</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {item.evidencePhotos.map((foto, fIdx) => (
-                                  <div key={fIdx} className="relative aspect-video border rounded-xl overflow-hidden shadow-md">
-                                    <Image src={foto} alt={`evidencia-${fIdx}`} fill className="object-cover" />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <span className="text-xs font-bold">{p.progress}%</span>
                   </div>
-                </CardContent>
-              </Card>
-            )) : (
-              <div className="col-span-full text-center py-16 border-2 border-dashed rounded-2xl bg-slate-50/50">
-                <Search className="h-10 w-10 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-400 font-bold uppercase text-sm">
-                  {cctSearch ? 'No hay evidencias para este CCT.' : 'Ingrese una CCT para consultar su expediente.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                  <Progress value={p.progress} className="h-2" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
