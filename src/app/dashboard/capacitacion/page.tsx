@@ -144,11 +144,12 @@ export default function TrainingPage() {
       'Apellido Paterno', 'Apellido Materno', 'Nombre(s)', 'RFC', 'Función', 'Correo electrónico',
       'CCT Plantel', 'Nombre C.T.', 'ZE', 'Sector', 'Modalidad', 'Municipio', 'Región', 'Valle'
     ];
+    // Formato de datos vacío para la plantilla
     const ws = XLSX.utils.aoa_to_sheet([headers]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Plantilla Asistentes");
     XLSX.writeFile(wb, "plantilla_importacion_asistentes.xlsx");
-    toast({ title: "Plantilla descargada", description: "Completa los datos de los asistentes y súbela en la pestaña de Evidencias." });
+    toast({ title: "Plantilla descargada", description: "Completa el CCT y el sistema autocompletará el resto al importar." });
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,40 +169,47 @@ export default function TrainingPage() {
       const ws = wb.Sheets[wsname]
       const data: any[] = XLSX.utils.sheet_to_json(ws)
 
-      const importedRecords: TrainingRecord[] = data.map((row, idx) => ({
-        id: `${formData.id}-${idx}-${Date.now()}`,
-        cursoGrupo: formData.cursoGrupo,
-        cursoNombre: formData.cursoNombre,
-        duracionHoras: formData.duracionHoras,
-        fechaInicio: formData.fechaInicio,
-        fechaTermino: formData.fechaTermino,
-        instructores: formData.instructores,
-        numeroOficio: formData.numeroOficio,
-        materialUtilizado: formData.materialUtilizado,
-        cctSede: formData.cctSede,
-        setes: formData.setes,
-        observaciones: formData.observaciones,
-        asistentePaterno: (row['Apellido Paterno'] || '').toString(),
-        asistenteMaterno: (row['Apellido Materno'] || '').toString(),
-        asistenteNombres: (row['Nombre(s)'] || '').toString(),
-        asistenteRFC: (row['RFC'] || '').toString().toUpperCase(),
-        asistenteFuncion: (row['Función'] || '').toString(),
-        asistenteEmail: (row['Correo electrónico'] || row['Email'] || '').toString(),
-        asistenteCCT: (row['CCT Plantel'] || row['CCT'] || '').toString().toUpperCase(),
-        asistenteNombreCT: (row['Nombre C.T.'] || '').toString(),
-        asistenteZE: (row['ZE'] || '').toString(),
-        asistenteSector: (row['Sector'] || '').toString(),
-        asistenteModalidad: (row['Modalidad'] || '').toString(),
-        asistenteMunicipio: (row['Municipio'] || '').toString(),
-        asistenteRegion: (row['Región'] || '').toString(),
-        asistenteValle: (row['Valle'] || '').toString(),
-        evidencePhotos: [],
-      }))
+      const importedRecords: TrainingRecord[] = data.map((row, idx) => {
+        const cctFromExcel = (row['CCT Plantel'] || row['CCT'] || '').toString().toUpperCase();
+        // Búsqueda automática en el catálogo
+        const schoolMatch = schoolsDirectory.find(s => s.cct === cctFromExcel);
+
+        return {
+          id: `${formData.id}-${idx}-${Date.now()}`,
+          cursoGrupo: formData.cursoGrupo,
+          cursoNombre: formData.cursoNombre,
+          duracionHoras: formData.duracionHoras,
+          fechaInicio: formData.fechaInicio,
+          fechaTermino: formData.fechaTermino,
+          instructores: formData.instructores,
+          numeroOficio: formData.numeroOficio,
+          materialUtilizado: formData.materialUtilizado,
+          cctSede: formData.cctSede,
+          setes: formData.setes,
+          observaciones: formData.observaciones,
+          asistentePaterno: (row['Apellido Paterno'] || '').toString(),
+          asistenteMaterno: (row['Apellido Materno'] || '').toString(),
+          asistenteNombres: (row['Nombre(s)'] || '').toString(),
+          asistenteRFC: (row['RFC'] || '').toString().toUpperCase(),
+          asistenteFuncion: (row['Función'] || '').toString(),
+          asistenteEmail: (row['Correo electrónico'] || row['Email'] || '').toString(),
+          asistenteCCT: cctFromExcel,
+          // Si hay match en catálogo, usamos esos datos, si no, lo que venga en el Excel (o vacío)
+          asistenteNombreCT: schoolMatch ? schoolMatch.nombre : (row['Nombre C.T.'] || '').toString(),
+          asistenteZE: schoolMatch ? schoolMatch.zonaEscolar : (row['ZE'] || '').toString(),
+          asistenteSector: schoolMatch ? schoolMatch.sector : (row['Sector'] || '').toString(),
+          asistenteModalidad: schoolMatch ? schoolMatch.modalidad : (row['Modalidad'] || '').toString(),
+          asistenteMunicipio: schoolMatch ? schoolMatch.municipio : (row['Municipio'] || '').toString(),
+          asistenteRegion: schoolMatch ? schoolMatch.region : (row['Región'] || '').toString(),
+          asistenteValle: schoolMatch ? schoolMatch.valle : (row['Valle'] || '').toString(),
+          evidencePhotos: [],
+        }
+      })
 
       const newRecords = [...importedRecords, ...records]
       setRecords(newRecords)
       localStorage.setItem('training_records_full', JSON.stringify(newRecords))
-      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} asistentes al curso ${formData.cursoNombre}.` })
+      toast({ title: "Importación Exitosa", description: `Se han cargado ${importedRecords.length} asistentes. Se autocompletaron los datos geográficos desde el catálogo.` })
       setIsDialogOpen(false)
     }
     reader.readAsBinaryString(file)
@@ -353,7 +361,7 @@ export default function TrainingPage() {
                         <div className="space-y-2">
                           <h4 className="font-black uppercase text-sm text-primary">Gestión Masiva de Asistentes</h4>
                           <p className="text-xs font-bold text-muted-foreground max-w-md mx-auto">
-                            Descarga la plantilla con los campos requeridos, complétala con la información de los asistentes y súbela para realizar un registro múltiple automático para este curso.
+                            Descarga la plantilla con los campos requeridos. Al llenar el **CCT**, el sistema autocompletará el resto de datos geográficos automáticamente al importar.
                           </p>
                         </div>
                         <div className="flex flex-wrap justify-center gap-4">
