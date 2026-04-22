@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
-import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 export default function SupportPage() {
   const { toast } = useToast()
@@ -131,6 +132,13 @@ export default function SupportPage() {
     })
   }
 
+  const updateTicketStatus = (id: string, newStatus: 'pendiente' | 'en proceso' | 'resuelto') => {
+    const updated = tickets.map(t => t.id === id ? { ...t, status: newStatus } : t);
+    setTickets(updated);
+    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    toast({ title: "Estatus Actualizado", description: `El reporte ${id} ahora está ${newStatus}.` });
+  }
+
   const exportToExcel = () => {
     const dataToExport = tickets.map(t => ({
       'Folio': t.id,
@@ -163,12 +171,21 @@ export default function SupportPage() {
     XLSX.writeFile(workbook, `Reporte_Soporte_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'resuelto': return 'bg-green-500 hover:bg-green-600 text-white';
+      case 'en proceso': return 'bg-yellow-500 hover:bg-yellow-600 text-black font-semibold';
+      case 'pendiente': return 'bg-red-500 hover:bg-red-600 text-white';
+      default: return 'bg-gray-500';
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-primary">Soporte Técnico</h2>
-          <p className="text-muted-foreground">Sistema Integral de Movimientos de la Oficina de Planeación.</p>
+          <p className="text-muted-foreground">Gestión de incidencias y mantenimiento de infraestructura.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportToExcel} className="gap-2">
@@ -191,8 +208,8 @@ export default function SupportPage() {
                 <div className="grid gap-6 py-4">
                   {/* Sección 1: Datos del Centro de Trabajo */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <LifeBuoy className="h-4 w-4 text-primary" /> Datos del Plantel (C.T.)
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
+                      <LifeBuoy className="h-4 w-4" /> Datos del Plantel (C.T.)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
@@ -226,8 +243,8 @@ export default function SupportPage() {
 
                   {/* Sección Responsables */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <Users className="h-4 w-4 text-primary" /> Responsable(s) (Técnicos)
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
+                      <Users className="h-4 w-4" /> Responsable(s) (Técnicos)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                       {formData.responsables.map((resp, idx) => (
@@ -249,8 +266,8 @@ export default function SupportPage() {
 
                   {/* Sección Detalles */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <Monitor className="h-4 w-4 text-primary" /> Detalles Técnicos
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
+                      <Monitor className="h-4 w-4" /> Detalles Técnicos
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
@@ -274,10 +291,10 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* SECCIÓN NUEVA: Archivos y Evidencia */}
+                  {/* Evidencia */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1">
-                      <FileText className="h-4 w-4 text-primary" /> Evidencias y Documentación
+                    <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
+                      <FileText className="h-4 w-4" /> Evidencias y Documentación
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
@@ -342,58 +359,91 @@ export default function SupportPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 text-primary" />
-            <CardTitle>Historial Detallado de Soporte</CardTitle>
+      <Card className="shadow-md border-t-4 border-t-primary">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Historial Detallado de Solicitudes
+            </CardTitle>
+            <CardDescription>Seguimiento en tiempo real con semáforo de atención.</CardDescription>
           </div>
-          <CardDescription>Resumen de movimientos técnicos por CCT y municipio.</CardDescription>
+          <div className="flex gap-4 text-xs font-semibold">
+            <div className="flex items-center gap-1"><Circle className="h-3 w-3 fill-red-500 text-red-500" /> Pendiente</div>
+            <div className="flex items-center gap-1"><Circle className="h-3 w-3 fill-yellow-500 text-yellow-500" /> En Proceso</div>
+            <div className="flex items-center gap-1"><Circle className="h-3 w-3 fill-green-500 text-green-500" /> Resuelto</div>
+          </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[500px] w-full border rounded-md">
+          <div className="rounded-md border">
             <Table>
-              <TableHeader className="bg-muted/50 sticky top-0 z-10">
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[100px]">Folio</TableHead>
-                  <TableHead className="w-[120px]">C.C.T.</TableHead>
-                  <TableHead>Nombre CT</TableHead>
-                  <TableHead>Archivos</TableHead>
-                  <TableHead>Estatus</TableHead>
+                  <TableHead className="w-[110px]">C.C.T.</TableHead>
+                  <TableHead>Escuela</TableHead>
+                  <TableHead>Municipio</TableHead>
+                  <TableHead>Evidencias</TableHead>
+                  <TableHead className="w-[150px]">Semáforo Estatus</TableHead>
+                  <TableHead className="text-right">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tickets.length > 0 ? tickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-mono text-xs font-bold">{ticket.id}</TableCell>
+                  <TableRow key={ticket.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="font-mono text-xs font-bold text-primary">{ticket.id}</TableCell>
                     <TableCell className="font-mono text-xs">{ticket.cct}</TableCell>
-                    <TableCell className="max-w-[180px] truncate">{ticket.schoolName}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm truncate max-w-[200px]">{ticket.schoolName}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">Sector: {ticket.sector} | Zona: {ticket.zonaEscolar}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{ticket.municipio}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {ticket.reportPdf && <FileText className="h-4 w-4 text-blue-500" title="PDF disponible" />}
+                        {ticket.reportPdf && <FileText className="h-4 w-4 text-blue-500" />}
                         {ticket.evidencePhotos && ticket.evidencePhotos.length > 0 && (
-                          <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
                             <ImageIcon className="h-3 w-3" /> {ticket.evidencePhotos.length}
                           </span>
+                        )}
+                        {!ticket.reportPdf && (!ticket.evidencePhotos || ticket.evidencePhotos.length === 0) && (
+                          <span className="text-[10px] text-muted-foreground italic">Sin archivos</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={ticket.status === 'resuelto' ? 'default' : 'destructive'}>
+                      <Badge className={cn("uppercase text-[10px] px-2 py-0.5", getStatusColor(ticket.status))}>
                         {ticket.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Select 
+                        onValueChange={(val) => updateTicketStatus(ticket.id, val as any)}
+                        defaultValue={ticket.status}
+                      >
+                        <SelectTrigger className="h-8 w-32 text-[10px]">
+                          <SelectValue placeholder="Cambiar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="en proceso">En Proceso</SelectItem>
+                          <SelectItem value="resuelto">Resuelto</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                      No hay registros detallados.
+                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground italic">
+                      No se han encontrado registros de atención técnica.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     </div>
