@@ -1,11 +1,12 @@
 'use client'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { LifeBuoy, GraduationCap, Briefcase, TrendingUp } from 'lucide-react';
-import { supportData, trainingData, programsData } from '@/lib/planning-data';
+import { supportData, trainingRecords, programsData } from '@/lib/planning-data';
 
 export default function DashboardPage() {
   const pendingSupport = supportData.filter(s => s.status !== 'resuelto').length;
-  const totalTrained = trainingData.reduce((acc, curr) => acc + curr.attendees, 0);
+  // En el nuevo formato, cada registro en trainingRecords es un asistente individual
+  const totalTrained = trainingRecords.length;
   const activePrograms = programsData.filter(p => p.status === 'activo').length;
 
   const stats = [
