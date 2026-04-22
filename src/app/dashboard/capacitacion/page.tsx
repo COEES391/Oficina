@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
@@ -32,6 +32,15 @@ type AssistantEntry = {
   region: string;
   valle: string;
 }
+
+const FUNCIONES = [
+  "ADMINISTRATIVO",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
 
 export default function TrainingPage() {
   const { toast } = useToast()
@@ -136,7 +145,6 @@ export default function TrainingPage() {
 
     let updated;
     if (editingId) {
-      // For simplicity, we replace or append. In a real scenario we'd match the course ID.
       updated = [...newRecords, ...records.filter(r => !r.id.startsWith(editingId.split('-')[0]))]
     } else {
       updated = [...newRecords, ...records]
@@ -156,8 +164,9 @@ export default function TrainingPage() {
   }
 
   const handleEdit = (record: TrainingRecord) => {
+    const folio = record.id.split('-')[0];
     setCourseData({
-      id: record.id.split('-')[0],
+      id: folio,
       cursoGrupo: record.cursoGrupo,
       cursoNombre: record.cursoNombre,
       duracionHoras: record.duracionHoras,
@@ -171,8 +180,6 @@ export default function TrainingPage() {
       observaciones: record.observaciones,
     })
     
-    // Get all assistants for this specific course folio
-    const folio = record.id.split('-')[0];
     const relatedAssistants = records.filter(r => r.id.startsWith(folio)).map(r => ({
       paterno: r.asistentePaterno,
       materno: r.asistenteMaterno,
@@ -226,7 +233,7 @@ export default function TrainingPage() {
               <PlusCircle className="h-5 w-5" /> Iniciar Registro
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0">
+          <DialogContent className="sm:max-w-[1400px] h-[90vh] flex flex-col p-0">
             <DialogHeader className="p-6 pb-2">
               <DialogTitle className="uppercase font-black text-primary text-xl">Gestión de Curso y Asistentes</DialogTitle>
               <DialogDescription className="font-bold text-xs">Complete la información del curso y capture la lista de asistentes en la cuadrícula.</DialogDescription>
@@ -240,9 +247,8 @@ export default function TrainingPage() {
                 </TabsList>
               </div>
 
-              <ScrollArea className="flex-1">
-                <div className="p-6">
-                  <TabsContent value="curso" className="space-y-8 mt-0">
+              <div className="flex-1 overflow-hidden">
+                <TabsContent value="curso" className="h-full m-0 p-6 space-y-8 overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Folio Registro</Label><Input className="font-bold border-primary/20" value={courseData.id} onChange={e => setCourseData({...courseData, id: e.target.value.toUpperCase()})} /></div>
                       <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Grupo</Label><Input value={courseData.cursoGrupo} onChange={e => setCourseData({...courseData, cursoGrupo: e.target.value})} /></div>
@@ -279,30 +285,38 @@ export default function TrainingPage() {
                         </Select>
                       </div>
                     </div>
-                  </TabsContent>
+                </TabsContent>
 
-                  <TabsContent value="asistentes" className="space-y-4 mt-0">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                        <p className="text-[10px] font-bold text-blue-800 uppercase">Captura directa: Al ingresar el CCT, los datos se cargarán por automático.</p>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={handleAddRow} className="gap-2 font-black uppercase text-[10px] border-primary text-primary hover:bg-primary/5">
-                        <Plus className="h-4 w-4" /> Añadir Fila
-                      </Button>
+                <TabsContent value="asistentes" className="h-full m-0 p-6 flex flex-col">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                      <p className="text-[10px] font-bold text-blue-800 uppercase">Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos del plantel.</p>
                     </div>
+                    <Button variant="outline" size="sm" onClick={handleAddRow} className="gap-2 font-black uppercase text-[10px] border-primary text-primary hover:bg-primary/5">
+                      <Plus className="h-4 w-4" /> Añadir Fila
+                    </Button>
+                  </div>
 
-                    <div className="border rounded-xl overflow-hidden shadow-sm">
+                  <div className="flex-1 overflow-hidden border rounded-xl shadow-sm">
+                    <ScrollArea className="h-full">
                       <Table>
-                        <TableHeader className="bg-slate-100">
+                        <TableHeader className="bg-slate-100 sticky top-0 z-10">
                           <TableRow>
                             <TableHead className="w-10 text-[10px] font-black uppercase">#</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">RFC</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Función</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Género</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">CCT Plantel</TableHead>
-                            <TableHead className="w-10"></TableHead>
+                            <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                            <TableHead className="min-w-[150px] text-[10px] font-black uppercase">RFC</TableHead>
+                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Función</TableHead>
+                            <TableHead className="min-w-[120px] text-[10px] font-black uppercase">Género</TableHead>
+                            <TableHead className="min-w-[140px] text-[10px] font-black uppercase">CCT Plantel</TableHead>
+                            <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Nombre C.T.</TableHead>
+                            <TableHead className="min-w-[60px] text-[10px] font-black uppercase">ZE</TableHead>
+                            <TableHead className="min-w-[60px] text-[10px] font-black uppercase">Sector</TableHead>
+                            <TableHead className="min-w-[120px] text-[10px] font-black uppercase">Modalidad</TableHead>
+                            <TableHead className="min-w-[150px] text-[10px] font-black uppercase">Municipio</TableHead>
+                            <TableHead className="min-w-[120px] text-[10px] font-black uppercase">Región</TableHead>
+                            <TableHead className="min-w-[100px] text-[10px] font-black uppercase">Valle</TableHead>
+                            <TableHead className="w-10 sticky right-0 bg-slate-100"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -320,31 +334,53 @@ export default function TrainingPage() {
                                 <Input placeholder="RFC" className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} />
                               </TableCell>
                               <TableCell className="p-2">
-                                <Input placeholder="Función" className="h-8 text-[10px]" value={ast.funcion} onChange={e => updateAssistant(idx, 'funcion', e.target.value)} />
-                              </TableCell>
-                              <TableCell className="p-2">
-                                <Select value={ast.genero} onValueChange={(val: any) => updateAssistant(idx, 'genero', val)}>
-                                  <SelectTrigger className="h-8 text-[10px] border-primary/20">
-                                    <SelectValue placeholder="Género" />
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                  <SelectTrigger className="h-8 text-[10px]">
+                                    <SelectValue placeholder="Seleccionar función..." />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="MASCULINO">MASCULINO</SelectItem>
-                                    <SelectItem value="FEMENINO">FEMENINO</SelectItem>
+                                    {FUNCIONES.map(f => (
+                                      <SelectItem key={f} value={f} className="text-[10px]">{f}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </TableCell>
                               <TableCell className="p-2">
-                                <div className="space-y-1">
-                                  <Input placeholder="15DESXXXXX" className="h-8 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                                  {ast.nombreCT && (
-                                    <div className="flex items-center gap-1 p-1 bg-emerald-50 rounded border border-emerald-100">
-                                      <School className="h-3 w-3 text-emerald-600" />
-                                      <span className="text-[8px] font-black text-emerald-800 uppercase truncate max-w-[120px]">{ast.nombreCT}</span>
-                                    </div>
-                                  )}
-                                </div>
+                                <Select value={ast.genero} onValueChange={(val: any) => updateAssistant(idx, 'genero', val)}>
+                                  <SelectTrigger className="h-8 text-[10px]">
+                                    <SelectValue placeholder="Género" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="MASCULINO" className="text-[10px]">MASCULINO</SelectItem>
+                                    <SelectItem value="FEMENINO" className="text-[10px]">FEMENINO</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </TableCell>
                               <TableCell className="p-2">
+                                <Input placeholder="15DESXXXXX" className="h-8 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.nombreCT} readOnly className="h-8 text-[10px] bg-slate-50 font-bold uppercase" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.ze} readOnly className="h-8 text-[10px] bg-slate-50 text-center" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.sector} readOnly className="h-8 text-[10px] bg-slate-50 text-center" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.modalidad} readOnly className="h-8 text-[10px] bg-slate-50 uppercase text-[9px]" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.municipio} readOnly className="h-8 text-[10px] bg-slate-50 uppercase" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.region} readOnly className="h-8 text-[10px] bg-slate-50 uppercase" />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input value={ast.valle} readOnly className="h-8 text-[10px] bg-slate-50 uppercase" />
+                              </TableCell>
+                              <TableCell className="p-2 sticky right-0 bg-white/80 backdrop-blur-sm shadow-l">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveRow(idx)} disabled={assistants.length === 1}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -353,10 +389,11 @@ export default function TrainingPage() {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
-                  </TabsContent>
-                </div>
-              </ScrollArea>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                </TabsContent>
+              </div>
             </Tabs>
 
             <DialogFooter className="p-6 border-t bg-slate-50 flex items-center justify-between">
@@ -392,6 +429,7 @@ export default function TrainingPage() {
                   <TableHead className="font-black text-[10px] uppercase">Asistente Capacitado</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">RFC</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">Género</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase">Función</TableHead>
                   <TableHead className="font-black text-[10px] uppercase">Plantel de Origen</TableHead>
                   <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
                 </TableRow>
@@ -411,6 +449,7 @@ export default function TrainingPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs uppercase text-muted-foreground">{record.asistenteRFC}</TableCell>
                     <TableCell className="text-[10px] font-bold uppercase">{record.asistenteGenero || '-'}</TableCell>
+                    <TableCell className="text-[10px] font-bold text-slate-600">{record.asistenteFuncion || '-'}</TableCell>
                     <TableCell className="text-[10px] font-bold">
                        <div className="flex flex-col">
                           <span>{record.asistenteCCT}</span>
@@ -425,7 +464,7 @@ export default function TrainingPage() {
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 bg-slate-50/20">
+                    <TableCell colSpan={8} className="text-center py-20 bg-slate-50/20">
                       <div className="flex flex-col items-center gap-2 opacity-50">
                         <GraduationCap className="h-10 w-10 text-primary" />
                         <p className="font-black text-xs uppercase">Sin registros de capacitación disponibles.</p>
