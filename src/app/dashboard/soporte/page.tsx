@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle, Search, MapPin, Eye } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle, Search, MapPin, Eye, Pencil } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -24,6 +24,7 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   
   // Estado para visor de evidencias
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
@@ -125,17 +126,40 @@ export default function SupportPage() {
       toast({ variant: "destructive", title: "Faltan datos", description: "Folio y CCT son obligatorios." })
       return
     }
-    const newTicket: SupportTicket = {
-      ...formData,
-      status: 'pendiente',
-      responsables: formData.responsables.filter(r => r.trim() !== ''),
+
+    if (editingTicketId) {
+      const updated = tickets.map(t => t.id === editingTicketId ? { 
+        ...formData, 
+        responsables: formData.responsables.filter(r => r.trim() !== ''),
+        status: t.status 
+      } as SupportTicket : t);
+      setTickets(updated);
+      localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+      toast({ title: "Reporte actualizado con éxito" });
+    } else {
+      const newTicket: SupportTicket = {
+        ...formData,
+        status: 'pendiente',
+        responsables: formData.responsables.filter(r => r.trim() !== ''),
+      }
+      const updated = [newTicket, ...tickets]
+      setTickets(updated)
+      localStorage.setItem('support_tickets_full', JSON.stringify(updated))
+      toast({ title: "Registro exitoso" })
     }
-    const updated = [newTicket, ...tickets]
-    setTickets(updated)
-    localStorage.setItem('support_tickets_full', JSON.stringify(updated))
+
     setIsDialogOpen(false)
     setFormData(initialFormState)
-    toast({ title: "Registro exitoso" })
+    setEditingTicketId(null)
+  }
+
+  const handleEdit = (ticket: SupportTicket) => {
+    setFormData({
+      ...ticket,
+      responsables: [...ticket.responsables, '', '', ''].slice(0, 3) as string[],
+    });
+    setEditingTicketId(ticket.id);
+    setIsDialogOpen(true);
   }
 
   const updateTicketStatus = (id: string, newStatus: any) => {
@@ -151,13 +175,21 @@ export default function SupportPage() {
           <h2 className="text-3xl font-bold tracking-tight text-primary uppercase">Soporte Técnico</h2>
           <p className="text-muted-foreground font-semibold">Gestión de incidencias y evidencias documentales.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setFormData(initialFormState);
+            setEditingTicketId(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2 font-bold uppercase"><PlusCircle className="h-4 w-4" /> Nuevo Reporte</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0">
             <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="uppercase font-black text-primary">Formato de Reporte Técnico</DialogTitle>
+              <DialogTitle className="uppercase font-black text-primary">
+                {editingTicketId ? `Editando Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
+              </DialogTitle>
             </DialogHeader>
             <ScrollArea className="flex-1 px-6">
               <div className="grid gap-6 py-4">
@@ -182,7 +214,7 @@ export default function SupportPage() {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1"><Label className="text-xs font-bold uppercase">Folio de Reporte</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" /></div>
+                  <div className="space-y-1"><Label className="text-xs font-bold uppercase">Folio de Reporte</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} /></div>
                   <div className="space-y-1">
                     <Label className="text-xs font-bold uppercase">Tipo de Incidencia</Label>
                     <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
@@ -233,7 +265,7 @@ export default function SupportPage() {
                     <div className="space-y-2 p-4 border border-dashed rounded-lg bg-slate-50">
                       <Label className="flex items-center gap-2 text-xs font-bold"><ImageIcon className="h-4 w-4 text-pink-600" /> EVIDENCIA FOTOGRÁFICA (MÁX 5)</Label>
                       <Input type="file" multiple accept="image/*" className="bg-white" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-2 flex-wrap mt-2">
                         {formData.evidencePhotos?.map((p, i) => (
                           <div key={i} className="relative h-10 w-10 border rounded bg-white overflow-hidden shadow-sm">
                             <Image src={p} alt="ev" fill className="object-cover" />
@@ -254,8 +286,10 @@ export default function SupportPage() {
               </div>
             </ScrollArea>
             <DialogFooter className="p-6 border-t bg-slate-50">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-bold uppercase">Cancelar</Button>
-              <Button onClick={handleSave} className="font-black uppercase px-10">Guardar Reporte Técnico</Button>
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setEditingTicketId(null); }} className="font-bold uppercase">Cancelar</Button>
+              <Button onClick={handleSave} className="font-black uppercase px-10">
+                {editingTicketId ? "Actualizar Reporte" : "Guardar Reporte Técnico"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -308,16 +342,21 @@ export default function SupportPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
-                      <SelectTrigger className="h-8 w-28 text-[9px] font-black uppercase ml-auto">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pendiente" className="text-[10px] font-bold">Pendiente</SelectItem>
-                        <SelectItem value="en proceso" className="text-[10px] font-bold">En Proceso</SelectItem>
-                        <SelectItem value="resuelto" className="text-[10px] font-bold">Resuelto</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center justify-end gap-2">
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEdit(t)}>
+                          <Pencil className="h-4 w-4" />
+                       </Button>
+                       <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
+                        <SelectTrigger className="h-8 w-28 text-[9px] font-black uppercase">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente" className="text-[10px] font-bold">Pendiente</SelectItem>
+                          <SelectItem value="en proceso" className="text-[10px] font-bold">En Proceso</SelectItem>
+                          <SelectItem value="resuelto" className="text-[10px] font-bold">Resuelto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
