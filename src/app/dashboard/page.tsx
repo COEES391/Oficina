@@ -308,7 +308,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Incidencias</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus de Servicios</CardTitle></CardHeader>
                 <CardContent className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -359,7 +359,7 @@ export default function DashboardPage() {
                     <TableRow>
                       <TableHead className="text-[10px] font-black">Folio</TableHead>
                       <TableHead className="text-[10px] font-black">CCT</TableHead>
-                      <TableHead className="text-[10px] font-black">Incidencia</TableHead>
+                      <TableHead className="text-[10px] font-black">Servicio</TableHead>
                       <TableHead className="text-[10px] font-black">Oficina</TableHead>
                       <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
                     </TableRow>

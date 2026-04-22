@@ -173,7 +173,7 @@ export default function SupportPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-primary uppercase">Soporte Técnico</h2>
-          <p className="text-muted-foreground font-semibold">Gestión de incidencias y evidencias documentales.</p>
+          <p className="text-muted-foreground font-semibold">Gestión de servicios y evidencias documentales.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
@@ -216,7 +216,7 @@ export default function SupportPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1"><Label className="text-xs font-bold uppercase">Folio de Reporte</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} /></div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase">Tipo de Incidencia</Label>
+                    <Label className="text-xs font-bold uppercase">Tipo de Servicio</Label>
                     <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -302,7 +302,7 @@ export default function SupportPage() {
               <TableRow>
                 <TableHead className="font-black text-[10px] uppercase">Folio</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">CCT / Plantel</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Incidencia</TableHead>
+                <TableHead className="font-black text-[10px] uppercase">Servicio</TableHead>
                 <TableHead className="font-black text-[10px] uppercase">Estatus</TableHead>
                 <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
                 <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
