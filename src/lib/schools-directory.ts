@@ -9,67 +9,97 @@ export type SchoolInfo = {
   modalidad: string;
 };
 
-// Catálogo masivo basado en la estructura oficial del Estado de México
+const mapValle = (v: string) => v === 'T' ? 'TOLUCA' : 'MEXICO';
+const mapModalidad = (m: string) => {
+  if (m === 'DES') return 'GENERAL';
+  if (m === 'DST') return 'TECNICA';
+  if (m === 'DTV') return 'TELESECUNDARIA';
+  return m;
+};
+
+// Catálogo masivo basado en la tabla proporcionada por el usuario
 export const schoolsDirectory: SchoolInfo[] = [
-  // ACAMBAY
-  { cct: '15EES0001Z', nombre: 'SEC. OFIC. NO. 0001 "MIGUEL HIDALGO"', municipio: 'ACAMBAY', zonaEscolar: '001', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0542K', nombre: 'SEC. OFIC. NO. 0542 "JUAN ESCUTIA"', municipio: 'ACAMBAY', zonaEscolar: '001', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0593B', nombre: 'SEC. OFIC. NO. 0593 "MARIANO MATAMOROS"', municipio: 'ACAMBAY', zonaEscolar: '001', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0003V', nombre: 'SEC. TEC. NO. 0003', municipio: 'ACAMBAY', zonaEscolar: '005', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0010U', nombre: 'TELESECUNDARIA NO. 0010', municipio: 'ACAMBAY', zonaEscolar: '010', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  
-  // ACOLMAN
-  { cct: '15EES0002Y', nombre: 'SEC. OFIC. NO. 0002 "BENITO JUAREZ"', municipio: 'ACOLMAN', zonaEscolar: '005', sector: '02', region: 'IV', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EES0345T', nombre: 'SEC. OFIC. NO. 0345', municipio: 'ACOLMAN', zonaEscolar: '005', sector: '02', region: 'IV', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EES0847V', nombre: 'SEC. OFIC. NO. 0847', municipio: 'ACOLMAN', zonaEscolar: '005', sector: '02', region: 'IV', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EST0040B', nombre: 'SEC. TEC. NO. 0040', municipio: 'ACOLMAN', zonaEscolar: '010', sector: '02', region: 'IV', valle: 'MEXICO', modalidad: 'TECNICA' },
-  { cct: '15ETV0123A', nombre: 'TELESECUNDARIA NO. 0123', municipio: 'ACOLMAN', zonaEscolar: '045', sector: '07', region: 'IV', valle: 'MEXICO', modalidad: 'TELESECUNDARIA' },
-  
-  // ACULCO
-  { cct: '15EES0003X', nombre: 'SEC. OFIC. NO. 0003 "HIDALGO"', municipio: 'ACULCO', zonaEscolar: '003', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0720V', nombre: 'SEC. OFIC. NO. 0720', municipio: 'ACULCO', zonaEscolar: '003', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0041A', nombre: 'SEC. TEC. NO. 0041', municipio: 'ACULCO', zonaEscolar: '003', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0103N', nombre: 'TELESECUNDARIA NO. 0103', municipio: 'ACULCO', zonaEscolar: '003', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  
-  // ALMOLOYA DE JUAREZ
-  { cct: '15EES0005V', nombre: 'SEC. OFIC. NO. 0005 "CUAUHTEMOC"', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '008', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0663H', nombre: 'SEC. OFIC. NO. 0663', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '008', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0912Z', nombre: 'SEC. OFIC. NO. 0912', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '008', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0045X', nombre: 'SEC. TEC. NO. 0045', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '012', sector: '03', region: 'I', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0411Z', nombre: 'TELESECUNDARIA NO. 0411', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '015', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  { cct: '15ETV0723X', nombre: 'TELESECUNDARIA NO. 0723', municipio: 'ALMOLOYA DE JUAREZ', zonaEscolar: '015', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
+  // ADG
+  { cct: '15ADG0001Q', nombre: 'CCT 15ADG0001Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0002P', nombre: 'CCT 15ADG0002P', municipio: 'ECATEPEC', zonaEscolar: '000', sector: '00', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0004N', nombre: 'CCT 15ADG0004N', municipio: 'TULTITLAN', zonaEscolar: '000', sector: '00', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0005M', nombre: 'CCT 15ADG0005M', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '000', sector: '00', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0007E', nombre: 'CCT 15ADG0007E', municipio: 'ECATEPEC', zonaEscolar: '000', sector: '00', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0007K', nombre: 'CCT 15ADG0007K', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0007N', nombre: 'CCT 15ADG0007N', municipio: 'NAUCALPAN DE JUAREZ', zonaEscolar: '000', sector: '00', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0007Z', nombre: 'CCT 15ADG0007Z', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '000', sector: '00', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0031K', nombre: 'CCT 15ADG0031K', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0032J', nombre: 'CCT 15ADG0032J', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0033I', nombre: 'CCT 15ADG0033I', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0034H', nombre: 'CCT 15ADG0034H', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0035G', nombre: 'CCT 15ADG0035G', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0036F', nombre: 'CCT 15ADG0036F', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0037E', nombre: 'CCT 15ADG0037E', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0038D', nombre: 'CCT 15ADG0038D', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0039C', nombre: 'CCT 15ADG0039C', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0040S', nombre: 'CCT 15ADG0040S', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0041R', nombre: 'CCT 15ADG0041R', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0042Q', nombre: 'CCT 15ADG0042Q', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0043P', nombre: 'CCT 15ADG0043P', municipio: 'TOLUCA', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0061E', nombre: 'CCT 15ADG0107J', municipio: 'SAN MATEO ATENCO', zonaEscolar: '000', sector: '00', region: 'LERMA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0076G', nombre: 'CCT 15ADG0076G', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0079D', nombre: 'CCT 15ADG0079D', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0080T', nombre: 'CCT 15ADG0080T', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0082R', nombre: 'CCT 15ADG0082R', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0083Q', nombre: 'CCT 15ADG0083Q', municipio: 'TULTITLAN', zonaEscolar: '000', sector: '00', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0085O', nombre: 'CCT 15ADG0085O', municipio: 'TLALNEPANTLA DE BAZ', zonaEscolar: '000', sector: '00', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0086N', nombre: 'CCT 15ADG0086N', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '000', sector: '00', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0087M', nombre: 'CCT 15ADG0087M', municipio: 'ECATEPEC', zonaEscolar: '000', sector: '00', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0112V', nombre: 'CCT 15ADG0112V', municipio: 'NAUCALPAN DE JUAREZ', zonaEscolar: '000', sector: '00', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'ADG' },
+  { cct: '15ADG0118P', nombre: 'CCT 15ADG0118P', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0119O', nombre: 'CCT 15ADG0119O', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0120D', nombre: 'CCT 15ADG0120D', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0121C', nombre: 'CCT 15ADG0121C', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0122B', nombre: 'CCT 15ADG0122B', municipio: 'METEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
+  { cct: '15ADG0124Z', nombre: 'CCT 15ADG0124Z', municipio: 'ZINACANTEPEC', zonaEscolar: '000', sector: '00', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'ADG' },
 
-  // AMANALCO
-  { cct: '15EES0006U', nombre: 'SEC. OFIC. NO. 0006', municipio: 'AMANALCO', zonaEscolar: '012', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15ETV0210B', nombre: 'TELESECUNDARIA NO. 0210', municipio: 'AMANALCO', zonaEscolar: '012', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
+  // DES (SECUNDARIA GENERAL)
+  { cct: '15DES0001R', nombre: 'CCT 15DES0001R', municipio: 'ATLACOMULCO', zonaEscolar: '030', sector: '08', region: 'ATLACOMULCO', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0002Q', nombre: 'CCT 15DES0002Q', municipio: 'TEXCOCO', zonaEscolar: '024', sector: '09', region: 'TEXCOCO', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0003P', nombre: 'CCT 15DES0003P', municipio: 'TLALNEPANTLA DE BAZ', zonaEscolar: '006', sector: '02', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0004O', nombre: 'CCT 15DES0004O', municipio: 'TLALMANALCO', zonaEscolar: '023', sector: '09', region: 'AMECAMECA', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0005N', nombre: 'CCT 15DES0005N', municipio: 'NICOLAS ROMERO', zonaEscolar: '008', sector: '02', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0006M', nombre: 'CCT 15DES0006M', municipio: 'VALLE DE BRAVO', zonaEscolar: '028', sector: '07', region: 'VALLE DE BRAVO', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0007L', nombre: 'CCT 15DES0007L', municipio: 'TOLUCA', zonaEscolar: '037', sector: '06', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0008K', nombre: 'CCT 15DES0008K', municipio: 'ATIZAPAN DE ZARAGOZA', zonaEscolar: '009', sector: '02', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0009J', nombre: 'CCT 15DES0009J', municipio: 'IXTAPAN DE LA SAL', zonaEscolar: '027', sector: '07', region: 'IXTAPAN DE LA SAL', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0010Z', nombre: 'CCT 15DES0010Z', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '033', sector: '05', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0011Y', nombre: 'CCT 15DES0011Y', municipio: 'NAUCALPAN DE JUAREZ', zonaEscolar: '001', sector: '01', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0012X', nombre: 'CCT 15DES0012X', municipio: 'TOLUCA', zonaEscolar: '026', sector: '06', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0013W', nombre: 'CCT 15DES0013W', municipio: 'IXTAPALUCA', zonaEscolar: '007', sector: '09', region: 'CHIMALHUACAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0014V', nombre: 'CCT 15DES0014V', municipio: 'NEZAHUALCOYOTL', zonaEscolar: '020', sector: '05', region: 'NEZAHUALCOYOTL', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0015U', nombre: 'CCT 15DES0015U', municipio: 'TEOLOYUCAN', zonaEscolar: '042', sector: '03', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0016T', nombre: 'CCT 15DES0016T', municipio: 'CUAUTITLAN', zonaEscolar: '031', sector: '03', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0021E', nombre: 'CCT 15DES0021E', municipio: 'CUAUTITLAN IZCALLI', zonaEscolar: '010', sector: '03', region: 'CUAUTITLAN IZCALLI', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0022D', nombre: 'CCT 15DES0022D', municipio: 'TEMASCALCINGO', zonaEscolar: '035', sector: '08', region: 'ATLACOMULCO', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0023C', nombre: 'CCT 15DES0023C', municipio: 'ZUMPANGO', zonaEscolar: '043', sector: '03', region: 'ZUMPANGO', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0025A', nombre: 'CCT 15DES0025A', municipio: 'ECATEPEC', zonaEscolar: '016', sector: '04', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0026Z', nombre: 'CCT 15DES0026Z', municipio: 'ZINACANTEPEC', zonaEscolar: '026', sector: '06', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'GENERAL' },
+  { cct: '15DES0035H', nombre: 'CCT 15DES0035H', municipio: 'ECATEPEC', zonaEscolar: '017', sector: '04', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0036G', nombre: 'CCT 15DES0036G', municipio: 'TULTITLAN', zonaEscolar: '012', sector: '03', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0038E', nombre: 'CCT 15DES0038E', municipio: 'CHALCO', zonaEscolar: '046', sector: '09', region: 'AMECAMECA', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0039D', nombre: 'CCT 15DES0039D', municipio: 'TECAMAC', zonaEscolar: '032', sector: '04', region: 'ECATEPEC', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0041S', nombre: 'CCT 15DES0041S', municipio: 'CHICONCUAC', zonaEscolar: '044', sector: '04', region: 'TEXCOCO', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0064C', nombre: 'CCT 15DES0064C', municipio: 'COYOTEPEC', zonaEscolar: '042', sector: '03', region: 'CUAUTITLAN IZCALLI', valle: 'MEXICO', modalidad: 'GENERAL' },
+  { cct: '15DES0065B', nombre: 'CCT 15DES0065B', municipio: 'AMECAMECA', zonaEscolar: '023', sector: '09', region: 'AMECAMECA', valle: 'MEXICO', modalidad: 'GENERAL' },
 
-  // AMATEPEC
-  { cct: '15EES0008S', nombre: 'SEC. OFIC. NO. 0008', municipio: 'AMATEPEC', zonaEscolar: '020', sector: '05', region: 'VI', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0004U', nombre: 'SEC. TEC. NO. 0004', municipio: 'AMATEPEC', zonaEscolar: '020', sector: '05', region: 'VI', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0750U', nombre: 'TELESECUNDARIA NO. 0750', municipio: 'AMATEPEC', zonaEscolar: '030', sector: '05', region: 'VI', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  
-  // ATIZAPAN DE ZARAGOZA
-  { cct: '15EES0013D', nombre: 'SEC. OFIC. NO. 0013 "IZCALLI"', municipio: 'ATIZAPAN DE ZARAGOZA', zonaEscolar: '045', sector: '08', region: 'V', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EES0638L', nombre: 'SEC. OFIC. NO. 0638', municipio: 'ATIZAPAN DE ZARAGOZA', zonaEscolar: '045', sector: '08', region: 'V', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EST0112U', nombre: 'SEC. TEC. NO. 0112', municipio: 'ATIZAPAN DE ZARAGOZA', zonaEscolar: '015', sector: '08', region: 'V', valle: 'MEXICO', modalidad: 'TECNICA' },
-  
-  // ATLACOMULCO
-  { cct: '15EES0014C', nombre: 'SEC. OFIC. NO. 0014 "ATLACOMULCO"', municipio: 'ATLACOMULCO', zonaEscolar: '050', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0840B', nombre: 'SEC. OFIC. NO. 0840', municipio: 'ATLACOMULCO', zonaEscolar: '050', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0005T', nombre: 'SEC. TEC. NO. 0005', municipio: 'ATLACOMULCO', zonaEscolar: '022', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0567Z', nombre: 'TELESECUNDARIA NO. 0567', municipio: 'ATLACOMULCO', zonaEscolar: '022', sector: '01', region: 'II', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  
-  // ECATEPEC DE MORELOS
-  { cct: '15EES0027P', nombre: 'SEC. OFIC. NO. 0027 "ECATEPEC"', municipio: 'ECATEPEC DE MORELOS', zonaEscolar: '115', sector: '12', region: 'IV', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EES0145X', nombre: 'SEC. OFIC. NO. 0145', municipio: 'ECATEPEC DE MORELOS', zonaEscolar: '115', sector: '12', region: 'IV', valle: 'MEXICO', modalidad: 'GENERAL' },
-  { cct: '15EST0012Z', nombre: 'SEC. TEC. NO. 0012', municipio: 'ECATEPEC DE MORELOS', zonaEscolar: '030', sector: '12', region: 'IV', valle: 'MEXICO', modalidad: 'TECNICA' },
-  { cct: '15EST0090D', nombre: 'SEC. TEC. NO. 0090', municipio: 'ECATEPEC DE MORELOS', zonaEscolar: '030', sector: '12', region: 'IV', valle: 'MEXICO', modalidad: 'TECNICA' },
-  { cct: '15ETV0901X', nombre: 'TELESECUNDARIA NO. 0901', municipio: 'ECATEPEC DE MORELOS', zonaEscolar: '050', sector: '12', region: 'IV', valle: 'MEXICO', modalidad: 'TELESECUNDARIA' },
-  
-  // TOLUCA
-  { cct: '15EES0097G', nombre: 'SEC. OFIC. NO. 0097 "TOLUCA"', municipio: 'TOLUCA', zonaEscolar: '465', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EES0432E', nombre: 'SEC. OFIC. NO. 0432', municipio: 'TOLUCA', zonaEscolar: '465', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'GENERAL' },
-  { cct: '15EST0005T', nombre: 'SEC. TEC. NO. 0005', municipio: 'TOLUCA', zonaEscolar: '005', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TECNICA' },
-  { cct: '15ETV0001M', nombre: 'TELESECUNDARIA NO. 0001', municipio: 'TOLUCA', zonaEscolar: '001', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
-  { cct: '15ETV0194A', nombre: 'TELESECUNDARIA NO. 0194', municipio: 'TOLUCA', zonaEscolar: '001', sector: '01', region: 'I', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
+  // DST (SECUNDARIA TECNICA)
+  { cct: '15DST0001J', nombre: 'CCT 15DST0001J', municipio: 'TIANGUISTENCO', zonaEscolar: '002', sector: '02', region: 'LERMA', valle: 'TOLUCA', modalidad: 'TECNICA' },
+  { cct: '15DST0002I', nombre: 'CCT 15DST0002I', municipio: 'TOLUCA', zonaEscolar: '001', sector: '01', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'TECNICA' },
+  { cct: '15DST0003H', nombre: 'CCT 15DST0003H', municipio: 'TLALNEPANTLA DE BAZ', zonaEscolar: '012', sector: '04', region: 'TLALNEPANTLA', valle: 'MEXICO', modalidad: 'TECNICA' },
+  { cct: '15DST0008C', nombre: 'CCT 15DST0008C', municipio: 'TEJUPILCO', zonaEscolar: '009', sector: '01', region: 'TEJUPILCO', valle: 'TOLUCA', modalidad: 'TECNICA' },
+  { cct: '15DST0010R', nombre: 'CCT 15DST0010R', municipio: 'ACAMBAY', zonaEscolar: '028', sector: '03', region: 'ATLACOMULCO', valle: 'TOLUCA', modalidad: 'TECNICA' },
+  { cct: '15DST0013O', nombre: 'CCT 15DST0013O', municipio: 'NAUCALPAN DE JUAREZ', zonaEscolar: '010', sector: '04', region: 'NAUCALPAN', valle: 'MEXICO', modalidad: 'TECNICA' },
+  { cct: '15DST0015M', nombre: 'CCT 15DST0015M', municipio: 'COACALCO DE BERRIOZABAL', zonaEscolar: '018', sector: '05', region: 'TULTITLAN', valle: 'MEXICO', modalidad: 'TECNICA' },
+
+  // DTV (TELESECUNDARIA)
+  { cct: '15DTV0001X', nombre: 'CCT 15DTV0001X', municipio: 'ZUMPANGO', zonaEscolar: '026', sector: '06', region: 'ZUMPANGO', valle: 'MEXICO', modalidad: 'TELESECUNDARIA' },
+  { cct: '15DTV0002W', nombre: 'CCT 15DTV0002W', municipio: 'ATENCO', zonaEscolar: '004', sector: '06', region: 'TEXCOCO', valle: 'MEXICO', modalidad: 'TELESECUNDARIA' },
+  { cct: '15DTV0014A', nombre: 'CCT 15DTV0014A', municipio: 'ZINACANTEPEC', zonaEscolar: '027', sector: '09', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
+  { cct: '15DTV0025G', nombre: 'CCT 15DTV0025G', municipio: 'TOLUCA', zonaEscolar: '028', sector: '09', region: 'TOLUCA', valle: 'TOLUCA', modalidad: 'TELESECUNDARIA' },
 ];

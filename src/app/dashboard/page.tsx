@@ -2,19 +2,18 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { 
-  LifeBuoy, 
+  Network, 
+  Wrench, 
   Users, 
+  CheckCircle2, 
+  Globe, 
+  LayoutGrid, 
   Search, 
   FileText, 
   Image as ImageIcon, 
-  Eye,
-  CheckCircle2,
-  Network,
-  Wrench,
-  Filter,
-  Globe,
-  LayoutGrid,
-  RefreshCcw
+  Eye, 
+  Filter, 
+  RefreshCcw 
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -38,16 +37,6 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Image from 'next/image'
 
-// Datos del Universo proporcionados
-const UNIVERSE_STATS = [
-  { modalidad: 'GENERAL', valle: 'MEXICO', total: 175 },
-  { modalidad: 'GENERAL', valle: 'TOLUCA', total: 77 },
-  { modalidad: 'TECNICA', valle: 'MEXICO', total: 128 },
-  { modalidad: 'TECNICA', valle: 'TOLUCA', total: 112 },
-  { modalidad: 'TELESECUNDARIA', valle: 'MEXICO', total: 144 },
-  { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194 },
-];
-
 export default function DashboardPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [cctSearch, setCctSearch] = useState('')
@@ -63,28 +52,29 @@ export default function DashboardPage() {
     setTickets(stored.length > 0 ? stored : supportData)
   }, [])
 
-  // Filtros en Cascada Inteligente
+  // Opciones de filtros dinámicas basadas en el catálogo
   const filterOptions = useMemo(() => {
-    // 1. Filtrar catálogo base por Modalidad
+    // Lista de modalidades únicas del catálogo
+    const uniqueModalidades = Array.from(new Set(schoolsDirectory.map(s => s.modalidad))).sort();
+    
+    // Filtrar catálogo por modalidad para obtener municipios válidos
     const listByModalidad = modalidadFilter === 'all' 
       ? schoolsDirectory 
       : schoolsDirectory.filter(s => s.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
     
-    // 2. Municipios únicos resultantes de la modalidad
     const uniqueMunicipios = Array.from(new Set(listByModalidad.map(s => s.municipio))).sort();
     
-    // 3. Filtrar catálogo por Municipio seleccionado
+    // Filtrar catálogo por municipio para obtener CCTs válidos
     const listByMunicipio = municipioFilter === 'all'
       ? listByModalidad
       : listByModalidad.filter(s => s.municipio.toUpperCase() === municipioFilter.toUpperCase());
 
-    // 4. CCTs únicos resultantes del cruce
     const uniqueCCTs = Array.from(new Set(listByMunicipio.map(s => s.cct))).sort();
     
-    return { municipios: uniqueMunicipios, ccts: uniqueCCTs };
+    return { modalidades: uniqueModalidades, municipios: uniqueMunicipios, ccts: uniqueCCTs };
   }, [municipioFilter, modalidadFilter]);
 
-  // Resetear filtros si dejan de ser válidos para las nuevas selecciones
+  // Resetear filtros dependientes si dejan de ser válidos
   useEffect(() => {
     if (municipioFilter !== 'all' && !filterOptions.municipios.some(m => m.toUpperCase() === municipioFilter.toUpperCase())) {
       setMunicipioFilter('all');
@@ -103,6 +93,20 @@ export default function DashboardPage() {
       return matchMunicipio && matchModalidad && matchCCT;
     });
   }, [tickets, municipioFilter, modalidadFilter, cctFilter]);
+
+  // Universo calculado dinámicamente desde el catálogo
+  const UNIVERSE_STATS = useMemo(() => {
+    const mainModalities = ['GENERAL', 'TECNICA', 'TELESECUNDARIA'];
+    const results: { modalidad: string, valle: string, total: number }[] = [];
+    
+    mainModalities.forEach(mod => {
+      ['MEXICO', 'TOLUCA'].forEach(valle => {
+        const count = schoolsDirectory.filter(s => s.modalidad === mod && s.valle === valle).length;
+        results.push({ modalidad: mod, valle, total: count });
+      });
+    });
+    return results;
+  }, []);
 
   // Estadísticas del Informe Ejecutivo
   const totalEdusat = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length
@@ -148,7 +152,6 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        {/* Barra de Filtros Inteligentes en Cascada */}
         <Card className="p-3 border-primary/20 bg-primary/5 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
@@ -156,58 +159,49 @@ export default function DashboardPage() {
               <span className="text-[10px] font-black uppercase text-primary">Filtrar por:</span>
             </div>
             
-            {/* 1. Modalidad (Filtro Principal) */}
             <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
-              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+              <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20">
                 <SelectValue placeholder="Modalidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las Modalidades</SelectItem>
-                <SelectItem value="GENERAL">Secundaria General</SelectItem>
-                <SelectItem value="TECNICA">Secundaria Técnica</SelectItem>
-                <SelectItem value="TELESECUNDARIA">Telesecundaria</SelectItem>
+                <SelectItem value="all">Modalidad (Todas)</SelectItem>
+                {filterOptions.modalidades.map(m => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            {/* 2. Municipio (Depende de Modalidad) */}
             <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
-              <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20">
+              <SelectTrigger className="h-9 text-xs w-[160px] bg-white border-primary/20">
                 <SelectValue placeholder="Municipio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los Municipios ({filterOptions.municipios.length})</SelectItem>
+                <SelectItem value="all">Municipio ({filterOptions.municipios.length})</SelectItem>
                 {filterOptions.municipios.map(m => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* 3. CCT (Depende de Modalidad y Municipio) */}
             <Select value={cctFilter} onValueChange={setCctFilter}>
               <SelectTrigger className="h-9 text-xs w-[180px] bg-white border-primary/20 font-mono">
                 <SelectValue placeholder="Seleccionar CCT" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las CCT ({filterOptions.ccts.length})</SelectItem>
+                <SelectItem value="all">CCT ({filterOptions.ccts.length})</SelectItem>
                 {filterOptions.ccts.map(c => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-9 px-3 text-[10px] font-black bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-              onClick={clearFilters}
-            >
+            <Button variant="outline" size="sm" className="h-9 px-3 text-[10px] font-black bg-white" onClick={clearFilters}>
               <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
             </Button>
           </div>
         </Card>
       </div>
 
-      {/* KPI GLOBALES */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-6">
@@ -254,14 +248,13 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Universo de Atención por Modalidad */}
       <Card className="shadow-lg border-t-4 border-t-primary">
         <CardHeader className="bg-slate-50/50 pb-4">
           <div className="flex items-center gap-3">
             <Globe className="h-6 w-6 text-primary" />
             <div>
               <CardTitle className="text-xl font-black uppercase">Universo de Atención por Modalidad y Valle</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional (Universo Programado: 830 CCT)</CardDescription>
+              <CardDescription className="text-xs font-bold uppercase">Cobertura Institucional Basada en Catálogo Actual</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -281,7 +274,7 @@ export default function DashboardPage() {
                 <TableBody>
                   {UNIVERSE_STATS.map((row, idx) => {
                     const atendidos = getAtendidos(row.modalidad, row.valle);
-                    const percent = Math.min(Math.round((atendidos / row.total) * 100), 100);
+                    const percent = row.total > 0 ? Math.min(Math.round((atendidos / row.total) * 100), 100) : 0;
                     return (
                       <TableRow key={idx} className="hover:bg-slate-50/50">
                         <TableCell className="font-bold text-xs py-3">{row.modalidad}</TableCell>
@@ -304,14 +297,14 @@ export default function DashboardPage() {
                   })}
                   <TableRow className="bg-primary/5 font-black">
                     <TableCell colSpan={2} className="text-right uppercase">Total Universo Programado</TableCell>
-                    <TableCell className="text-center text-lg">830</TableCell>
+                    <TableCell className="text-center text-lg">{schoolsDirectory.length}</TableCell>
                     <TableCell className="text-center text-lg">{tickets.length}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                          <div className="flex justify-between text-[10px]">
-                            <span>{Math.round((tickets.length / 830) * 100)}% Cobertura Global</span>
+                            <span>{Math.round((tickets.length / schoolsDirectory.length) * 100)}% Cobertura</span>
                          </div>
-                         <Progress value={(tickets.length / 830) * 100} className="h-2" />
+                         <Progress value={(tickets.length / schoolsDirectory.length) * 100} className="h-2" />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -343,7 +336,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Consulta de Expedientes Digitales */}
       <Card className="shadow-md border-none overflow-hidden">
         <CardHeader className="bg-slate-900 text-white">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
