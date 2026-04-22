@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -11,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
-import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle } from "lucide-react"
+import { schoolsDirectory } from "@/lib/schools-directory"
+import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle, Search } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -22,6 +24,7 @@ export default function SupportPage() {
   const { toast } = useToast()
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   
   const initialFormState: Omit<SupportTicket, 'status'> = {
     id: '',
@@ -61,6 +64,27 @@ export default function SupportPage() {
     }
   }, [])
 
+  const handleSelectSchool = (cct: string) => {
+    const school = schoolsDirectory.find(s => s.cct === cct);
+    if (school) {
+      setFormData({
+        ...formData,
+        cct: school.cct,
+        schoolName: school.nombre,
+        zonaEscolar: school.zonaEscolar,
+        sector: school.sector,
+        modalidad: school.modalidad,
+        municipio: school.municipio,
+        region: school.region,
+        valle: school.valle
+      });
+      toast({
+        title: "Plantel seleccionado",
+        description: `Se han autocompletado los datos para ${school.nombre}`,
+      });
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
     const files = e.target.files
     if (!files) return
@@ -78,7 +102,7 @@ export default function SupportPage() {
       reader.readAsDataURL(file)
     } else {
       const newPhotos = Array.from(files)
-      if (formData.evidencePhotos!.length + newPhotos.length > 5) {
+      if ((formData.evidencePhotos?.length || 0) + newPhotos.length > 5) {
         toast({ variant: "destructive", title: "Límite excedido", description: "Máximo 5 fotos de evidencia." })
         return
       }
@@ -114,7 +138,6 @@ export default function SupportPage() {
       return
     }
 
-    // Verificar si el folio ya existe
     if (tickets.some(t => t.id === formData.id)) {
       toast({
         variant: "destructive",
@@ -190,6 +213,11 @@ export default function SupportPage() {
     }
   }
 
+  const filteredSchools = schoolsDirectory.filter(s => 
+    s.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.cct.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -211,12 +239,39 @@ export default function SupportPage() {
               <DialogHeader className="p-6 pb-2">
                 <DialogTitle>Formato de Reporte Técnico</DialogTitle>
                 <DialogDescription>
-                  Capture todos los campos del formato oficial de planeación.
+                  Capture todos los campos. Puede buscar el plantel por CCT o Nombre para autocompletar.
                 </DialogDescription>
               </DialogHeader>
               <ScrollArea className="flex-1 px-6">
                 <div className="grid gap-6 py-4">
-                  {/* Sección 0: Identificación Oficial */}
+                  {/* Buscador de Planteles */}
+                  <div className="p-4 bg-muted/30 rounded-lg border border-primary/20 space-y-3">
+                    <Label className="flex items-center gap-2 text-primary font-bold"><Search className="h-4 w-4" /> Buscador de Planteles (Catálogo Oficial)</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Buscar por Nombre o CCT..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    {searchTerm && (
+                      <div className="max-h-40 overflow-auto border rounded bg-white shadow-sm mt-1">
+                        {filteredSchools.map(school => (
+                          <div 
+                            key={school.cct} 
+                            className="p-2 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0"
+                            onClick={() => {
+                              handleSelectSchool(school.cct);
+                              setSearchTerm('');
+                            }}
+                          >
+                            <span className="font-bold">{school.cct}</span> - {school.nombre}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <FileText className="h-4 w-4" /> Identificación del Reporte
@@ -243,7 +298,6 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Sección 1: Datos del Centro de Trabajo */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <LifeBuoy className="h-4 w-4" /> Datos del Plantel (C.T.)
@@ -278,7 +332,6 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Sección Responsables */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <Users className="h-4 w-4" /> Responsable(s) (Técnicos)
@@ -301,7 +354,6 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Sección Detalles */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <Monitor className="h-4 w-4" /> Detalles Técnicos
@@ -324,7 +376,6 @@ export default function SupportPage() {
                     </div>
                   </div>
 
-                  {/* Evidencia */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <FileText className="h-4 w-4" /> Evidencias y Documentación
@@ -339,17 +390,14 @@ export default function SupportPage() {
                           type="file" 
                           accept=".pdf" 
                           onChange={(e) => handleFileChange(e, 'pdf')}
-                          className="cursor-pointer"
                         />
                         {formData.reportPdf && (
-                          <div className="text-xs text-green-600 font-medium flex items-center gap-1">
-                            ✓ PDF cargado correctamente
-                          </div>
+                          <div className="text-xs text-green-600 font-medium flex items-center gap-1">✓ PDF cargado</div>
                         )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="photos" className="flex items-center gap-2">
-                          <ImageIcon className="h-4 w-4" /> Fotos de Evidencia (Máx. 5)
+                          <ImageIcon className="h-4 w-4" /> Fotos (Máx. 5)
                         </Label>
                         <Input 
                           id="photos" 
@@ -357,19 +405,13 @@ export default function SupportPage() {
                           accept="image/*" 
                           multiple 
                           onChange={(e) => handleFileChange(e, 'photo')}
-                          disabled={formData.evidencePhotos!.length >= 5}
-                          className="cursor-pointer"
+                          disabled={(formData.evidencePhotos?.length || 0) >= 5}
                         />
                         <div className="grid grid-cols-5 gap-2 mt-2">
                           {formData.evidencePhotos?.map((photo, idx) => (
-                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border">
+                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">
                               <Image src={photo} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
-                              <button 
-                                onClick={() => removePhoto(idx)}
-                                className="absolute top-0 right-0 bg-destructive text-white p-0.5 rounded-bl-md"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
+                              <button onClick={() => removePhoto(idx)} className="absolute top-0 right-0 bg-destructive text-white p-0.5"><X className="h-3 w-3" /></button>
                             </div>
                           ))}
                         </div>
@@ -440,9 +482,6 @@ export default function SupportPage() {
                           <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
                             <ImageIcon className="h-3 w-3" /> {ticket.evidencePhotos.length}
                           </span>
-                        )}
-                        {!ticket.reportPdf && (!ticket.evidencePhotos || ticket.evidencePhotos.length === 0) && (
-                          <span className="text-[10px] text-muted-foreground italic">Sin archivos</span>
                         )}
                       </div>
                     </TableCell>
