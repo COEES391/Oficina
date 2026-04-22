@@ -1,7 +1,10 @@
 export type SupportTicket = {
   id: string;
+  cct: string;
+  sector: string;
+  zona: string;
   school: string;
-  issue: string;
+  issue: 'Red Local' | 'Instalación de Red Local' | 'Red Edusat' | 'Mantenimiento Preventivo' | 'Mantenimiento Correctivo';
   status: 'pendiente' | 'en proceso' | 'resuelto';
   date: string;
 };
@@ -22,8 +25,26 @@ export type ProgramStatus = {
 };
 
 export const supportData: SupportTicket[] = [
-  { id: 'S001', school: 'Secundaria Fed. 1', issue: 'Falla de red en aula de cómputo', status: 'pendiente', date: '2024-05-20' },
-  { id: 'S002', school: 'Secundaria Tec. 15', issue: 'Mantenimiento preventivo proyectores', status: 'resuelto', date: '2024-05-18' },
+  { 
+    id: 'S001', 
+    cct: '15EES0001Z', 
+    sector: '01', 
+    zona: '12', 
+    school: 'Secundaria Fed. 1', 
+    issue: 'Red Local', 
+    status: 'pendiente', 
+    date: '2024-05-20' 
+  },
+  { 
+    id: 'S002', 
+    cct: '15DST0015A', 
+    sector: '03', 
+    zona: '05', 
+    school: 'Secundaria Tec. 15', 
+    issue: 'Mantenimiento Correctivo', 
+    status: 'resuelto', 
+    date: '2024-05-18' 
+  },
 ];
 
 export const trainingData: TrainingSession[] = [
