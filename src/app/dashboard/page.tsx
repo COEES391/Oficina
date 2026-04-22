@@ -99,21 +99,21 @@ export default function DashboardPage() {
 
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
-      const matchValle = valleFilter === 'all' || t.valle?.toUpperCase() === valleFilter.toUpperCase();
-      const matchMunicipio = municipioFilter === 'all' || t.municipio?.toUpperCase() === municipioFilter.toUpperCase();
-      const matchModalidad = modalidadFilter === 'all' || t.modalidad?.toUpperCase() === modalidadFilter.toUpperCase();
+      const matchValle = valleFilter === 'all' || (t.valle && t.valle.toUpperCase() === valleFilter.toUpperCase());
+      const matchMunicipio = municipioFilter === 'all' || (t.municipio && t.municipio.toUpperCase() === municipioFilter.toUpperCase());
+      const matchModalidad = modalidadFilter === 'all' || (t.modalidad && t.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
       const matchOficina = oficinaFilter === 'all' || t.oficinaRegionalAtencion === oficinaFilter;
-      const matchCCT = cctFilter === '' || t.cct?.toUpperCase().includes(cctFilter.toUpperCase());
+      const matchCCT = cctFilter === '' || (t.cct && t.cct.toUpperCase().includes(cctFilter.toUpperCase()));
       return matchValle && matchMunicipio && matchModalidad && matchOficina && matchCCT;
     });
   }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, cctFilter]);
 
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
-      const matchValle = valleFilter === 'all' || tr.asistenteValle?.toUpperCase() === valleFilter.toUpperCase();
-      const matchMunicipio = municipioFilter === 'all' || tr.asistenteMunicipio?.toUpperCase() === municipioFilter.toUpperCase();
-      const matchModalidad = modalidadFilter === 'all' || tr.asistenteModalidad?.toUpperCase() === modalidadFilter.toUpperCase();
-      const matchCCT = cctFilter === '' || tr.asistenteCCT?.toUpperCase().includes(cctFilter.toUpperCase());
+      const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
+      const matchMunicipio = municipioFilter === 'all' || (tr.asistenteMunicipio && tr.asistenteMunicipio.toUpperCase() === municipioFilter.toUpperCase());
+      const matchModalidad = modalidadFilter === 'all' || (tr.asistenteModalidad && tr.asistenteModalidad.toUpperCase() === modalidadFilter.toUpperCase());
+      const matchCCT = cctFilter === '' || (tr.asistenteCCT && tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase()));
       return matchValle && matchMunicipio && matchModalidad && matchCCT;
     });
   }, [trainings, valleFilter, municipioFilter, modalidadFilter, cctFilter]);
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                     <TableHeader className="bg-slate-50"><TableRow>
                       <TableHead className="text-[10px] font-black">Modalidad</TableHead>
                       <TableHead className="text-[10px] font-black">Valle</TableHead>
-                      <TableHead className="text-[10px] font-black text-center">Meta</TableHead>
+                      <TableHead className="text-[10px] font-black text-center">Universo</TableHead>
                       <TableHead className="text-[10px] font-black text-center">Atención</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
