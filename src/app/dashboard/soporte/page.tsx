@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -13,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle, Search } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileSpreadsheet, Users, Monitor, Calendar, FileText, Image as ImageIcon, X, Circle, Search, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -37,6 +36,7 @@ export default function SupportPage() {
     region: '',
     valle: '',
     responsables: ['', '', '', '', '', ''],
+    oficinaRegionalAtencion: '',
     numeroOficio: '',
     alumnosBeneficiados: 0,
     numeroEquipos: 0,
@@ -175,6 +175,7 @@ export default function SupportPage() {
   const exportToExcel = () => {
     const dataToExport = tickets.map(t => ({
       'Folio': t.id,
+      'Oficina que Atendió': t.oficinaRegionalAtencion,
       'CCT': t.cct,
       'Nombre CT': t.schoolName,
       'Z.E.': t.zonaEscolar,
@@ -276,7 +277,7 @@ export default function SupportPage() {
                     <h3 className="text-sm font-bold flex items-center gap-2 border-b pb-1 text-primary">
                       <FileText className="h-4 w-4" /> Identificación del Reporte
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label htmlFor="folio" className="text-primary font-bold">No. de Folio</Label>
                         <Input 
@@ -287,6 +288,23 @@ export default function SupportPage() {
                           onChange={(e) => setFormData({...formData, id: e.target.value.toUpperCase()})} 
                         />
                       </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="oficinaRegional" className="text-primary font-bold">Oficina Regional que atendió</Label>
+                        <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                          <SelectTrigger className="border-primary/50">
+                            <SelectValue placeholder="Seleccionar oficina..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Oficina de Tecnóloga Educativa Ecatepec">Oficina de Tecnóloga Educativa Ecatepec</SelectItem>
+                            <SelectItem value="Oficina de Tecnóloga Educativa Naucalpan">Oficina de Tecnóloga Educativa Naucalpan</SelectItem>
+                            <SelectItem value="Oficina de Tecnóloga Educativa Nezahualcóyotl">Oficina de Tecnóloga Educativa Nezahualcóyotl</SelectItem>
+                            <SelectItem value="Oficina de Tecnóloga Educativa Toluca">Oficina de Tecnóloga Educativa Toluca</SelectItem>
+                            <SelectItem value="Oficina de COEES Tultitlan">Oficina de COEES Tultitlan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label htmlFor="oficio">No. de Oficio</Label>
                         <Input id="oficio" value={formData.numeroOficio} onChange={(e) => setFormData({...formData, numeroOficio: e.target.value})} />
@@ -305,29 +323,29 @@ export default function SupportPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <Label htmlFor="cct">C.C.T.</Label>
-                        <Input id="cct" value={formData.cct} onChange={(e) => setFormData({...formData, cct: e.target.value.toUpperCase()})} />
+                        <Input id="cct" value={formData.cct} readOnly className="bg-muted/50" />
                       </div>
                       <div className="md:col-span-2 space-y-1">
                         <Label htmlFor="schoolName">Nombre del C.T.</Label>
-                        <Input id="schoolName" value={formData.schoolName} onChange={(e) => setFormData({...formData, schoolName: e.target.value})} />
+                        <Input id="schoolName" value={formData.schoolName} readOnly className="bg-muted/50" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="space-y-1">
                         <Label htmlFor="ze">Z.E.</Label>
-                        <Input id="ze" value={formData.zonaEscolar} onChange={(e) => setFormData({...formData, zonaEscolar: e.target.value})} />
+                        <Input id="ze" value={formData.zonaEscolar} readOnly className="bg-muted/50" />
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="sector">Sector</Label>
-                        <Input id="sector" value={formData.sector} onChange={(e) => setFormData({...formData, sector: e.target.value})} />
+                        <Input id="sector" value={formData.sector} readOnly className="bg-muted/50" />
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="modalidad">Modalidad</Label>
-                        <Input id="modalidad" value={formData.modalidad} onChange={(e) => setFormData({...formData, modalidad: e.target.value})} />
+                        <Input id="modalidad" value={formData.modalidad} readOnly className="bg-muted/50" />
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="municipio">Municipio</Label>
-                        <Input id="municipio" value={formData.municipio} onChange={(e) => setFormData({...formData, municipio: e.target.value})} />
+                        <Input id="municipio" value={formData.municipio} readOnly className="bg-muted/50" />
                       </div>
                     </div>
                   </div>
@@ -455,8 +473,8 @@ export default function SupportPage() {
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[120px]">Folio</TableHead>
-                  <TableHead className="w-[110px]">C.C.T.</TableHead>
-                  <TableHead>Escuela</TableHead>
+                  <TableHead>Atendido por</TableHead>
+                  <TableHead>Escuela / CCT</TableHead>
                   <TableHead>Municipio</TableHead>
                   <TableHead>Evidencias</TableHead>
                   <TableHead className="w-[150px]">Semáforo Estatus</TableHead>
@@ -467,11 +485,20 @@ export default function SupportPage() {
                 {tickets.length > 0 ? tickets.map((ticket) => (
                   <TableRow key={ticket.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-mono text-xs font-bold text-primary">{ticket.id}</TableCell>
-                    <TableCell className="font-mono text-xs">{ticket.cct}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-2 w-2" /> Regional
+                        </span>
+                        <span className="text-[10px] font-medium max-w-[150px] leading-tight">
+                          {ticket.oficinaRegionalAtencion || 'No asignada'}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium text-sm truncate max-w-[200px]">{ticket.schoolName}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase">Sector: {ticket.sector} | Zona: {ticket.zonaEscolar}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-mono">{ticket.cct}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{ticket.municipio}</TableCell>

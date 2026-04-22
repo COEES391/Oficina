@@ -9,6 +9,7 @@ export type SupportTicket = {
   region: string;
   valle: string;
   responsables: string[];
+  oficinaRegionalAtencion?: string; // Nueva propiedad
   numeroOficio: string;
   alumnosBeneficiados: number;
   numeroEquipos: number;
@@ -76,14 +77,15 @@ export const supportData: SupportTicket[] = [
     municipio: 'Toluca',
     region: 'I',
     valle: 'Toluca',
-    responsables: ['Ing. Carlos Ruiz', 'Lic. Ana Soto'],
+    responsables: ['Ing. Carlos Ruiz'],
+    oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Toluca',
     numeroOficio: 'OF-2024-001',
     alumnosBeneficiados: 450,
     numeroEquipos: 15,
-    materialUtilizado: 'Cable UTP Cat6, Conectores RJ45',
+    materialUtilizado: 'Cable UTP Cat6',
     setes: 'S',
-    observaciones: 'Pendiente configuración de switch',
-    descripcionEquipo: 'Servidor Dell PowerEdge y 14 terminales',
+    observaciones: 'Pendiente configuración',
+    descripcionEquipo: 'Servidor Dell',
     fechaEntrada: '2024-05-20',
     fechaSalida: '',
     serviciosMC: 1,
@@ -102,7 +104,7 @@ export const trainingRecords: TrainingRecord[] = [
     fechaTermino: '2024-05-05',
     instructores: ['Gustavo Bello', '', ''],
     numeroOficio: 'OF-CAP-001',
-    materialUtilizado: 'Guías digitales, proyector',
+    materialUtilizado: 'Guías digitales',
     asistentePaterno: 'García',
     asistenteMaterno: 'López',
     asistenteNombres: 'Juan',
