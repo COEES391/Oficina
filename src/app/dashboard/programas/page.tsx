@@ -36,7 +36,8 @@ import {
   Star,
   Mail,
   FileUp,
-  Table as TableIcon
+  Table as TableIcon,
+  Eraser
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -191,6 +192,22 @@ export default function ProgramsPage() {
     });
     return stats;
   }, [accountsData]);
+
+  const handleClearAccounts = () => {
+    if (window.confirm('¿Está seguro de borrar TODOS los registros importados de Cuentas Institucionales? Esta acción no se puede deshacer.')) {
+      const filtered = records.filter(r => 
+        !r.name.startsWith('Cuentas Institucionales') && 
+        !r.id.startsWith('IMP-') && 
+        !r.id.startsWith('PROG-CI')
+      );
+      // Mantener los rubros base vacíos
+      const baseRubros = programsData.filter(p => !filtered.some(f => f.id === p.id));
+      const final = [...filtered, ...baseRubros];
+      setRecords(final);
+      localStorage.setItem('programs_full', JSON.stringify(final));
+      toast({ title: "Auditoría Limpiada", description: "Se han removido todos los registros de cuentas." });
+    }
+  };
 
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -496,6 +513,9 @@ export default function ProgramsPage() {
                           <input type="file" className="hidden" ref={fileInputRef} accept=".xlsx, .xls" onChange={handleExcelUpload} />
                           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-primary/20 text-primary hover:bg-primary/5 gap-2 shadow-sm">
                              <FileUp className="h-4 w-4" /> Importar Auditoría Excel
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={handleClearAccounts} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-rose-200 text-rose-600 hover:bg-rose-50 gap-2 shadow-sm">
+                             <Eraser className="h-4 w-4" /> Limpiar Auditoría
                           </Button>
                        </div>
                     </div>
