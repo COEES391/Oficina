@@ -1,3 +1,4 @@
+
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -78,6 +79,7 @@ type DashboardGoals = {
 }
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
   const [activeReport, setActiveReport] = useState('soporte')
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [trainings, setTrainings] = useState<TrainingRecord[]>([])
@@ -103,6 +105,7 @@ export default function DashboardPage() {
   const [dateEnd, setDateEnd] = useState('')
 
   useEffect(() => {
+    setMounted(true)
     const storedTickets = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
     setTickets(storedTickets.length > 0 ? storedTickets : supportData)
 
@@ -231,6 +234,8 @@ export default function DashboardPage() {
     setDateStart('');
     setDateEnd('');
   };
+
+  if (!mounted) return null
 
   return (
     <div className="space-y-6 pb-10">
@@ -801,7 +806,7 @@ export default function DashboardPage() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 relative">
              {evidenceToView?.type === 'pdf' ? (
-                <iframe src={evidenceToView.data as string} className="w-full h-full border-none shadow-inner" />
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none shadow-inner" title="PDF Viewer" />
              ) : (
                 <ScrollArea className="h-full w-full p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

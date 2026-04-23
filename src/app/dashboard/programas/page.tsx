@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -28,6 +29,7 @@ const PROGRAM_RUBROS = [
 
 export default function ProgramsPage() {
   const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -40,7 +42,7 @@ export default function ProgramsPage() {
     name: '',
     progress: 0,
     status: 'planeacion',
-    date: format(new Date(), 'yyyy-MM-dd'),
+    date: '',
     cct: '',
     schoolName: '',
     zonaEscolar: '',
@@ -51,7 +53,7 @@ export default function ProgramsPage() {
     valle: '',
     numeroEquipos: 0,
     descripcionEquipo: '',
-    fechaEntrada: format(new Date(), 'yyyy-MM-dd'),
+    fechaEntrada: '',
     fechaSalida: '',
     serviciosMC: 0,
     serviciosMP: 0,
@@ -66,12 +68,21 @@ export default function ProgramsPage() {
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
 
   useEffect(() => {
+    setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     if (stored.length === 0) {
       setRecords([]) 
     } else {
       setRecords(stored)
     }
+    
+    // Set initial dates after mounting to avoid hydration mismatch
+    const today = format(new Date(), 'yyyy-MM-dd')
+    setFormData(prev => ({ 
+      ...prev, 
+      date: today,
+      fechaEntrada: today
+    }))
   }, [])
 
   // Auto-lookup al escribir CCT (10 caracteres)
@@ -156,9 +167,18 @@ export default function ProgramsPage() {
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
     setIsDialogOpen(false)
-    setFormData(initialFormState)
-    setEditingId(null)
+    resetForm()
     setSearchTerm('')
+  }
+
+  const resetForm = () => {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    setFormData({
+      ...initialFormState,
+      date: today,
+      fechaEntrada: today
+    })
+    setEditingId(null)
   }
 
   const handleEdit = (record: ProgramStatus) => {
@@ -177,6 +197,8 @@ export default function ProgramsPage() {
     toast({ title: `Estatus: ${newStatus.toUpperCase()}` });
   }
 
+  if (!mounted) return null
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -187,8 +209,7 @@ export default function ProgramsPage() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) {
-            setFormData(initialFormState);
-            setEditingId(null);
+            resetForm();
             setSearchTerm('');
           }
         }}>

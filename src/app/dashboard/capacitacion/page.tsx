@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -44,6 +45,7 @@ const FUNCIONES = [
 
 export default function TrainingPage() {
   const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<TrainingRecord[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -53,8 +55,8 @@ export default function TrainingPage() {
     cursoGrupo: '',
     cursoNombre: '',
     duracionHoras: 0,
-    fechaInicio: format(new Date(), 'yyyy-MM-dd'),
-    fechaTermino: format(new Date(), 'yyyy-MM-dd'),
+    fechaInicio: '',
+    fechaTermino: '',
     instructores: ['', '', ''],
     numeroOficio: '',
     materialUtilizado: '',
@@ -69,6 +71,7 @@ export default function TrainingPage() {
   ])
 
   useEffect(() => {
+    setMounted(true)
     const stored = JSON.parse(localStorage.getItem('training_records_full') || '[]')
     if (stored.length === 0) {
       setRecords(trainingRecords)
@@ -76,6 +79,14 @@ export default function TrainingPage() {
     } else {
       setRecords(stored)
     }
+    
+    // Set initial dates after mounting
+    const today = format(new Date(), 'yyyy-MM-dd')
+    setCourseData(prev => ({
+      ...prev,
+      fechaInicio: today,
+      fechaTermino: today
+    }))
   }, [])
 
   const handleAddRow = () => {
@@ -108,7 +119,6 @@ export default function TrainingPage() {
             valle: school.valle
           }
         } else {
-          // Reset fields if school not found
           newAssistants[index].nombreCT = ''
           newAssistants[index].ze = ''
           newAssistants[index].sector = ''
@@ -170,7 +180,12 @@ export default function TrainingPage() {
   }
 
   const resetForm = () => {
-    setCourseData(initialCourseData)
+    const today = format(new Date(), 'yyyy-MM-dd')
+    setCourseData({
+      ...initialCourseData,
+      fechaInicio: today,
+      fechaTermino: today
+    })
     setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
     setEditingId(null)
   }
@@ -231,6 +246,8 @@ export default function TrainingPage() {
     setEditingId(record.id)
     setIsDialogOpen(true)
   }
+
+  if (!mounted) return null
 
   return (
     <div className="space-y-6">

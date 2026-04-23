@@ -540,7 +540,7 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       className,
       children,
-      leftIcon, // Destructuramos para que no pase al elemento DOM
+      leftIcon,
       ...props
     },
     ref
@@ -644,8 +644,10 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean
   }
 >(({ className, showIcon = false, ...props }, ref) => {
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
+  const [width, setWidth] = React.useState("70%")
+  
+  React.useEffect(() => {
+    setWidth(`${Math.floor(Math.random() * 40) + 50}%`)
   }, [])
 
   return (

@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -28,6 +29,7 @@ const REGIONAL_OFFICES = [
 
 export default function SupportPage() {
   const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -56,7 +58,7 @@ export default function SupportPage() {
     setes: 'N',
     observaciones: '',
     descripcionEquipo: '',
-    fechaEntrada: format(new Date(), 'yyyy-MM-dd'),
+    fechaEntrada: '',
     fechaSalida: '',
     serviciosMC: 0,
     serviciosMP: 0,
@@ -67,6 +69,7 @@ export default function SupportPage() {
   const [formData, setFormData] = useState(initialFormState)
 
   useEffect(() => {
+    setMounted(true)
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
     if (stored.length === 0) {
       setTickets(supportData)
@@ -74,6 +77,9 @@ export default function SupportPage() {
     } else {
       setTickets(stored)
     }
+    
+    // Set initial date after mounting
+    setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
   }, [])
 
   // Auto-lookup when typing CCT
@@ -82,7 +88,7 @@ export default function SupportPage() {
       const match = schoolsDirectory.find(s => s.cct.toUpperCase() === searchTerm.toUpperCase());
       if (match) {
         handleSelectSchool(match.cct);
-        setSearchTerm(''); // Clear search term after auto-filling
+        setSearchTerm('');
       }
     }
   }, [searchTerm]);
@@ -165,8 +171,15 @@ export default function SupportPage() {
     setTickets(updated)
     localStorage.setItem('support_tickets_full', JSON.stringify(updated))
     setIsDialogOpen(false)
-    setFormData(initialFormState)
+    resetForm()
     setEditingTicketId(null)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      ...initialFormState,
+      fechaEntrada: format(new Date(), 'yyyy-MM-dd')
+    })
   }
 
   const handleEdit = (ticket: SupportTicket) => {
@@ -185,6 +198,8 @@ export default function SupportPage() {
     toast({ title: `Estatus actualizado a ${newStatus.toUpperCase()}` });
   }
 
+  if (!mounted) return null
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -195,7 +210,7 @@ export default function SupportPage() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) {
-            setFormData(initialFormState);
+            resetForm();
             setEditingTicketId(null);
             setSearchTerm('');
           }
@@ -353,7 +368,7 @@ export default function SupportPage() {
               </div>
             </ScrollArea>
             <DialogFooter className="p-6 border-t bg-slate-50">
-              <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setEditingTicketId(null); setSearchTerm(''); }} className="font-bold uppercase text-xs">Cancelar</Button>
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); setSearchTerm(''); }} className="font-bold uppercase text-xs">Cancelar</Button>
               <Button onClick={handleSave} className="font-black uppercase text-xs px-10">
                 {editingTicketId ? "Actualizar Servicio" : "Guardar Servicio Técnico"}
               </Button>
