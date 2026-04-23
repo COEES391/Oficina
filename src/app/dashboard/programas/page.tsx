@@ -115,10 +115,11 @@ export default function ProgramsPage() {
     
     setFormData(prev => ({ 
       ...prev, 
+      name: activeTab,
       date: format(new Date(), 'yyyy-MM-dd'),
       fechaEntrada: format(new Date(), 'yyyy-MM-dd')
     }))
-  }, [])
+  }, [activeTab])
 
   const rubroStats = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
@@ -257,6 +258,12 @@ export default function ProgramsPage() {
     setEditingId(null)
   }
 
+  const handleEditRecord = (record: ProgramStatus) => {
+    setFormData(record);
+    setEditingId(record.id);
+    setIsDialogOpen(true);
+  }
+
   if (!mounted) return null
 
   return (
@@ -347,7 +354,8 @@ export default function ProgramsPage() {
                             <TableHead className="text-[10px] font-black uppercase text-center">Sector</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Zona (ZE)</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right pr-6">Equipos Rehab.</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right">Equipos Rehab.</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right pr-6 w-20">Acción</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -368,15 +376,25 @@ export default function ProgramsPage() {
                                     </div>
                                  </div>
                               </TableCell>
-                              <TableCell className="text-xs font-black text-right pr-6">
+                              <TableCell className="text-xs font-black text-right">
                                  <div className="flex items-center justify-end gap-2 text-emerald-600">
                                    {rec.numeroEquipos} <MonitorCheck className="h-4 w-4" />
                                  </div>
                               </TableCell>
+                              <TableCell className="text-right pr-6">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 hover:text-primary transition-colors" 
+                                  onClick={() => handleEditRecord(rec)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
                             </TableRow>
                           )) : (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
+                              <TableCell colSpan={7} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
                                 No se han registrado intervenciones técnicas en este rubro aún.
                               </TableCell>
                             </TableRow>
@@ -427,7 +445,7 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Tipo de Intervención</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
-                      <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-20">Acción</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -467,7 +485,12 @@ export default function ProgramsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right pr-8">
-                          <Button variant="ghost" size="icon" className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" onClick={() => { setFormData(r); setEditingId(r.id); setIsDialogOpen(true); }}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
+                            onClick={() => handleEditRecord(r)}
+                          >
                              <Pencil className="h-5 w-5" />
                           </Button>
                         </TableCell>
@@ -497,7 +520,7 @@ export default function ProgramsPage() {
                <Settings2 className="h-6 w-6 text-primary" />
             </div>
             <DialogTitle className="uppercase font-black text-primary text-2xl tracking-tighter flex items-center gap-4">
-              Ficha Técnica de Programa: {activeTab}
+              Ficha Técnica de Programa: {formData.name || activeTab}
             </DialogTitle>
             <DialogDescription className="font-bold text-xs uppercase text-slate-400 tracking-widest pt-1">Actualización de registro operativo y seguimiento técnico</DialogDescription>
           </DialogHeader>
@@ -506,11 +529,11 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-xs font-black uppercase text-primary tracking-widest">Folio de Registro</Label>
-                  <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-12 font-black border-primary/20 focus:border-primary shadow-sm" />
+                  <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-12 font-black border-primary/20 focus:border-primary shadow-sm" disabled={!!editingId} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-black uppercase text-primary tracking-widest">Rubro del Programa</Label>
-                  <Select value={formData.name} onValueChange={v => setFormData({...formData, name: v})}>
+                  <Select value={formData.name || activeTab} onValueChange={v => setFormData({...formData, name: v})}>
                     <SelectTrigger className="h-12 font-bold border-primary/20 shadow-sm"><SelectValue /></SelectTrigger>
                     <SelectContent className="font-bold">{PROGRAM_RUBROS.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent>
                   </Select>
@@ -592,7 +615,7 @@ export default function ProgramsPage() {
                 </div>
               </div>
 
-              {formData.name === 'Biblioteca Digital' && (
+              {(formData.name === 'Biblioteca Digital' || activeTab === 'Biblioteca Digital') && (
                 <div className="space-y-8 p-8 bg-emerald-50/30 rounded-3xl border-2 border-emerald-100/50 shadow-inner animate-in fade-in slide-in-from-top-4 duration-700">
                    <h3 className="text-sm font-black uppercase text-emerald-700 border-b-2 border-emerald-100 pb-3 flex items-center gap-3 tracking-widest">
                      <Users className="h-6 w-6" /> Seguimiento Pedagógico: Capacitación
@@ -749,7 +772,7 @@ export default function ProgramsPage() {
           </ScrollArea>
           <DialogFooter className="p-8 border-t bg-slate-50/80 backdrop-blur-md">
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-black uppercase text-xs h-12 px-8 rounded-xl border-slate-300">Cancelar</Button>
-             <Button onClick={handleSave} className="font-black uppercase text-xs h-12 px-14 rounded-xl shadow-xl shadow-primary/20">Finalizar y Guardar Registro Técnico</Button>
+             <Button onClick={handleSave} className="font-black uppercase text-xs h-12 px-14 rounded-xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">Finalizar y Guardar Registro Técnico</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -781,7 +804,7 @@ export default function ProgramsPage() {
              )}
           </div>
           <div className="p-6 bg-slate-900 flex justify-end">
-             <Button onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs h-11 px-8 rounded-xl">Cerrar Visor</Button>
+             <Button onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs h-11 px-8 rounded-xl bg-primary hover:bg-primary/90">Cerrar Visor</Button>
           </div>
         </DialogContent>
       </Dialog>
