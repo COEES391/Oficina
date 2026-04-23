@@ -114,8 +114,7 @@ export default function DashboardPage() {
 
     const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
     if (storedGoals) {
-      const { programsGoal, ...rest } = storedGoals;
-      setGoals(rest)
+      setGoals(storedGoals)
     }
   }, [])
 
@@ -168,6 +167,7 @@ export default function DashboardPage() {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
+    const supportSetes = filteredTickets.filter(t => t.setes === 'S').length
 
     const groupBy = (arr: any[], key: string) => {
       return Object.entries(arr.reduce((acc, obj) => {
@@ -182,6 +182,10 @@ export default function DashboardPage() {
         { name: 'Atendidos', value: atendidos, fill: '#10b981' },
         { name: 'En Proceso', value: enProceso, fill: '#f59e0b' },
         { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
+      ],
+      supportSetesData: [
+        { name: 'Semana SETES', value: supportSetes, fill: '#8b5cf6' },
+        { name: 'Soporte Regular', value: filteredTickets.length - supportSetes, fill: '#cbd5e1' },
       ],
       serviceData: [
         { name: 'Red Edusat', value: filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red edusat')).length },
@@ -331,19 +335,11 @@ export default function DashboardPage() {
       <div className="w-full">
         {activeReport === 'soporte' && (
           <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-5">
               <Card className="shadow-sm border-l-4 border-l-blue-500">
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
-                      <div className="text-2xl font-black">{filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red')).length}</div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[8px] font-bold text-primary uppercase">Avance Meta</span>
-                      <span className="text-xs font-black">{Math.round((filteredTickets.filter(t => t.status === 'atendido').length / goals.supportGoal) * 100)}%</span>
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Redes Atendidas</span>
+                  <div className="text-2xl font-black">{filteredTickets.filter(t => (t.tipoIncidencia || '').includes('red')).length}</div>
                   <Progress value={(filteredTickets.filter(t => t.status === 'atendido').length / goals.supportGoal) * 100} className="h-1 mt-2" />
                   <Network className="h-4 w-4 text-blue-500 mt-2" />
                 </CardContent>
@@ -355,16 +351,23 @@ export default function DashboardPage() {
                   <Wrench className="h-4 w-4 text-emerald-500 mt-1" />
                 </CardContent>
               </Card>
-              <Card className="shadow-sm border-l-4 border-l-purple-500">
+              <Card className="shadow-sm border-l-4 border-l-purple-600">
+                <CardContent className="p-6">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Semana de SETES</span>
+                  <div className="text-2xl font-black">{filteredTickets.filter(t => t.setes === 'S').length}</div>
+                  <Zap className="h-4 w-4 text-purple-600 mt-1 fill-purple-600" />
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-l-4 border-l-cyan-500">
                 <CardContent className="p-6">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Beneficiarios</span>
                   <div className="text-2xl font-black">{(filteredTickets.reduce((a, b) => a + (b.alumnosBeneficiados || 0), 0)).toLocaleString()}</div>
-                  <Users className="h-4 w-4 text-purple-500 mt-1" />
+                  <Users className="h-4 w-4 text-cyan-500 mt-1" />
                 </CardContent>
               </Card>
               <Card className="shadow-sm border-l-4 border-l-orange-500">
                 <CardContent className="p-6">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia Operativa</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Eficiencia</span>
                   <div className="text-2xl font-black">
                     {Math.round((filteredTickets.filter(t => t.status === 'atendido').length / (filteredTickets.length || 1)) * 100)}%
                   </div>
@@ -374,20 +377,40 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus Operativo</CardTitle></CardHeader>
-                <CardContent className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={stats.statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                        {stats.statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                      </Pie>
-                      <RechartsTooltip />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+               <div className="grid gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-purple-600 fill-purple-600" /> Atención Semana de SETES vs Regular
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={stats.supportSetesData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {stats.supportSetesData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                          </Pie>
+                          <RechartsTooltip />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader><CardTitle className="text-sm font-black uppercase">Estatus Operativo de Folios</CardTitle></CardHeader>
+                    <CardContent className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={stats.statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {stats.statusData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                          </Pie>
+                          <RechartsTooltip />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+               </div>
               <Card>
                 <CardHeader><CardTitle className="text-sm font-black uppercase">Universo Escolar y Cobertura</CardTitle></CardHeader>
                 <CardContent className="p-0">
@@ -426,6 +449,7 @@ export default function DashboardPage() {
                     <TableRow>
                       <TableHead className="text-[10px] font-black">Folio</TableHead>
                       <TableHead className="text-[10px] font-black">CCT / Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black text-center">SETES</TableHead>
                       <TableHead className="text-[10px] font-black">Servicio</TableHead>
                       <TableHead className="text-[10px] font-black">Estatus</TableHead>
                       <TableHead className="text-[10px] font-black text-center">Evidencias</TableHead>
@@ -440,6 +464,9 @@ export default function DashboardPage() {
                               <span className="text-[10px] font-mono font-bold">{t.cct}</span>
                               <span className="text-[9px] text-muted-foreground truncate max-w-[180px]">{t.schoolName}</span>
                            </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                           {t.setes === 'S' ? <Zap className="h-3.5 w-3.5 text-purple-600 fill-purple-600 mx-auto" /> : <span className="text-[8px] text-muted-foreground font-bold">REGULAR</span>}
                         </TableCell>
                         <TableCell className="text-[10px] font-semibold capitalize text-primary">
                           {t.tipoIncidencia || 'Sin especificar'}
@@ -469,7 +496,7 @@ export default function DashboardPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredTickets.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-10 text-[10px]">Sin registros encontrados en el periodo.</TableCell></TableRow>}
+                    {filteredTickets.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-10 text-[10px]">Sin registros encontrados en el periodo.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </CardContent>
