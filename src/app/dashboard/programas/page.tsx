@@ -359,7 +359,6 @@ export default function ProgramsPage() {
             ...updatedAsistentes[0],
             email: inlineFormData.email,
             cct: inlineFormData.cct,
-            departamento: inlineFormData.departamento,
             modalidad: inlineFormData.modalidad,
             sector: inlineFormData.sector,
             ze: inlineFormData.zona,
@@ -571,15 +570,15 @@ export default function ProgramsPage() {
                        </div>
                     </div>
                     <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
-                       <Table className="min-w-[1200px]">
+                       <Table className="min-w-[1000px]">
                           <TableHeader className="bg-white/80">
                              <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[250px]">Correo Institucional</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Centro de Trabajo (CCT)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[200px]">Correo Institucional</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase min-w-[130px]">CCT</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase min-w-[120px]">Modalidad</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[150px]">Sector / ZE</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[150px]">Departamento</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[120px]">Estatus</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Sector / ZE</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Valle</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Estatus</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[100px]">Acción</TableHead>
                              </TableRow>
                           </TableHeader>
@@ -606,7 +605,7 @@ export default function ProgramsPage() {
                                   <TableCell>
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-xs font-black uppercase w-32 bg-white" 
+                                          className="h-9 text-xs font-black uppercase w-28 bg-white" 
                                           value={inlineFormData.cct} 
                                           onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} 
                                           maxLength={10}
@@ -639,18 +638,18 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-[10px] font-black uppercase w-32 mx-auto bg-white text-center" 
-                                          value={inlineFormData.departamento} 
-                                          onChange={e => setInlineFormData({...inlineFormData, departamento: e.target.value.toUpperCase()})} 
+                                          className="h-9 text-[10px] font-black uppercase w-24 mx-auto bg-white text-center" 
+                                          value={inlineFormData.valle} 
+                                          onChange={e => setInlineFormData({...inlineFormData, valle: e.target.value.toUpperCase()})} 
                                         />
                                      ) : (
-                                       <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.departamento}</Badge>
+                                       <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.valle}</Badge>
                                      )}
                                   </TableCell>
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <Select value={inlineFormData.status} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
-                                          <SelectTrigger className="h-9 w-32 mx-auto text-[10px] font-black uppercase bg-white">
+                                          <SelectTrigger className="h-9 w-28 mx-auto text-[10px] font-black uppercase bg-white">
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent className="font-black">
@@ -766,7 +765,7 @@ export default function ProgramsPage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                        <Pencil className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
                                        <Trash2 className="h-4 w-4" />
                                     </Button>
                                  </div>
@@ -925,7 +924,7 @@ export default function ProgramsPage() {
                                     <TableHead className={cn("min-w-[180px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Paterno / Materno / Nombre</TableHead>
                                     <TableHead className={cn("min-w-[150px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>RFC (13)</TableHead>
                                     <TableHead className={cn("min-w-[200px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Correo / Usuario</TableHead>
-                                    <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Departamento</TableHead>
+                                    <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Valle</TableHead>
                                     <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Género</TableHead>
                                     {!isCuentasInDialog && <TableHead className={cn("w-12 sticky right-0 bg-white/95", isLibraryTab ? "border-emerald-50" : "border-blue-50")}></TableHead>}
                                   </TableRow>
@@ -943,7 +942,7 @@ export default function ProgramsPage() {
                                       </TableCell>
                                       <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 text-primary uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
                                       <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 uppercase" value={ast.departamento} onChange={e => updateAssistant(idx, 'departamento', e.target.value.toUpperCase())} placeholder="DEPARTAMENTO" /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 uppercase" value={ast.valle} onChange={e => updateAssistant(idx, 'valle', e.target.value.toUpperCase())} placeholder="VALLE" /></TableCell>
                                       <TableCell className="p-4">
                                         <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
                                           <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 shadow-sm"><SelectValue /></SelectTrigger>
