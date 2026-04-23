@@ -98,7 +98,6 @@ export default function ProgramsPage() {
     }))
   }, [])
 
-  // Cálculo de estadísticas por rubro
   const rubroStats = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
       const rubroRecords = records.filter(r => r.name === name);
@@ -177,6 +176,7 @@ export default function ProgramsPage() {
     localStorage.setItem('programs_full', JSON.stringify(updated))
     setIsDialogOpen(false)
     resetForm()
+    toast({ title: "Registro exitoso", description: "La intervención ha sido guardada." })
   }
 
   const resetForm = () => {
@@ -197,7 +197,6 @@ export default function ProgramsPage() {
         <p className="text-muted-foreground font-bold text-sm uppercase tracking-[0.2em]">Seguimiento Transversal de Rubros Estratégicos</p>
       </div>
 
-      {/* Tarjetas de Rubros Estilo Ejecutivo */}
       <div className="grid gap-6">
         {rubroStats.map((rubro) => (
           <Card key={rubro.name} className="overflow-hidden border-2 border-primary/10 shadow-lg hover:border-primary/30 transition-all group">
@@ -233,6 +232,7 @@ export default function ProgramsPage() {
                       </div>
                       <Button 
                         onClick={() => {
+                          resetForm();
                           setFormData(prev => ({ ...prev, name: rubro.name }));
                           setIsDialogOpen(true);
                         }}
@@ -257,7 +257,6 @@ export default function ProgramsPage() {
         ))}
       </div>
 
-      {/* Tabla de Registros Detallados (Idéntica a Soporte) */}
       <Card className="border-t-4 border-t-primary shadow-xl">
         <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-4">
            <div>
@@ -335,7 +334,6 @@ export default function ProgramsPage() {
         </CardContent>
       </Card>
 
-      {/* Diálogo de Captura (Ficha Técnica) */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="sm:max-w-[900px] h-[95vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-2 bg-slate-50 border-b">
@@ -442,11 +440,11 @@ export default function ProgramsPage() {
                 <h3 className="text-xs font-black uppercase text-primary">Gestión de Evidencias Digitales</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-4 border-2 border-dashed rounded-2xl bg-slate-50 space-y-2">
-                    <Label className="text-[10px] font-black uppercase flex items-center gap-2"><FileText className="h-4 w-4" /> Reporte PDF</Label>
+                    <Label className="text-[10px] font-black uppercase flex items-center gap-2"><FileText className="h-4 w-4 text-blue-600" /> Reporte PDF</Label>
                     <Input type="file" accept=".pdf" className="bg-white" onChange={e => handleFileChange(e, 'pdf')} />
                   </div>
                   <div className="p-4 border-2 border-dashed rounded-2xl bg-slate-50 space-y-2">
-                    <Label className="text-[10px] font-black uppercase flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Fotos (Máx 5)</Label>
+                    <Label className="text-[10px] font-black uppercase flex items-center gap-2"><ImageIcon className="h-4 w-4 text-pink-600" /> Fotos (Máx 5)</Label>
                     <Input type="file" multiple accept="image/*" className="bg-white" onChange={e => handleFileChange(e, 'photo')} />
                   </div>
                 </div>
@@ -465,7 +463,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Visor de Evidencias */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="p-6 bg-slate-50 border-b">
@@ -475,10 +472,10 @@ export default function ProgramsPage() {
           </DialogHeader>
           <div className="flex-1 bg-slate-100 p-4">
              {evidenceToView?.type === 'pdf' ? (
-                <iframe src={evidenceToView.data as string} className="w-full h-full border-none rounded-xl shadow-inner" />
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none rounded-xl shadow-inner" title="PDF Viewer" />
              ) : (
                 <div className="grid grid-cols-2 gap-4">
-                   {(evidenceToView?.data as string[]).map((img, i) => (
+                   {(evidenceToView?.data as string[])?.map((img, i) => (
                       <div key={i} className="relative aspect-video rounded-xl overflow-hidden border-4 border-white shadow-lg">
                         <Image src={img} alt="ev" fill className="object-cover" />
                       </div>
