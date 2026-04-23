@@ -271,6 +271,7 @@ export default function ProgramsPage() {
                           <TableHead className="text-[9px] font-black uppercase">CCT Atendido</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-center">Sector</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-center">Zona (ZE)</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-right">Equipos Rehab.</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -281,6 +282,14 @@ export default function ProgramsPage() {
                             <TableCell className="text-[10px] font-mono font-black">{rec.cct}</TableCell>
                             <TableCell className="text-[10px] font-bold text-center">{rec.sector}</TableCell>
                             <TableCell className="text-[10px] font-bold text-center">{rec.zonaEscolar}</TableCell>
+                            <TableCell className="text-center">
+                               <div className="flex justify-center">
+                                  <Circle className={cn("h-3 w-3 fill-current", 
+                                    rec.status === 'concluido' ? 'text-emerald-500' : 
+                                    rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500'
+                                  )} />
+                               </div>
+                            </TableCell>
                             <TableCell className="text-[10px] font-black text-right text-emerald-600">
                                <div className="flex items-center justify-end gap-1.5">
                                  {rec.numeroEquipos} <MonitorCheck className="h-3 w-3" />
@@ -289,7 +298,7 @@ export default function ProgramsPage() {
                           </TableRow>
                         )) : (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-6 text-[9px] font-bold text-muted-foreground uppercase">
+                            <TableCell colSpan={6} className="text-center py-6 text-[9px] font-bold text-muted-foreground uppercase">
                               Sin registros de atención técnica disponibles.
                             </TableCell>
                           </TableRow>
@@ -482,13 +491,24 @@ export default function ProgramsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">No. de Oficio</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} /></div>
                 <div className="space-y-1">
                   <Label className="text-[10px] font-black uppercase">Atención SETES (S/N)</Label>
                   <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
                     <SelectTrigger className="font-black"><SelectValue /></SelectTrigger>
                     <SelectContent><SelectItem value="S">SÍ</SelectItem><SelectItem value="N">NO</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase">Estatus Intervención</Label>
+                  <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
+                    <SelectTrigger className="font-black"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planeacion">Planeación</SelectItem>
+                      <SelectItem value="activo">En Proceso</SelectItem>
+                      <SelectItem value="concluido">Concluido</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
               </div>
