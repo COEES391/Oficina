@@ -99,7 +99,6 @@ export default function DashboardPage() {
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
   const [oficinaFilter, setOficinaFilter] = useState('all')
-  const [cctFilter, setCctFilter] = useState('')
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
@@ -115,7 +114,7 @@ export default function DashboardPage() {
 
     const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
     if (storedGoals) {
-      const { programsGoal, ...rest } = storedGoals; // Clean up old structure if exists
+      const { programsGoal, ...rest } = storedGoals;
       setGoals(rest)
     }
   }, [])
@@ -140,24 +139,22 @@ export default function DashboardPage() {
       const matchMunicipio = municipioFilter === 'all' || (t.municipio && t.municipio.toUpperCase() === municipioFilter.toUpperCase());
       const matchModalidad = modalidadFilter === 'all' || (t.modalidad && t.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
       const matchOficina = oficinaFilter === 'all' || t.oficinaRegionalAtencion === oficinaFilter;
-      const matchCCT = cctFilter === '' || (t.cct && t.cct.toUpperCase().includes(cctFilter.toUpperCase()));
       const matchDateStart = !dateStart || t.fechaEntrada >= dateStart;
       const matchDateEnd = !dateEnd || t.fechaEntrada <= dateEnd;
-      return matchValle && matchMunicipio && matchModalidad && matchOficina && matchCCT && matchDateStart && matchDateEnd;
+      return matchValle && matchMunicipio && matchModalidad && matchOficina && matchDateStart && matchDateEnd;
     });
-  }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, cctFilter, dateStart, dateEnd]);
+  }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, dateStart, dateEnd]);
 
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
       const matchMunicipio = municipioFilter === 'all' || (tr.asistenteMunicipio && tr.asistenteMunicipio.toUpperCase() === municipioFilter.toUpperCase());
       const matchModalidad = modalidadFilter === 'all' || (tr.asistenteModalidad && tr.asistenteModalidad.toUpperCase() === modalidadFilter.toUpperCase());
-      const matchCCT = cctFilter === '' || (tr.asistenteCCT && tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase()));
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
-      return matchValle && matchMunicipio && matchModalidad && matchCCT && matchDateStart && matchDateEnd;
+      return matchValle && matchMunicipio && matchModalidad && matchDateStart && matchDateEnd;
     });
-  }, [trainings, valleFilter, municipioFilter, modalidadFilter, cctFilter, dateStart, dateEnd]);
+  }, [trainings, valleFilter, municipioFilter, modalidadFilter, dateStart, dateEnd]);
 
   const filteredPrograms = useMemo(() => {
     return programs.filter(p => {
@@ -172,7 +169,6 @@ export default function DashboardPage() {
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
 
-    // Grouping helper
     const groupBy = (arr: any[], key: string) => {
       return Object.entries(arr.reduce((acc, obj) => {
         const val = obj[key] || 'Sin Dato';
@@ -228,7 +224,6 @@ export default function DashboardPage() {
     setMunicipioFilter('all');
     setModalidadFilter('all');
     setOficinaFilter('all');
-    setCctFilter('');
     setDateStart('');
     setDateEnd('');
   };
@@ -325,16 +320,6 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
             )}
-
-            <div className="relative w-[180px]">
-               <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-               <Input 
-                  placeholder="Filtrar CCT..." 
-                  className="h-9 text-xs pl-8 bg-white border-primary/20 font-mono uppercase"
-                  value={cctFilter}
-                  onChange={(e) => setCctFilter(e.target.value.toUpperCase())}
-                />
-            </div>
 
             <Button variant="ghost" size="sm" className="h-9 px-3 text-[10px] font-black" onClick={clearFilters}>
               <RefreshCcw className="h-3 w-3 mr-1" /> REINICIAR
