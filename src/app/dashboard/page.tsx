@@ -26,7 +26,10 @@ import {
   Calendar,
   Layers,
   Layout,
-  Table as TableIcon
+  Table as TableIcon,
+  MonitorCheck,
+  Mail,
+  Activity
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -65,7 +68,16 @@ const TARGET_UNIVERSE_DATA = [
   { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
 ];
 
-// Metas regionales 2026 basadas en la tabla proporcionada por el usuario
+const TOTAL_UNIVERSE = 830;
+
+const PROGRAM_RUBROS = [
+  'Biblioteca Digital',
+  'Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)',
+  'Geoposición',
+  'Conoce mi Escuela',
+  'Mesa de Ayuda Técnica'
+];
+
 const REGIONAL_METAS_FY2026 = [
   { region: 'TOLUCA', oficina: 'Toluca', trimestral: 539, anual: 2156 },
   { region: 'MÉXICO', oficina: 'Nezahualcóyotl', trimestral: 215, anual: 860 },
@@ -75,7 +87,7 @@ const REGIONAL_METAS_FY2026 = [
 
 const REGIONAL_SUMMARY_2026 = {
   'TOLUCA': 2156,
-  'MEXICO': 860 + 860 + 1724 // Neza + Ecatepec + Naucalpan
+  'MEXICO': 860 + 860 + 1724
 };
 
 type DashboardGoals = {
@@ -161,6 +173,60 @@ export default function DashboardPage() {
     });
   }, [trainings, valleFilter, municipioFilter, modalidadFilter, dateStart, dateEnd]);
 
+  const programStats = useMemo(() => {
+    return PROGRAM_RUBROS.map(name => {
+      const rubroRecords = programs.filter(r => r.name === name || (name.startsWith('Cuentas') && (r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI'))));
+      const uniqueSchools = new Set(rubroRecords.map(r => r.cct).filter(Boolean)).size;
+      const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
+      const lastUpdate = rubroRecords.length > 0 
+        ? rubroRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date 
+        : '-';
+      
+      let status: 'planeacion' | 'activo' | 'concluido' = 'planeacion';
+      if (progress > 0) status = 'activo';
+      if (progress >= 100) status = 'concluido';
+
+      return { 
+        name: name.includes('(') ? name.split('(')[0].trim() : name, 
+        fullName: name,
+        progress, 
+        status, 
+        lastUpdate, 
+        count: uniqueSchools,
+        records: rubroRecords 
+      };
+    });
+  }, [programs]);
+
+  const accountsByDomain = useMemo(() => {
+    const accRecords = programs.filter(r => r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI') || r.name?.startsWith('Cuentas'));
+    const stats: Record<string, number> = {
+      '@desysa.gob.mx': 0,
+      '@desysa.edu.mx': 0,
+      '@coees.edu.mx': 0,
+      'otros': 0
+    };
+    
+    accRecords.forEach(rec => {
+      const email = rec.asistentes?.[0]?.email || '';
+      if (email.includes('@')) {
+        const dom = `@${email.split('@')[1]}`.toLowerCase();
+        if (stats.hasOwnProperty(dom)) {
+          stats[dom]++;
+        } else {
+          stats['otros']++;
+        }
+      }
+    });
+
+    return [
+      { name: '@desysa.gob.mx', value: stats['@desysa.gob.mx'], fill: '#621132' },
+      { name: '@desysa.edu.mx', value: stats['@desysa.edu.mx'], fill: '#B38E5D' },
+      { name: '@coees.edu.mx', value: stats['@coees.edu.mx'], fill: '#10b981' },
+      { name: 'Otros', value: stats['otros'], fill: '#cbd5e1' },
+    ].filter(d => d.value > 0);
+  }, [programs]);
+
   const stats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length
     const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
@@ -190,14 +256,6 @@ export default function DashboardPage() {
           goal: REGIONAL_SUMMARY_2026['TOLUCA'],
           fill: '#ec4899' 
         },
-      ],
-      trainingByGender: [
-        { name: 'MASCULINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#0ea5e9' },
-        { name: 'FEMENINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'FEMENINO').length, fill: '#f43f5e' },
-      ],
-      trainingBySetes: [
-        { name: 'SETES', value: filteredTrainings.filter(tr => tr.setes === 'S').length, fill: '#8b5cf6' },
-        { name: 'OTRO', value: filteredTrainings.filter(tr => tr.setes === 'N').length, fill: '#94a3b8' },
       ],
     }
   }, [filteredTickets, filteredTrainings]);
@@ -493,6 +551,156 @@ export default function DashboardPage() {
                 </div>
               </Card>
             </div>
+          </div>
+        )}
+
+        {activeReport === 'programas' && (
+          <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
+             {/* Program Summary Cards */}
+             <div className="grid gap-6 md:grid-cols-4">
+               {[
+                 { title: 'Intervenciones', value: programs.length, icon: <Activity className="h-6 w-6" />, color: 'bg-rose-700', bg: 'bg-rose-50' },
+                 { title: 'Planteles Impactados', value: new Set(programs.map(p => p.cct).filter(Boolean)).size, icon: <School className="h-6 w-6" />, color: 'bg-amber-600', bg: 'bg-amber-50' },
+                 { title: 'Cuentas Auditadas', value: programs.filter(p => p.id.startsWith('IMP-') || p.id.startsWith('PROG-CI') || p.name?.startsWith('Cuentas')).length, icon: <Mail className="h-6 w-6" />, color: 'bg-blue-600', bg: 'bg-blue-50' },
+                 { title: 'Equipos Biblioteca', value: programs.filter(p => p.name === 'Biblioteca Digital').reduce((a, b) => a + (b.numeroEquipos || 0), 0), icon: <MonitorCheck className="h-6 w-6" />, color: 'bg-emerald-600', bg: 'bg-emerald-50' },
+               ].map((item, i) => (
+                 <Card key={i} className="executive-card p-8 group">
+                   <div className="relative z-10">
+                     <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform`}>
+                       {item.icon}
+                     </div>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{item.title}</span>
+                     <div className="text-4xl font-black text-slate-800 mt-2">{item.value.toLocaleString()}</div>
+                   </div>
+                 </Card>
+               ))}
+             </div>
+
+             <div className="grid gap-8 md:grid-cols-2">
+                {/* Program Progress Chart */}
+                <Card className="executive-card p-8">
+                  <CardHeader className="p-0 mb-8">
+                    <CardTitle className="text-sm font-black uppercase flex items-center gap-3 text-primary">
+                      <TrendingUp className="h-5 w-5" /> Avance por Rubro Programático
+                    </CardTitle>
+                  </CardHeader>
+                  <div className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={programStats} layout="vertical" margin={{ left: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
+                        <XAxis type="number" hide />
+                        <YAxis 
+                          dataKey="name" 
+                          type="category" 
+                          tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} 
+                          width={140}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }}
+                          formatter={(value: any) => [`${value}%`, 'Avance Global']}
+                        />
+                        <Bar dataKey="progress" radius={[0, 10, 10, 0]} barSize={20}>
+                          {programStats.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.progress > 70 ? '#10b981' : entry.progress > 30 ? '#f59e0b' : '#621132'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+
+                {/* Account Domain Breakdown Chart */}
+                <Card className="executive-card p-8">
+                  <CardHeader className="p-0 mb-8">
+                    <CardTitle className="text-sm font-black uppercase flex items-center gap-3 text-primary">
+                      <PieChartIcon className="h-5 w-5" /> Auditoría de Cuentas por Dominio
+                    </CardTitle>
+                  </CardHeader>
+                  {accountsByDomain.length > 0 ? (
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie 
+                            data={accountsByDomain} 
+                            cx="50%" 
+                            cy="45%" 
+                            innerRadius={70} 
+                            outerRadius={110} 
+                            paddingAngle={5} 
+                            dataKey="value"
+                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                          >
+                            {accountsByDomain.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="none" />)}
+                          </Pie>
+                          <RechartsTooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'black', textTransform: 'uppercase', paddingTop: '20px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[350px] flex flex-col items-center justify-center opacity-30">
+                       <Mail className="h-16 w-16 mb-4" />
+                       <p className="font-black text-[10px] uppercase">Sin datos de cuentas disponibles</p>
+                    </div>
+                  )}
+                </Card>
+             </div>
+
+             {/* Detailed Rubric Table */}
+             <Card className="executive-card">
+               <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
+                 <div>
+                   <CardTitle className="text-lg font-black uppercase text-primary">Estado de Cobertura por Rubro</CardTitle>
+                   <CardDescription className="text-[9px] font-black uppercase tracking-widest mt-1">Sincronizado con Auditoría Oficial 2024-2025</CardDescription>
+                 </div>
+                 <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl">Consolidado SIP</Badge>
+               </CardHeader>
+               <CardContent className="p-0">
+                 <Table>
+                   <TableHeader className="bg-slate-50/50">
+                     <TableRow className="border-none">
+                       <TableHead className="text-[10px] font-black py-6 pl-10">PROGRAMA / RUBRO</TableHead>
+                       <TableHead className="text-[10px] font-black text-center">PLANTELES</TableHead>
+                       <TableHead className="text-[10px] font-black text-center">ESTATUS</TableHead>
+                       <TableHead className="text-[10px] font-black text-center">ÚLTIMA ACT.</TableHead>
+                       <TableHead className="text-[10px] font-black text-right pr-10">AVANCE %</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {programStats.map((row, idx) => (
+                       <TableRow key={idx} className="hover:bg-slate-50/50 border-slate-50 transition-all">
+                         <TableCell className="py-6 pl-10">
+                            <div className="flex flex-col">
+                               <span className="text-xs font-black text-slate-700">{row.name}</span>
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Rubro Estratégico Planeación</span>
+                            </div>
+                         </TableCell>
+                         <TableCell className="text-center font-black text-xs text-primary">{row.count}</TableCell>
+                         <TableCell className="text-center">
+                            <Badge className={cn(
+                              "text-[8px] font-black uppercase px-3 py-1 rounded-full border-none",
+                              row.status === 'concluido' ? 'bg-emerald-500 text-white' : row.status === 'activo' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'
+                            )}>
+                              {row.status}
+                            </Badge>
+                         </TableCell>
+                         <TableCell className="text-center text-[10px] font-bold text-slate-500">{row.lastUpdate}</TableCell>
+                         <TableCell className="text-right pr-10">
+                            <div className="flex items-center justify-end gap-4">
+                               <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-primary h-full rounded-full" style={{ width: `${row.progress}%` }} />
+                               </div>
+                               <span className="text-xs font-black text-primary">{row.progress}%</span>
+                            </div>
+                         </TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </CardContent>
+             </Card>
           </div>
         )}
       </div>
