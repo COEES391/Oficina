@@ -364,6 +364,7 @@ export default function ProgramsPage() {
                             <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Sector</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Zona (ZE)</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-center">Género (M/F)</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-right">Equipos Rehab.</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-right pr-6 w-24">Acción</TableHead>
@@ -378,6 +379,20 @@ export default function ProgramsPage() {
                               <TableCell className="text-xs font-bold text-slate-700 uppercase">{rec.modalidad}</TableCell>
                               <TableCell className="text-xs font-bold text-center">{rec.sector}</TableCell>
                               <TableCell className="text-xs font-bold text-center">{rec.zonaEscolar}</TableCell>
+                              <TableCell className="text-center">
+                                {rec.capacitacion === 'S' && rec.asistentes && rec.asistentes.length > 0 ? (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Badge variant="outline" className="text-[8px] font-black border-blue-200 text-blue-700 bg-blue-50 px-1.5 h-4">
+                                      {rec.asistentes.filter(a => a.genero === 'MASCULINO').length}M
+                                    </Badge>
+                                    <Badge variant="outline" className="text-[8px] font-black border-pink-200 text-pink-700 bg-pink-50 px-1.5 h-4">
+                                      {rec.asistentes.filter(a => a.genero === 'FEMENINO').length}F
+                                    </Badge>
+                                  </div>
+                                ) : (
+                                  <span className="text-[9px] text-muted-foreground font-bold">-</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-center">
                                  <div className="flex justify-center">
                                     <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border shadow-sm">
@@ -417,7 +432,7 @@ export default function ProgramsPage() {
                             </TableRow>
                           )) : (
                             <TableRow>
-                              <TableCell colSpan={9} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
+                              <TableCell colSpan={10} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
                                 No se han registrado intervenciones técnicas en este rubro aún.
                               </TableCell>
                             </TableRow>
@@ -721,10 +736,11 @@ export default function ProgramsPage() {
                                         </Select>
                                       </TableCell>
                                       <TableCell className="p-2">
-                                        <Select value={ast.funcion} onValueChange={v => updateAssistant(idx, 'funcion', v)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-bold rounded-lg border-emerald-100"><SelectValue /></SelectTrigger>
+                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v)}>
+                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-lg border-emerald-100"><SelectValue /></SelectTrigger>
                                           <SelectContent className="font-bold">
-                                            {FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px]">{f}</SelectItem>)}
+                                            <SelectItem value="MASCULINO" className="text-[10px]">MASCULINO</SelectItem>
+                                            <SelectItem value="FEMENINO" className="text-[10px]">FEMENINO</SelectItem>
                                           </SelectContent>
                                         </Select>
                                       </TableCell>
