@@ -101,8 +101,41 @@ export const supportData: SupportTicket[] = [
 ];
 
 export const trainingRecords: TrainingRecord[] = [];
+
 export const programsData: ProgramStatus[] = [
-  { id: 'P1', name: 'Equipamiento Tecnológico 2024', progress: 85, status: 'activo', date: '2024-01-15' },
-  { id: 'P2', name: 'Conectividad Rural', progress: 40, status: 'planeacion', date: '2024-02-10' },
-  { id: 'P3', name: 'Capacitación a Directivos', progress: 100, status: 'concluido', date: '2024-03-05' },
+  { 
+    id: 'PROG-BD', 
+    name: 'Biblioteca Digital', 
+    progress: 0, 
+    status: 'planeacion', 
+    date: '2024-01-01' 
+  },
+  { 
+    id: 'PROG-CI', 
+    name: 'Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)', 
+    progress: 0, 
+    status: 'planeacion', 
+    date: '2024-01-01' 
+  },
+  { 
+    id: 'PROG-GP', 
+    name: 'Geoposición', 
+    progress: 0, 
+    status: 'planeacion', 
+    date: '2024-01-01' 
+  },
+  { 
+    id: 'PROG-CE', 
+    name: 'Conoce mi Escuela', 
+    progress: 0, 
+    status: 'planeacion', 
+    date: '2024-01-01' 
+  },
+  { 
+    id: 'PROG-MA', 
+    name: 'Mesa de Ayuda Técnica', 
+    progress: 0, 
+    status: 'planeacion', 
+    date: '2024-01-01' 
+  },
 ];
