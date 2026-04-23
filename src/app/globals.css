@@ -10,14 +10,14 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    /* Edomex Guinda: #621132 -> HSL 336 70% 23% */
+    /* Edomex Guinda: #621132 */
     --primary: 336 70% 23%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    /* Edomex Oro: #B38E5D -> HSL 36 32% 53% */
+    /* Edomex Oro: #B38E5D */
     --accent: 36 32% 53%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
@@ -25,7 +25,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 336 70% 23%;
-    --radius: 0.5rem;
+    --radius: 1rem;
   }
 
   .dark {
@@ -53,9 +53,23 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border transition-colors duration-200;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#f8f9fb] text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .executive-card {
+    @apply rounded-3xl border-none shadow-lg hover:shadow-2xl transition-all duration-300 bg-white overflow-hidden;
+  }
+
+  .btn-institutional {
+    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95;
   }
 }

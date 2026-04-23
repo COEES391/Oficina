@@ -13,7 +13,19 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/components/ui/sidebar'
-import { LayoutDashboard, LifeBuoy, GraduationCap, Briefcase, LogOut, PanelLeft, User, ShieldCheck } from 'lucide-react'
+import { 
+  LayoutDashboard, 
+  LifeBuoy, 
+  GraduationCap, 
+  Briefcase, 
+  LogOut, 
+  PanelLeft, 
+  User, 
+  ShieldCheck,
+  Zap,
+  Star,
+  Settings2
+} from 'lucide-react'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 
@@ -45,20 +57,20 @@ export default function DashboardLayout({
   }
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-4 w-4" /> },
-    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" /> },
-    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-4 w-4" /> },
+    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
+    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
   ]
 
   if (!mounted) return null
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r-2 border-primary/5">
-        <SidebarHeader className="border-b-2 border-primary/5 pb-4 mb-2">
-          <div className="flex items-center gap-3 px-2 py-4">
-            <div className="relative h-12 w-12 flex-shrink-0 bg-white rounded-xl p-1 shadow-md border border-primary/10">
+      <Sidebar className="border-r-2 border-primary/5 bg-white">
+        <SidebarHeader className="border-b-2 border-primary/5 pb-6 mb-4">
+          <div className="flex items-center gap-4 px-4 py-6">
+            <div className="relative h-14 w-14 flex-shrink-0 bg-white rounded-2xl p-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.08)] border border-primary/5">
               <Image 
                 src={logoData.imageUrl} 
                 alt="DESySA" 
@@ -68,37 +80,44 @@ export default function DashboardLayout({
               />
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-xs font-black leading-none text-primary truncate uppercase tracking-tighter">Planeación</span>
-              <span className="text-[9px] text-muted-foreground truncate uppercase font-bold tracking-widest mt-1">Edoméx</span>
+              <span className="text-[14px] font-black leading-tight text-primary truncate uppercase tracking-tighter">Planeación</span>
+              <span className="text-[9px] text-muted-foreground truncate uppercase font-black tracking-widest mt-1 opacity-70">Estado de México</span>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-2">
+        <SidebarContent className="px-4">
           <SidebarMenu>
             {menuItems.map((item) => (
-              <SidebarMenuItem key={item.path} className="mb-1">
+              <SidebarMenuItem key={item.path} className="mb-2">
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  leftIcon={item.icon}
-                  className={`font-black uppercase text-[10px] tracking-widest transition-all ${pathname === item.path ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90' : 'hover:bg-primary/5 hover:text-primary'}`}
+                  className={`h-12 rounded-2xl font-black uppercase text-[10px] tracking-[0.15em] transition-all px-4 ${
+                    pathname === item.path 
+                      ? 'bg-primary text-white shadow-xl shadow-primary/30' 
+                      : 'text-slate-500 hover:bg-primary/5 hover:text-primary'
+                  }`}
                 >
-                  {item.name}
+                  <div className="flex items-center gap-3">
+                    {item.icon}
+                    <span>{item.name}</span>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="border-t-2 border-primary/5 pt-4 px-2 pb-6">
-          <div className="flex items-center gap-3 p-3 mb-4 bg-primary/[0.03] rounded-xl border border-primary/10">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-               <User className="h-4 w-4 text-primary" />
+        <SidebarFooter className="border-t-2 border-primary/5 pt-6 px-4 pb-8">
+          <div className="flex items-center gap-4 p-4 mb-6 bg-slate-50 rounded-3xl border border-primary/5 shadow-inner">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/5 text-primary">
+               <User className="h-5 w-5" />
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-[10px] font-black truncate uppercase text-primary leading-none mb-1">{userRfc}</span>
-              <span className="text-[8px] text-muted-foreground uppercase font-black tracking-widest flex items-center gap-1">
-                <ShieldCheck className="h-2 w-2 text-primary" /> Analista
-              </span>
+              <span className="text-[10px] font-black truncate uppercase text-primary leading-none mb-1.5">{userRfc}</span>
+              <div className="flex items-center gap-1.5 bg-accent/10 px-2 py-0.5 rounded-full w-fit">
+                <ShieldCheck className="h-2.5 w-2.5 text-accent" />
+                <span className="text-[8px] text-accent uppercase font-black tracking-[0.1em]">Analista Senior</span>
+              </div>
             </div>
           </div>
           <SidebarMenu>
@@ -106,33 +125,36 @@ export default function DashboardLayout({
               <SidebarMenuButton
                 onClick={handleLogout}
                 variant="outline"
-                className="text-destructive font-black uppercase text-[10px] tracking-widest hover:text-destructive hover:bg-destructive/10 border-destructive/20 h-10"
-                leftIcon={<LogOut className="h-4 w-4" />}
+                className="text-rose-600 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 border-rose-100 h-12 rounded-2xl flex items-center justify-center gap-3"
               >
-                Cerrar Sesión
+                <LogOut className="h-4 w-4" /> Cerrar Sesión
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 items-center justify-between border-b-2 border-primary/5 px-6 bg-white sticky top-0 z-30 shadow-sm">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger className="lg:hidden text-primary">
+        <header className="flex h-20 items-center justify-between border-b-2 border-primary/5 px-8 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-6">
+            <SidebarTrigger className="lg:hidden text-primary h-10 w-10 hover:bg-primary/5 rounded-xl">
               <PanelLeft className="h-6 w-6" />
             </SidebarTrigger>
-            <h1 className="text-sm font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="bg-primary text-white px-2 py-0.5 rounded text-[10px]">EDOMÉX</span>
-              Sistema de Gestión Integral
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-[11px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-3">
+                <span className="bg-primary text-white px-2.5 py-1 rounded-lg text-[9px] shadow-lg shadow-primary/20">EDOMÉX</span>
+                Sistema Integral de Planeación
+              </h1>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Control de Gestión Administrativa y Técnica</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
-               Estado de México • Oficina de Planeación
+             <div className="flex items-center gap-2 bg-slate-50 border px-4 py-2 rounded-2xl shadow-inner">
+               <Star className="h-3.5 w-3.5 text-accent fill-accent" />
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Periodo Vigente: 2024-2025</span>
              </div>
           </div>
         </header>
-        <main className="flex-1 p-6 md:p-8 bg-slate-50/30">{children}</main>
+        <main className="flex-1 p-8 md:p-12 overflow-y-auto">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

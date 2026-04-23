@@ -34,7 +34,8 @@ import {
   Users,
   Trash2,
   Plus,
-  Layers
+  Layers,
+  Star
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -51,15 +52,6 @@ const PROGRAM_RUBROS = [
   'Mesa de Ayuda Técnica'
 ];
 
-const FUNCIONES = [
-  "ADMINISTRATIVO",
-  "DOCENTE",
-  "DIRECTIVO",
-  "JEFE DE ENSEÑANZA",
-  "SUPERVISOR",
-  "ASESOR TECNICO PEDAGOGICO"
-]
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -68,7 +60,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialAssistant: ProgramAssistant = {
@@ -112,7 +103,6 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     setRecords(stored)
-    
     setFormData(prev => ({ 
       ...prev, 
       name: activeTab,
@@ -140,21 +130,13 @@ export default function ProgramsPage() {
     });
   }, [records]);
 
-  const filteredHistory = useMemo(() => {
-    return records.filter(r => r.name === activeTab);
-  }, [records, activeTab]);
-
-  const currentStats = useMemo(() => {
-    return rubroStats.find(s => s.name === activeTab);
-  }, [rubroStats, activeTab]);
+  const filteredHistory = useMemo(() => records.filter(r => r.name === activeTab), [records, activeTab]);
+  const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
 
   useEffect(() => {
     if (searchTerm.length === 10) {
       const match = schoolsDirectory.find(s => s.cct.toUpperCase() === searchTerm.toUpperCase());
-      if (match) {
-        handleSelectSchool(match.cct);
-        setSearchTerm('');
-      }
+      if (match) { handleSelectSchool(match.cct); setSearchTerm(''); }
     }
   }, [searchTerm]);
 
@@ -184,122 +166,72 @@ export default function ProgramsPage() {
       reader.onloadend = () => setFormData(prev => ({ ...prev, reportPdf: reader.result as string }))
       reader.readAsDataURL(file)
     } else {
-      const newPhotos = Array.from(files)
+      const newPhotos = Array.from(files).slice(0, 5)
       newPhotos.forEach(file => {
         const reader = new FileReader()
         reader.onloadend = () => setFormData(prev => ({
           ...prev,
-          evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
+          evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string].slice(0, 5)
         }))
         reader.readAsDataURL(file)
       })
     }
   }
 
-  const handleAddAssistant = () => {
-    setFormData(prev => ({
-      ...prev,
-      asistentes: [...(prev.asistentes || []), initialAssistant]
-    }))
-  }
-
-  const handleRemoveAssistant = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      asistentes: prev.asistentes?.filter((_, i) => i !== index)
-    }))
-  }
+  const handleAddAssistant = () => setFormData(prev => ({ ...prev, asistentes: [...(prev.asistentes || []), initialAssistant] }))
+  const handleRemoveAssistant = (index: number) => setFormData(prev => ({ ...prev, asistentes: prev.asistentes?.filter((_, i) => i !== index) }))
 
   const updateAssistant = (index: number, field: keyof ProgramAssistant, value: string) => {
     const newAsistentes = [...(formData.asistentes || [])]
     newAsistentes[index] = { ...newAsistentes[index], [field]: value }
-
     if (field === 'cct' && value.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === value.toUpperCase())
       if (school) {
-        newAsistentes[index] = {
-          ...newAsistentes[index],
-          nombreCT: school.nombre,
-          ze: school.zonaEscolar,
-          sector: school.sector,
-          modalidad: school.modalidad,
-          municipio: school.municipio,
-          region: school.region,
-          valle: school.valle
-        }
+        newAsistentes[index] = { ...newAsistentes[index], nombreCT: school.nombre, ze: school.zonaEscolar, sector: school.sector, modalidad: school.modalidad, municipio: school.municipio, region: school.region, valle: school.valle }
       }
     }
     setFormData(prev => ({ ...prev, asistentes: newAsistentes, totalParticipantes: newAsistentes.filter(a => a.rfc).length }))
   }
 
   const handleSave = () => {
-    if (!formData.id || !formData.name || !formData.cct) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "Folio, Rubro y CCT son obligatorios." })
-      return
-    }
-    const updated = editingId 
-      ? records.map(r => r.id === editingId ? formData : r)
-      : [formData, ...records];
-    
+    if (!formData.id || !formData.cct) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
+    const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
     setIsDialogOpen(false)
     resetForm()
-    toast({ title: "Registro exitoso", description: "La intervención ha sido guardada." })
+    toast({ title: "Registro guardado" })
   }
 
   const resetForm = () => {
-    setFormData({
-      ...initialFormState,
-      name: activeTab,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      fechaEntrada: format(new Date(), 'yyyy-MM-dd')
-    })
+    setFormData({ ...initialFormState, name: activeTab, date: format(new Date(), 'yyyy-MM-dd'), fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
     setEditingId(null)
-  }
-
-  const handleEditRecord = (record: ProgramStatus) => {
-    setFormData(record);
-    setEditingId(record.id);
-    setIsDialogOpen(true);
-  }
-
-  const handleDeleteRecord = (id: string) => {
-    if (window.confirm('¿Está seguro de eliminar este registro técnico? Esta acción no se puede deshacer.')) {
-      const updated = records.filter(r => r.id !== id);
-      setRecords(updated);
-      localStorage.setItem('programs_full', JSON.stringify(updated));
-      toast({ title: "Registro eliminado", description: "El registro ha sido removido exitosamente." });
-    }
   }
 
   if (!mounted) return null
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div className="space-y-1">
-          <h2 className="text-4xl font-black tracking-tighter text-primary uppercase">Gestión de Programas Institucionales</h2>
-          <p className="text-muted-foreground font-bold text-sm uppercase tracking-[0.2em]">Seguimiento Transversal de Rubros Estratégicos</p>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-20">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl font-black tracking-tighter text-primary uppercase leading-none">Gestión de Programas</h2>
+          <div className="flex items-center gap-3">
+             <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+             <p className="text-muted-foreground font-black text-[11px] uppercase tracking-[0.3em]">Seguimiento Estratégico Oficina de Planeación</p>
+          </div>
         </div>
-        <Button 
-          onClick={() => {
-            resetForm();
-            setIsDialogOpen(true);
-          }}
-          className="bg-primary hover:bg-primary/90 font-black uppercase text-xs h-11 px-6 shadow-lg shadow-primary/20 gap-2"
-        >
+        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-14 px-10 rounded-2xl gap-3">
           <PlusCircle className="h-5 w-5" /> Nueva Intervención
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-        <TabsList className="w-full h-auto flex flex-wrap bg-slate-100 p-1 rounded-xl shadow-inner">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+        <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1.5 rounded-3xl shadow-inner border border-primary/5">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger 
               key={rubro} 
               value={rubro}
-              className="flex-1 min-w-[200px] h-12 text-[10px] font-black uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md transition-all"
+              className="flex-1 min-w-[200px] h-14 text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-xl transition-all"
             >
               {rubro.includes('(') ? rubro.split('(')[0] : rubro}
             </TabsTrigger>
@@ -307,309 +239,185 @@ export default function ProgramsPage() {
         </TabsList>
 
         {currentStats && (
-          <TabsContent value={activeTab} className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-            <Card className="overflow-hidden border-2 border-primary/10 shadow-lg bg-white">
-              <CardContent className="p-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8">
-                  <div className="flex items-center gap-6">
-                    <div className="h-20 w-20 rounded-2xl bg-primary/5 flex items-center justify-center border-2 border-primary/10 shadow-inner">
-                      {activeTab === 'Biblioteca Digital' ? <MonitorCheck className="h-10 w-10 text-primary" /> : <Layers className="h-10 w-10 text-primary" />}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800">{activeTab}</h3>
-                        <Badge variant={currentStats.status === 'concluido' ? 'default' : 'outline'} className="uppercase font-black text-[10px] px-3 h-6">
-                          {currentStats.status}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-6 text-muted-foreground pt-2">
-                         <span className="text-xs font-bold uppercase flex items-center gap-2">
-                           <Calendar className="h-4 w-4 text-primary" /> Última Actualización: {currentStats.lastUpdate}
-                         </span>
-                         <span className="text-xs font-bold uppercase flex items-center gap-2">
-                           <School className="h-4 w-4 text-primary" /> Planteles Atendidos: <span className="text-primary font-black">{currentStats.count}</span> {activeTab !== 'Biblioteca Digital' && `/ ${TOTAL_UNIVERSE}`}
-                         </span>
-                         {activeTab === 'Biblioteca Digital' && (
-                           <span className="text-xs font-black uppercase text-emerald-600 flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                             <MonitorCheck className="h-4 w-4" /> Equipos Rehabilitados: {currentStats.totalEquipos}
-                           </span>
-                         )}
-                      </div>
-                    </div>
+          <TabsContent value={activeTab} className="space-y-10 animate-in zoom-in-95 duration-500">
+            <Card className="executive-card p-10 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
+                  <div className="flex items-center gap-8">
+                     <div className="h-24 w-24 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/5 shadow-inner">
+                        {activeTab === 'Biblioteca Digital' ? <MonitorCheck className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
+                     </div>
+                     <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                           <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800 leading-none">{activeTab}</h3>
+                           <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats.status}</Badge>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-8 pt-3">
+                           <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                              <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate}
+                           </div>
+                           <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                              <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {activeTab !== 'Biblioteca Digital' && `/ ${TOTAL_UNIVERSE}`}
+                           </div>
+                           {activeTab === 'Biblioteca Digital' && (
+                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                                <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
+                             </div>
+                           )}
+                        </div>
+                     </div>
                   </div>
 
                   {activeTab !== 'Biblioteca Digital' && (
-                    <div className="text-right bg-slate-50 p-6 rounded-2xl border min-w-[180px]">
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Avance Global</p>
-                      <p className="text-5xl font-black text-primary leading-none">{currentStats.progress}%</p>
+                    <div className="text-right bg-slate-50 p-8 rounded-[2rem] border-2 border-white shadow-inner min-w-[220px]">
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Avance Global</p>
+                      <p className="text-6xl font-black text-primary leading-none tracking-tighter">{currentStats.progress}<span className="text-2xl text-accent ml-1">%</span></p>
                     </div>
                   )}
-                </div>
+               </div>
 
-                {activeTab === 'Biblioteca Digital' ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-black uppercase text-slate-500 flex items-center gap-2 tracking-widest">
-                         <History className="h-4 w-4" /> Detalle Operativo por Modalidad
-                      </h4>
-                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-black uppercase px-4 py-1.5 shadow-sm">Vista de Rendición de Cuentas</Badge>
+               {activeTab === 'Biblioteca Digital' ? (
+                 <div className="mt-12 space-y-8">
+                    <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
+                       <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
+                          <History className="h-5 w-5" /> Auditoría Operativa por Modalidad
+                       </h4>
+                       <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Registro Institucional</Badge>
                     </div>
-                    <div className="rounded-2xl border bg-slate-50/50 overflow-hidden shadow-sm">
-                      <Table>
-                        <TableHeader className="bg-slate-100/80">
-                          <TableRow>
-                            <TableHead className="text-[10px] font-black uppercase py-4 pl-6">Folio</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">No. Oficio</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">CCT Atendido</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Sector</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Zona (ZE)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Género (M/F)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right">Equipos Rehab.</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right pr-6 w-24">Acción</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentStats.records.length > 0 ? currentStats.records.map((rec, idx) => (
-                            <TableRow key={idx} className="hover:bg-white transition-colors">
-                              <TableCell className="text-xs font-black text-primary uppercase py-4 pl-6">{rec.id}</TableCell>
-                              <TableCell className="text-[10px] font-bold text-slate-600">{rec.numeroOficio || '-'}</TableCell>
-                              <TableCell className="text-xs font-mono font-black">{rec.cct}</TableCell>
-                              <TableCell className="text-xs font-bold text-slate-700 uppercase">{rec.modalidad}</TableCell>
-                              <TableCell className="text-xs font-bold text-center">{rec.sector}</TableCell>
-                              <TableCell className="text-xs font-bold text-center">{rec.zonaEscolar}</TableCell>
-                              <TableCell className="text-center">
-                                {rec.capacitacion === 'S' && rec.asistentes && rec.asistentes.length > 0 ? (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Badge variant="outline" className="text-[8px] font-black border-blue-200 text-blue-700 bg-blue-50 px-1.5 h-4">
-                                      {rec.asistentes.filter(a => a.genero === 'MASCULINO').length}M
-                                    </Badge>
-                                    <Badge variant="outline" className="text-[8px] font-black border-pink-200 text-pink-700 bg-pink-50 px-1.5 h-4">
-                                      {rec.asistentes.filter(a => a.genero === 'FEMENINO').length}F
-                                    </Badge>
-                                  </div>
-                                ) : (
-                                  <span className="text-[9px] text-muted-foreground font-bold">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                 <div className="flex justify-center">
-                                    <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border shadow-sm">
-                                      <Circle className={cn("h-3 w-3 fill-current", 
-                                        rec.status === 'concluido' ? 'text-emerald-500' : 
-                                        rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500'
-                                      )} />
-                                      <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
-                                    </div>
-                                 </div>
-                              </TableCell>
-                              <TableCell className="text-xs font-black text-right">
-                                 <div className="flex items-center justify-end gap-2 text-emerald-600">
-                                   {rec.numeroEquipos} <MonitorCheck className="h-4 w-4" />
-                                 </div>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <div className="flex justify-end gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 hover:text-primary transition-colors" 
-                                    onClick={() => handleEditRecord(rec)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 hover:text-destructive transition-colors" 
-                                    onClick={() => handleDeleteRecord(rec.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )) : (
-                            <TableRow>
-                              <TableCell colSpan={10} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
-                                No se han registrado intervenciones técnicas en este rubro aún.
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
+                       <Table>
+                          <TableHeader className="bg-white/80">
+                             <TableRow className="border-none">
+                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio / Oficio</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">ZE/SEC</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Impacto (M/F)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right">Equipos</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
+                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                             {currentStats.records.map((rec, idx) => (
+                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100 group">
+                                  <TableCell className="py-6 pl-10">
+                                     <div className="flex flex-col">
+                                        <span className="text-xs font-black text-primary">{rec.id}</span>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{rec.numeroOficio || '-'}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell>
+                                     <div className="flex flex-col">
+                                        <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[150px]">{rec.schoolName}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <div className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">ZE:{rec.zonaEscolar} / S:{rec.sector}</div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     {rec.capacitacion === 'S' ? (
+                                       <div className="flex items-center justify-center gap-2">
+                                          <Badge className="bg-blue-500 text-white border-none text-[8px] font-black rounded-lg h-5 w-8 flex items-center justify-center">M:{rec.asistentes?.filter(a => a.genero === 'MASCULINO').length}</Badge>
+                                          <Badge className="bg-pink-500 text-white border-none text-[8px] font-black rounded-lg h-5 w-8 flex items-center justify-center">F:{rec.asistentes?.filter(a => a.genero === 'FEMENINO').length}</Badge>
+                                       </div>
+                                     ) : <span className="text-[9px] font-black text-slate-300">-</span>}
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
+                                        <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                        <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs font-black text-emerald-600 pr-4">
+                                     {rec.numeroEquipos} <MonitorCheck className="h-3 w-3 inline ml-1" />
+                                  </TableCell>
+                                  <TableCell className="text-right pr-10">
+                                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                           <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl" onClick={() => { if(window.confirm('Eliminar?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Eliminado"}); } }}>
+                                           <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                     </div>
+                                  </TableCell>
+                               </TableRow>
+                             ))}
+                          </TableBody>
+                       </Table>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-8 space-y-4">
+                 </div>
+               ) : (
+                 <div className="mt-12 space-y-6 bg-slate-50 p-10 rounded-[3rem] border border-white shadow-inner">
                     <div className="flex justify-between items-end">
-                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Barra de Progreso Institucional</span>
-                       <span className="text-xs font-black text-primary uppercase">{currentStats.count} Escuelas de {TOTAL_UNIVERSE}</span>
+                       <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Progreso de Cobertura Institucional</span>
+                       <span className="text-sm font-black text-primary uppercase tracking-tighter">{currentStats.count} Escuelas <span className="text-slate-300 font-bold mx-2">/</span> {TOTAL_UNIVERSE}</span>
                     </div>
-                    <div className="relative h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200">
-                       <div 
-                        className="absolute inset-y-0 left-0 bg-primary transition-all duration-1000 ease-out"
-                        style={{ width: `${currentStats.progress}%` }}
-                       />
-                       <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-[8px] font-black text-slate-800 drop-shadow-sm uppercase mix-blend-difference">Avance: {currentStats.progress}%</span>
-                       </div>
+                    <div className="relative h-6 w-full bg-white rounded-full overflow-hidden shadow-inner border-2 border-white p-1">
+                       <div className="absolute inset-y-1 left-1 bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000 ease-out shadow-lg shadow-primary/20" style={{ width: `calc(${currentStats.progress}% - 8px)` }} />
                     </div>
-                    <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] pt-1">
-                      <span>0% Inicio</span>
-                      <span>50% Proceso</span>
-                      <span>100% Meta</span>
+                    <div className="flex justify-between text-[10px] font-black text-slate-300 uppercase tracking-[0.25em] pt-2">
+                       <span>Inicio 0%</span>
+                       <div className="flex items-center gap-2"><div className="h-1.5 w-1.5 rounded-full bg-accent" /> Proceso 50%</div>
+                       <span>Meta 100%</span>
                     </div>
-                  </div>
-                )}
-              </CardContent>
+                 </div>
+               )}
             </Card>
-
-            {activeTab !== 'Biblioteca Digital' && (
-              <Card className="border-t-4 border-t-primary shadow-xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-6 px-8 border-b">
-                   <div className="space-y-1">
-                     <CardTitle className="text-xl font-black uppercase text-primary flex items-center gap-3">
-                       <History className="h-6 w-6" /> Historial de Intervenciones: {activeTab}
-                     </CardTitle>
-                     <CardDescription className="text-xs font-bold uppercase tracking-wider">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
-                   </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="bg-slate-100/50">
-                      <TableRow>
-                        <TableHead className="text-[10px] font-black uppercase py-4 pl-8">Folio / Fecha</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase">Tipo de Intervención</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-24">Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredHistory.length > 0 ? filteredHistory.map(r => (
-                        <TableRow key={r.id} className="hover:bg-slate-50/80 transition-colors border-b last:border-0">
-                          <TableCell className="py-4 pl-8">
-                            <div className="flex flex-col">
-                              <span className="font-black text-primary text-xs">{r.id}</span>
-                              <span className="text-[9px] font-bold text-muted-foreground uppercase">{r.date}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-black text-slate-700">{r.cct}</span>
-                              <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[200px] uppercase">{r.schoolName}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Badge variant="outline" className="text-[9px] font-black border-blue-200 text-blue-700 bg-blue-50/50">MC: {r.serviciosMC}</Badge>
-                              <Badge variant="outline" className="text-[9px] font-black border-emerald-200 text-emerald-700 bg-emerald-50/50">MP: {r.serviciosMP}</Badge>
-                              {r.numeroEquipos > 0 && <Badge variant="outline" className="text-[9px] font-black border-purple-200 text-purple-700 bg-purple-50/50">EQ: {r.numeroEquipos}</Badge>}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-center gap-3">
-                              {r.reportPdf && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: r.reportPdf!, title: r.name })}>
-                                  <FileText className="h-5 w-5" />
-                                </Button>
-                              )}
-                              {r.evidencePhotos && r.evidencePhotos.length > 0 && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: r.evidencePhotos!, title: r.name })}>
-                                  <ImageIcon className="h-5 w-5" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right pr-8">
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
-                                onClick={() => handleEditRecord(r)}
-                              >
-                                 <Pencil className="h-5 w-5" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-10 w-10 hover:text-destructive transition-transform hover:scale-110" 
-                                onClick={() => handleDeleteRecord(r.id)}
-                              >
-                                 <Trash2 className="h-5 w-5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-20 opacity-40">
-                            <div className="flex flex-col items-center gap-4">
-                              <Briefcase className="h-12 w-12 text-slate-300" />
-                              <p className="text-xs font-black uppercase tracking-widest">Sin registros históricos en este rubro</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
         )}
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 border-none shadow-2xl">
-          <DialogHeader className="p-8 pb-4 bg-slate-50 border-b relative">
-            <div className="absolute right-12 top-8 h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-               <Settings2 className="h-6 w-6 text-primary" />
+        <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 border-none shadow-[0_50px_100px_rgba(0,0,0,0.4)] rounded-[3rem] overflow-hidden">
+          <DialogHeader className="p-10 pb-6 bg-slate-50 border-b relative">
+            <div className="absolute right-12 top-10 h-16 w-16 bg-white rounded-3xl flex items-center justify-center border shadow-xl border-primary/5">
+               <Settings2 className="h-8 w-8 text-primary" />
             </div>
-            <DialogTitle className="uppercase font-black text-primary text-2xl tracking-tighter flex items-center gap-4">
-              Ficha Técnica de Programa: {formData.name || activeTab}
+            <DialogTitle className="uppercase font-black text-primary text-4xl tracking-tighter flex items-center gap-6 leading-none">
+              Ficha Técnica <br /> <span className="text-xl text-slate-400 font-bold">{formData.name || activeTab}</span>
             </DialogTitle>
-            <DialogDescription className="font-bold text-xs uppercase text-slate-400 tracking-widest pt-1">Actualización de registro operativo y seguimiento técnico</DialogDescription>
+            <DialogDescription className="font-black text-[11px] uppercase text-slate-400 tracking-[0.4em] mt-3">Expediente de Registro Técnico Administrativo</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 px-8">
-            <div className="grid gap-10 py-8 pb-16">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase text-primary tracking-widest">Folio de Registro</Label>
-                  <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-12 font-black border-primary/20 focus:border-primary shadow-sm" disabled={!!editingId} />
+          
+          <ScrollArea className="flex-1 px-10">
+            <div className="grid gap-12 py-12 pb-20">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
+                  <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase text-primary tracking-widest">Rubro del Programa</Label>
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Rubro Programático</Label>
                   <Select value={formData.name || activeTab} onValueChange={v => setFormData({...formData, name: v})}>
-                    <SelectTrigger className="h-12 font-bold border-primary/20 shadow-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="font-bold">{PROGRAM_RUBROS.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent>
+                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-slate-50/50 border-primary/10 shadow-inner px-8"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none shadow-2xl">{PROGRAM_RUBROS.map(r => <SelectItem key={r} value={r} className="text-xs font-black">{r}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="p-6 bg-primary/[0.03] rounded-3xl space-y-6 border-2 border-primary/5 shadow-inner">
-                <Label className="text-xs font-black uppercase flex items-center gap-3 text-primary tracking-widest">
-                  <Search className="h-5 w-5" /> Búsqueda y Localización del Centro de Trabajo
-                </Label>
+              <div className="p-10 bg-primary/[0.03] rounded-[3rem] space-y-8 border-4 border-white shadow-xl shadow-slate-100">
+                <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
+                   <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Search className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Geolocalización del Centro de Trabajo</h3>
+                </div>
                 <div className="relative">
                   <Input 
-                    placeholder="Escribe CCT o Nombre para autocompletar información geográfica..." 
-                    className="bg-white h-14 font-mono uppercase font-black px-6 rounded-2xl border-primary/20 shadow-sm focus:ring-primary/20" 
+                    placeholder="ESCRIBE CCT O NOMBRE PARA IDENTIFICAR PLANTEL..." 
+                    className="bg-white h-16 font-black uppercase px-8 rounded-2xl border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
                     value={searchTerm} 
                     onChange={e => setSearchTerm(e.target.value)} 
                   />
                   {searchTerm.length > 2 && (
-                    <div className="absolute z-50 w-full mt-2 bg-white border rounded-2xl shadow-2xl max-h-72 overflow-auto p-2">
+                    <div className="absolute z-50 w-full mt-4 bg-white/90 backdrop-blur-xl border border-primary/5 rounded-[2rem] shadow-[0_32px_64px_rgba(0,0,0,0.15)] max-h-80 overflow-auto p-4 animate-in zoom-in-95 duration-200">
                       {schoolsDirectory.filter(s => s.cct.includes(searchTerm.toUpperCase()) || s.nombre.includes(searchTerm.toUpperCase())).slice(0, 10).map(s => (
-                        <div key={s.cct} className="p-4 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0 flex justify-between items-center font-bold rounded-xl transition-colors" onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-primary font-black text-sm">{s.cct}</span>
-                            <span className="text-slate-500 uppercase">{s.nombre}</span>
+                        <div key={s.cct} className="p-5 hover:bg-primary/5 cursor-pointer rounded-2xl border-b last:border-0 border-slate-50 transition-all flex justify-between items-center group" onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}>
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-primary font-black text-base group-hover:scale-105 transition-transform">{s.cct}</span>
+                            <span className="text-slate-400 font-black text-[10px] uppercase tracking-widest">{s.nombre}</span>
                           </div>
-                          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter px-3">{s.valle}</Badge>
+                          <Badge className="bg-accent/10 text-accent font-black uppercase text-[9px] px-4 py-1.5 rounded-full">{s.valle}</Badge>
                         </div>
                       ))}
                     </div>
@@ -617,143 +425,112 @@ export default function ProgramsPage() {
                 </div>
 
                 {formData.cct && (
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="col-span-2 md:col-span-3 p-4 bg-white rounded-2xl border border-primary/10 flex items-center gap-4 shadow-sm">
-                       <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <School className="h-6 w-6 text-primary" />
-                       </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-4 animate-in slide-in-from-top-4 duration-500">
+                    <div className="col-span-2 md:col-span-3 p-6 bg-white rounded-3xl border border-primary/5 flex items-center gap-6 shadow-sm">
+                       <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner"><School className="h-8 w-8" /></div>
                        <div className="flex-1 overflow-hidden">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Nombre del Plantel</p>
-                          <p className="text-sm font-black truncate uppercase text-slate-800">{formData.schoolName}</p>
+                          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Nombre del Centro de Trabajo</p>
+                          <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName}</p>
                        </div>
                     </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/10 shadow-sm">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Zona (ZE)</p>
-                        <p className="text-sm font-black text-slate-800">{formData.zonaEscolar}</p>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/10 shadow-sm">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Sector</p>
-                        <p className="text-sm font-black text-slate-800">{formData.sector}</p>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/10 shadow-sm">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Municipio</p>
-                        <p className="text-sm font-black truncate uppercase text-slate-800">{formData.municipio}</p>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/10 shadow-sm">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Modalidad</p>
-                        <p className="text-sm font-black truncate uppercase text-slate-800">{formData.modalidad}</p>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-primary/10 shadow-sm">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none mb-1.5 tracking-widest">Valle</p>
-                        <p className="text-sm font-black uppercase text-slate-800">{formData.valle}</p>
-                    </div>
+                    {[
+                      { l: 'ZONA (ZE)', v: formData.zonaEscolar },
+                      { l: 'SECTOR', v: formData.sector },
+                      { l: 'MUNICIPIO', v: formData.municipio },
+                      { l: 'MODALIDAD', v: formData.modalidad },
+                      { l: 'VALLE', v: formData.valle }
+                    ].map((item, i) => (
+                      <div key={i} className="p-6 bg-white rounded-3xl border border-primary/5 shadow-sm">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">{item.l}</p>
+                        <p className="text-sm font-black text-slate-800 uppercase">{item.v}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              <div className="space-y-6">
-                <h3 className="text-xs font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3 tracking-widest">
-                  <Zap className="h-5 w-5" /> Control Técnico y Métricas de Servicios
-                </h3>
+              <div className="space-y-8">
+                <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
+                   <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Zap className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas y Operativas</h3>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">No. Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-11 font-black" /></div>
-                   <div className="col-span-3 space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción Detallada del Equipo</Label><Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="Ej: Servidor ProLiant, 20 Laptops HP G8, Switch 24p..." className="h-11 font-bold" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servicios M.C.</Label><Input type="number" className="h-11 font-black text-blue-600 border-blue-200 bg-blue-50/30" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servicios M.P.</Label><Input type="number" className="h-11 font-black text-emerald-600 border-emerald-200 bg-emerald-50/30" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Entrada</Label><Input type="date" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} className="h-11 font-bold" /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha Salida</Label><Input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="h-11 font-bold" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                   <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Svc. M.C.</Label><Input type="number" className="h-14 rounded-2xl font-black bg-blue-50 text-blue-600 border-blue-100" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Svc. M.P.</Label><Input type="number" className="h-14 rounded-2xl font-black bg-emerald-50 text-emerald-600 border-emerald-100" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Entrada</Label><Input type="date" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Salida</Label><Input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
                 </div>
               </div>
 
               {(formData.name === 'Biblioteca Digital' || activeTab === 'Biblioteca Digital') && (
-                <div className="space-y-8 p-8 bg-emerald-50/30 rounded-3xl border-2 border-emerald-100/50 shadow-inner animate-in fade-in slide-in-from-top-4 duration-700">
-                   <h3 className="text-sm font-black uppercase text-emerald-700 border-b-2 border-emerald-100 pb-3 flex items-center gap-3 tracking-widest">
-                     <Users className="h-6 w-6" /> Seguimiento Pedagógico: Capacitación
-                   </h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-600">¿Se brindó Capacitación Técnica?</Label>
-                        <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
-                          <SelectTrigger className="h-12 font-black border-emerald-200 bg-white shadow-sm">
-                            <SelectValue placeholder="Seleccionar estatus..." />
-                          </SelectTrigger>
-                          <SelectContent className="font-bold">
-                            <SelectItem value="S">SÍ, SE BRINDÓ CAPACITACIÓN</SelectItem>
-                            <SelectItem value="N">NO SE BRINDÓ</SelectItem>
-                          </SelectContent>
-                        </Select>
+                <div className="space-y-10 p-10 bg-emerald-50/30 rounded-[3rem] border-4 border-white shadow-xl shadow-emerald-50">
+                   <div className="flex items-center justify-between border-b border-emerald-100 pb-8">
+                      <div className="flex items-center gap-4">
+                         <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-200"><Users className="h-6 w-6" /></div>
+                         <h3 className="text-sm font-black uppercase text-emerald-800 tracking-[0.2em]">Seguimiento Pedagógico: Capacitación</h3>
                       </div>
-                      {formData.capacitacion === 'S' && (
-                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Total Participantes (Calculado)</Label>
-                          <div className="h-12 flex items-center px-4 font-black border-2 border-emerald-300 bg-emerald-100/50 rounded-xl text-emerald-800">
-                            {formData.asistentes?.filter(a => a.rfc).length || 0} PERSONAS
-                          </div>
-                        </div>
-                      )}
+                      <div className="space-y-1 text-right">
+                         <Label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest">¿Capacitación?</Label>
+                         <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
+                           <SelectTrigger className="h-12 w-64 rounded-2xl font-black bg-white border-emerald-200 shadow-sm"><SelectValue /></SelectTrigger>
+                           <SelectContent className="rounded-2xl border-none shadow-2xl font-black"><SelectItem value="S">SÍ, BRINDADA</SelectItem><SelectItem value="N">NO BRINDADA</SelectItem></SelectContent>
+                         </Select>
+                      </div>
                    </div>
 
                    {formData.capacitacion === 'S' && (
-                      <div className="space-y-6 animate-in fade-in duration-500">
+                      <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex justify-between items-center">
-                          <h4 className="text-xs font-black uppercase text-emerald-800 tracking-widest">Lista de Asistencia y Registro de RFC</h4>
-                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className="gap-3 font-black uppercase text-[10px] border-emerald-600 text-emerald-700 hover:bg-emerald-50 bg-white h-10 px-5 shadow-sm rounded-xl">
+                          <div className="flex items-center gap-4">
+                             <Star className="h-5 w-5 text-emerald-600 fill-emerald-600" />
+                             <h4 className="text-[12px] font-black uppercase text-emerald-800 tracking-widest">Registro de Asistentes y RFC</h4>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white border-emerald-300 text-emerald-700 shadow-sm gap-3 hover:bg-emerald-600 hover:text-white transition-all">
                             <Plus className="h-4 w-4" /> Añadir Asistente
                           </Button>
                         </div>
 
-                        <div className="border-2 border-emerald-100 rounded-3xl overflow-hidden bg-white shadow-xl">
+                        <div className="rounded-[2.5rem] border-2 border-emerald-100 overflow-hidden bg-white shadow-2xl">
                            <ScrollArea className="w-full">
                               <Table>
-                                <TableHeader className="bg-emerald-50">
-                                  <TableRow>
-                                    <TableHead className="w-12 text-[10px] font-black uppercase py-4 pl-6 text-emerald-800">#</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Apellido Paterno</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Apellido Materno</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Nombre(s)</TableHead>
-                                    <TableHead className="min-w-[150px] text-[10px] font-black uppercase text-emerald-800">RFC (13 car.)</TableHead>
+                                <TableHeader className="bg-emerald-50/50">
+                                  <TableRow className="border-none">
+                                    <TableHead className="w-12 text-[10px] font-black uppercase py-6 pl-10 text-emerald-800">#</TableHead>
+                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Paterno / Materno / Nombre</TableHead>
+                                    <TableHead className="min-w-[150px] text-[10px] font-black uppercase text-emerald-800">RFC (13)</TableHead>
                                     <TableHead className="min-w-[120px] text-[10px] font-black uppercase text-emerald-800">Género</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Función</TableHead>
-                                    <TableHead className="min-w-[150px] text-[10px] font-black uppercase text-emerald-800 text-center">Procedencia (CCT)</TableHead>
-                                    <TableHead className="w-12 sticky right-0 bg-emerald-50"></TableHead>
+                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Procedencia (CCT)</TableHead>
+                                    <TableHead className="w-12 sticky right-0 bg-white/95"></TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {formData.asistentes?.map((ast, idx) => (
-                                    <TableRow key={idx} className="hover:bg-emerald-50/30 border-b border-emerald-50 last:border-0 transition-colors">
-                                      <TableCell className="text-center font-black text-xs text-emerald-400 pl-6">{idx + 1}</TableCell>
-                                      <TableCell className="p-2"><Input className="h-10 text-[10px] uppercase font-bold rounded-lg border-emerald-100" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} /></TableCell>
-                                      <TableCell className="p-2"><Input className="h-10 text-[10px] uppercase font-bold rounded-lg border-emerald-100" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} /></TableCell>
-                                      <TableCell className="p-2"><Input className="h-10 text-[10px] font-black uppercase rounded-lg border-emerald-100 text-emerald-900" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} /></TableCell>
-                                      <TableCell className="p-2"><Input className="h-10 text-[10px] font-mono uppercase font-black rounded-lg border-emerald-300 text-primary" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                      <TableCell className="p-2">
-                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-lg border-emerald-100"><SelectValue /></SelectTrigger>
-                                          <SelectContent className="font-bold">
-                                            <SelectItem value="MASCULINO" className="text-[10px]">MASCULINO</SelectItem>
-                                            <SelectItem value="FEMENINO" className="text-[10px]">FEMENINO</SelectItem>
-                                          </SelectContent>
+                                    <TableRow key={idx} className="hover:bg-emerald-50/20 border-emerald-50 transition-colors">
+                                      <TableCell className="text-center font-black text-xs text-emerald-300 pl-10">{idx + 1}</TableCell>
+                                      <TableCell className="p-4">
+                                         <div className="flex gap-2">
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
+                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
+                                         </div>
+                                      </TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-emerald-300 text-primary uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                      <TableCell className="p-4">
+                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
+                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-emerald-100"><SelectValue /></SelectTrigger>
+                                          <SelectContent className="font-black"><SelectItem value="MASCULINO">MASC</SelectItem><SelectItem value="FEMENINO">FEM</SelectItem></SelectContent>
                                         </Select>
                                       </TableCell>
-                                      <TableCell className="p-2">
-                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-lg border-emerald-100"><SelectValue /></SelectTrigger>
-                                          <SelectContent className="font-bold">
-                                            <SelectItem value="MASCULINO" className="text-[10px]">MASCULINO</SelectItem>
-                                            <SelectItem value="FEMENINO" className="text-[10px]">FEMENINO</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </TableCell>
-                                      <TableCell className="p-2">
+                                      <TableCell className="p-4">
                                         <div className="flex flex-col gap-1">
-                                          <Input className="h-10 text-[10px] font-mono uppercase font-black border-emerald-300 bg-emerald-50/50" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} placeholder="CCT ORIGEN" />
-                                          {ast.nombreCT && <span className="text-[8px] font-black text-muted-foreground uppercase truncate max-w-[140px] px-1">{ast.nombreCT}</span>}
+                                          <Input className="h-10 text-[10px] font-black rounded-xl border-emerald-300 uppercase shadow-inner" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} placeholder="15DESXXXXX" />
+                                          {ast.nombreCT && <span className="text-[8px] font-black text-slate-400 uppercase truncate max-w-[140px] px-1">{ast.nombreCT}</span>}
                                         </div>
                                       </TableCell>
-                                      <TableCell className="p-2 sticky right-0 bg-white/95 backdrop-blur-sm border-l border-emerald-50">
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}>
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                      <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm border-l border-emerald-50">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></Button>
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -767,86 +544,89 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="DESySA/PL/001/2024" className="h-11 font-bold" /></div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">¿Atención en Semana SETES?</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
                   <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
-                    <SelectTrigger className="h-11 font-black border-purple-200 focus:ring-purple-200"><SelectValue /></SelectTrigger>
-                    <SelectContent className="font-bold"><SelectItem value="S">SÍ, ES SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
+                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-white border-purple-200 shadow-lg shadow-purple-50"><SelectValue /></SelectTrigger>
+                    <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estatus de la Intervención</Label>
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
                   <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
-                    <SelectTrigger className="h-11 font-black shadow-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="font-bold">
-                      <SelectItem value="planeacion">🔴 PLANEACIÓN / INICIO</SelectItem>
-                      <SelectItem value="activo">🟡 EN PROCESO TÉCNICO</SelectItem>
-                      <SelectItem value="concluido">🟢 CONCLUIDO / CERRADO</SelectItem>
+                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="font-black rounded-2xl">
+                      <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
+                      <SelectItem value="activo" className="text-amber-600">EN PROCESO TÉCNICO</SelectItem>
+                      <SelectItem value="concluido" className="text-emerald-600">CONCLUIDO / CERRADO</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-6 pt-8 border-t-2 border-slate-100">
-                <h3 className="text-xs font-black uppercase text-primary tracking-widest">Respaldo Digital y Evidencias</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="p-6 border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-4 hover:bg-slate-50 transition-colors border-slate-200">
-                    <Label className="text-xs font-black uppercase flex items-center gap-3 text-slate-600">
-                      <FileText className="h-5 w-5 text-blue-600" /> Carga de Reporte Técnico (PDF)
-                    </Label>
-                    <Input type="file" accept=".pdf" className="bg-white h-11 py-2 cursor-pointer border-slate-200 shadow-sm" onChange={e => handleFileChange(e, 'pdf')} />
-                    {formData.reportPdf && <p className="text-[10px] font-black text-emerald-600 flex items-center gap-2">✓ DOCUMENTO CARGADO Y LISTO</p>}
+              <div className="space-y-8 pt-10 border-t-4 border-slate-50">
+                <div className="flex items-center gap-4">
+                   <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><ImageIcon className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Respaldo Digital y Evidencia Fotográfica</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="p-10 border-4 border-dashed rounded-[3rem] bg-slate-50/50 space-y-6 hover:bg-white hover:border-primary/20 transition-all duration-300 text-center">
+                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest block mb-4">Carga de Reporte Técnico (PDF)</Label>
+                    <div className="relative h-24 w-full bg-white rounded-3xl border-2 border-slate-100 flex items-center justify-center cursor-pointer overflow-hidden shadow-sm group">
+                       <FileText className="h-8 w-8 text-blue-600 group-hover:scale-110 transition-transform" />
+                       <Input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileChange(e, 'pdf')} />
+                    </div>
+                    {formData.reportPdf && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center justify-center gap-2">✓ Documento Cargado Exitosamente</p>}
                   </div>
-                  <div className="p-6 border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-4 hover:bg-slate-50 transition-colors border-slate-200">
-                    <Label className="text-xs font-black uppercase flex items-center gap-3 text-slate-600">
-                      <ImageIcon className="h-5 w-5 text-pink-600" /> Galería Fotográfica (Máximo 5 imágenes)
-                    </Label>
-                    <Input type="file" multiple accept="image/*" className="bg-white h-11 py-2 cursor-pointer border-slate-200 shadow-sm" onChange={e => handleFileChange(e, 'photo')} />
-                    {formData.evidencePhotos && formData.evidencePhotos.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
-                        {formData.evidencePhotos.map((_, i) => (
-                           <div key={i} className="h-8 w-8 bg-pink-100 rounded-lg flex items-center justify-center text-[10px] font-black text-pink-600 border border-pink-200">#{i+1}</div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="p-10 border-4 border-dashed rounded-[3rem] bg-slate-50/50 space-y-6 hover:bg-white hover:border-primary/20 transition-all duration-300 text-center">
+                    <Label className="text-[11px] font-black uppercase text-slate-500 tracking-widest block mb-4">Galería de Campo (Máx 5 Fotos)</Label>
+                    <div className="relative h-24 w-full bg-white rounded-3xl border-2 border-slate-100 flex items-center justify-center cursor-pointer overflow-hidden shadow-sm group">
+                       <ImageIcon className="h-8 w-8 text-pink-600 group-hover:scale-110 transition-transform" />
+                       <Input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileChange(e, 'photo')} />
+                    </div>
+                    <div className="flex gap-3 justify-center">
+                       {formData.evidencePhotos?.map((_, i) => <div key={i} className="h-8 w-8 bg-pink-50 rounded-lg flex items-center justify-center text-[10px] font-black text-pink-600 border border-pink-100 shadow-sm">#{i+1}</div>)}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-primary tracking-widest">Bitácora y Observaciones Operativas</Label>
-                <Textarea className="min-h-[160px] rounded-3xl p-6 border-slate-200 focus:border-primary shadow-inner bg-slate-50/30 font-medium" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle cronológico de la intervención, inconvenientes técnicos o acuerdos con el plantel..." />
+              <div className="space-y-4">
+                <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
+                <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-8 border-t bg-slate-50/80 backdrop-blur-md">
-             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-black uppercase text-xs h-12 px-8 rounded-xl border-slate-300">Cancelar</Button>
-             <Button onClick={handleSave} className="font-black uppercase text-xs h-12 px-14 rounded-xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">Finalizar y Guardar Registro Técnico</Button>
+          
+          <DialogFooter className="p-10 bg-slate-50/80 backdrop-blur-md border-t flex justify-end gap-6">
+             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-16 px-12 rounded-2xl font-black uppercase text-[11px] tracking-widest border-slate-300 bg-white">Cancelar</Button>
+             <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Finalizar y Sincronizar Registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
-        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
-          <DialogHeader className="p-8 bg-slate-900 border-b border-slate-800 text-white">
-            <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4 tracking-tighter">
-              {evidenceToView?.title} <ExternalLink className="h-6 w-6 text-primary" />
+        <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 border-none shadow-[0_50px_100px_rgba(0,0,0,0.4)] rounded-[4rem] overflow-hidden">
+          <DialogHeader className="p-12 bg-slate-900 border-b border-slate-800 text-white relative">
+             <div className="absolute right-12 top-12"><Zap className="h-10 w-10 text-primary animate-pulse" /></div>
+            <DialogTitle className="uppercase font-black text-4xl flex items-center gap-8 tracking-tighter leading-none">
+              {evidenceToView?.title} <ExternalLink className="h-10 w-10 text-primary" />
             </DialogTitle>
-            <DialogDescription className="text-slate-400 font-bold text-xs uppercase tracking-widest">Visor Ejecutivo de Evidencias Oficina de Planeación</DialogDescription>
+            <DialogDescription className="text-slate-400 font-black text-[12px] uppercase tracking-[0.4em] mt-4 pl-1">Auditoría Digital de Evidencias • Planeación Edoméx</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 bg-slate-100 p-8 overflow-hidden relative">
+          <div className="flex-1 bg-slate-100 p-12 overflow-hidden relative">
              {evidenceToView?.type === 'pdf' ? (
-                <iframe src={evidenceToView.data as string} className="w-full h-full border-none rounded-2xl shadow-2xl bg-white" title="PDF Viewer" />
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.2)] bg-white" title="PDF Viewer" />
              ) : (
                 <ScrollArea className="h-full">
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pb-12">
                      {evidenceToView?.data && Array.isArray(evidenceToView.data) && (evidenceToView.data as string[]).map((img, i) => (
-                        <div key={i} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl group cursor-zoom-in">
-                          <Image src={img} alt="evidencia" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <Search className="h-10 w-10 text-white" />
+                        <div key={i} className="relative aspect-video rounded-[3rem] overflow-hidden border-[16px] border-white shadow-2xl group cursor-zoom-in">
+                          <Image src={img} alt="evidencia" fill className="object-cover transition-transform duration-1000 group-hover:scale-110" />
+                          <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <Search className="h-16 w-16 text-white" />
                           </div>
                         </div>
                      ))}
@@ -854,8 +634,8 @@ export default function ProgramsPage() {
                 </ScrollArea>
              )}
           </div>
-          <div className="p-6 bg-slate-900 flex justify-end">
-             <Button onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs h-11 px-8 rounded-xl bg-primary hover:bg-primary/90">Cerrar Visor</Button>
+          <div className="p-10 bg-slate-900 flex justify-end">
+             <Button onClick={() => setEvidenceToView(null)} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-xl shadow-black/20 transition-all hover:scale-105 active:scale-95">Cerrar Visor de Auditoría</Button>
           </div>
         </DialogContent>
       </Dialog>
