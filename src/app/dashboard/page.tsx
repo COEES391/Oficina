@@ -64,6 +64,12 @@ const TARGET_UNIVERSE_DATA = [
   { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
 ];
 
+// Metas regionales 2026 basadas en la tabla proporcionada
+const REGIONAL_METAS_2026 = {
+  'TOLUCA': 2156, // 539 * 4 trimestres
+  'MEXICO': 3444  // (215 Neza + 215 Ecatepec + 431 Naucalpan) * 4 trimestres
+};
+
 type DashboardGoals = {
   periodType: 'Ciclo Escolar' | 'Año Fiscal';
   periodName: string;
@@ -80,11 +86,13 @@ export default function DashboardPage() {
   
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  
+  // Default values set to Año Fiscal 2026 with 5600 total goal
   const [goals, setGoals] = useState<DashboardGoals>({
-    periodType: 'Ciclo Escolar',
-    periodName: '2024-2025',
-    supportGoal: 100,
-    trainingGoal: 50
+    periodType: 'Año Fiscal',
+    periodName: '2026',
+    supportGoal: 500,
+    trainingGoal: 5600
   })
 
   // Filters
@@ -171,8 +179,18 @@ export default function DashboardPage() {
         { name: 'Soporte Regular', value: filteredTickets.length - supportSetes, fill: '#cbd5e1' },
       ],
       trainingByValle: [
-        { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#6366f1' },
-        { name: 'TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#ec4899' },
+        { 
+          name: 'MÉXICO', 
+          value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, 
+          goal: REGIONAL_METAS_2026['MEXICO'],
+          fill: '#6366f1' 
+        },
+        { 
+          name: 'TOLUCA', 
+          value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, 
+          goal: REGIONAL_METAS_2026['TOLUCA'],
+          fill: '#ec4899' 
+        },
       ],
       trainingByGender: [
         { name: 'MASCULINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#0ea5e9' },
@@ -533,15 +551,21 @@ export default function DashboardPage() {
               </Card>
 
               <Card className="executive-card p-8">
-                <CardHeader className="p-0 mb-8"><CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><BarChart3 className="h-5 w-5" /> Capacitación por Valle</CardTitle></CardHeader>
+                <CardHeader className="p-0 mb-8"><CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><BarChart3 className="h-5 w-5" /> Meta Regional (Actual vs Plan)</CardTitle></CardHeader>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.trainingByValle}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                       <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                      <RechartsTooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} cursor={{ fill: 'rgba(98, 17, 50, 0.05)', radius: 10 }} />
-                      <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={45}>
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} 
+                        cursor={{ fill: 'rgba(98, 17, 50, 0.05)', radius: 10 }}
+                        formatter={(value: any, name: any, props: any) => [value, name === 'value' ? 'Real' : 'Meta']}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase' }} />
+                      <Bar dataKey="goal" name="Meta Planeada" fill="#cbd5e1" radius={[10, 10, 0, 0]} barSize={40} />
+                      <Bar dataKey="value" name="Avance Real" radius={[10, 10, 0, 0]} barSize={40}>
                         {stats.trainingByValle.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                       </Bar>
                     </BarChart>
