@@ -161,7 +161,6 @@ export default function ProgramsPage() {
         id: rec.id,
         email: ast.email || '-',
         cct: ast.cct || rec.cct || '-',
-        modalidad: ast.modalidad || rec.modalidad || '-',
         sector: ast.sector || rec.sector || '-',
         zona: ast.ze || rec.zonaEscolar || '-',
         valle: ast.valle || rec.valle || '-',
@@ -566,15 +565,15 @@ export default function ProgramsPage() {
                        </div>
                     </div>
                     <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
-                       <Table className="min-w-[900px]">
-                          <TableHeader className="bg-white/80">
+                       <Table className="min-w-[950px]">
+                          <TableHeader className="bg-white/80 sticky top-0 z-20">
                              <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[200px]">Correo Institucional</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase min-w-[130px]">CCT</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Sector / ZE</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Valle</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Estatus</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[100px]">Acción</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[280px]">Correo Institucional</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase min-w-[140px]">CCT</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Sector / ZE</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[120px]">Valle</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Estatus</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[120px] sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">Acción</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -582,11 +581,11 @@ export default function ProgramsPage() {
                                const isEditing = editingRowId === acc.id;
                                
                                return (
-                               <TableRow key={idx} className={cn("transition-all border-slate-100 group", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
+                               <TableRow key={idx} className={cn("transition-all border-slate-100 group relative", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
                                   <TableCell className="py-6 pl-10">
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-xs font-black lowercase text-primary w-full bg-white" 
+                                          className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" 
                                           value={inlineFormData.email} 
                                           onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} 
                                         />
@@ -600,7 +599,7 @@ export default function ProgramsPage() {
                                   <TableCell>
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-xs font-black uppercase w-28 bg-white" 
+                                          className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" 
                                           value={inlineFormData.cct} 
                                           onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} 
                                           maxLength={10}
@@ -612,8 +611,8 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <div className="flex gap-2 justify-center">
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
                                        </div>
                                      ) : (
                                        <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
@@ -622,7 +621,7 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-[10px] font-black uppercase w-24 mx-auto bg-white text-center" 
+                                          className="h-9 text-[10px] font-black uppercase w-full bg-white text-center border-primary/20" 
                                           value={inlineFormData.valle} 
                                           onChange={e => setInlineFormData({...inlineFormData, valle: e.target.value.toUpperCase()})} 
                                         />
@@ -633,7 +632,7 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <Select value={inlineFormData.status} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
-                                          <SelectTrigger className="h-9 w-28 mx-auto text-[10px] font-black uppercase bg-white">
+                                          <SelectTrigger className="h-9 w-full text-[10px] font-black uppercase bg-white border-primary/20">
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent className="font-black">
@@ -648,7 +647,7 @@ export default function ProgramsPage() {
                                        </div>
                                      )}
                                   </TableCell>
-                                  <TableCell className="text-right pr-10">
+                                  <TableCell className="text-right pr-10 sticky right-0 z-10 bg-white/90 group-hover:bg-white transition-colors backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">
                                      <div className="flex justify-end gap-2">
                                         {isEditing ? (
                                           <>
