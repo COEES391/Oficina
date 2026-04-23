@@ -120,7 +120,7 @@ export default function ProgramsPage() {
 
   const rubroStats = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
-      const rubroRecords = records.filter(r => r.name === name);
+      const rubroRecords = records.filter(r => r.name === name || (name.startsWith('Cuentas') && (r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI'))));
       const uniqueSchools = new Set(rubroRecords.map(r => r.cct).filter(Boolean)).size;
       const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
       const lastUpdate = rubroRecords.length > 0 
@@ -145,7 +145,6 @@ export default function ProgramsPage() {
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
     
-    // Filtramos registros que correspondan a cuentas (por nombre exacto o prefijos de importación)
     const rubroRecords = records.filter(r => 
       r.name.startsWith('Cuentas Institucionales') || 
       r.id.startsWith('PROG-CI') || 
@@ -156,21 +155,19 @@ export default function ProgramsPage() {
     rubroRecords.forEach(rec => {
       if (rec.asistentes && rec.asistentes.length > 0) {
         rec.asistentes.forEach(ast => {
-          if (ast.email && ast.email.trim() !== '') {
-            accounts.push({
-              id: rec.id,
-              email: ast.email,
-              cct: ast.cct || rec.cct || '-',
-              modalidad: ast.modalidad || rec.modalidad || '-',
-              sector: ast.sector || rec.sector || '-',
-              zona: ast.ze || rec.zonaEscolar || '-',
-              valle: ast.valle || rec.valle || '-',
-              departamento: ast.departamento || '-',
-              dominio: ast.email.split('@')[1] ? `@${ast.email.split('@')[1]}` : '-',
-              status: rec.status,
-              originalRecord: rec
-            });
-          }
+          accounts.push({
+            id: rec.id,
+            email: ast.email || '-',
+            cct: ast.cct || rec.cct || '-',
+            modalidad: ast.modalidad || rec.modalidad || '-',
+            sector: ast.sector || rec.sector || '-',
+            zona: ast.ze || rec.zonaEscolar || '-',
+            valle: ast.valle || rec.valle || '-',
+            departamento: ast.departamento || '-',
+            dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
+            status: rec.status,
+            originalRecord: rec
+          });
         });
       }
     });
@@ -188,7 +185,7 @@ export default function ProgramsPage() {
       const dom = acc.dominio.toLowerCase();
       if (stats.hasOwnProperty(dom)) {
         stats[dom]++;
-      } else {
+      } else if (dom !== '-') {
         stats['otros']++;
       }
     });
@@ -211,45 +208,45 @@ export default function ProgramsPage() {
         const findKey = (obj: any, variants: string[]) => {
           const keys = Object.keys(obj);
           for (const v of variants) {
-            const found = keys.find(k => k.toLowerCase().trim().replace(/[^a-z0-9]/g, '') === v.toLowerCase().replace(/[^a-z0-9]/g, ''));
+            const found = keys.find(k => k.toLowerCase().trim().replace(/[^a-z0-9]/g, '').includes(v.toLowerCase().replace(/[^a-z0-9]/g, '')));
             if (found) return obj[found];
           }
           return undefined;
         };
 
         const importedAssistants: ProgramAssistant[] = data.map(row => {
-          const cct = String(findKey(row, ['cct', 'centro de trabajo', 'clave', 'plantel', 'ct']) || '').toUpperCase();
-          const email = String(findKey(row, ['correo', 'email', 'cuenta', 'usuario', 'mail', 'e-mail', 'direccion']) || '').toLowerCase().trim();
+          const cct = String(findKey(row, ['cct', 'centro', 'clave', 'ct', 'trabajo']) || '').toUpperCase();
+          const email = String(findKey(row, ['correo', 'email', 'cuenta', 'user', 'usuario', 'mail']) || '').toLowerCase().trim();
           const school = schoolsDirectory.find(s => s.cct === cct);
           
           return {
-            paterno: String(findKey(row, ['paterno', 'apellido paterno', 'apellidop']) || ''),
-            materno: String(findKey(row, ['materno', 'apellido materno', 'apellidom']) || ''),
-            nombres: String(findKey(row, ['nombre', 'nombres', 'nom']) || ''),
-            rfc: String(findKey(row, ['rfc', 'curp', 'r f c']) || '').toUpperCase(),
-            genero: (String(findKey(row, ['genero', 'g', 'sexo']) || '').toUpperCase().startsWith('M')) ? 'MASCULINO' : 'FEMENINO',
+            paterno: String(findKey(row, ['paterno', 'apellidop']) || ''),
+            materno: String(findKey(row, ['materno', 'apellidom']) || ''),
+            nombres: String(findKey(row, ['nombre', 'nom']) || ''),
+            rfc: String(findKey(row, ['rfc', 'curp']) || '').toUpperCase(),
+            genero: (String(findKey(row, ['genero', 'sexo', 'g']) || '').toUpperCase().startsWith('M')) ? 'MASCULINO' : 'FEMENINO',
             funcion: String(findKey(row, ['funcion', 'cargo', 'puesto']) || 'DOCENTE'),
             email: email,
             cct: cct,
-            nombreCT: school?.nombre || String(findKey(row, ['escuela', 'plantel', 'nombre ct']) || ''),
-            ze: String(findKey(row, ['zona', 'ze', 'z', 'zona escolar']) || school?.zonaEscolar || ''),
-            sector: String(findKey(row, ['sector', 's', 'sector escolar']) || school?.sector || ''),
+            nombreCT: school?.nombre || String(findKey(row, ['escuela', 'nombrect', 'plantel']) || ''),
+            ze: String(findKey(row, ['zona', 'ze', 'z', 'escolar']) || school?.zonaEscolar || ''),
+            sector: String(findKey(row, ['sector', 's']) || school?.sector || ''),
             modalidad: String(findKey(row, ['modalidad', 'nivel', 'mod']) || school?.modalidad || ''),
-            municipio: String(findKey(row, ['municipio', 'mun', 'delegacion']) || school?.municipio || ''),
+            municipio: String(findKey(row, ['municipio', 'mun']) || school?.municipio || ''),
             region: String(findKey(row, ['region', 'reg']) || school?.region || ''),
             valle: String(findKey(row, ['valle', 'v']) || school?.valle || ''),
-            departamento: String(findKey(row, ['departamento', 'depto', 'area', 'oficina']) || 'TÉCNICO')
+            departamento: String(findKey(row, ['departamento', 'depto', 'area', 'oficina']) || 'TECNICO')
           };
         });
 
         if (importedAssistants.length > 0) {
-          const globalStatus = (String(findKey(data[0], ['estatus', 'status', 'estado']) || 'concluido')).toLowerCase();
+          const statusField = String(findKey(data[0], ['estatus', 'status', 'estado']) || 'concluido').toLowerCase();
           
           const newRecord: ProgramStatus = {
             ...initialFormState,
             id: `IMP-${Date.now()}`,
             name: PROGRAM_RUBROS[1],
-            status: (['planeacion', 'activo', 'concluido'].includes(globalStatus) ? globalStatus : 'concluido') as any,
+            status: (['planeacion', 'activo', 'concluido'].includes(statusField) ? statusField : 'concluido') as any,
             date: format(new Date(), 'yyyy-MM-dd'),
             asistentes: importedAssistants,
             totalParticipantes: importedAssistants.length,
