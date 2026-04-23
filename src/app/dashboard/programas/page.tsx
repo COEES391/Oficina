@@ -165,7 +165,6 @@ export default function ProgramsPage() {
         sector: ast.sector || rec.sector || '-',
         zona: ast.ze || rec.zonaEscolar || '-',
         valle: ast.valle || rec.valle || '-',
-        departamento: ast.departamento || '-',
         dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
         status: (rec.status === 'activo' || rec.status === 'inactivo') ? rec.status : 'activo',
         originalRecord: rec
@@ -352,16 +351,14 @@ export default function ProgramsPage() {
     
     const updatedRecords = records.map(r => {
       if (r.id === inlineFormData.id) {
-        // Update the assistant record inside the program record
         const updatedAsistentes = [...(r.asistentes || [])];
         if (updatedAsistentes.length > 0) {
           updatedAsistentes[0] = {
             ...updatedAsistentes[0],
             email: inlineFormData.email,
             cct: inlineFormData.cct,
-            modalidad: inlineFormData.modalidad,
-            sector: inlineFormData.sector,
             ze: inlineFormData.zona,
+            sector: inlineFormData.sector,
             valle: inlineFormData.valle
           };
         }
@@ -370,7 +367,6 @@ export default function ProgramsPage() {
           status: inlineFormData.status, 
           asistentes: updatedAsistentes,
           cct: inlineFormData.cct,
-          modalidad: inlineFormData.modalidad,
           zonaEscolar: inlineFormData.zona,
           sector: inlineFormData.sector,
           valle: inlineFormData.valle
@@ -570,12 +566,11 @@ export default function ProgramsPage() {
                        </div>
                     </div>
                     <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
-                       <Table className="min-w-[1000px]">
+                       <Table className="min-w-[900px]">
                           <TableHeader className="bg-white/80">
                              <TableRow className="border-none">
                                 <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[200px]">Correo Institucional</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase min-w-[130px]">CCT</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase min-w-[120px]">Modalidad</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Sector / ZE</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Valle</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[100px]">Estatus</TableHead>
@@ -612,17 +607,6 @@ export default function ProgramsPage() {
                                         />
                                      ) : (
                                        <span className="text-xs font-black text-slate-700 uppercase">{acc.cct}</span>
-                                     )}
-                                  </TableCell>
-                                  <TableCell>
-                                     {isEditing ? (
-                                       <Input 
-                                          className="h-9 text-[10px] font-bold uppercase w-full bg-white" 
-                                          value={inlineFormData.modalidad} 
-                                          onChange={e => setInlineFormData({...inlineFormData, modalidad: e.target.value.toUpperCase()})} 
-                                        />
-                                     ) : (
-                                       <span className="text-[10px] font-bold text-slate-500 uppercase">{acc.modalidad}</span>
                                      )}
                                   </TableCell>
                                   <TableCell className="text-center">
@@ -690,7 +674,7 @@ export default function ProgramsPage() {
                                </TableRow>
                              )})}
                              {accountsData.length === 0 && (
-                               <TableRow><TableCell colSpan={7} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">No se han registrado cuentas institucionales aún</TableCell></TableRow>
+                               <TableRow><TableCell colSpan={6} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">No se han registrado cuentas institucionales aún</TableCell></TableRow>
                              )}
                           </TableBody>
                        </Table>
