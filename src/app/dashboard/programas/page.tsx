@@ -146,33 +146,26 @@ export default function ProgramsPage() {
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
     
-    const rubroRecords = records.filter(r => 
+    return records.filter(r => 
       r.name.startsWith('Cuentas Institucionales') || 
       r.id.startsWith('PROG-CI') || 
       r.id.startsWith('IMP-')
-    );
-
-    const accounts: any[] = [];
-    rubroRecords.forEach(rec => {
-      if (rec.asistentes && rec.asistentes.length > 0) {
-        rec.asistentes.forEach(ast => {
-          accounts.push({
-            id: rec.id,
-            email: ast.email || '-',
-            cct: ast.cct || rec.cct || '-',
-            modalidad: ast.modalidad || rec.modalidad || '-',
-            sector: ast.sector || rec.sector || '-',
-            zona: ast.ze || rec.zonaEscolar || '-',
-            valle: ast.valle || rec.valle || '-',
-            departamento: ast.departamento || '-',
-            dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
-            status: rec.status,
-            originalRecord: rec
-          });
-        });
-      }
+    ).map(rec => {
+      const ast = (rec.asistentes && rec.asistentes.length > 0) ? rec.asistentes[0] : initialAssistant;
+      return {
+        id: rec.id,
+        email: ast.email || '-',
+        cct: ast.cct || rec.cct || '-',
+        modalidad: ast.modalidad || rec.modalidad || '-',
+        sector: ast.sector || rec.sector || '-',
+        zona: ast.ze || rec.zonaEscolar || '-',
+        valle: ast.valle || rec.valle || '-',
+        departamento: ast.departamento || '-',
+        dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
+        status: rec.status,
+        originalRecord: rec
+      };
     });
-    return accounts;
   }, [records, isCuentasTab]);
 
   const accountsByDomain = useMemo(() => {
@@ -200,11 +193,8 @@ export default function ProgramsPage() {
         !r.id.startsWith('IMP-') && 
         !r.id.startsWith('PROG-CI')
       );
-      // Mantener los rubros base vacíos
-      const baseRubros = programsData.filter(p => !filtered.some(f => f.id === p.id));
-      const final = [...filtered, ...baseRubros];
-      setRecords(final);
-      localStorage.setItem('programs_full', JSON.stringify(final));
+      setRecords(filtered);
+      localStorage.setItem('programs_full', JSON.stringify(filtered));
       toast({ title: "Auditoría Limpiada", description: "Se han removido todos los registros de cuentas." });
     }
   };
@@ -231,12 +221,13 @@ export default function ProgramsPage() {
           return undefined;
         };
 
-        const importedAssistants: ProgramAssistant[] = data.map(row => {
+        const newRecords: ProgramStatus[] = data.map((row, idx) => {
           const cct = String(findKey(row, ['cct', 'centro', 'clave', 'ct', 'trabajo']) || '').toUpperCase();
           const email = String(findKey(row, ['correo', 'email', 'cuenta', 'user', 'usuario', 'mail']) || '').toLowerCase().trim();
+          const statusField = String(findKey(row, ['estatus', 'status', 'estado']) || 'concluido').toLowerCase();
           const school = schoolsDirectory.find(s => s.cct === cct);
           
-          return {
+          const assistant: ProgramAssistant = {
             paterno: String(findKey(row, ['paterno', 'apellidop']) || ''),
             materno: String(findKey(row, ['materno', 'apellidom']) || ''),
             nombres: String(findKey(row, ['nombre', 'nom']) || ''),
@@ -254,27 +245,33 @@ export default function ProgramsPage() {
             valle: String(findKey(row, ['valle', 'v']) || school?.valle || ''),
             departamento: String(findKey(row, ['departamento', 'depto', 'area', 'oficina']) || 'TECNICO')
           };
-        });
 
-        if (importedAssistants.length > 0) {
-          const statusField = String(findKey(data[0], ['estatus', 'status', 'estado']) || 'concluido').toLowerCase();
-          
-          const newRecord: ProgramStatus = {
+          return {
             ...initialFormState,
-            id: `IMP-${Date.now()}`,
+            id: `IMP-${Date.now()}-${idx}`,
             name: PROGRAM_RUBROS[1],
             status: (['planeacion', 'activo', 'concluido'].includes(statusField) ? statusField : 'concluido') as any,
             date: format(new Date(), 'yyyy-MM-dd'),
-            asistentes: importedAssistants,
-            totalParticipantes: importedAssistants.length,
+            asistentes: [assistant],
+            totalParticipantes: 1,
             capacitacion: 'S',
-            observaciones: 'Importación masiva desde Excel para auditoría de cuentas.'
+            cct: assistant.cct,
+            schoolName: assistant.nombreCT,
+            zonaEscolar: assistant.ze,
+            sector: assistant.sector,
+            modalidad: assistant.modalidad,
+            municipio: assistant.municipio,
+            region: assistant.region,
+            valle: assistant.valle,
+            observaciones: 'Importación individual desde Excel para auditoría de cuentas.'
           };
+        });
 
-          const updated = [newRecord, ...records];
+        if (newRecords.length > 0) {
+          const updated = [...newRecords, ...records];
           setRecords(updated);
           localStorage.setItem('programs_full', JSON.stringify(updated));
-          toast({ title: "Importación Exitosa", description: `Se han cargado ${importedAssistants.length} cuentas institucionales.` });
+          toast({ title: "Importación Exitosa", description: `Se han cargado ${newRecords.length} cuentas institucionales.` });
         }
       } catch (err) {
         console.error(err);
@@ -340,7 +337,6 @@ export default function ProgramsPage() {
 
   if (!mounted) return null
 
-  // Helper inside dialog to check if current rubro is accounts
   const isCuentasInDialog = formData.name?.startsWith('Cuentas');
 
   return (
@@ -788,12 +784,14 @@ export default function ProgramsPage() {
                           <div className="flex items-center gap-4">
                              <Star className={cn("h-5 w-5 fill-current", isLibraryTab ? "text-emerald-600" : "text-blue-600")} />
                              <h4 className={cn("text-[12px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
-                               {isCuentasInDialog ? "Lista de Cuentas / Usuarios" : "Registro de Asistentes y RFC"}
+                               {isCuentasInDialog ? "Datos Maestros del Usuario" : "Registro de Asistentes y RFC"}
                              </h4>
                           </div>
-                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className={cn("h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white shadow-sm gap-3 transition-all", isLibraryTab ? "border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white" : "border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white")}>
-                            <Plus className="h-4 w-4" /> Añadir Registro
-                          </Button>
+                          {!isCuentasInDialog && (
+                            <Button variant="outline" size="sm" onClick={handleAddAssistant} className={cn("h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white shadow-sm gap-3 transition-all", isLibraryTab ? "border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white" : "border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white")}>
+                              <Plus className="h-4 w-4" /> Añadir Registro
+                            </Button>
+                          )}
                         </div>
 
                         <div className={cn("rounded-[2.5rem] border-2 overflow-hidden bg-white shadow-2xl", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
@@ -807,7 +805,7 @@ export default function ProgramsPage() {
                                     <TableHead className={cn("min-w-[200px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Correo / Usuario</TableHead>
                                     <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Departamento</TableHead>
                                     <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Género</TableHead>
-                                    <TableHead className={cn("w-12 sticky right-0 bg-white/95", isLibraryTab ? "border-emerald-50" : "border-blue-50")}></TableHead>
+                                    {!isCuentasInDialog && <TableHead className={cn("w-12 sticky right-0 bg-white/95", isLibraryTab ? "border-emerald-50" : "border-blue-50")}></TableHead>}
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -830,9 +828,11 @@ export default function ProgramsPage() {
                                           <SelectContent className="font-black"><SelectItem value="MASCULINO">MASC</SelectItem><SelectItem value="FEMENINO">FEM</SelectItem></SelectContent>
                                         </Select>
                                       </TableCell>
-                                      <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm">
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></Button>
-                                      </TableCell>
+                                      {!isCuentasInDialog && (
+                                        <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm">
+                                          <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></Button>
+                                        </TableCell>
+                                      )}
                                     </TableRow>
                                   ))}
                                 </TableBody>
@@ -845,9 +845,11 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              {!isCuentasInDialog && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                  <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                {!isCuentasInDialog && (
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                )}
+                {!isCuentasInDialog && (
                   <div className="space-y-3">
                     <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
                     <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
@@ -855,19 +857,19 @@ export default function ProgramsPage() {
                       <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
-                    <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
-                      <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
-                      <SelectContent className="font-black rounded-2xl">
-                        <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
-                        <SelectItem value="activo" className="text-amber-600">EN PROCESO TÉCNICO</SelectItem>
-                        <SelectItem value="concluido" className="text-emerald-600">CONCLUIDO / CERRADO</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                )}
+                <div className={cn("space-y-3", isCuentasInDialog ? "col-span-3" : "")}>
+                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
+                  <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
+                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="font-black rounded-2xl">
+                      <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
+                      <SelectItem value="activo" className="text-amber-600">EN PROCESO TÉCNICO</SelectItem>
+                      <SelectItem value="concluido" className="text-emerald-600">CONCLUIDO / CERRADO</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+              </div>
 
               {!isCuentasInDialog && (
                 <div className="space-y-4">
