@@ -264,6 +264,15 @@ export default function ProgramsPage() {
     setIsDialogOpen(true);
   }
 
+  const handleDeleteRecord = (id: string) => {
+    if (window.confirm('¿Está seguro de eliminar este registro técnico? Esta acción no se puede deshacer.')) {
+      const updated = records.filter(r => r.id !== id);
+      setRecords(updated);
+      localStorage.setItem('programs_full', JSON.stringify(updated));
+      toast({ title: "Registro eliminado", description: "El registro ha sido removido exitosamente." });
+    }
+  }
+
   if (!mounted) return null
 
   return (
@@ -355,7 +364,7 @@ export default function ProgramsPage() {
                             <TableHead className="text-[10px] font-black uppercase text-center">Zona (ZE)</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-right">Equipos Rehab.</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right pr-6 w-20">Acción</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right pr-6 w-24">Acción</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -382,14 +391,24 @@ export default function ProgramsPage() {
                                  </div>
                               </TableCell>
                               <TableCell className="text-right pr-6">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 hover:text-primary transition-colors" 
-                                  onClick={() => handleEditRecord(rec)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
+                                <div className="flex justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 hover:text-primary transition-colors" 
+                                    onClick={() => handleEditRecord(rec)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 hover:text-destructive transition-colors" 
+                                    onClick={() => handleDeleteRecord(rec.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           )) : (
@@ -445,7 +464,7 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Tipo de Intervención</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
-                      <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-20">Acción</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-24">Acción</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -485,14 +504,24 @@ export default function ProgramsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right pr-8">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
-                            onClick={() => handleEditRecord(r)}
-                          >
-                             <Pencil className="h-5 w-5" />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
+                              onClick={() => handleEditRecord(r)}
+                            >
+                               <Pencil className="h-5 w-5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-10 w-10 hover:text-destructive transition-transform hover:scale-110" 
+                              onClick={() => handleDeleteRecord(r.id)}
+                            >
+                               <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )) : (
