@@ -234,7 +234,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
               <p className="text-muted-foreground font-black text-[11px] tracking-[0.2em] uppercase">
-                Análisis Operativo {goals.periodType}: {goals.periodName}
+                Análisis Operativo
               </p>
               <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/5 text-primary rounded-xl" onClick={() => setIsSettingsOpen(true)}>
                 <Settings2 className="h-4 w-4" />
