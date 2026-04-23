@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,11 +11,16 @@ import { placeholderImages } from '@/lib/placeholder-images'
 import { Eye, EyeOff, Lock, User } from 'lucide-react'
 
 export default function LoginPage() {
+  const [mounted, setMounted] = useState(false)
   const [rfc, setRfc] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
 
@@ -38,9 +43,11 @@ export default function LoginPage() {
     }
   }
 
+  if (!mounted) return null
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary bg-white">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-t-8 border-t-primary bg-white">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto relative h-28 w-28 overflow-hidden rounded-xl border-2 border-primary/10 bg-white flex items-center justify-center p-2 shadow-sm">
             <Image 
@@ -54,35 +61,35 @@ export default function LoginPage() {
           <div className="space-y-1">
             <CardTitle className="text-2xl font-black tracking-tight text-primary uppercase">Oficina de Planeación</CardTitle>
             <CardDescription className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
-              Soporte, Capacitación y Programas
+              Gobierno del Estado de México
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rfc" className="text-xs font-black uppercase text-slate-600 flex items-center gap-2">
-                <User className="h-3 w-3" /> RFC de Usuario
+              <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2 tracking-widest">
+                <User className="h-3 w-3 text-primary" /> RFC de Usuario
               </Label>
               <Input
                 id="rfc"
                 placeholder="Ingresa tu RFC"
-                className="h-11 uppercase font-mono border-slate-200 focus:border-primary"
+                className="h-12 uppercase font-mono border-slate-200 focus:border-primary text-sm font-bold"
                 value={rfc}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs font-black uppercase text-slate-600 flex items-center gap-2">
-                <Lock className="h-3 w-3" /> Contraseña
+              <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2 tracking-widest">
+                <Lock className="h-3 w-3 text-primary" /> Contraseña
               </Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="h-11 pr-10 border-slate-200 focus:border-primary"
+                  className="h-12 pr-12 border-slate-200 focus:border-primary text-sm font-bold"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
@@ -91,7 +98,7 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-11 w-11 text-slate-400 hover:text-primary"
+                  className="absolute right-0 top-0 h-12 w-12 text-slate-400 hover:text-primary"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -100,8 +107,8 @@ export default function LoginPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button className="w-full h-12 text-sm font-black uppercase tracking-widest shadow-lg" onClick={handleLogin}>
+        <CardFooter className="pt-2">
+          <Button className="w-full h-14 text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90" onClick={handleLogin}>
             Ingresar al Sistema
           </Button>
         </CardFooter>
