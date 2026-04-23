@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { programsData, type ProgramStatus } from "@/lib/planning-data"
+import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
@@ -31,7 +31,9 @@ import {
   ChevronRight,
   MonitorCheck,
   History,
-  Users
+  Users,
+  Trash2,
+  Plus
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -48,6 +50,15 @@ const PROGRAM_RUBROS = [
   'Mesa de Ayuda Técnica'
 ];
 
+const FUNCIONES = [
+  "ADMINISTRATIVO",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
+
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -57,6 +68,10 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
+
+  const initialAssistant: ProgramAssistant = {
+    paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: ''
+  };
 
   const initialFormState: ProgramStatus = {
     id: '',
@@ -86,6 +101,7 @@ export default function ProgramsPage() {
     evidencePhotos: [],
     capacitacion: 'N',
     totalParticipantes: 0,
+    asistentes: [initialAssistant]
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -167,6 +183,42 @@ export default function ProgramsPage() {
         reader.readAsDataURL(file)
       })
     }
+  }
+
+  const handleAddAssistant = () => {
+    setFormData(prev => ({
+      ...prev,
+      asistentes: [...(prev.asistentes || []), initialAssistant]
+    }))
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      asistentes: prev.asistentes?.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateAssistant = (index: number, field: keyof ProgramAssistant, value: string) => {
+    const newAsistentes = [...(formData.asistentes || [])]
+    newAsistentes[index] = { ...newAsistentes[index], [field]: value }
+
+    if (field === 'cct' && value.length === 10) {
+      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === value.toUpperCase())
+      if (school) {
+        newAsistentes[index] = {
+          ...newAsistentes[index],
+          nombreCT: school.nombre,
+          ze: school.zonaEscolar,
+          sector: school.sector,
+          modalidad: school.modalidad,
+          municipio: school.municipio,
+          region: school.region,
+          valle: school.valle
+        }
+      }
+    }
+    setFormData(prev => ({ ...prev, asistentes: newAsistentes, totalParticipantes: newAsistentes.filter(a => a.rfc).length }))
   }
 
   const handleSave = () => {
@@ -403,7 +455,7 @@ export default function ProgramsPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[900px] h-[95vh] flex flex-col p-0">
+        <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-2 bg-slate-50 border-b">
             <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
               <Settings2 className="h-6 w-6" /> Ficha Técnica de Programa: {formData.name}
@@ -494,7 +546,7 @@ export default function ProgramsPage() {
               </div>
 
               {formData.name === 'Biblioteca Digital' && (
-                <div className="space-y-4 p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100 animate-in fade-in slide-in-from-top-2">
+                <div className="space-y-6 p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100 animate-in fade-in slide-in-from-top-2">
                    <h3 className="text-xs font-black uppercase text-emerald-700 border-b border-emerald-100 pb-1 flex items-center gap-2">
                      <Users className="h-4 w-4" /> Seguimiento de Capacitación
                    </h3>
@@ -502,7 +554,7 @@ export default function ProgramsPage() {
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase">¿Se brindó Capacitación?</Label>
                         <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
-                          <SelectTrigger className="font-black border-emerald-200">
+                          <SelectTrigger className="font-black border-emerald-200 bg-white">
                             <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -511,17 +563,88 @@ export default function ProgramsPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black uppercase">Total de Participantes</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0"
-                          value={formData.totalParticipantes} 
-                          onChange={e => setFormData({...formData, totalParticipantes: parseInt(e.target.value) || 0})}
-                          className="font-black border-emerald-200"
-                        />
-                      </div>
+                      {formData.capacitacion === 'S' && (
+                         <div className="space-y-1">
+                          <Label className="text-[10px] font-black uppercase">Total de Participantes</Label>
+                          <Input 
+                            type="number" 
+                            readOnly
+                            value={formData.asistentes?.filter(a => a.rfc).length || 0}
+                            className="font-black border-emerald-200 bg-emerald-100/50"
+                          />
+                        </div>
+                      )}
                    </div>
+
+                   {formData.capacitacion === 'S' && (
+                      <div className="space-y-4 animate-in fade-in duration-500">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-[11px] font-black uppercase text-emerald-800">Registro de Asistentes</h4>
+                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] border-emerald-600 text-emerald-700 hover:bg-emerald-50 bg-white">
+                            <Plus className="h-3 w-3" /> Añadir Asistente
+                          </Button>
+                        </div>
+
+                        <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
+                           <ScrollArea className="w-full">
+                              <Table>
+                                <TableHeader className="bg-emerald-100/50">
+                                  <TableRow>
+                                    <TableHead className="w-10 text-[9px] font-black uppercase">#</TableHead>
+                                    <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Apellido Paterno</TableHead>
+                                    <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Apellido Materno</TableHead>
+                                    <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre(s)</TableHead>
+                                    <TableHead className="min-w-[150px] text-[9px] font-black uppercase">RFC</TableHead>
+                                    <TableHead className="min-w-[120px] text-[9px] font-black uppercase">Género</TableHead>
+                                    <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Función</TableHead>
+                                    <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Email</TableHead>
+                                    <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT Proc.</TableHead>
+                                    <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Plantel Proc.</TableHead>
+                                    <TableHead className="w-10 sticky right-0 bg-emerald-50"></TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {formData.asistentes?.map((ast, idx) => (
+                                    <TableRow key={idx} className="hover:bg-emerald-50/30">
+                                      <TableCell className="text-center font-bold text-xs text-muted-foreground">{idx + 1}</TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} /></TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} /></TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] font-bold uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} /></TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                      <TableCell className="p-1">
+                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v)}>
+                                          <SelectTrigger className="h-8 text-[10px]"><SelectValue /></SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="MASCULINO" className="text-[10px]">MASCULINO</SelectItem>
+                                            <SelectItem value="FEMENINO" className="text-[10px]">FEMENINO</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </TableCell>
+                                      <TableCell className="p-1">
+                                        <Select value={ast.funcion} onValueChange={v => updateAssistant(idx, 'funcion', v)}>
+                                          <SelectTrigger className="h-8 text-[10px]"><SelectValue /></SelectTrigger>
+                                          <SelectContent>
+                                            {FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px]">{f}</SelectItem>)}
+                                          </SelectContent>
+                                        </Select>
+                                      </TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] lowercase" type="email" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} /></TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[10px] font-mono uppercase font-black border-emerald-300" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
+                                      <TableCell className="p-1"><Input className="h-8 text-[9px] bg-slate-50 uppercase font-bold" value={ast.nombreCT} readOnly /></TableCell>
+                                      <TableCell className="p-1 sticky right-0 bg-white/80 backdrop-blur-sm">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                              <ScrollBar orientation="horizontal" />
+                           </ScrollArea>
+                        </div>
+                      </div>
+                   )}
                 </div>
               )}
 

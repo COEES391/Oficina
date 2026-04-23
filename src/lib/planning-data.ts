@@ -28,6 +28,24 @@ export type SupportTicket = {
   evidencePhotos?: string[];
 };
 
+export type ProgramAssistant = {
+  paterno: string;
+  materno: string;
+  nombres: string;
+  rfc: string;
+  genero: 'MASCULINO' | 'FEMENINO' | '';
+  funcion: string;
+  email: string;
+  cct: string;
+  nombreCT: string;
+  ze: string;
+  sector: string;
+  modalidad: string;
+  municipio: string;
+  region: string;
+  valle: string;
+};
+
 export type TrainingRecord = {
   id: string;
   asistentePaterno: string;
@@ -89,6 +107,7 @@ export type ProgramStatus = {
   observaciones?: string;
   capacitacion?: 'S' | 'N';
   totalParticipantes?: number;
+  asistentes?: ProgramAssistant[];
 };
 
 export const supportData: SupportTicket[] = [
