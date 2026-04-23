@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -35,7 +36,8 @@ import {
   Trash2,
   Plus,
   Layers,
-  Star
+  Star,
+  Mail
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -130,8 +132,37 @@ export default function ProgramsPage() {
     });
   }, [records]);
 
+  const isLibraryTab = activeTab === 'Biblioteca Digital';
+  const isCuentasTab = activeTab.startsWith('Cuentas Institucionales');
+  
   const filteredHistory = useMemo(() => records.filter(r => r.name === activeTab), [records, activeTab]);
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
+
+  // Flattened accounts for the special accounts table
+  const accountsData = useMemo(() => {
+    if (!isCuentasTab) return [];
+    const rubroRecords = records.filter(r => r.name === activeTab);
+    const accounts: any[] = [];
+    rubroRecords.forEach(rec => {
+      rec.asistentes?.forEach(ast => {
+        if (ast.email) {
+          accounts.push({
+            id: rec.id,
+            email: ast.email,
+            cct: rec.cct,
+            modalidad: rec.modalidad,
+            sector: rec.sector,
+            zona: rec.zonaEscolar,
+            valle: rec.valle,
+            dominio: ast.email.split('@')[1] ? `@${ast.email.split('@')[1]}` : '-',
+            status: rec.status,
+            originalRecord: rec
+          });
+        }
+      });
+    });
+    return accounts;
+  }, [records, activeTab, isCuentasTab]);
 
   useEffect(() => {
     if (searchTerm.length === 10) {
@@ -245,11 +276,13 @@ export default function ProgramsPage() {
                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
                   <div className="flex items-center gap-8">
                      <div className="h-24 w-24 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/5 shadow-inner">
-                        {activeTab === 'Biblioteca Digital' ? <MonitorCheck className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
+                        {isLibraryTab ? <MonitorCheck className="h-12 w-12 text-primary" /> : isCuentasTab ? <Mail className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
                      </div>
                      <div className="space-y-2">
                         <div className="flex items-center gap-4">
-                           <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800 leading-none">{activeTab}</h3>
+                           <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800 leading-none">
+                             {isCuentasTab ? "Cuentas Institucionales" : activeTab}
+                           </h3>
                            <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats.status}</Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-8 pt-3">
@@ -257,18 +290,23 @@ export default function ProgramsPage() {
                               <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate}
                            </div>
                            <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                              <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {activeTab !== 'Biblioteca Digital' && `/ ${TOTAL_UNIVERSE}`}
+                              <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
                            </div>
-                           {activeTab === 'Biblioteca Digital' && (
+                           {isLibraryTab && (
                              <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
                                 <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
+                             </div>
+                           )}
+                           {isCuentasTab && (
+                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
+                                <Mail className="h-4 w-4" /> Cuentas Activas: {accountsData.length}
                              </div>
                            )}
                         </div>
                      </div>
                   </div>
 
-                  {activeTab !== 'Biblioteca Digital' && (
+                  {(!isLibraryTab && !isCuentasTab) && (
                     <div className="text-right bg-slate-50 p-8 rounded-[2rem] border-2 border-white shadow-inner min-w-[220px]">
                       <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Avance Global</p>
                       <p className="text-6xl font-black text-primary leading-none tracking-tighter">{currentStats.progress}<span className="text-2xl text-accent ml-1">%</span></p>
@@ -276,7 +314,7 @@ export default function ProgramsPage() {
                   )}
                </div>
 
-               {activeTab === 'Biblioteca Digital' ? (
+               {isLibraryTab && (
                  <div className="mt-12 space-y-8">
                     <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
                        <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
@@ -344,11 +382,79 @@ export default function ProgramsPage() {
                                   </TableCell>
                                </TableRow>
                              ))}
+                             {currentStats.records.length === 0 && (
+                               <TableRow><TableCell colSpan={7} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">Sin registros en este rubro</TableCell></TableRow>
+                             )}
                           </TableBody>
                        </Table>
                     </div>
                  </div>
-               ) : (
+               )}
+
+               {isCuentasTab && (
+                 <div className="mt-12 space-y-8">
+                    <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
+                       <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
+                          <Mail className="h-5 w-5" /> Progreso de Cobertura Institucional (Cuentas)
+                       </h4>
+                       <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría de Dominios</Badge>
+                    </div>
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
+                       <Table>
+                          <TableHeader className="bg-white/80">
+                             <TableRow className="border-none">
+                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Correo Institucional</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Sector / ZE</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Valle</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Dominio</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
+                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                             {accountsData.map((acc, idx) => (
+                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100">
+                                  <TableCell className="py-6 pl-10">
+                                     <span className="text-xs font-black text-primary lowercase">{acc.email}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                     <span className="text-xs font-black text-slate-700 uppercase">{acc.cct}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                     <span className="text-[10px] font-bold text-slate-500 uppercase">{acc.modalidad}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.valle}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[9px]">{acc.dominio}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right pr-10">
+                                     <div className="flex justify-end gap-2">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(acc.originalRecord); setEditingId(acc.originalRecord.id); setIsDialogOpen(true); }}>
+                                           <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('Eliminar registro técnico?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                           <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                     </div>
+                                  </TableCell>
+                               </TableRow>
+                             ))}
+                             {accountsData.length === 0 && (
+                               <TableRow><TableCell colSpan={7} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">No se han registrado cuentas institucionales aún</TableCell></TableRow>
+                             )}
+                          </TableBody>
+                       </Table>
+                    </div>
+                 </div>
+               )}
+
+               {(!isLibraryTab && !isCuentasTab) && (
                  <div className="mt-12 space-y-6 bg-slate-50 p-10 rounded-[3rem] border border-white shadow-inner">
                     <div className="flex justify-between items-end">
                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Progreso de Cobertura Institucional</span>
@@ -366,7 +472,7 @@ export default function ProgramsPage() {
                )}
             </Card>
 
-            {activeTab !== 'Biblioteca Digital' && (
+            {(!isLibraryTab && !isCuentasTab) && (
                <Card className="executive-card">
                   <CardHeader className="p-8 border-b border-slate-50">
                     <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
@@ -525,17 +631,21 @@ export default function ProgramsPage() {
                 </div>
               </div>
 
-              {(formData.name === 'Biblioteca Digital' || activeTab === 'Biblioteca Digital') && (
-                <div className="space-y-10 p-10 bg-emerald-50/30 rounded-[3rem] border-4 border-white shadow-xl shadow-emerald-50">
-                   <div className="flex items-center justify-between border-b border-emerald-100 pb-8">
+              {(isLibraryTab || isCuentasTab) && (
+                <div className={cn("space-y-10 p-10 rounded-[3rem] border-4 border-white shadow-xl", isLibraryTab ? "bg-emerald-50/30 shadow-emerald-50" : "bg-blue-50/30 shadow-blue-50")}>
+                   <div className={cn("flex items-center justify-between border-b pb-8", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
                       <div className="flex items-center gap-4">
-                         <div className="h-12 w-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-200"><Users className="h-6 w-6" /></div>
-                         <h3 className="text-sm font-black uppercase text-emerald-800 tracking-[0.2em]">Seguimiento Pedagógico: Capacitación</h3>
+                         <div className={cn("h-12 w-12 rounded-2xl text-white flex items-center justify-center shadow-lg", isLibraryTab ? "bg-emerald-600 shadow-emerald-200" : "bg-blue-600 shadow-blue-200")}><Users className="h-6 w-6" /></div>
+                         <h3 className={cn("text-sm font-black uppercase tracking-[0.2em]", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
+                           {isCuentasTab ? "Registro de Cuentas Institucionales" : "Seguimiento Pedagógico: Capacitación"}
+                         </h3>
                       </div>
                       <div className="space-y-1 text-right">
-                         <Label className="text-[11px] font-black uppercase text-emerald-600 tracking-widest">¿Capacitación?</Label>
+                         <Label className={cn("text-[11px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-600" : "text-blue-600")}>
+                           {isCuentasTab ? "¿Registrar Cuentas?" : "¿Capacitación?"}
+                         </Label>
                          <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
-                           <SelectTrigger className="h-12 w-64 rounded-2xl font-black bg-white border-emerald-200 shadow-sm"><SelectValue /></SelectTrigger>
+                           <SelectTrigger className={cn("h-12 w-64 rounded-2xl font-black bg-white shadow-sm", isLibraryTab ? "border-emerald-200" : "border-blue-200")}><SelectValue /></SelectTrigger>
                            <SelectContent className="rounded-2xl border-none shadow-2xl font-black"><SelectItem value="S">SÍ, BRINDADA</SelectItem><SelectItem value="N">NO BRINDADA</SelectItem></SelectContent>
                          </Select>
                       </div>
@@ -545,52 +655,49 @@ export default function ProgramsPage() {
                       <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-4">
-                             <Star className="h-5 w-5 text-emerald-600 fill-emerald-600" />
-                             <h4 className="text-[12px] font-black uppercase text-emerald-800 tracking-widest">Registro de Asistentes y RFC</h4>
+                             <Star className={cn("h-5 w-5 fill-current", isLibraryTab ? "text-emerald-600" : "text-blue-600")} />
+                             <h4 className={cn("text-[12px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
+                               {isCuentasTab ? "Lista de Cuentas / Usuarios" : "Registro de Asistentes y RFC"}
+                             </h4>
                           </div>
-                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white border-emerald-300 text-emerald-700 shadow-sm gap-3 hover:bg-emerald-600 hover:text-white transition-all">
-                            <Plus className="h-4 w-4" /> Añadir Asistente
+                          <Button variant="outline" size="sm" onClick={handleAddAssistant} className={cn("h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white shadow-sm gap-3 transition-all", isLibraryTab ? "border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white" : "border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white")}>
+                            <Plus className="h-4 w-4" /> Añadir Registro
                           </Button>
                         </div>
 
-                        <div className="rounded-[2.5rem] border-2 border-emerald-100 overflow-hidden bg-white shadow-2xl">
+                        <div className={cn("rounded-[2.5rem] border-2 overflow-hidden bg-white shadow-2xl", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
                            <ScrollArea className="w-full">
                               <Table>
-                                <TableHeader className="bg-emerald-50/50">
+                                <TableHeader className={isLibraryTab ? "bg-emerald-50/50" : "bg-blue-50/50"}>
                                   <TableRow className="border-none">
-                                    <TableHead className="w-12 text-[10px] font-black uppercase py-6 pl-10 text-emerald-800">#</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Paterno / Materno / Nombre</TableHead>
-                                    <TableHead className="min-w-[150px] text-[10px] font-black uppercase text-emerald-800">RFC (13)</TableHead>
-                                    <TableHead className="min-w-[120px] text-[10px] font-black uppercase text-emerald-800">Género</TableHead>
-                                    <TableHead className="min-w-[180px] text-[10px] font-black uppercase text-emerald-800">Procedencia (CCT)</TableHead>
-                                    <TableHead className="w-12 sticky right-0 bg-white/95"></TableHead>
+                                    <TableHead className={cn("w-12 text-[10px] font-black uppercase py-6 pl-10", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>#</TableHead>
+                                    <TableHead className={cn("min-w-[180px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Paterno / Materno / Nombre</TableHead>
+                                    <TableHead className={cn("min-w-[150px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>RFC (13)</TableHead>
+                                    <TableHead className={cn("min-w-[200px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Correo / Usuario</TableHead>
+                                    <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Género</TableHead>
+                                    <TableHead className={cn("w-12 sticky right-0 bg-white/95", isLibraryTab ? "border-emerald-50" : "border-blue-50")}></TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {formData.asistentes?.map((ast, idx) => (
-                                    <TableRow key={idx} className="hover:bg-emerald-50/20 border-emerald-50 transition-colors">
-                                      <TableCell className="text-center font-black text-xs text-emerald-300 pl-10">{idx + 1}</TableCell>
+                                    <TableRow key={idx} className={cn("transition-colors border-b", isLibraryTab ? "hover:bg-emerald-50/20 border-emerald-50" : "hover:bg-blue-50/20 border-blue-50")}>
+                                      <TableCell className={cn("text-center font-black text-xs pl-10", isLibraryTab ? "text-emerald-300" : "text-blue-300")}>{idx + 1}</TableCell>
                                       <TableCell className="p-4">
                                          <div className="flex gap-2">
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
-                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-emerald-50 uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
+                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
                                          </div>
                                       </TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-emerald-300 text-primary uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 text-primary uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
                                       <TableCell className="p-4">
                                         <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-emerald-100"><SelectValue /></SelectTrigger>
+                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 shadow-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent className="font-black"><SelectItem value="MASCULINO">MASC</SelectItem><SelectItem value="FEMENINO">FEM</SelectItem></SelectContent>
                                         </Select>
                                       </TableCell>
-                                      <TableCell className="p-4">
-                                        <div className="flex flex-col gap-1">
-                                          <Input className="h-10 text-[10px] font-black rounded-xl border-emerald-300 uppercase shadow-inner" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} placeholder="15DESXXXXX" />
-                                          {ast.nombreCT && <span className="text-[8px] font-black text-slate-400 uppercase truncate max-w-[140px] px-1">{ast.nombreCT}</span>}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm border-l border-emerald-50">
+                                      <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm">
                                         <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></Button>
                                       </TableCell>
                                     </TableRow>
