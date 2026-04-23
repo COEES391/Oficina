@@ -30,14 +30,6 @@ export type SupportTicket = {
 
 export type TrainingRecord = {
   id: string;
-  cursoGrupo: string;
-  cursoNombre: string;
-  duracionHoras: number;
-  fechaInicio: string;
-  fechaTermino: string;
-  instructores: string[];
-  numeroOficio: string;
-  materialUtilizado: string;
   asistentePaterno: string;
   asistenteMaterno: string;
   asistenteNombres: string;
@@ -53,6 +45,14 @@ export type TrainingRecord = {
   asistenteMunicipio: string;
   asistenteRegion: string;
   asistenteValle: string;
+  cursoGrupo: string;
+  cursoNombre: string;
+  duracionHoras: number;
+  fechaInicio: string;
+  fechaTermino: string;
+  instructores: string[];
+  numeroOficio: string;
+  materialUtilizado: string;
   cctSede: string;
   setes: 'S' | 'N';
   observaciones: string;
@@ -68,6 +68,25 @@ export type ProgramStatus = {
   date: string; // YYYY-MM-DD
   reportPdf?: string;
   evidencePhotos?: string[];
+  // Campos técnicos detallados
+  cct?: string;
+  schoolName?: string;
+  zonaEscolar?: string;
+  sector?: string;
+  modalidad?: string;
+  municipio?: string;
+  region?: string;
+  valle?: string;
+  numeroEquipos?: number;
+  descripcionEquipo?: string;
+  fechaEntrada?: string;
+  fechaSalida?: string;
+  serviciosMC?: number;
+  serviciosMP?: number;
+  responsables?: string[];
+  numeroOficio?: string;
+  setes?: 'S' | 'N';
+  observaciones?: string;
 };
 
 export const supportData: SupportTicket[] = [
