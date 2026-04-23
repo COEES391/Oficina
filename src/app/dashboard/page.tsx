@@ -64,14 +64,6 @@ const TARGET_UNIVERSE_DATA = [
   { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
 ];
 
-const REGIONAL_OFFICES = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
-  "Oficina de COEES Tultitlan"
-];
-
 type DashboardGoals = {
   periodType: 'Ciclo Escolar' | 'Año Fiscal';
   periodName: string;
@@ -221,7 +213,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h2 className="text-4xl font-black tracking-tight text-primary uppercase leading-none">Centro de Mando</h2>
+            <h2 className="text-4xl font-black tracking-tight text-primary uppercase leading-none">PLANEACIÓN</h2>
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
               <p className="text-muted-foreground font-black text-[11px] tracking-[0.2em] uppercase">
@@ -233,7 +225,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:w-auto">
+          <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:auto">
             <TabsList className="grid grid-cols-3 w-full md:w-[500px] bg-slate-100 p-1.5 h-14 rounded-2xl shadow-inner border border-primary/5">
               <TabsTrigger value="soporte" className="gap-3 text-[10px] font-black uppercase tracking-wider rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg">
                 <Wrench className="h-4 w-4" /> Soporte
