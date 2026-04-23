@@ -333,11 +333,11 @@ export default function ProgramsPage() {
                                      {rec.numeroEquipos} <MonitorCheck className="h-3 w-3 inline ml-1" />
                                   </TableCell>
                                   <TableCell className="text-right pr-10">
-                                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                     <div className="flex justify-end gap-2">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                            <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl" onClick={() => { if(window.confirm('Eliminar?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Eliminado"}); } }}>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('Eliminar registro institucional?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                      </div>
@@ -365,6 +365,67 @@ export default function ProgramsPage() {
                  </div>
                )}
             </Card>
+
+            {activeTab !== 'Biblioteca Digital' && (
+               <Card className="executive-card">
+                  <CardHeader className="p-8 border-b border-slate-50">
+                    <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                      <History className="h-6 w-6" /> Historial de Intervenciones: {activeTab}
+                    </CardTitle>
+                    <CardDescription className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mt-1">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50">
+                        <TableRow className="border-none">
+                          <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase">Municipio / Modalidad</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase text-right">Impacto (Eq)</TableHead>
+                          <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredHistory.map((rec, idx) => (
+                          <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50">
+                            <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
+                            <TableCell>
+                               <div className="flex flex-col">
+                                  <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{rec.schoolName}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell>
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-black uppercase text-slate-600">{rec.municipio}</span>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase">{rec.modalidad}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                               <div className="flex items-center justify-center gap-2">
+                                  <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                  <span className="text-[10px] font-black uppercase text-slate-500">{rec.status}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-black text-slate-700">{rec.numeroEquipos}</TableCell>
+                            <TableCell className="text-right pr-10">
+                               <div className="flex justify-end gap-2">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                     <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                     <Trash2 className="h-4 w-4" />
+                                  </Button>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+               </Card>
+            )}
           </TabsContent>
         )}
       </Tabs>
