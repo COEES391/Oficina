@@ -358,8 +358,10 @@ export default function ProgramsPage() {
                       <Table>
                         <TableHeader className="bg-slate-100/80">
                           <TableRow>
-                            <TableHead className="text-[10px] font-black uppercase py-4 pl-6">Modalidad</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase py-4 pl-6">Folio</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">No. Oficio</TableHead>
                             <TableHead className="text-[10px] font-black uppercase">CCT Atendido</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Sector</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Zona (ZE)</TableHead>
                             <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
@@ -370,8 +372,10 @@ export default function ProgramsPage() {
                         <TableBody>
                           {currentStats.records.length > 0 ? currentStats.records.map((rec, idx) => (
                             <TableRow key={idx} className="hover:bg-white transition-colors">
-                              <TableCell className="text-xs font-bold text-primary uppercase py-4 pl-6">{rec.modalidad}</TableCell>
+                              <TableCell className="text-xs font-black text-primary uppercase py-4 pl-6">{rec.id}</TableCell>
+                              <TableCell className="text-[10px] font-bold text-slate-600">{rec.numeroOficio || '-'}</TableCell>
                               <TableCell className="text-xs font-mono font-black">{rec.cct}</TableCell>
+                              <TableCell className="text-xs font-bold text-slate-700 uppercase">{rec.modalidad}</TableCell>
                               <TableCell className="text-xs font-bold text-center">{rec.sector}</TableCell>
                               <TableCell className="text-xs font-bold text-center">{rec.zonaEscolar}</TableCell>
                               <TableCell className="text-center">
@@ -413,7 +417,7 @@ export default function ProgramsPage() {
                             </TableRow>
                           )) : (
                             <TableRow>
-                              <TableCell colSpan={7} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
+                              <TableCell colSpan={9} className="text-center py-12 text-xs font-bold text-muted-foreground uppercase opacity-40 italic">
                                 No se han registrado intervenciones técnicas en este rubro aún.
                               </TableCell>
                             </TableRow>
@@ -447,97 +451,99 @@ export default function ProgramsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-t-4 border-t-primary shadow-xl overflow-hidden bg-white">
-              <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-6 px-8 border-b">
-                 <div className="space-y-1">
-                   <CardTitle className="text-xl font-black uppercase text-primary flex items-center gap-3">
-                     <History className="h-6 w-6" /> Historial de Intervenciones: {activeTab}
-                   </CardTitle>
-                   <CardDescription className="text-xs font-bold uppercase tracking-wider">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
-                 </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader className="bg-slate-100/50">
-                    <TableRow>
-                      <TableHead className="text-[10px] font-black uppercase py-4 pl-8">Folio / Fecha</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Tipo de Intervención</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
-                      <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-24">Acción</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredHistory.length > 0 ? filteredHistory.map(r => (
-                      <TableRow key={r.id} className="hover:bg-slate-50/80 transition-colors border-b last:border-0">
-                        <TableCell className="py-4 pl-8">
-                          <div className="flex flex-col">
-                            <span className="font-black text-primary text-xs">{r.id}</span>
-                            <span className="text-[9px] font-bold text-muted-foreground uppercase">{r.date}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black text-slate-700">{r.cct}</span>
-                            <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[200px] uppercase">{r.schoolName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Badge variant="outline" className="text-[9px] font-black border-blue-200 text-blue-700 bg-blue-50/50">MC: {r.serviciosMC}</Badge>
-                            <Badge variant="outline" className="text-[9px] font-black border-emerald-200 text-emerald-700 bg-emerald-50/50">MP: {r.serviciosMP}</Badge>
-                            {r.numeroEquipos > 0 && <Badge variant="outline" className="text-[9px] font-black border-purple-200 text-purple-700 bg-purple-50/50">EQ: {r.numeroEquipos}</Badge>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-center gap-3">
-                            {r.reportPdf && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: r.reportPdf!, title: r.name })}>
-                                <FileText className="h-5 w-5" />
-                              </Button>
-                            )}
-                            {r.evidencePhotos && r.evidencePhotos.length > 0 && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: r.evidencePhotos!, title: r.name })}>
-                                <ImageIcon className="h-5 w-5" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right pr-8">
-                          <div className="flex justify-end gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
-                              onClick={() => handleEditRecord(r)}
-                            >
-                               <Pencil className="h-5 w-5" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-10 w-10 hover:text-destructive transition-transform hover:scale-110" 
-                              onClick={() => handleDeleteRecord(r.id)}
-                            >
-                               <Trash2 className="h-5 w-5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )) : (
+            {activeTab !== 'Biblioteca Digital' && (
+              <Card className="border-t-4 border-t-primary shadow-xl overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between py-6 px-8 border-b">
+                   <div className="space-y-1">
+                     <CardTitle className="text-xl font-black uppercase text-primary flex items-center gap-3">
+                       <History className="h-6 w-6" /> Historial de Intervenciones: {activeTab}
+                     </CardTitle>
+                     <CardDescription className="text-xs font-bold uppercase tracking-wider">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
+                   </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-100/50">
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-20 opacity-40">
-                          <div className="flex flex-col items-center gap-4">
-                            <Briefcase className="h-12 w-12 text-slate-300" />
-                            <p className="text-xs font-black uppercase tracking-widest">Sin registros históricos en este rubro</p>
-                          </div>
-                        </TableCell>
+                        <TableHead className="text-[10px] font-black uppercase py-4 pl-8">Folio / Fecha</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Tipo de Intervención</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
+                        <TableHead className="text-right text-[10px] font-black uppercase pr-8 w-24">Acción</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredHistory.length > 0 ? filteredHistory.map(r => (
+                        <TableRow key={r.id} className="hover:bg-slate-50/80 transition-colors border-b last:border-0">
+                          <TableCell className="py-4 pl-8">
+                            <div className="flex flex-col">
+                              <span className="font-black text-primary text-xs">{r.id}</span>
+                              <span className="text-[9px] font-bold text-muted-foreground uppercase">{r.date}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-black text-slate-700">{r.cct}</span>
+                              <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[200px] uppercase">{r.schoolName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="text-[9px] font-black border-blue-200 text-blue-700 bg-blue-50/50">MC: {r.serviciosMC}</Badge>
+                              <Badge variant="outline" className="text-[9px] font-black border-emerald-200 text-emerald-700 bg-emerald-50/50">MP: {r.serviciosMP}</Badge>
+                              {r.numeroEquipos > 0 && <Badge variant="outline" className="text-[9px] font-black border-purple-200 text-purple-700 bg-purple-50/50">EQ: {r.numeroEquipos}</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-3">
+                              {r.reportPdf && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: r.reportPdf!, title: r.name })}>
+                                  <FileText className="h-5 w-5" />
+                                </Button>
+                              )}
+                              {r.evidencePhotos && r.evidencePhotos.length > 0 && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: r.evidencePhotos!, title: r.name })}>
+                                  <ImageIcon className="h-5 w-5" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-8">
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 hover:text-primary transition-transform hover:scale-110" 
+                                onClick={() => handleEditRecord(r)}
+                              >
+                                 <Pencil className="h-5 w-5" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 hover:text-destructive transition-transform hover:scale-110" 
+                                onClick={() => handleDeleteRecord(r.id)}
+                              >
+                                 <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-20 opacity-40">
+                            <div className="flex flex-col items-center gap-4">
+                              <Briefcase className="h-12 w-12 text-slate-300" />
+                              <p className="text-xs font-black uppercase tracking-widest">Sin registros históricos en este rubro</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         )}
       </Tabs>
@@ -820,7 +826,7 @@ export default function ProgramsPage() {
              ) : (
                 <ScrollArea className="h-full">
                   <div className="grid grid-cols-2 gap-8">
-                     {(evidenceToView?.data as string[])?.map((img, i) => (
+                     {evidenceToView?.data && Array.isArray(evidenceToView.data) && (evidenceToView.data as string[]).map((img, i) => (
                         <div key={i} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl group cursor-zoom-in">
                           <Image src={img} alt="evidencia" fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
