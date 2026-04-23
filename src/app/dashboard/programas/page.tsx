@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -31,7 +30,8 @@ import {
   Calendar,
   ChevronRight,
   MonitorCheck,
-  History
+  History,
+  Users
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -84,6 +84,8 @@ export default function ProgramsPage() {
     observaciones: '',
     reportPdf: '',
     evidencePhotos: [],
+    capacitacion: 'N',
+    totalParticipantes: 0,
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -490,6 +492,38 @@ export default function ProgramsPage() {
                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Fecha Salida</Label><Input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} /></div>
                 </div>
               </div>
+
+              {formData.name === 'Biblioteca Digital' && (
+                <div className="space-y-4 p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100 animate-in fade-in slide-in-from-top-2">
+                   <h3 className="text-xs font-black uppercase text-emerald-700 border-b border-emerald-100 pb-1 flex items-center gap-2">
+                     <Users className="h-4 w-4" /> Seguimiento de Capacitación
+                   </h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase">¿Se brindó Capacitación?</Label>
+                        <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
+                          <SelectTrigger className="font-black border-emerald-200">
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="S">SÍ</SelectItem>
+                            <SelectItem value="N">NO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase">Total de Participantes</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0"
+                          value={formData.totalParticipantes} 
+                          onChange={e => setFormData({...formData, totalParticipantes: parseInt(e.target.value) || 0})}
+                          className="font-black border-emerald-200"
+                        />
+                      </div>
+                   </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">No. de Oficio</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} /></div>

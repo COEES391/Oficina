@@ -87,6 +87,8 @@ export type ProgramStatus = {
   numeroOficio?: string;
   setes?: 'S' | 'N';
   observaciones?: string;
+  capacitacion?: 'S' | 'N';
+  totalParticipantes?: number;
 };
 
 export const supportData: SupportTicket[] = [
