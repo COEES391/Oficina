@@ -138,7 +138,6 @@ export default function ProgramsPage() {
   const filteredHistory = useMemo(() => records.filter(r => r.name === activeTab), [records, activeTab]);
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
 
-  // Flattened accounts for the special accounts table
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
     const rubroRecords = records.filter(r => r.name === activeTab);
@@ -163,6 +162,24 @@ export default function ProgramsPage() {
     });
     return accounts;
   }, [records, activeTab, isCuentasTab]);
+
+  const accountsByDomain = useMemo(() => {
+    const stats: Record<string, number> = {
+      '@desysa.gob.mx': 0,
+      '@desysa.edu.mx': 0,
+      '@coees.edu.mx': 0,
+      'otros': 0
+    };
+    accountsData.forEach(acc => {
+      const dom = acc.dominio.toLowerCase();
+      if (stats.hasOwnProperty(dom)) {
+        stats[dom]++;
+      } else {
+        stats['otros']++;
+      }
+    });
+    return stats;
+  }, [accountsData]);
 
   useEffect(() => {
     if (searchTerm.length === 10) {
@@ -285,24 +302,37 @@ export default function ProgramsPage() {
                            </h3>
                            <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats.status}</Badge>
                         </div>
-                        <div className="flex flex-wrap items-center gap-8 pt-3">
-                           <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                              <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate}
-                           </div>
-                           <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                              <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
-                           </div>
-                           {isLibraryTab && (
-                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
-                                <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
+                        
+                        {!isCuentasTab && (
+                          <div className="flex flex-wrap items-center gap-8 pt-3">
+                            <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                                <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate}
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                                <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
+                            </div>
+                            {isLibraryTab && (
+                              <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                                  <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {isCuentasTab && (
+                          <div className="space-y-4 pt-3">
+                             <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
+                                    <Mail className="h-4 w-4" /> Cuentas Activas: {accountsData.length}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                   <Badge variant="outline" className="text-[10px] font-black border-primary/20 text-primary bg-primary/5 uppercase">@desysa.gob.mx: {accountsByDomain['@desysa.gob.mx']}</Badge>
+                                   <Badge variant="outline" className="text-[10px] font-black border-primary/20 text-primary bg-primary/5 uppercase">@desysa.edu.mx: {accountsByDomain['@desysa.edu.mx']}</Badge>
+                                   <Badge variant="outline" className="text-[10px] font-black border-primary/20 text-primary bg-primary/5 uppercase">@coees.edu.mx: {accountsByDomain['@coees.edu.mx']}</Badge>
+                                </div>
                              </div>
-                           )}
-                           {isCuentasTab && (
-                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
-                                <Mail className="h-4 w-4" /> Cuentas Activas: {accountsData.length}
-                             </div>
-                           )}
-                        </div>
+                          </div>
+                        )}
                      </div>
                   </div>
 
@@ -318,9 +348,9 @@ export default function ProgramsPage() {
                  <div className="mt-12 space-y-8">
                     <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
                        <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
-                          <History className="h-5 w-5" /> Auditoría Operativa por Modalidad
+                          <History className="h-5 w-5" /> Detalle Operativo por Modalidad
                        </h4>
-                       <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Registro Institucional</Badge>
+                       <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría Institucional</Badge>
                     </div>
                     <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
                        <Table>
@@ -329,7 +359,7 @@ export default function ProgramsPage() {
                                 <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio / Oficio</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center">ZE/SEC</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Impacto (M/F)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center">Género (M/F)</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-right">Equipos</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
@@ -375,7 +405,7 @@ export default function ProgramsPage() {
                                         <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                            <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('Eliminar registro institucional?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro institucional de Biblioteca Digital?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                      </div>
@@ -414,7 +444,7 @@ export default function ProgramsPage() {
                           </TableHeader>
                           <TableBody>
                              {accountsData.map((acc, idx) => (
-                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100">
+                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100 group">
                                   <TableCell className="py-6 pl-10">
                                      <span className="text-xs font-black text-primary lowercase">{acc.email}</span>
                                   </TableCell>
@@ -435,10 +465,10 @@ export default function ProgramsPage() {
                                   </TableCell>
                                   <TableCell className="text-right pr-10">
                                      <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(acc.originalRecord); setEditingId(acc.originalRecord.id); setIsDialogOpen(true); }}>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => { setFormData(acc.originalRecord); setEditingId(acc.originalRecord.id); setIsDialogOpen(true); }}>
                                            <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('Eliminar registro técnico?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                      </div>
@@ -494,7 +524,7 @@ export default function ProgramsPage() {
                       </TableHeader>
                       <TableBody>
                         {filteredHistory.map((rec, idx) => (
-                          <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50">
+                          <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
                             <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
                             <TableCell>
                                <div className="flex flex-col">
@@ -520,7 +550,7 @@ export default function ProgramsPage() {
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                      <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                      <Trash2 className="h-4 w-4" />
                                   </Button>
                                </div>
