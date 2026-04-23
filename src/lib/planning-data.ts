@@ -83,7 +83,7 @@ export type ProgramStatus = {
   id: string;
   name: string;
   progress: number;
-  status: 'activo' | 'planeacion' | 'concluido';
+  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo';
   date: string; // YYYY-MM-DD
   reportPdf?: string;
   evidencePhotos?: string[];

@@ -37,7 +37,8 @@ import {
   Mail,
   FileUp,
   Table as TableIcon,
-  Eraser
+  Eraser,
+  Check
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -62,6 +63,10 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  
+  // Inline Editing State for Accounts
+  const [editingRowId, setEditingRowId] = useState<string | null>(null)
+  const [inlineFormData, setInlineFormData] = useState<any>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -162,7 +167,7 @@ export default function ProgramsPage() {
         valle: ast.valle || rec.valle || '-',
         departamento: ast.departamento || '-',
         dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
-        status: rec.status,
+        status: (rec.status === 'activo' || rec.status === 'inactivo') ? rec.status : 'activo',
         originalRecord: rec
       };
     });
@@ -224,7 +229,9 @@ export default function ProgramsPage() {
         const newRecords: ProgramStatus[] = data.map((row, idx) => {
           const cct = String(findKey(row, ['cct', 'centro', 'clave', 'ct', 'trabajo']) || '').toUpperCase();
           const email = String(findKey(row, ['correo', 'email', 'cuenta', 'user', 'usuario', 'mail']) || '').toLowerCase().trim();
-          const statusField = String(findKey(row, ['estatus', 'status', 'estado']) || 'concluido').toLowerCase();
+          const statusVal = String(findKey(row, ['estatus', 'status', 'estado']) || 'activo').toLowerCase();
+          const finalStatus = (statusVal === 'inactivo' || statusVal === 'desactivado') ? 'inactivo' : 'activo';
+          
           const school = schoolsDirectory.find(s => s.cct === cct);
           
           const assistant: ProgramAssistant = {
@@ -250,7 +257,7 @@ export default function ProgramsPage() {
             ...initialFormState,
             id: `IMP-${Date.now()}-${idx}`,
             name: PROGRAM_RUBROS[1],
-            status: (['planeacion', 'activo', 'concluido'].includes(statusField) ? statusField : 'concluido') as any,
+            status: finalStatus as any,
             date: format(new Date(), 'yyyy-MM-dd'),
             asistentes: [assistant],
             totalParticipantes: 1,
@@ -329,10 +336,55 @@ export default function ProgramsPage() {
     setEditingId(null)
   }
 
-  const handleEditAccount = (acc: any) => {
-    setFormData(acc.originalRecord);
-    setEditingId(acc.originalRecord.id);
-    setIsDialogOpen(true);
+  // Inline Editing Functions
+  const startInlineEdit = (acc: any) => {
+    setEditingRowId(acc.id);
+    setInlineFormData({ ...acc });
+  }
+
+  const cancelInlineEdit = () => {
+    setEditingRowId(null);
+    setInlineFormData(null);
+  }
+
+  const saveInlineEdit = () => {
+    if (!inlineFormData) return;
+    
+    const updatedRecords = records.map(r => {
+      if (r.id === inlineFormData.id) {
+        // Update the assistant record inside the program record
+        const updatedAsistentes = [...(r.asistentes || [])];
+        if (updatedAsistentes.length > 0) {
+          updatedAsistentes[0] = {
+            ...updatedAsistentes[0],
+            email: inlineFormData.email,
+            cct: inlineFormData.cct,
+            departamento: inlineFormData.departamento,
+            modalidad: inlineFormData.modalidad,
+            sector: inlineFormData.sector,
+            ze: inlineFormData.zona,
+            valle: inlineFormData.valle
+          };
+        }
+        return { 
+          ...r, 
+          status: inlineFormData.status, 
+          asistentes: updatedAsistentes,
+          cct: inlineFormData.cct,
+          modalidad: inlineFormData.modalidad,
+          zonaEscolar: inlineFormData.zona,
+          sector: inlineFormData.sector,
+          valle: inlineFormData.valle
+        };
+      }
+      return r;
+    });
+
+    setRecords(updatedRecords);
+    localStorage.setItem('programs_full', JSON.stringify(updatedRecords));
+    setEditingRowId(null);
+    setInlineFormData(null);
+    toast({ title: "Cambios guardados localmente" });
   }
 
   if (!mounted) return null
@@ -532,44 +584,112 @@ export default function ProgramsPage() {
                              </TableRow>
                           </TableHeader>
                           <TableBody>
-                             {accountsData.map((acc, idx) => (
-                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100 group">
+                             {accountsData.map((acc, idx) => {
+                               const isEditing = editingRowId === acc.id;
+                               
+                               return (
+                               <TableRow key={idx} className={cn("transition-all border-slate-100 group", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
                                   <TableCell className="py-6 pl-10">
-                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-primary lowercase">{acc.email}</span>
-                                        <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[8px] w-fit mt-1">{acc.dominio}</Badge>
-                                     </div>
+                                     {isEditing ? (
+                                       <Input 
+                                          className="h-9 text-xs font-black lowercase text-primary w-full bg-white" 
+                                          value={inlineFormData.email} 
+                                          onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} 
+                                        />
+                                     ) : (
+                                       <div className="flex flex-col">
+                                          <span className="text-xs font-black text-primary lowercase">{acc.email}</span>
+                                          <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[8px] w-fit mt-1">{acc.dominio}</Badge>
+                                       </div>
+                                     )}
                                   </TableCell>
                                   <TableCell>
-                                     <span className="text-xs font-black text-slate-700 uppercase">{acc.cct}</span>
+                                     {isEditing ? (
+                                       <Input 
+                                          className="h-9 text-xs font-black uppercase w-32 bg-white" 
+                                          value={inlineFormData.cct} 
+                                          onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} 
+                                          maxLength={10}
+                                        />
+                                     ) : (
+                                       <span className="text-xs font-black text-slate-700 uppercase">{acc.cct}</span>
+                                     )}
                                   </TableCell>
                                   <TableCell>
-                                     <span className="text-[10px] font-bold text-slate-500 uppercase">{acc.modalidad}</span>
+                                     {isEditing ? (
+                                       <Input 
+                                          className="h-9 text-[10px] font-bold uppercase w-full bg-white" 
+                                          value={inlineFormData.modalidad} 
+                                          onChange={e => setInlineFormData({...inlineFormData, modalidad: e.target.value.toUpperCase()})} 
+                                        />
+                                     ) : (
+                                       <span className="text-[10px] font-bold text-slate-500 uppercase">{acc.modalidad}</span>
+                                     )}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                     <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
+                                     {isEditing ? (
+                                       <div className="flex gap-2">
+                                          <Input className="h-9 text-[10px] font-black w-16 bg-white" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
+                                          <Input className="h-9 text-[10px] font-black w-16 bg-white" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
+                                       </div>
+                                     ) : (
+                                       <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
+                                     )}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                     <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.departamento}</Badge>
+                                     {isEditing ? (
+                                       <Input 
+                                          className="h-9 text-[10px] font-black uppercase w-32 mx-auto bg-white" 
+                                          value={inlineFormData.departamento} 
+                                          onChange={e => setInlineFormData({...inlineFormData, departamento: e.target.value.toUpperCase()})} 
+                                        />
+                                     ) : (
+                                       <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.departamento}</Badge>
+                                     )}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                     <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                        <Circle className={cn("h-2 w-2 fill-current", acc.status === 'concluido' ? 'text-emerald-500' : acc.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
-                                        <span className="text-[9px] font-black uppercase text-slate-500">{acc.status}</span>
-                                     </div>
+                                     {isEditing ? (
+                                       <Select value={inlineFormData.status} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
+                                          <SelectTrigger className="h-9 w-32 mx-auto text-[10px] font-black uppercase bg-white">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent className="font-black">
+                                            <SelectItem value="activo">ACTIVO</SelectItem>
+                                            <SelectItem value="inactivo">INACTIVO</SelectItem>
+                                          </SelectContent>
+                                       </Select>
+                                     ) : (
+                                       <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
+                                          <Circle className={cn("h-2 w-2 fill-current", acc.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
+                                          <span className="text-[9px] font-black uppercase text-slate-500">{acc.status}</span>
+                                       </div>
+                                     )}
                                   </TableCell>
                                   <TableCell className="text-right pr-10">
                                      <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => handleEditAccount(acc)}>
-                                           <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
-                                           <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        {isEditing ? (
+                                          <>
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white rounded-xl transition-all" onClick={saveInlineEdit}>
+                                              <Check className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={cancelInlineEdit}>
+                                              <X className="h-4 w-4" />
+                                            </Button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => startInlineEdit(acc)}>
+                                               <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                               <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </>
+                                        )}
                                      </div>
                                   </TableCell>
                                </TableRow>
-                             ))}
+                             )})}
                              {accountsData.length === 0 && (
                                <TableRow><TableCell colSpan={7} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">No se han registrado cuentas institucionales aún</TableCell></TableRow>
                              )}
