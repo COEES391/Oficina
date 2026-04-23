@@ -381,7 +381,7 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-sm font-black uppercase flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-purple-600 fill-purple-600" /> Atención Semana de SETES vs Regular
+                        <Zap className="h-4 w-4 text-purple-600 fill-purple-600" /> Atención Semana de SETES
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="h-[250px]">
