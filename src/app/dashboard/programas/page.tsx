@@ -318,7 +318,7 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
-    if (!formData.id || (!formData.cct && !isCuentasTab)) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
+    if (!formData.id || (!formData.cct && !formData.name?.startsWith('Cuentas'))) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
@@ -339,6 +339,9 @@ export default function ProgramsPage() {
   }
 
   if (!mounted) return null
+
+  // Helper inside dialog to check if current rubro is accounts
+  const isCuentasInDialog = formData.name?.startsWith('Cuentas');
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
@@ -690,7 +693,7 @@ export default function ProgramsPage() {
                 </div>
               </div>
 
-              {!isCuentasTab && (
+              {!isCuentasInDialog && (
                 <div className="p-10 bg-primary/[0.03] rounded-[3rem] space-y-8 border-4 border-white shadow-xl shadow-slate-100">
                   <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
                      <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Search className="h-6 w-6" /></div>
@@ -744,7 +747,7 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              {!isCuentasTab && (
+              {!isCuentasInDialog && (
                 <div className="space-y-8">
                   <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
                      <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Zap className="h-6 w-6" /></div>
@@ -759,18 +762,18 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              {(isLibraryTab || isCuentasTab) && (
+              {(isLibraryTab || isCuentasInDialog) && (
                 <div className={cn("space-y-10 p-10 rounded-[3rem] border-4 border-white shadow-xl", isLibraryTab ? "bg-emerald-50/30 shadow-emerald-50" : "bg-blue-50/30 shadow-blue-50")}>
                    <div className={cn("flex items-center justify-between border-b pb-8", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
                       <div className="flex items-center gap-4">
                          <div className={cn("h-12 w-12 rounded-2xl text-white flex items-center justify-center shadow-lg", isLibraryTab ? "bg-emerald-600 shadow-emerald-200" : "bg-blue-600 shadow-blue-200")}><Users className="h-6 w-6" /></div>
                          <h3 className={cn("text-sm font-black uppercase tracking-[0.2em]", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
-                           {isCuentasTab ? "Registro de Cuentas Institucionales" : "Seguimiento Pedagógico: Capacitación"}
+                           {isCuentasInDialog ? "Registro de Cuentas Institucionales" : "Seguimiento Pedagógico: Capacitación"}
                          </h3>
                       </div>
                       <div className="space-y-1 text-right">
                          <Label className={cn("text-[11px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-600" : "text-blue-600")}>
-                           {isCuentasTab ? "¿Registrar Cuentas?" : "¿Capacitación?"}
+                           {isCuentasInDialog ? "¿Registrar Cuentas?" : "¿Capacitación?"}
                          </Label>
                          <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
                            <SelectTrigger className={cn("h-12 w-64 rounded-2xl font-black bg-white shadow-sm", isLibraryTab ? "border-emerald-200" : "border-blue-200")}><SelectValue /></SelectTrigger>
@@ -785,7 +788,7 @@ export default function ProgramsPage() {
                           <div className="flex items-center gap-4">
                              <Star className={cn("h-5 w-5 fill-current", isLibraryTab ? "text-emerald-600" : "text-blue-600")} />
                              <h4 className={cn("text-[12px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
-                               {isCuentasTab ? "Lista de Cuentas / Usuarios" : "Registro de Asistentes y RFC"}
+                               {isCuentasInDialog ? "Lista de Cuentas / Usuarios" : "Registro de Asistentes y RFC"}
                              </h4>
                           </div>
                           <Button variant="outline" size="sm" onClick={handleAddAssistant} className={cn("h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white shadow-sm gap-3 transition-all", isLibraryTab ? "border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white" : "border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white")}>
@@ -842,32 +845,36 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
-                  <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
-                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-white border-purple-200 shadow-lg shadow-purple-50"><SelectValue /></SelectTrigger>
-                    <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
-                  </Select>
+              {!isCuentasInDialog && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                  <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
+                    <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
+                      <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-white border-purple-200 shadow-lg shadow-purple-50"><SelectValue /></SelectTrigger>
+                      <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
+                    <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
+                      <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
+                      <SelectContent className="font-black rounded-2xl">
+                        <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
+                        <SelectItem value="activo" className="text-amber-600">EN PROCESO TÉCNICO</SelectItem>
+                        <SelectItem value="concluido" className="text-emerald-600">CONCLUIDO / CERRADO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
-                  <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
-                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="font-black rounded-2xl">
-                      <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
-                      <SelectItem value="activo" className="text-amber-600">EN PROCESO TÉCNICO</SelectItem>
-                      <SelectItem value="concluido" className="text-emerald-600">CONCLUIDO / CERRADO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
 
-              <div className="space-y-4">
-                <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
-                <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
-              </div>
+              {!isCuentasInDialog && (
+                <div className="space-y-4">
+                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
+                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
+                </div>
+              )}
             </div>
           </ScrollArea>
           
