@@ -61,7 +61,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -193,35 +192,40 @@ export default function ProgramsPage() {
       const data = XLSX.utils.sheet_to_json(sheet) as any[];
 
       const importedAssistants: ProgramAssistant[] = data.map(row => {
-        const cct = String(row.CCT || '').toUpperCase();
+        // Robust header mapping
+        const cct = String(row.CCT || row['Centro de Trabajo'] || '').toUpperCase();
+        const email = String(row.Correo || row.Email || row.Cuenta || '').toLowerCase();
         const school = schoolsDirectory.find(s => s.cct === cct);
         
         return {
-          paterno: row.Paterno || '',
-          materno: row.Materno || '',
+          paterno: row.Paterno || row.ApellidoP || '',
+          materno: row.Materno || row.ApellidoM || '',
           nombres: row.Nombre || row.Nombres || '',
           rfc: String(row.RFC || '').toUpperCase(),
-          genero: (row.Genero || '').toUpperCase() === 'MASCULINO' ? 'MASCULINO' : 'FEMENINO',
-          funcion: row.Funcion || 'DOCENTE',
-          email: String(row.Correo || row.Email || '').toLowerCase(),
+          genero: (String(row.Genero || row.G || '').toUpperCase() === 'MASCULINO' || String(row.Genero || row.G || '').toUpperCase() === 'M') ? 'MASCULINO' : 'FEMENINO',
+          funcion: row.Funcion || row.Cargo || 'DOCENTE',
+          email: email,
           cct: cct,
-          nombreCT: school?.nombre || row.Escuela || '',
-          ze: row.Zona || row.ZE || school?.zonaEscolar || '',
-          sector: row.Sector || school?.sector || '',
-          modalidad: row.Modalidad || school?.modalidad || '',
-          municipio: row.Municipio || school?.municipio || '',
-          region: row.Region || school?.region || '',
-          valle: row.Valle || school?.valle || '',
-          departamento: row.Departamento || 'TÉCNICO'
+          nombreCT: school?.nombre || row.Escuela || row.Plantel || '',
+          ze: String(row.Zona || row.ZE || row.Z || school?.zonaEscolar || ''),
+          sector: String(row.Sector || row.S || school?.sector || ''),
+          modalidad: row.Modalidad || row.Nivel || school?.modalidad || '',
+          municipio: row.Municipio || row.Mun || school?.municipio || '',
+          region: row.Region || row.Reg || school?.region || '',
+          valle: row.Valle || row.V || school?.valle || '',
+          departamento: row.Departamento || row.Depto || row.Area || 'TÉCNICO'
         };
       });
 
       if (importedAssistants.length > 0) {
+        // Find if there's a status in the Excel, else default to 'concluido'
+        const globalStatus = (data[0].Estatus || data[0].Status || 'concluido').toLowerCase();
+        
         const newRecord: ProgramStatus = {
           ...initialFormState,
           id: `IMP-${Date.now()}`,
           name: activeTab,
-          status: 'concluido',
+          status: (['planeacion', 'activo', 'concluido'].includes(globalStatus) ? globalStatus : 'concluido') as any,
           date: format(new Date(), 'yyyy-MM-dd'),
           asistentes: importedAssistants,
           totalParticipantes: importedAssistants.length,
@@ -252,27 +256,6 @@ export default function ProgramsPage() {
         region: school.region,
         valle: school.valle
       }));
-    }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
-    const files = e.target.files
-    if (!files) return
-    if (type === 'pdf') {
-      const file = files[0]
-      const reader = new FileReader()
-      reader.onloadend = () => setFormData(prev => ({ ...prev, reportPdf: reader.result as string }))
-      reader.readAsDataURL(file)
-    } else {
-      const newPhotos = Array.from(files).slice(0, 5)
-      newPhotos.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => setFormData(prev => ({
-          ...prev,
-          evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string].slice(0, 5)
-        }))
-        reader.readAsDataURL(file)
-      })
     }
   }
 
@@ -840,39 +823,6 @@ export default function ProgramsPage() {
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-16 px-12 rounded-2xl font-black uppercase text-[11px] tracking-widest border-slate-300 bg-white">Cancelar</Button>
              <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Finalizar y Sincronizar Registro</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
-        <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 border-none shadow-[0_50px_100px_rgba(0,0,0,0.4)] rounded-[4rem] overflow-hidden">
-          <DialogHeader className="p-12 bg-slate-900 border-b border-slate-800 text-white relative">
-             <div className="absolute right-12 top-12"><Zap className="h-10 w-10 text-primary animate-pulse" /></div>
-            <DialogTitle className="uppercase font-black text-4xl flex items-center gap-8 tracking-tighter leading-none">
-              {evidenceToView?.title} <ExternalLink className="h-10 w-10 text-primary" />
-            </DialogTitle>
-            <DialogDescription className="text-slate-400 font-black text-[12px] uppercase tracking-[0.4em] mt-4 pl-1">Auditoría Digital de Evidencias • Planeación Edoméx</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 bg-slate-100 p-12 overflow-hidden relative">
-             {evidenceToView?.type === 'pdf' ? (
-                <iframe src={evidenceToView.data as string} className="w-full h-full border-none rounded-[3rem] shadow-[0_30px_60px_rgba(0,0,0,0.2)] bg-white" title="PDF Viewer" />
-             ) : (
-                <ScrollArea className="h-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pb-12">
-                     {evidenceToView?.data && Array.isArray(evidenceToView.data) && (evidenceToView.data as string[]).map((img, i) => (
-                        <div key={i} className="relative aspect-video rounded-[3rem] overflow-hidden border-[16px] border-white shadow-2xl group cursor-zoom-in">
-                          <Image src={img} alt="evidencia" fill className="object-cover transition-transform duration-1000 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <Search className="h-16 w-16 text-white" />
-                          </div>
-                        </div>
-                     ))}
-                  </div>
-                </ScrollArea>
-             )}
-          </div>
-          <div className="p-10 bg-slate-900 flex justify-end">
-             <Button onClick={() => setEvidenceToView(null)} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-xl shadow-black/20 transition-all hover:scale-105 active:scale-95">Cerrar Visor de Auditoría</Button>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
