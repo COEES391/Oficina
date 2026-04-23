@@ -29,7 +29,8 @@ import {
   Table as TableIcon,
   MonitorCheck,
   Mail,
-  Activity
+  Activity,
+  School
 } from 'lucide-react'
 import { 
   BarChart, 
