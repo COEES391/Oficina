@@ -68,14 +68,13 @@ export default function ProgramsPage() {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     if (stored.length === 0) {
-      // Iniciar con datos de ejemplo si no hay nada
       setRecords([]) 
     } else {
       setRecords(stored)
     }
   }, [])
 
-  // Auto-lookup al escribir CCT
+  // Auto-lookup al escribir CCT (10 caracteres)
   useEffect(() => {
     if (searchTerm.length === 10) {
       const match = schoolsDirectory.find(s => s.cct.toUpperCase() === searchTerm.toUpperCase());
@@ -102,7 +101,7 @@ export default function ProgramsPage() {
       }));
       toast({
         title: "Plantel Vinculado",
-        description: `${school.nombre} cargado correctamente.`,
+        description: `${school.nombre} cargado correctamente con ZE ${school.zonaEscolar} y Sector ${school.sector}.`,
       });
     }
   }
@@ -159,6 +158,7 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
+    setSearchTerm('')
   }
 
   const handleEdit = (record: ProgramStatus) => {
@@ -230,19 +230,41 @@ export default function ProgramsPage() {
                   </div>
                 </div>
 
-                {/* Buscador de Plantel (Igual que Soporte) */}
+                {/* Buscador de Plantel (CCT y Datos Geográficos) */}
                 <div className="p-4 bg-slate-50 rounded-xl space-y-4 border border-primary/10 shadow-sm">
                   <div className="flex flex-col gap-2">
                     <Label className="text-xs font-black uppercase flex items-center gap-2 text-primary">
                       <Search className="h-4 w-4" /> 1. Información del Centro de Trabajo (C.T.)
                     </Label>
-                    <Input 
-                      placeholder="Escribir CCT (10 caracteres) para autocompletar..." 
-                      className="bg-white font-mono uppercase font-bold h-11" 
-                      value={searchTerm} 
-                      onChange={(e) => setSearchTerm(e.target.value)} 
-                      maxLength={10}
-                    />
+                    <div className="relative">
+                      <Input 
+                        placeholder="Escribir CCT o Nombre del Plantel para autocompletar..." 
+                        className="bg-white font-mono uppercase font-bold h-11" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                        maxLength={50}
+                      />
+                      {searchTerm && searchTerm.length > 2 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-xl max-h-60 overflow-auto">
+                          {schoolsDirectory
+                            .filter(s => s.cct.toUpperCase().includes(searchTerm.toUpperCase()) || s.nombre.toUpperCase().includes(searchTerm.toUpperCase()))
+                            .slice(0, 10)
+                            .map(s => (
+                              <div 
+                                key={s.cct} 
+                                className="p-3 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0 flex justify-between items-center"
+                                onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}
+                              >
+                                <div>
+                                  <span className="font-black text-primary">{s.cct}</span> - {s.nombre}
+                                </div>
+                                <Badge variant="outline" className="text-[9px] uppercase">{s.municipio}</Badge>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {formData.cct && (
