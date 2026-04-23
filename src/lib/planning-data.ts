@@ -44,6 +44,7 @@ export type ProgramAssistant = {
   municipio: string;
   region: string;
   valle: string;
+  departamento?: string;
 };
 
 export type TrainingRecord = {
@@ -99,8 +100,6 @@ export type ProgramStatus = {
   descripcionEquipo?: string;
   fechaEntrada?: string;
   fechaSalida?: string;
-  serviciosMC?: number;
-  serviciosMP?: number;
   responsables?: string[];
   numeroOficio?: string;
   setes?: 'S' | 'N';
