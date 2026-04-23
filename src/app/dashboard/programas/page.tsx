@@ -482,7 +482,6 @@ export default function ProgramsPage() {
                           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-primary/20 text-primary hover:bg-primary/5 gap-2 shadow-sm">
                              <FileUp className="h-4 w-4" /> Importar Auditoría Excel
                           </Button>
-                          <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría de Dominios</Badge>
                        </div>
                     </div>
                     <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
