@@ -102,7 +102,14 @@ export default function ProgramsPage() {
   useEffect(() => {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
-    setRecords(stored)
+    if (stored.length > 0) {
+      setRecords(stored)
+    } else {
+      setRecords(programsData)
+    }
+  }, [])
+
+  useEffect(() => {
     setFormData(prev => ({ 
       ...prev, 
       name: activeTab,
@@ -114,7 +121,7 @@ export default function ProgramsPage() {
   const rubroStats = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
       const rubroRecords = records.filter(r => r.name === name);
-      const uniqueSchools = new Set(rubroRecords.map(r => r.cct)).size;
+      const uniqueSchools = new Set(rubroRecords.map(r => r.cct).filter(Boolean)).size;
       const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
       const lastUpdate = rubroRecords.length > 0 
         ? rubroRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date 
@@ -137,11 +144,12 @@ export default function ProgramsPage() {
 
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
-    const rubroRecords = records.filter(r => r.name === activeTab);
+    // Filtrado por coincidencia exacta de nombre o ID base
+    const rubroRecords = records.filter(r => r.name === activeTab || r.id.startsWith('PROG-CI') || r.id.startsWith('IMP-'));
     const accounts: any[] = [];
     rubroRecords.forEach(rec => {
       rec.asistentes?.forEach(ast => {
-        if (ast.email) {
+        if (ast.email && ast.email.trim() !== '') {
           accounts.push({
             id: rec.id,
             email: ast.email,
@@ -185,57 +193,69 @@ export default function ProgramsPage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const bstr = event.target?.result;
-      const workbook = XLSX.read(bstr, { type: 'binary' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(sheet) as any[];
+      try {
+        const bstr = event.target?.result;
+        const workbook = XLSX.read(bstr, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(sheet) as any[];
 
-      const importedAssistants: ProgramAssistant[] = data.map(row => {
-        // Robust header mapping
-        const cct = String(row.CCT || row['Centro de Trabajo'] || '').toUpperCase();
-        const email = String(row.Correo || row.Email || row.Cuenta || '').toLowerCase();
-        const school = schoolsDirectory.find(s => s.cct === cct);
-        
-        return {
-          paterno: row.Paterno || row.ApellidoP || '',
-          materno: row.Materno || row.ApellidoM || '',
-          nombres: row.Nombre || row.Nombres || '',
-          rfc: String(row.RFC || '').toUpperCase(),
-          genero: (String(row.Genero || row.G || '').toUpperCase() === 'MASCULINO' || String(row.Genero || row.G || '').toUpperCase() === 'M') ? 'MASCULINO' : 'FEMENINO',
-          funcion: row.Funcion || row.Cargo || 'DOCENTE',
-          email: email,
-          cct: cct,
-          nombreCT: school?.nombre || row.Escuela || row.Plantel || '',
-          ze: String(row.Zona || row.ZE || row.Z || school?.zonaEscolar || ''),
-          sector: String(row.Sector || row.S || school?.sector || ''),
-          modalidad: row.Modalidad || row.Nivel || school?.modalidad || '',
-          municipio: row.Municipio || row.Mun || school?.municipio || '',
-          region: row.Region || row.Reg || school?.region || '',
-          valle: row.Valle || row.V || school?.valle || '',
-          departamento: row.Departamento || row.Depto || row.Area || 'TÉCNICO'
-        };
-      });
-
-      if (importedAssistants.length > 0) {
-        // Find if there's a status in the Excel, else default to 'concluido'
-        const globalStatus = (data[0].Estatus || data[0].Status || 'concluido').toLowerCase();
-        
-        const newRecord: ProgramStatus = {
-          ...initialFormState,
-          id: `IMP-${Date.now()}`,
-          name: activeTab,
-          status: (['planeacion', 'activo', 'concluido'].includes(globalStatus) ? globalStatus : 'concluido') as any,
-          date: format(new Date(), 'yyyy-MM-dd'),
-          asistentes: importedAssistants,
-          totalParticipantes: importedAssistants.length,
-          observaciones: 'Importación masiva desde Excel para auditoría de cuentas.'
+        const findKey = (obj: any, variants: string[]) => {
+          const keys = Object.keys(obj);
+          for (const v of variants) {
+            const found = keys.find(k => k.toLowerCase().trim() === v.toLowerCase());
+            if (found) return obj[found];
+          }
+          return undefined;
         };
 
-        const updated = [newRecord, ...records];
-        setRecords(updated);
-        localStorage.setItem('programs_full', JSON.stringify(updated));
-        toast({ title: "Importación Exitosa", description: `Se han cargado ${importedAssistants.length} cuentas institucionales.` });
+        const importedAssistants: ProgramAssistant[] = data.map(row => {
+          const cct = String(findKey(row, ['cct', 'centro de trabajo', 'clave', 'plantel', 'ct']) || '').toUpperCase();
+          const email = String(findKey(row, ['correo', 'email', 'cuenta', 'usuario', 'mail', 'e-mail', 'direccion']) || '').toLowerCase().trim();
+          const school = schoolsDirectory.find(s => s.cct === cct);
+          
+          return {
+            paterno: String(findKey(row, ['paterno', 'apellido paterno', 'apellidop']) || ''),
+            materno: String(findKey(row, ['materno', 'apellido materno', 'apellidom']) || ''),
+            nombres: String(findKey(row, ['nombre', 'nombres', 'nom']) || ''),
+            rfc: String(findKey(row, ['rfc', 'curp']) || '').toUpperCase(),
+            genero: (String(findKey(row, ['genero', 'g', 'sexo']) || '').toUpperCase().startsWith('M')) ? 'MASCULINO' : 'FEMENINO',
+            funcion: String(findKey(row, ['funcion', 'cargo', 'puesto']) || 'DOCENTE'),
+            email: email,
+            cct: cct,
+            nombreCT: school?.nombre || String(findKey(row, ['escuela', 'plantel', 'nombre ct']) || ''),
+            ze: String(findKey(row, ['zona', 'ze', 'z', 'zona escolar']) || school?.zonaEscolar || ''),
+            sector: String(findKey(row, ['sector', 's', 'sector escolar']) || school?.sector || ''),
+            modalidad: String(findKey(row, ['modalidad', 'nivel', 'mod']) || school?.modalidad || ''),
+            municipio: String(findKey(row, ['municipio', 'mun', 'delegacion']) || school?.municipio || ''),
+            region: String(findKey(row, ['region', 'reg']) || school?.region || ''),
+            valle: String(findKey(row, ['valle', 'v']) || school?.valle || ''),
+            departamento: String(findKey(row, ['departamento', 'depto', 'area', 'oficina']) || 'TÉCNICO')
+          };
+        });
+
+        if (importedAssistants.length > 0) {
+          const globalStatus = (String(findKey(data[0], ['estatus', 'status', 'estado']) || 'concluido')).toLowerCase();
+          
+          const newRecord: ProgramStatus = {
+            ...initialFormState,
+            id: `IMP-${Date.now()}`,
+            name: activeTab,
+            status: (['planeacion', 'activo', 'concluido'].includes(globalStatus) ? globalStatus : 'concluido') as any,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            asistentes: importedAssistants,
+            totalParticipantes: importedAssistants.length,
+            observaciones: 'Importación masiva desde Excel para auditoría de cuentas.'
+          };
+
+          const updated = [newRecord, ...records];
+          setRecords(updated);
+          localStorage.setItem('programs_full', JSON.stringify(updated));
+          toast({ title: "Importación Exitosa", description: `Se han cargado ${importedAssistants.length} cuentas institucionales.` });
+        }
+      } catch (err) {
+        console.error(err);
+        toast({ variant: "destructive", title: "Error al leer archivo", description: "Asegúrate de que el archivo sea un Excel válido." });
       }
     };
     reader.readAsBinaryString(file);
