@@ -29,14 +29,16 @@ import {
   Settings2, 
   Zap,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  MonitorCheck,
+  History
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
-const TOTAL_UNIVERSE = 830; // 175+77 (General) + 128+112 (Técnica) + 144+194 (Telesecundaria)
+const TOTAL_UNIVERSE = 830; 
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
@@ -105,13 +107,15 @@ export default function ProgramsPage() {
       const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
       const lastUpdate = rubroRecords.length > 0 
         ? rubroRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date 
-        : '2024-01-01';
+        : format(new Date(), 'yyyy-MM-dd');
       
       let status: 'planeacion' | 'activo' | 'concluido' = 'planeacion';
       if (progress > 0) status = 'activo';
       if (progress >= 100) status = 'concluido';
 
-      return { name, progress, status, lastUpdate, count: uniqueSchools };
+      const totalEquiposRehabilitados = rubroRecords.reduce((acc, curr) => acc + (curr.numeroEquipos || 0), 0);
+
+      return { name, progress, status, lastUpdate, count: uniqueSchools, totalEquipos: totalEquiposRehabilitados, records: rubroRecords };
     });
   }, [records]);
 
@@ -199,12 +203,12 @@ export default function ProgramsPage() {
 
       <div className="grid gap-6">
         {rubroStats.map((rubro) => (
-          <Card key={rubro.name} className="overflow-hidden border-2 border-primary/10 shadow-lg hover:border-primary/30 transition-all group">
+          <Card key={rubro.name} className="overflow-hidden border-2 border-primary/10 shadow-lg hover:border-primary/30 transition-all group bg-white">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex items-center gap-5">
                   <div className="h-14 w-14 rounded-xl bg-primary/5 flex items-center justify-center border-2 border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors">
-                    <Briefcase className="h-7 w-7" />
+                    {rubro.name === 'Biblioteca Digital' ? <MonitorCheck className="h-7 w-7" /> : <Briefcase className="h-7 w-7" />}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
@@ -218,18 +222,25 @@ export default function ProgramsPage() {
                          <Calendar className="h-3 w-3" /> Actualizado: {rubro.lastUpdate}
                        </span>
                        <span className="text-[10px] font-bold uppercase text-primary">
-                         Escuelas Atendidas: {rubro.count} / {TOTAL_UNIVERSE}
+                         Escuelas Atendidas: {rubro.count} {rubro.name !== 'Biblioteca Digital' && `/ ${TOTAL_UNIVERSE}`}
                        </span>
+                       {rubro.name === 'Biblioteca Digital' && (
+                         <span className="text-[10px] font-black uppercase text-emerald-600 flex items-center gap-1.5">
+                           <MonitorCheck className="h-3 w-3" /> Equipos Rehabilitados: {rubro.totalEquipos}
+                         </span>
+                       )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-2 w-full md:w-auto">
                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase leading-none">Avance</p>
-                        <p className="text-2xl font-black text-primary leading-none">{rubro.progress}%</p>
-                      </div>
+                      {rubro.name !== 'Biblioteca Digital' && (
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase leading-none">Avance</p>
+                          <p className="text-2xl font-black text-primary leading-none">{rubro.progress}%</p>
+                        </div>
+                      )}
                       <Button 
                         onClick={() => {
                           resetForm();
@@ -244,14 +255,59 @@ export default function ProgramsPage() {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-2">
-                <Progress value={rubro.progress} className="h-2.5 bg-slate-100" />
-                <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase tracking-widest">
-                  <span>0% Inicio</span>
-                  <span>50% Proceso</span>
-                  <span>100% Meta</span>
+              {rubro.name === 'Biblioteca Digital' ? (
+                <div className="mt-6 border-t pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[11px] font-black uppercase text-slate-500 flex items-center gap-2">
+                       <History className="h-3.5 w-3.5" /> Detalle de Atención por Modalidad
+                    </h4>
+                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-black uppercase">Enfoque Operativo</Badge>
+                  </div>
+                  <div className="rounded-xl border bg-slate-50/50 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-100">
+                        <TableRow>
+                          <TableHead className="text-[9px] font-black uppercase">Modalidad</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase">CCT Atendido</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase text-center">Sector</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase text-center">Zona (ZE)</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase text-right">Equipos Rehab.</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rubro.records.length > 0 ? rubro.records.map((rec, idx) => (
+                          <TableRow key={idx} className="hover:bg-white transition-colors">
+                            <TableCell className="text-[10px] font-bold text-primary uppercase">{rec.modalidad}</TableCell>
+                            <TableCell className="text-[10px] font-mono font-black">{rec.cct}</TableCell>
+                            <TableCell className="text-[10px] font-bold text-center">{rec.sector}</TableCell>
+                            <TableCell className="text-[10px] font-bold text-center">{rec.zonaEscolar}</TableCell>
+                            <TableCell className="text-[10px] font-black text-right text-emerald-600">
+                               <div className="flex items-center justify-end gap-1.5">
+                                 {rec.numeroEquipos} <MonitorCheck className="h-3 w-3" />
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        )) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-6 text-[9px] font-bold text-muted-foreground uppercase">
+                              Sin registros de atención técnica disponibles.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-6 space-y-2">
+                  <Progress value={rubro.progress} className="h-2.5 bg-slate-100" />
+                  <div className="flex justify-between text-[8px] font-black text-muted-foreground uppercase tracking-widest">
+                    <span>0% Inicio</span>
+                    <span>50% Proceso</span>
+                    <span>100% Meta</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -300,6 +356,7 @@ export default function ProgramsPage() {
                     <div className="flex gap-2">
                       <Badge variant="outline" className="text-[8px] font-black border-blue-200 text-blue-700 bg-blue-50">MC: {r.serviciosMC}</Badge>
                       <Badge variant="outline" className="text-[8px] font-black border-emerald-200 text-emerald-700 bg-emerald-50">MP: {r.serviciosMP}</Badge>
+                      {r.numeroEquipos > 0 && <Badge variant="outline" className="text-[8px] font-black border-purple-200 text-purple-700 bg-purple-50">EQ: {r.numeroEquipos}</Badge>}
                     </div>
                   </TableCell>
                   <TableCell>
