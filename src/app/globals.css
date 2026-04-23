@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25,7 +26,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 336 70% 23%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 
   .dark {
@@ -56,20 +57,24 @@
     @apply border-border transition-colors duration-200;
   }
   body {
-    @apply bg-[#f8f9fb] text-foreground antialiased;
+    @apply bg-[#f4f6f9] text-foreground antialiased selection:bg-primary/20 selection:text-primary;
   }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl;
   }
   
   .executive-card {
-    @apply rounded-3xl border-none shadow-lg hover:shadow-2xl transition-all duration-300 bg-white overflow-hidden;
+    @apply rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:shadow-[0_30px_70px_rgba(98,17,50,0.08)] transition-all duration-500 bg-white/80 backdrop-blur-md overflow-hidden;
   }
 
   .btn-institutional {
-    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95;
+    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95;
+  }
+  
+  .input-executive {
+    @apply h-14 rounded-2xl bg-white/50 border-slate-200 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-bold;
   }
 }

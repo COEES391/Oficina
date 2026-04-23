@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
-import { Eye, EyeOff, Lock, User, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Lock, User } from 'lucide-react'
 
 export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
@@ -38,65 +39,64 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-[#f0f2f5] overflow-hidden p-4">
-      {/* Background patterns for a more attractive look */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent blur-[120px]" />
+    <div className="relative flex items-center justify-center min-h-screen bg-transparent overflow-hidden p-4">
+      {/* Dynamic Background Accents */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary blur-[160px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] border-none bg-white/90 backdrop-blur-xl rounded-[2.5rem] overflow-hidden relative z-10">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-accent to-primary" />
-        <CardHeader className="text-center pt-12 pb-8 space-y-6">
-          <div className="mx-auto relative h-32 w-32 group">
-            <div className="absolute inset-0 bg-primary/10 rounded-3xl rotate-6 group-hover:rotate-12 transition-transform duration-500" />
-            <div className="absolute inset-0 bg-white rounded-3xl border-2 border-primary/5 flex items-center justify-center p-3 shadow-sm relative z-10">
+      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.15)] border-none bg-white/70 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10 border-t-8 border-t-primary">
+        <CardHeader className="text-center pt-14 pb-8 space-y-8">
+          <div className="mx-auto relative h-36 w-36 group">
+            <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] rotate-6 group-hover:rotate-12 transition-transform duration-700" />
+            <div className="absolute inset-0 bg-white rounded-[2.5rem] border-2 border-primary/5 flex items-center justify-center p-4 shadow-xl relative z-10">
               <Image 
                 src={logoData.imageUrl} 
                 alt="Logo DESySA" 
                 fill
-                className="object-contain p-4"
-                data-ai-hint="planning logo"
+                className="object-contain p-5"
+                data-ai-hint="education logo"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <CardTitle className="text-3xl font-black tracking-tighter text-primary uppercase leading-tight">
-              Sistema de Gestión <br /> Integral
+          <div className="space-y-3">
+            <CardTitle className="text-4xl font-black tracking-tighter text-primary uppercase leading-[0.9]">
+              Portal <br /> Integral
             </CardTitle>
-            <div className="flex items-center justify-center gap-2">
-              <span className="h-px w-8 bg-accent" />
-              <CardDescription className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.3em]">
+            <div className="flex items-center justify-center gap-3">
+              <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
+              <CardDescription className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.4em]">
                 Planeación Edoméx
               </CardDescription>
-              <span className="h-px w-8 bg-accent" />
+              <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6 px-10">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-1">
-                <User className="h-3 w-3 text-primary" /> RFC de Usuario
+        <CardContent className="space-y-8 px-12 pb-10">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
+                <User className="h-3.5 w-3.5 text-primary" /> RFC de Usuario
               </Label>
               <Input
                 id="rfc"
-                placeholder="Ingresa tu RFC"
-                className="h-14 rounded-2xl bg-slate-50/50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold uppercase transition-all"
+                placeholder="INGRESA RFC"
+                className="h-16 rounded-2xl bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-black uppercase px-6 shadow-inner"
                 value={rfc}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-1">
-                <Lock className="h-3 w-3 text-primary" /> Contraseña
+            <div className="space-y-3">
+              <Label htmlFor="password" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
+                <Lock className="h-3.5 w-3.5 text-primary" /> Contraseña Oficial
               </Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="h-14 rounded-2xl bg-slate-50/50 pr-12 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold transition-all"
+                  className="h-16 rounded-2xl bg-white/50 pr-14 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold px-6 shadow-inner"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -104,24 +104,30 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-2 top-2 h-10 w-10 text-slate-400 hover:text-primary rounded-xl"
+                  className="absolute right-3 top-3 h-10 w-10 text-slate-400 hover:text-primary rounded-xl"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
           </div>
-        </CardContent>
-        <CardFooter className="pt-4 pb-12 px-10">
-          <Button className="w-full h-16 text-xs font-black uppercase tracking-[0.2em] rounded-2xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95" onClick={handleLogin}>
-            Ingresar al Portal
+          <Button className="w-full h-16 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-95 text-white" onClick={handleLogin}>
+            Iniciar Sesión
           </Button>
+        </CardContent>
+        <CardFooter className="pt-0 pb-12 px-12">
+           <div className="w-full py-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Servidor de Acceso Seguro v2.5</span>
+           </div>
         </CardFooter>
       </Card>
       
-      <div className="absolute bottom-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        Gobierno del Estado de México • Dirección de Educación Secundaria
+      <div className="absolute bottom-10 text-center w-full">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] opacity-60">
+          Dirección de Educación Secundaria • Servicios de Apoyo
+        </p>
       </div>
     </div>
   )

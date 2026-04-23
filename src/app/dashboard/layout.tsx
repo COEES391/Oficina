@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -22,9 +23,7 @@ import {
   PanelLeft, 
   User, 
   ShieldCheck,
-  Zap,
-  Star,
-  Settings2
+  Star
 } from 'lucide-react'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
@@ -67,7 +66,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r-2 border-primary/5 bg-white">
+      <Sidebar className="border-r-2 border-primary/5 bg-white/90 backdrop-blur-xl">
         <SidebarHeader className="border-b-2 border-primary/5 pb-6 mb-4">
           <div className="flex items-center gap-4 px-4 py-6">
             <div className="relative h-14 w-14 flex-shrink-0 bg-white rounded-2xl p-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.08)] border border-primary/5">
@@ -76,7 +75,7 @@ export default function DashboardLayout({
                 alt="DESySA" 
                 fill 
                 className="object-contain"
-                data-ai-hint="office logo"
+                data-ai-hint="education logo"
               />
             </div>
             <div className="flex flex-col overflow-hidden">
@@ -108,7 +107,7 @@ export default function DashboardLayout({
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="border-t-2 border-primary/5 pt-6 px-4 pb-8">
-          <div className="flex items-center gap-4 p-4 mb-6 bg-slate-50 rounded-3xl border border-primary/5 shadow-inner">
+          <div className="flex items-center gap-4 p-4 mb-6 bg-slate-50/50 rounded-3xl border border-primary/5 shadow-inner backdrop-blur-sm">
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/5 text-primary">
                <User className="h-5 w-5" />
             </div>
@@ -125,7 +124,7 @@ export default function DashboardLayout({
               <SidebarMenuButton
                 onClick={handleLogout}
                 variant="outline"
-                className="text-rose-600 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 border-rose-100 h-12 rounded-2xl flex items-center justify-center gap-3"
+                className="text-rose-600 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 border-rose-100 h-12 rounded-2xl flex items-center justify-center gap-3 bg-white"
               >
                 <LogOut className="h-4 w-4" /> Cerrar Sesión
               </SidebarMenuButton>
@@ -133,8 +132,8 @@ export default function DashboardLayout({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <header className="flex h-20 items-center justify-between border-b-2 border-primary/5 px-8 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+      <SidebarInset className="bg-transparent">
+        <header className="flex h-20 items-center justify-between border-b-2 border-primary/5 px-8 bg-white/70 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
           <div className="flex items-center gap-6">
             <SidebarTrigger className="lg:hidden text-primary h-10 w-10 hover:bg-primary/5 rounded-xl">
               <PanelLeft className="h-6 w-6" />
@@ -148,13 +147,17 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 bg-slate-50 border px-4 py-2 rounded-2xl shadow-inner">
+             <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md border px-4 py-2 rounded-2xl shadow-inner">
                <Star className="h-3.5 w-3.5 text-accent fill-accent" />
                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Periodo Vigente: 2024-2025</span>
              </div>
           </div>
         </header>
-        <main className="flex-1 p-8 md:p-12 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-8 md:p-12 overflow-y-auto">
+          <div className="max-w-7xl mx-auto w-full">
+            {children}
+          </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )

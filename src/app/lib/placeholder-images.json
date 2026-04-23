@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "desysa-logo",
+      "description": "Logo oficial de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA).",
+      "imageUrl": "https://picsum.photos/seed/desysa/500/500",
+      "imageHint": "education logo"
+    },
+    {
+      "id": "education-bg",
+      "description": "Fondo temático de educación secundaria para el portal.",
+      "imageUrl": "https://picsum.photos/seed/edu/1920/1080",
+      "imageHint": "secondary school"
+    }
+  ]
+}
