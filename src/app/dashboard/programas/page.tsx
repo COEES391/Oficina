@@ -144,30 +144,38 @@ export default function ProgramsPage() {
 
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
-    // Filtrado por coincidencia exacta de nombre o ID base
-    const rubroRecords = records.filter(r => r.name === activeTab || r.id.startsWith('PROG-CI') || r.id.startsWith('IMP-'));
+    
+    // Filtramos registros que correspondan a cuentas (por nombre exacto o prefijos de importación)
+    const rubroRecords = records.filter(r => 
+      r.name.startsWith('Cuentas Institucionales') || 
+      r.id.startsWith('PROG-CI') || 
+      r.id.startsWith('IMP-')
+    );
+
     const accounts: any[] = [];
     rubroRecords.forEach(rec => {
-      rec.asistentes?.forEach(ast => {
-        if (ast.email && ast.email.trim() !== '') {
-          accounts.push({
-            id: rec.id,
-            email: ast.email,
-            cct: rec.cct || ast.cct,
-            modalidad: rec.modalidad || ast.modalidad,
-            sector: rec.sector || ast.sector,
-            zona: rec.zonaEscolar || ast.ze,
-            valle: rec.valle || ast.valle,
-            departamento: ast.departamento || '-',
-            dominio: ast.email.split('@')[1] ? `@${ast.email.split('@')[1]}` : '-',
-            status: rec.status,
-            originalRecord: rec
-          });
-        }
-      });
+      if (rec.asistentes && rec.asistentes.length > 0) {
+        rec.asistentes.forEach(ast => {
+          if (ast.email && ast.email.trim() !== '') {
+            accounts.push({
+              id: rec.id,
+              email: ast.email,
+              cct: ast.cct || rec.cct || '-',
+              modalidad: ast.modalidad || rec.modalidad || '-',
+              sector: ast.sector || rec.sector || '-',
+              zona: ast.ze || rec.zonaEscolar || '-',
+              valle: ast.valle || rec.valle || '-',
+              departamento: ast.departamento || '-',
+              dominio: ast.email.split('@')[1] ? `@${ast.email.split('@')[1]}` : '-',
+              status: rec.status,
+              originalRecord: rec
+            });
+          }
+        });
+      }
     });
     return accounts;
-  }, [records, activeTab, isCuentasTab]);
+  }, [records, isCuentasTab]);
 
   const accountsByDomain = useMemo(() => {
     const stats: Record<string, number> = {
@@ -203,7 +211,7 @@ export default function ProgramsPage() {
         const findKey = (obj: any, variants: string[]) => {
           const keys = Object.keys(obj);
           for (const v of variants) {
-            const found = keys.find(k => k.toLowerCase().trim() === v.toLowerCase());
+            const found = keys.find(k => k.toLowerCase().trim().replace(/[^a-z0-9]/g, '') === v.toLowerCase().replace(/[^a-z0-9]/g, ''));
             if (found) return obj[found];
           }
           return undefined;
@@ -218,7 +226,7 @@ export default function ProgramsPage() {
             paterno: String(findKey(row, ['paterno', 'apellido paterno', 'apellidop']) || ''),
             materno: String(findKey(row, ['materno', 'apellido materno', 'apellidom']) || ''),
             nombres: String(findKey(row, ['nombre', 'nombres', 'nom']) || ''),
-            rfc: String(findKey(row, ['rfc', 'curp']) || '').toUpperCase(),
+            rfc: String(findKey(row, ['rfc', 'curp', 'r f c']) || '').toUpperCase(),
             genero: (String(findKey(row, ['genero', 'g', 'sexo']) || '').toUpperCase().startsWith('M')) ? 'MASCULINO' : 'FEMENINO',
             funcion: String(findKey(row, ['funcion', 'cargo', 'puesto']) || 'DOCENTE'),
             email: email,
@@ -240,11 +248,12 @@ export default function ProgramsPage() {
           const newRecord: ProgramStatus = {
             ...initialFormState,
             id: `IMP-${Date.now()}`,
-            name: activeTab,
+            name: PROGRAM_RUBROS[1],
             status: (['planeacion', 'activo', 'concluido'].includes(globalStatus) ? globalStatus : 'concluido') as any,
             date: format(new Date(), 'yyyy-MM-dd'),
             asistentes: importedAssistants,
             totalParticipantes: importedAssistants.length,
+            capacitacion: 'S',
             observaciones: 'Importación masiva desde Excel para auditoría de cuentas.'
           };
 
@@ -307,6 +316,12 @@ export default function ProgramsPage() {
   const resetForm = () => {
     setFormData({ ...initialFormState, name: activeTab, date: format(new Date(), 'yyyy-MM-dd'), fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
     setEditingId(null)
+  }
+
+  const handleEditAccount = (acc: any) => {
+    setFormData(acc.originalRecord);
+    setEditingId(acc.originalRecord.id);
+    setIsDialogOpen(true);
   }
 
   if (!mounted) return null
@@ -529,7 +544,7 @@ export default function ProgramsPage() {
                                   </TableCell>
                                   <TableCell className="text-right pr-10">
                                      <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => { setFormData(acc.originalRecord); setEditingId(acc.originalRecord.id); setIsDialogOpen(true); }}>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => handleEditAccount(acc)}>
                                            <Pencil className="h-4 w-4" />
                                         </Button>
                                         <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
