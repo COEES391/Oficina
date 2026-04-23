@@ -485,8 +485,8 @@ export default function ProgramsPage() {
                        </h4>
                        <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría Institucional</Badge>
                     </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
-                       <Table>
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
+                       <Table className="min-w-[1000px]">
                           <TableHeader className="bg-white/80">
                              <TableRow className="border-none">
                                 <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio / Oficio</TableHead>
@@ -556,11 +556,11 @@ export default function ProgramsPage() {
 
                {isCuentasTab && (
                  <div className="mt-12 space-y-8">
-                    <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-50 pb-6 gap-4">
                        <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
                           <Mail className="h-5 w-5" /> Progreso de Cobertura Institucional (Cuentas)
                        </h4>
-                       <div className="flex gap-4">
+                       <div className="flex flex-wrap gap-4">
                           <input type="file" className="hidden" ref={fileInputRef} accept=".xlsx, .xls" onChange={handleExcelUpload} />
                           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-primary/20 text-primary hover:bg-primary/5 gap-2 shadow-sm">
                              <FileUp className="h-4 w-4" /> Importar Auditoría Excel
@@ -570,17 +570,17 @@ export default function ProgramsPage() {
                           </Button>
                        </div>
                     </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-hidden shadow-sm">
-                       <Table>
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
+                       <Table className="min-w-[1200px]">
                           <TableHeader className="bg-white/80">
                              <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Correo Institucional</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Sector / ZE</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Departamento</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[250px]">Correo Institucional</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Centro de Trabajo (CCT)</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase min-w-[120px]">Modalidad</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[150px]">Sector / ZE</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[150px]">Departamento</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[120px]">Estatus</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[100px]">Acción</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -628,9 +628,9 @@ export default function ProgramsPage() {
                                   </TableCell>
                                   <TableCell className="text-center">
                                      {isEditing ? (
-                                       <div className="flex gap-2">
-                                          <Input className="h-9 text-[10px] font-black w-16 bg-white" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
-                                          <Input className="h-9 text-[10px] font-black w-16 bg-white" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
+                                       <div className="flex gap-2 justify-center">
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
                                        </div>
                                      ) : (
                                        <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
@@ -639,7 +639,7 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <Input 
-                                          className="h-9 text-[10px] font-black uppercase w-32 mx-auto bg-white" 
+                                          className="h-9 text-[10px] font-black uppercase w-32 mx-auto bg-white text-center" 
                                           value={inlineFormData.departamento} 
                                           onChange={e => setInlineFormData({...inlineFormData, departamento: e.target.value.toUpperCase()})} 
                                         />
@@ -726,54 +726,56 @@ export default function ProgramsPage() {
                     <CardDescription className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mt-1">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader className="bg-slate-50/50">
-                        <TableRow className="border-none">
-                          <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase">Municipio / Modalidad</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase text-right">Impacto (Eq)</TableHead>
-                          <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {currentStats.records.map((rec, idx) => (
-                          <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
-                            <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
-                            <TableCell>
-                               <div className="flex flex-col">
-                                  <span className="text-xs font-black text-slate-700">{rec.cct}</span>
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{rec.schoolName}</span>
-                               </div>
-                            </TableCell>
-                            <TableCell>
-                               <div className="flex flex-col">
-                                  <span className="text-[10px] font-black uppercase text-slate-600">{rec.municipio}</span>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase">{rec.modalidad}</span>
-                               </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                               <div className="flex items-center justify-center gap-2">
-                                  <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
-                                  <span className="text-[10px] font-black uppercase text-slate-500">{rec.status}</span>
-                               </div>
-                            </TableCell>
-                            <TableCell className="text-right text-xs font-black text-slate-700">{rec.numeroEquipos}</TableCell>
-                            <TableCell className="text-right pr-10">
-                               <div className="flex justify-end gap-2">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
-                                     <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
-                                     <Trash2 className="h-4 w-4" />
-                                  </Button>
-                               </div>
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[900px]">
+                        <TableHeader className="bg-slate-50/50">
+                          <TableRow className="border-none">
+                            <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase">Municipio / Modalidad</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right">Impacto (Eq)</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {currentStats.records.map((rec, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
+                              <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
+                              <TableCell>
+                                 <div className="flex flex-col">
+                                    <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{rec.schoolName}</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                 <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase text-slate-600">{rec.municipio}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase">{rec.modalidad}</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                 <div className="flex items-center justify-center gap-2">
+                                    <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                    <span className="text-[10px] font-black uppercase text-slate-500">{rec.status}</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="text-right text-xs font-black text-slate-700">{rec.numeroEquipos}</TableCell>
+                              <TableCell className="text-right pr-10">
+                                 <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                       <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                       <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                 </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                </Card>
             )}
