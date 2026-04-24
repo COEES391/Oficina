@@ -393,9 +393,6 @@ export default function ProgramsPage() {
              <p className="text-muted-foreground font-black text-[11px] uppercase tracking-[0.3em]">Seguimiento Estratégico Oficina de Planeación</p>
           </div>
         </div>
-        <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-14 px-10 rounded-2xl gap-3">
-          <PlusCircle className="h-5 w-5" /> Nueva Intervención
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
