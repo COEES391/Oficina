@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -27,12 +26,13 @@ export default function LoginPage() {
 
   const handleLogin = () => {
     const cleanRfc = rfc.trim().toUpperCase()
-    if (cleanRfc === 'BENG8009206U6' && password === 'Coees2026') {
+    // Nuevas credenciales solicitadas: COEES / 123456
+    if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
       toast({ title: "Acceso concedido", description: "Bienvenido al Sistema de Gestión de Planeación." })
       router.push('/dashboard')
     } else {
-      toast({ variant: "destructive", title: "Credenciales incorrectas", description: "El RFC o la contraseña son inválidos." })
+      toast({ variant: "destructive", title: "Credenciales incorrectas", description: "El usuario o la contraseña son inválidos." })
     }
   }
 
@@ -74,14 +74,14 @@ export default function LoginPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-8 px-12 pb-10">
-          <div className="space-y-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
-                <User className="h-3.5 w-3.5 text-primary" /> RFC de Usuario
+                <User className="h-3.5 w-3.5 text-primary" /> Usuario / RFC
               </Label>
               <Input
                 id="rfc"
-                placeholder="INGRESA RFC"
+                placeholder="INGRESA USUARIO"
                 className="h-16 rounded-2xl bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-black uppercase px-6 shadow-inner"
                 value={rfc}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
@@ -111,10 +111,10 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
-          </div>
-          <Button className="w-full h-16 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-95 text-white" onClick={handleLogin}>
-            Iniciar Sesión
-          </Button>
+            <Button type="submit" className="w-full h-16 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-95 text-white">
+              Iniciar Sesión
+            </Button>
+          </form>
         </CardContent>
         <CardFooter className="pt-0 pb-12 px-12">
            <div className="w-full py-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
