@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const handleLogin = () => {
     const cleanRfc = rfc.trim().toUpperCase()
-    // Nuevas credenciales solicitadas: COEES / 123456
+    // Credenciales oficiales: COEES / 123456
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
       toast({ title: "Acceso concedido", description: "Bienvenido al Sistema de Gestión de Planeación." })
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
-                <User className="h-3.5 w-3.5 text-primary" /> Usuario / RFC
+                <User className="h-3.5 w-3.5 text-primary" /> Usuario
               </Label>
               <Input
                 id="rfc"
