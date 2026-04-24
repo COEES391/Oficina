@@ -83,7 +83,7 @@ export default function LoginPage() {
                 id="rfc"
                 placeholder="INGRESA USUARIO"
                 className="h-16 rounded-2xl bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-black uppercase px-6 shadow-inner"
-                value={rfc}
+                value={rfc || ''}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
               />
             </div>
@@ -97,7 +97,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   className="h-16 rounded-2xl bg-white/50 pr-14 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold px-6 shadow-inner"
-                  value={password}
+                  value={password || ''}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <Button

@@ -584,7 +584,7 @@ export default function ProgramsPage() {
                                      {isEditing ? (
                                        <Input 
                                           className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" 
-                                          value={inlineFormData.email} 
+                                          value={inlineFormData.email || ''} 
                                           onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} 
                                         />
                                      ) : (
@@ -598,7 +598,7 @@ export default function ProgramsPage() {
                                      {isEditing ? (
                                        <Input 
                                           className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" 
-                                          value={inlineFormData.cct} 
+                                          value={inlineFormData.cct || ''} 
                                           onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} 
                                           maxLength={10}
                                         />
@@ -609,8 +609,8 @@ export default function ProgramsPage() {
                                   <TableCell className="text-center">
                                      {isEditing ? (
                                        <div className="flex gap-2 justify-center">
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.sector} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.zona} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.sector || ''} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
+                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData.zona || ''} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
                                        </div>
                                      ) : (
                                        <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
@@ -620,7 +620,7 @@ export default function ProgramsPage() {
                                      {isEditing ? (
                                        <Input 
                                           className="h-9 text-[10px] font-black uppercase w-full bg-white text-center border-primary/20" 
-                                          value={inlineFormData.valle} 
+                                          value={inlineFormData.valle || ''} 
                                           onChange={e => setInlineFormData({...inlineFormData, valle: e.target.value.toUpperCase()})} 
                                         />
                                      ) : (
@@ -629,7 +629,7 @@ export default function ProgramsPage() {
                                   </TableCell>
                                   <TableCell className="text-center">
                                      {isEditing ? (
-                                       <Select value={inlineFormData.status} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
+                                       <Select value={inlineFormData.status || 'activo'} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
                                           <SelectTrigger className="h-9 w-full text-[10px] font-black uppercase bg-white border-primary/20">
                                             <SelectValue />
                                           </SelectTrigger>
@@ -780,7 +780,7 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-3">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
-                  <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
+                  <Input value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Rubro Programático</Label>
@@ -801,7 +801,7 @@ export default function ProgramsPage() {
                     <Input 
                       placeholder="ESCRIBE CCT O NOMBRE PARA IDENTIFICAR PLANTEL..." 
                       className="bg-white h-16 font-black uppercase px-8 rounded-2xl border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
-                      value={searchTerm} 
+                      value={searchTerm || ''} 
                       onChange={e => setSearchTerm(e.target.value)} 
                     />
                     {searchTerm.length > 2 && (
@@ -852,10 +852,10 @@ export default function ProgramsPage() {
                      <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas y Operativas</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Entrada</Label><Input type="date" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Salida</Label><Input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos || 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo || ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Entrada</Label><Input type="date" value={formData.fechaEntrada || ''} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Salida</Label><Input type="date" value={formData.fechaSalida || ''} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
                   </div>
                 </div>
               )}
@@ -873,7 +873,7 @@ export default function ProgramsPage() {
                          <Label className={cn("text-[11px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-600" : "text-blue-600")}>
                            {isCuentasInDialog ? "¿Registrar Cuentas?" : "¿Capacitación?"}
                          </Label>
-                         <Select value={formData.capacitacion} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
+                         <Select value={formData.capacitacion || 'N'} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
                            <SelectTrigger className={cn("h-12 w-64 rounded-2xl font-black bg-white shadow-sm", isLibraryTab ? "border-emerald-200" : "border-blue-200")}><SelectValue /></SelectTrigger>
                            <SelectContent className="rounded-2xl border-none shadow-2xl font-black"><SelectItem value="S">SÍ, BRINDADA</SelectItem><SelectItem value="N">NO BRINDADA</SelectItem></SelectContent>
                          </Select>
@@ -916,16 +916,16 @@ export default function ProgramsPage() {
                                       <TableCell className={cn("text-center font-black text-xs pl-10", isLibraryTab ? "text-emerald-300" : "text-blue-300")}>{idx + 1}</TableCell>
                                       <TableCell className="p-4">
                                          <div className="flex gap-2">
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
-                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.paterno || ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
+                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.materno || ''} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
+                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.nombres || ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
                                          </div>
                                       </TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 text-primary uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 uppercase" value={ast.valle} onChange={e => updateAssistant(idx, 'valle', e.target.value.toUpperCase())} placeholder="VALLE" /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 text-primary uppercase" value={ast.rfc || ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email || ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
+                                      <TableCell className="p-4"><Input className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 uppercase" value={ast.valle || ''} onChange={e => updateAssistant(idx, 'valle', e.target.value.toUpperCase())} placeholder="VALLE" /></TableCell>
                                       <TableCell className="p-4">
-                                        <Select value={ast.genero} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
+                                        <Select value={ast.genero || ''} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
                                           <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 shadow-sm"><SelectValue /></SelectTrigger>
                                           <SelectContent className="font-black"><SelectItem value="MASCULINO">MASC</SelectItem><SelectItem value="FEMENINO">FEM</SelectItem></SelectContent>
                                         </Select>
@@ -949,12 +949,12 @@ export default function ProgramsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                 {!isCuentasInDialog && (
-                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio || ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
                 )}
                 {!isCuentasInDialog && (
                   <div className="space-y-3">
                     <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
-                    <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as any})}>
+                    <Select value={formData.setes || 'N'} onValueChange={v => setFormData({...formData, setes: v as any})}>
                       <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-white border-purple-200 shadow-lg shadow-purple-50"><SelectValue /></SelectTrigger>
                       <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
                     </Select>
@@ -962,7 +962,7 @@ export default function ProgramsPage() {
                 )}
                 <div className={cn("space-y-3", isCuentasInDialog ? "col-span-3" : "")}>
                   <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
-                  <Select value={formData.status} onValueChange={v => setFormData({...formData, status: v as any})}>
+                  <Select value={formData.status || 'planeacion'} onValueChange={v => setFormData({...formData, status: v as any})}>
                     <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent className="font-black rounded-2xl">
                       <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
@@ -976,7 +976,7 @@ export default function ProgramsPage() {
               {!isCuentasInDialog && (
                 <div className="space-y-4">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
-                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
+                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
                 </div>
               )}
             </div>
