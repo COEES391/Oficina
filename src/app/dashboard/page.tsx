@@ -115,7 +115,6 @@ export default function DashboardPage() {
     trainingGoal: 5600
   })
 
-  // Filters
   const [valleFilter, setValleFilter] = useState('all')
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [modalidadFilter, setModalidadFilter] = useState('all')
@@ -170,7 +169,7 @@ export default function DashboardPage() {
       const matchModalidad = modalidadFilter === 'all' || (tr.asistenteModalidad && tr.asistenteModalidad.toUpperCase() === modalidadFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
-      return matchValle && matchMunicipio && matchModalidad && matchDateStart && matchDateEnd;
+      return matchValle && matchMunicipio && matchDateStart && matchDateEnd;
     });
   }, [trainings, valleFilter, municipioFilter, modalidadFilter, dateStart, dateEnd]);
 
@@ -557,7 +556,6 @@ export default function DashboardPage() {
 
         {activeReport === 'programas' && (
           <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-             {/* Program Summary Cards */}
              <div className="grid gap-6 md:grid-cols-4">
                {[
                  { title: 'Intervenciones', value: programs.length, icon: <Activity className="h-6 w-6" />, color: 'bg-rose-700', bg: 'bg-rose-50' },
@@ -578,7 +576,6 @@ export default function DashboardPage() {
              </div>
 
              <div className="grid gap-8 md:grid-cols-2">
-                {/* Program Progress Chart */}
                 <Card className="executive-card p-8">
                   <CardHeader className="p-0 mb-8">
                     <CardTitle className="text-sm font-black uppercase flex items-center gap-3 text-primary">
@@ -612,7 +609,6 @@ export default function DashboardPage() {
                   </div>
                 </Card>
 
-                {/* Account Domain Breakdown Chart */}
                 <Card className="executive-card p-8">
                   <CardHeader className="p-0 mb-8">
                     <CardTitle className="text-sm font-black uppercase flex items-center gap-3 text-primary">
@@ -649,7 +645,6 @@ export default function DashboardPage() {
                 </Card>
              </div>
 
-             {/* Detailed Rubric Table */}
              <Card className="executive-card">
                <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
                  <div>
@@ -706,7 +701,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Settings Dialog (Goals) */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white/95 backdrop-blur-2xl">
           <DialogHeader className="p-10 bg-slate-50 border-b relative">
@@ -735,7 +729,7 @@ export default function DashboardPage() {
               
               <div className="space-y-8 pt-8 border-t-2 border-slate-50">
                  <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-3 tracking-[0.2em]">
-                   <Target className="h-5 w-5" /> Objetivos de Productividad Anual
+                   <Target className="h-5 w-5" /> Objetivos de Productivity Anual
                  </Label>
                  <div className="grid grid-cols-2 gap-8">
                    <div className="space-y-3">
@@ -796,7 +790,6 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Evidence Viewer Dialog */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 border-none shadow-[0_50px_100px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden">
           <DialogHeader className="p-10 pb-6 border-b bg-white relative">
@@ -805,7 +798,7 @@ export default function DashboardPage() {
                    <Zap className="h-6 w-6" />
                 </div>
             </div>
-            <DialogTitle className="uppercase font-black text-primary text-3xl tracking-tight flex items-center gap-6">
+            <DialogTitle className="uppercase font-black text-primary text-3xl tracking-tight flex items-center gap-6 leading-none">
               {evidenceToView?.type === 'pdf' ? <FileText className="h-8 w-8 text-blue-600" /> : <ImageIcon className="h-8 w-8 text-pink-600" />}
               {evidenceToView?.title}
             </DialogTitle>

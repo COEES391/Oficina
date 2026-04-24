@@ -64,7 +64,6 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   
-  // Inline Editing State for Accounts
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
   const [inlineFormData, setInlineFormData] = useState<any>(null)
   
@@ -334,7 +333,6 @@ export default function ProgramsPage() {
     setEditingId(null)
   }
 
-  // Inline Editing Functions
   const startInlineEdit = (acc: any) => {
     setEditingRowId(acc.id);
     setInlineFormData({ ...acc });
@@ -378,7 +376,7 @@ export default function ProgramsPage() {
     localStorage.setItem('programs_full', JSON.stringify(updatedRecords));
     setEditingRowId(null);
     setInlineFormData(null);
-    toast({ title: "Cambios guardados localmente" });
+    toast({ title: "Cambios guardados exitosamente" });
   }
 
   if (!mounted) return null
@@ -564,7 +562,7 @@ export default function ProgramsPage() {
                           </Button>
                        </div>
                     </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm relative">
                        <Table className="min-w-[950px]">
                           <TableHeader className="bg-white/80 sticky top-0 z-20">
                              <TableRow className="border-none">
@@ -573,7 +571,7 @@ export default function ProgramsPage() {
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Sector / ZE</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[120px]">Valle</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Estatus</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[120px] sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">Acción</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[140px] sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l z-30">Acción</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -647,23 +645,23 @@ export default function ProgramsPage() {
                                        </div>
                                      )}
                                   </TableCell>
-                                  <TableCell className="text-right pr-10 sticky right-0 z-10 bg-white/90 group-hover:bg-white transition-colors backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">
+                                  <TableCell className="text-right pr-10 sticky right-0 z-30 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">
                                      <div className="flex justify-end gap-2">
                                         {isEditing ? (
                                           <>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white rounded-xl transition-all" onClick={saveInlineEdit}>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white rounded-xl transition-all" onClick={saveInlineEdit}>
                                               <Check className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={cancelInlineEdit}>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={cancelInlineEdit}>
                                               <X className="h-4 w-4" />
                                             </Button>
                                           </>
                                         ) : (
                                           <>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => startInlineEdit(acc)}>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all" onClick={() => startInlineEdit(acc)}>
                                                <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                                <Trash2 className="h-4 w-4" />
                                             </Button>
                                           </>
@@ -748,7 +746,7 @@ export default function ProgramsPage() {
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                        <Pencil className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
                                        <Trash2 className="h-4 w-4" />
                                     </Button>
                                  </div>
