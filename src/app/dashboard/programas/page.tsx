@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -428,7 +428,7 @@ export default function ProgramsPage() {
                         {!isCuentasTab && (
                           <div className="flex flex-wrap items-center gap-8 pt-3">
                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                                <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate}
+                                <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate ?? ''}
                             </div>
                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
                                 <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
@@ -780,16 +780,9 @@ export default function ProgramsPage() {
           <ScrollArea className="flex-1 px-10">
             <div className="grid gap-12 py-12 pb-20">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-3">
+                <div className="space-y-3 col-span-2">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
                   <Input value={formData.id ?? ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Rubro Programático</Label>
-                  <Select value={formData.name || activeTab} onValueChange={v => setFormData({...formData, name: v})}>
-                    <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-slate-50/50 border-primary/10 shadow-inner px-8"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl">{PROGRAM_RUBROS.map(r => <SelectItem key={r} value={r} className="text-xs font-black">{r}</SelectItem>)}</SelectContent>
-                  </Select>
                 </div>
               </div>
 
@@ -827,7 +820,7 @@ export default function ProgramsPage() {
                          <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner"><School className="h-8 w-8" /></div>
                          <div className="flex-1 overflow-hidden">
                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Nombre del Centro de Trabajo</p>
-                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName}</p>
+                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName ?? ''}</p>
                          </div>
                       </div>
                       {[
@@ -839,7 +832,7 @@ export default function ProgramsPage() {
                       ].map((item, i) => (
                         <div key={i} className="p-6 bg-white rounded-3xl border border-primary/5 shadow-sm">
                           <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">{item.l}</p>
-                          <p className="text-sm font-black text-slate-800 uppercase">{item.v}</p>
+                          <p className="text-sm font-black text-slate-800 uppercase">{item.v ?? ''}</p>
                         </div>
                       ))}
                     </div>
