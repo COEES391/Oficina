@@ -158,7 +158,7 @@ export default function ProgramsPage() {
   
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
 
-  // Geoposition Logic - Updated with User Data
+  // Geoposition Logic - Updated with User Data and Geographic Coordinates Simulation
   const geoSchools = useMemo(() => {
     if (!isGeoTab) return [];
     return schoolsDirectory.filter(s => {
@@ -562,80 +562,94 @@ export default function ProgramsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                       <Card className="lg:col-span-2 h-[650px] rounded-[3rem] border-4 border-white shadow-2xl overflow-hidden bg-slate-100 relative group">
-                          {/* Simulated Map Visualizer using background pattern */}
-                          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=1200&auto=format&fit=crop')] bg-cover bg-center grayscale opacity-10" />
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-transparent to-slate-200/40" />
+                       <Card className="lg:col-span-2 h-[750px] rounded-[3rem] border-4 border-white shadow-2xl overflow-hidden bg-slate-50 relative group">
+                          {/* Map Silhoutte Background */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none p-10">
+                             <svg viewBox="0 0 100 100" className="w-full h-full fill-primary">
+                                <path d="M45,5 L55,8 L65,15 L75,10 L85,25 L90,45 L80,65 L70,85 L45,95 L25,85 L10,65 L5,45 L15,20 L30,10 Z" />
+                             </svg>
+                          </div>
                           
-                          {/* Valle Mexico Visual Container */}
-                          <div className={cn("absolute top-[10%] right-[8%] w-[48%] h-[65%] border-2 border-dashed border-primary/20 rounded-[3rem] transition-all duration-700", mapValleFilter === 'MEXICO' ? 'bg-primary/[0.04] border-primary/50 scale-105 shadow-2xl' : 'hover:border-primary/30')}>
-                             <div className="absolute top-6 right-10 text-[10px] font-black text-primary/50 uppercase tracking-[0.3em]">Auditoría Valle de México</div>
-                             <div className="relative w-full h-full p-12 flex flex-wrap gap-4 items-center justify-center content-center overflow-hidden">
-                                {geoSchools.filter(s => s.valle === 'MEXICO').map((s, i) => (
-                                   <div key={i} className={cn("h-3.5 w-3.5 rounded-full shadow-lg animate-pulse transition-all hover:scale-150 cursor-pointer", 
-                                      s.modalidad === 'DTV' ? 'bg-slate-700' : 
-                                      s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
-                                   )} title={`${s.cct} - ${s.municipio}`} />
-                                ))}
+                          {/* Realistic State Map Visualizer */}
+                          <div className="absolute inset-0 p-12">
+                             <div className="relative w-full h-full">
+                                {/* Representación de Valle de México (Derecha/Arriba) */}
+                                <div className={cn("absolute top-[10%] right-[10%] w-[45%] h-[60%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'MEXICO' ? 'border-primary/60 bg-primary/[0.03] scale-105' : 'border-slate-200')}>
+                                   <div className="absolute top-4 right-8 text-[9px] font-black text-primary/40 uppercase tracking-[0.3em]">Valle de México</div>
+                                   <div className="w-full h-full p-8 flex flex-wrap gap-3 items-center justify-center">
+                                      {geoSchools.filter(s => s.valle === 'MEXICO').slice(0, 150).map((s, i) => (
+                                         <div 
+                                          key={i} 
+                                          className={cn(
+                                            "h-2.5 w-2.5 rounded-full shadow-lg transition-all hover:scale-150 cursor-pointer animate-pulse",
+                                            s.modalidad === 'DTV' ? 'bg-slate-600' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
+                                          )} 
+                                          title={`${s.cct} - ${s.municipio}`} 
+                                        />
+                                      ))}
+                                   </div>
+                                </div>
+
+                                {/* Representación de Valle de Toluca (Izquierda/Abajo) */}
+                                <div className={cn("absolute bottom-[10%] left-[5%] w-[40%] h-[55%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'TOLUCA' ? 'border-accent/60 bg-accent/[0.03] scale-105' : 'border-slate-200')}>
+                                   <div className="absolute bottom-4 left-8 text-[9px] font-black text-accent/40 uppercase tracking-[0.3em]">Valle de Toluca</div>
+                                   <div className="w-full h-full p-8 flex flex-wrap gap-3 items-center justify-center">
+                                      {geoSchools.filter(s => s.valle === 'TOLUCA').slice(0, 150).map((s, i) => (
+                                         <div 
+                                          key={i} 
+                                          className={cn(
+                                            "h-2.5 w-2.5 rounded-full shadow-lg transition-all hover:scale-150 cursor-pointer animate-pulse",
+                                            s.modalidad === 'DTV' ? 'bg-slate-600' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
+                                          )} 
+                                          title={`${s.cct} - ${s.municipio}`} 
+                                        />
+                                      ))}
+                                   </div>
+                                </div>
                              </div>
                           </div>
 
-                          {/* Valle Toluca Visual Container */}
-                          <div className={cn("absolute bottom-[10%] left-[8%] w-[42%] h-[60%] border-2 border-dashed border-accent/20 rounded-[3rem] transition-all duration-700", mapValleFilter === 'TOLUCA' ? 'bg-accent/[0.04] border-accent/50 scale-105 shadow-2xl' : 'hover:border-accent/30')}>
-                             <div className="absolute bottom-6 left-10 text-[10px] font-black text-accent/50 uppercase tracking-[0.3em]">Auditoría Valle de Toluca</div>
-                             <div className="relative w-full h-full p-12 flex flex-wrap gap-3.5 items-center justify-center content-center overflow-hidden">
-                                {geoSchools.filter(s => s.valle === 'TOLUCA').map((s, i) => (
-                                   <div key={i} className={cn("h-3.5 w-3.5 rounded-full shadow-lg animate-pulse transition-all hover:scale-150 cursor-pointer", 
-                                      s.modalidad === 'DTV' ? 'bg-slate-700' : 
-                                      s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
-                                   )} title={`${s.cct} - ${s.municipio}`} />
-                                ))}
-                             </div>
+                          {/* Map Controls & Legends */}
+                          <div className="absolute top-10 left-10">
+                             <Badge className="bg-primary text-white border-none font-black text-[12px] uppercase px-8 py-3 rounded-2xl shadow-[0_15px_30px_rgba(98,17,50,0.3)] flex items-center gap-3">
+                               <Navigation className="h-5 w-5" /> Mapa de Cobertura Estatal
+                             </Badge>
                           </div>
 
                           <div className="absolute bottom-10 right-10 flex flex-col gap-4 bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-primary/5">
-                             <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-primary shadow-sm" /> <span className="text-[11px] font-black uppercase text-slate-600 tracking-wider">S. Generales (DES)</span></div>
-                             <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-accent shadow-sm" /> <span className="text-[11px] font-black uppercase text-slate-600 tracking-wider">S. Técnicas (DST)</span></div>
-                             <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-slate-700 shadow-sm" /> <span className="text-[11px] font-black uppercase text-slate-600 tracking-wider">Telesecundarias (DTV)</span></div>
-                          </div>
-
-                          <div className="absolute top-10 left-10">
-                             <Badge className="bg-primary text-white border-none font-black text-[12px] uppercase px-8 py-3 rounded-2xl shadow-[0_15px_30px_rgba(98,17,50,0.3)] flex items-center gap-3">
-                               <Navigation className="h-5 w-5" /> Ubicaciones SEIEM en el Mapa
-                             </Badge>
+                             <div className="flex items-center gap-4"><div className="h-4 w-4 rounded-full bg-primary" /> <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">S. Generales (DES)</span></div>
+                             <div className="flex items-center gap-4"><div className="h-4 w-4 rounded-full bg-accent" /> <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">S. Técnicas (DST)</span></div>
+                             <div className="flex items-center gap-4"><div className="h-4 w-4 rounded-full bg-slate-700" /> <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Telesecundarias (DTV)</span></div>
                           </div>
                        </Card>
 
                        <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden flex flex-col">
                           <CardHeader className="p-8 border-b bg-slate-50/50">
                              <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><Activity className="h-5 w-5" /> Desglose por Municipio</CardTitle>
-                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400">Cobertura territorial de planteles detectados</CardDescription>
+                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400">Presencia institucional en territorio</CardDescription>
                           </CardHeader>
                           <div className="flex-1">
-                             <ScrollArea className="h-[500px]">
-                                <div className="p-8 space-y-6">
+                             <ScrollArea className="h-[600px]">
+                                <div className="p-8 space-y-4">
                                    {Array.from(new Set(geoSchools.map(s => s.municipio))).sort().map((mun, i) => {
                                       const munSchools = geoSchools.filter(s => s.municipio === mun);
                                       return (
-                                        <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-primary/5 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-default">
+                                        <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-primary/5 hover:bg-primary/5 transition-all">
                                            <div className="flex justify-between items-center mb-3">
-                                              <span className="text-xs font-black text-slate-700 uppercase">{mun}</span>
-                                              <Badge className="bg-primary text-white text-[10px] font-black">{munSchools.length}</Badge>
+                                              <span className="text-[11px] font-black text-slate-700 uppercase">{mun}</span>
+                                              <Badge className="bg-primary text-white text-[10px] font-black px-2">{munSchools.length}</Badge>
                                            </div>
-                                           <div className="flex gap-1.5 flex-wrap">
-                                              {munSchools.slice(0, 15).map((s, idx) => (
-                                                 <div key={idx} className={cn("h-1.5 w-4 rounded-full", s.modalidad === 'DTV' ? 'bg-slate-400' : s.modalidad === 'DST' ? 'bg-accent/60' : 'bg-primary/60')} />
+                                           <div className="flex gap-1 flex-wrap">
+                                              {munSchools.slice(0, 20).map((s, idx) => (
+                                                 <div key={idx} className={cn("h-1 w-3 rounded-full", s.modalidad === 'DTV' ? 'bg-slate-400' : s.modalidad === 'DST' ? 'bg-accent/60' : 'bg-primary/60')} />
                                               ))}
-                                              {munSchools.length > 15 && <span className="text-[8px] font-black text-slate-300">+{munSchools.length - 15}</span>}
+                                              {munSchools.length > 20 && <span className="text-[8px] font-black text-slate-300">+{munSchools.length - 20}</span>}
                                            </div>
                                         </div>
                                       );
                                    })}
                                 </div>
                              </ScrollArea>
-                          </div>
-                          <div className="p-8 border-t bg-slate-50 flex justify-between items-center">
-                             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sectores Identificados: {new Set(geoSchools.map(s => s.municipio)).size}</span>
                           </div>
                        </Card>
                     </div>
