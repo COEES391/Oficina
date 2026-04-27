@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -38,7 +39,12 @@ import {
   FileUp,
   Table as TableIcon,
   Eraser,
-  Check
+  Check,
+  Map as MapIcon,
+  Navigation,
+  Globe,
+  Filter,
+  Activity
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -64,9 +70,14 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   
+  // States for Inline Edit (Accounts)
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
   const [inlineFormData, setInlineFormData] = useState<any>(null)
   
+  // Map Filters
+  const [mapValleFilter, setMapValleFilter] = useState('all')
+  const [mapModalidadFilter, setMapModalidadFilter] = useState('all')
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initialAssistant: ProgramAssistant = {
@@ -144,8 +155,32 @@ export default function ProgramsPage() {
 
   const isLibraryTab = activeTab === 'Biblioteca Digital';
   const isCuentasTab = activeTab.startsWith('Cuentas Institucionales');
+  const isGeoTab = activeTab === 'Geoposición';
   
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
+
+  // Geoposition Logic
+  const geoSchools = useMemo(() => {
+    if (!isGeoTab) return [];
+    return schoolsDirectory.filter(s => {
+      const matchValle = mapValleFilter === 'all' || s.valle === mapValleFilter;
+      const matchModalidad = mapModalidadFilter === 'all' || 
+        (mapModalidadFilter === 'GENERAL' && (s.modalidad === 'DES' || s.modalidad === 'DSN')) ||
+        (mapModalidadFilter === 'TECNICA' && s.modalidad === 'DST') ||
+        (mapModalidadFilter === 'TELESECUNDARIA' && (s.modalidad === 'DTV' || s.modalidad === 'FTV'));
+      return matchValle && matchModalidad;
+    });
+  }, [isGeoTab, mapValleFilter, mapModalidadFilter]);
+
+  const geoStats = useMemo(() => {
+    const total = geoSchools.length;
+    const toluca = geoSchools.filter(s => s.valle === 'TOLUCA').length;
+    const mexico = geoSchools.filter(s => s.valle === 'MEXICO').length;
+    const generales = geoSchools.filter(s => s.modalidad === 'DES' || s.modalidad === 'DSN').length;
+    const tecnicas = geoSchools.filter(s => s.modalidad === 'DST').length;
+    const teles = geoSchools.filter(s => s.modalidad === 'DTV' || s.modalidad === 'FTV').length;
+    return { total, toluca, mexico, generales, tecnicas, teles };
+  }, [geoSchools]);
 
   const accountsData = useMemo(() => {
     if (!isCuentasTab) return [];
@@ -415,7 +450,7 @@ export default function ProgramsPage() {
                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
                   <div className="flex items-center gap-8">
                      <div className="h-24 w-24 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/5 shadow-inner">
-                        {isLibraryTab ? <MonitorCheck className="h-12 w-12 text-primary" /> : isCuentasTab ? <Mail className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
+                        {isLibraryTab ? <MonitorCheck className="h-12 w-12 text-primary" /> : isCuentasTab ? <Mail className="h-12 w-12 text-primary" /> : isGeoTab ? <MapIcon className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
                      </div>
                      <div className="space-y-2">
                         <div className="flex items-center gap-4">
@@ -425,7 +460,7 @@ export default function ProgramsPage() {
                            <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats.status}</Badge>
                         </div>
                         
-                        {!isCuentasTab && (
+                        {!isCuentasTab && !isGeoTab && (
                           <div className="flex flex-wrap items-center gap-8 pt-3">
                             <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
                                 <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate ?? ''}
@@ -438,6 +473,23 @@ export default function ProgramsPage() {
                                   <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {isGeoTab && (
+                          <div className="flex flex-wrap items-center gap-6 pt-3">
+                             <div className="flex items-center gap-2 bg-white px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">
+                               <Navigation className="h-3.5 w-3.5 text-primary" />
+                               <span className="text-[10px] font-black uppercase text-slate-500">Valle México: <span className="text-primary">{geoStats.mexico}</span></span>
+                             </div>
+                             <div className="flex items-center gap-2 bg-white px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">
+                               <Navigation className="h-3.5 w-3.5 text-primary" />
+                               <span className="text-[10px] font-black uppercase text-slate-500">Valle Toluca: <span className="text-primary">{geoStats.toluca}</span></span>
+                             </div>
+                             <div className="flex items-center gap-2 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100 shadow-sm">
+                               <Globe className="h-3.5 w-3.5 text-emerald-600" />
+                               <span className="text-[10px] font-black uppercase text-emerald-700">Total SEIEM: <span className="text-emerald-900">{geoStats.total}</span></span>
+                             </div>
                           </div>
                         )}
 
@@ -458,13 +510,145 @@ export default function ProgramsPage() {
                      </div>
                   </div>
 
-                  {(!isLibraryTab && !isCuentasTab) && (
+                  {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
                     <div className="text-right bg-slate-50 p-8 rounded-[2rem] border-2 border-white shadow-inner min-w-[220px]">
                       <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Avance Global</p>
                       <p className="text-6xl font-black text-primary leading-none tracking-tighter">{currentStats.progress}<span className="text-2xl text-accent ml-1">%</span></p>
                     </div>
                   )}
+
+                  {isGeoTab && (
+                    <div className="flex flex-col gap-2 min-w-[250px]">
+                       <div className="p-4 bg-slate-50 rounded-2xl border-2 border-white shadow-inner">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Modalidades SEIEM</p>
+                          <div className="space-y-2">
+                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">Generales</span> <Badge className="bg-primary text-white text-[9px]">{geoStats.generales}</Badge></div>
+                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">Técnicas</span> <Badge className="bg-accent text-white text-[9px]">{geoStats.tecnicas}</Badge></div>
+                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">Telesecundarias</span> <Badge className="bg-slate-700 text-white text-[9px]">{geoStats.teles}</Badge></div>
+                          </div>
+                       </div>
+                    </div>
+                  )}
                </div>
+
+               {isGeoTab && (
+                 <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border-2 border-primary/5 shadow-lg">
+                       <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Filter className="h-5 w-5" /></div>
+                          <span className="text-[11px] font-black uppercase text-primary tracking-widest">Filtros de Ubicación SEIEM:</span>
+                       </div>
+                       <div className="flex flex-wrap gap-4 flex-1 justify-end">
+                          <Select value={mapValleFilter} onValueChange={setMapValleFilter}>
+                            <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="VALLE" /></SelectTrigger>
+                            <SelectContent className="font-black">
+                               <SelectItem value="all">TODOS LOS VALLES</SelectItem>
+                               <SelectItem value="MEXICO">VALLE DE MÉXICO</SelectItem>
+                               <SelectItem value="TOLUCA">VALLE DE TOLUCA</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={mapModalidadFilter} onValueChange={setMapModalidadFilter}>
+                            <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="MODALIDAD" /></SelectTrigger>
+                            <SelectContent className="font-black">
+                               <SelectItem value="all">TODAS LAS MODALIDADES</SelectItem>
+                               <SelectItem value="GENERAL">GENERALES (DES/DSN)</SelectItem>
+                               <SelectItem value="TECNICA">TÉCNICAS (DST)</SelectItem>
+                               <SelectItem value="TELESECUNDARIA">TELESECUNDARIAS (DTV/FTV)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl text-slate-400 hover:text-primary" onClick={() => { setMapValleFilter('all'); setMapModalidadFilter('all'); }}>
+                            <History className="h-5 w-5" />
+                          </Button>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                       <Card className="lg:col-span-2 h-[600px] rounded-[3rem] border-4 border-white shadow-2xl overflow-hidden bg-slate-100 relative group">
+                          {/* Simulated Map Visualizer */}
+                          <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/edomex-map/1200/800')] bg-cover bg-center grayscale opacity-20" />
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-transparent to-slate-200/50" />
+                          
+                          {/* Valle Mexico Region */}
+                          <div className={cn("absolute top-[10%] right-[10%] w-[45%] h-[60%] border-2 border-dashed border-primary/20 rounded-[3rem] transition-all duration-500", mapValleFilter === 'MEXICO' ? 'bg-primary/[0.03] border-primary/40 scale-105 shadow-2xl' : 'hover:border-primary/30')}>
+                             <div className="absolute top-6 right-8 text-[9px] font-black text-primary/40 uppercase tracking-[0.3em]">Sector Valle de México</div>
+                             <div className="relative w-full h-full p-10 flex flex-wrap gap-4 items-center justify-center content-center">
+                                {geoSchools.filter(s => s.valle === 'MEXICO').slice(0, 50).map((s, i) => (
+                                   <div key={i} className={cn("h-3 w-3 rounded-full shadow-lg animate-pulse", 
+                                      s.modalidad.startsWith('DTV') ? 'bg-slate-700' : 
+                                      s.modalidad.startsWith('DST') ? 'bg-accent' : 'bg-primary'
+                                   )} title={`${s.cct} - ${s.modalidad}`} />
+                                ))}
+                             </div>
+                          </div>
+
+                          {/* Valle Toluca Region */}
+                          <div className={cn("absolute bottom-[10%] left-[10%] w-[40%] h-[55%] border-2 border-dashed border-accent/20 rounded-[3rem] transition-all duration-500", mapValleFilter === 'TOLUCA' ? 'bg-accent/[0.03] border-accent/40 scale-105 shadow-2xl' : 'hover:border-accent/30')}>
+                             <div className="absolute bottom-6 left-8 text-[9px] font-black text-accent/40 uppercase tracking-[0.3em]">Sector Valle de Toluca</div>
+                             <div className="relative w-full h-full p-10 flex flex-wrap gap-3 items-center justify-center content-center">
+                                {geoSchools.filter(s => s.valle === 'TOLUCA').slice(0, 50).map((s, i) => (
+                                   <div key={i} className={cn("h-3 w-3 rounded-full shadow-lg animate-pulse", 
+                                      s.modalidad.startsWith('DTV') ? 'bg-slate-700' : 
+                                      s.modalidad.startsWith('DST') ? 'bg-accent' : 'bg-primary'
+                                   )} title={`${s.cct} - ${s.modalidad}`} />
+                                ))}
+                             </div>
+                          </div>
+
+                          <div className="absolute bottom-8 right-8 flex flex-col gap-3 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-primary/5">
+                             <div className="flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-primary" /> <span className="text-[10px] font-black uppercase text-slate-600">S. Generales</span></div>
+                             <div className="flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-accent" /> <span className="text-[10px] font-black uppercase text-slate-600">S. Técnicas</span></div>
+                             <div className="flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-slate-700" /> <span className="text-[10px] font-black uppercase text-slate-600">Telesecundarias</span></div>
+                          </div>
+
+                          <div className="absolute top-8 left-8">
+                             <Badge className="bg-primary text-white border-none font-black text-[10px] uppercase px-6 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+                               <Navigation className="h-3.5 w-3.5" /> Ubicaciones Federales SEIEM
+                             </Badge>
+                          </div>
+                       </Card>
+
+                       <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden flex flex-col">
+                          <CardHeader className="p-8 border-b bg-slate-50/50">
+                             <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><Activity className="h-5 w-5" /> Análisis de Planteles</CardTitle>
+                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400">Desglose por modalidad operativa en la región</CardDescription>
+                          </CardHeader>
+                          <div className="flex-1">
+                             <ScrollArea className="h-[450px]">
+                                <div className="p-8 space-y-6">
+                                   {geoSchools.slice(0, 100).map((s, i) => (
+                                     <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-primary/5 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-default group">
+                                        <div className="flex items-center gap-4">
+                                           <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform", 
+                                              s.modalidad.startsWith('DTV') ? 'bg-slate-700' : 
+                                              s.modalidad.startsWith('DST') ? 'bg-accent' : 'bg-primary'
+                                           )}>
+                                              <School className="h-5 w-5" />
+                                           </div>
+                                           <div className="flex flex-col">
+                                              <span className="text-xs font-black text-slate-700 uppercase">{s.cct}</span>
+                                              <span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[150px]">{s.nombre}</span>
+                                           </div>
+                                        </div>
+                                        <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 uppercase">{s.valle === 'TOLUCA' ? 'TOL' : 'MEX'}</Badge>
+                                     </div>
+                                   ))}
+                                   {geoSchools.length === 0 && (
+                                     <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                                        <Search className="h-12 w-12 mb-4" />
+                                        <p className="text-[10px] font-black uppercase">Sin resultados en los filtros</p>
+                                     </div>
+                                   )}
+                                </div>
+                             </ScrollArea>
+                          </div>
+                          <div className="p-8 border-t bg-slate-50 flex justify-between items-center">
+                             <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mostrando: {Math.min(geoSchools.length, 100)} / {geoSchools.length}</span>
+                             <Button variant="ghost" size="sm" className="text-[9px] font-black uppercase text-primary hover:bg-primary/5 rounded-xl">Descargar CSV</Button>
+                          </div>
+                       </Card>
+                    </div>
+                 </div>
+               )}
 
                {isLibraryTab && (
                  <div className="mt-12 space-y-8">
@@ -681,7 +865,7 @@ export default function ProgramsPage() {
                  </div>
                )}
 
-               {(!isLibraryTab && !isCuentasTab) && (
+               {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
                  <div className="mt-12 space-y-6 bg-slate-50 p-10 rounded-[3rem] border border-white shadow-inner">
                     <div className="flex justify-between items-end">
                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Progreso de Cobertura Institucional</span>
@@ -699,7 +883,7 @@ export default function ProgramsPage() {
                )}
             </Card>
 
-            {(!isLibraryTab && !isCuentasTab) && (
+            {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
                <Card className="executive-card">
                   <CardHeader className="p-8 border-b border-slate-50">
                     <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
