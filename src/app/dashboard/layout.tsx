@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -149,7 +148,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-4">
              <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md border px-4 py-2 rounded-2xl shadow-inner">
                <Star className="h-3.5 w-3.5 text-accent fill-accent" />
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Periodo Vigente: 2024-2025</span>
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Periodo Vigente</span>
              </div>
           </div>
         </header>
