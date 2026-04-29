@@ -44,7 +44,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Download,
-  X
+  X,
+  Circle
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -379,7 +380,7 @@ export default function ProgramsPage() {
                                       className="h-16 rounded-2xl font-black text-lg text-center uppercase tracking-[0.2em] bg-slate-50 shadow-inner" 
                                       placeholder="15DES0000X" 
                                       maxLength={10}
-                                      value={incCct}
+                                      value={incCct || ''}
                                       onChange={(e) => setIncCct(e.target.value.toUpperCase())}
                                     />
                                    <Button onClick={handleGeneratePass} className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white shadow-xl">
@@ -536,7 +537,7 @@ export default function ProgramsPage() {
                         <Input 
                           placeholder="BUSCAR CCT O ESCUELA..." 
                           className="h-12 w-64 rounded-xl font-black text-[10px] uppercase pl-10 border-slate-200"
-                          value={geoSearchTerm}
+                          value={geoSearchTerm || ''}
                           onChange={(e) => setGeoSearchTerm(e.target.value)}
                         />
                       </div>
