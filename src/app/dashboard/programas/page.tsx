@@ -16,13 +16,8 @@ import { schoolsDirectory } from "@/lib/schools-directory"
 import * as XLSX from 'xlsx'
 import { 
   PlusCircle, 
-  FileText, 
-  Image as ImageIcon, 
-  X, 
-  Circle, 
   Search, 
   Pencil, 
-  ExternalLink, 
   School, 
   Settings2, 
   Zap,
@@ -39,16 +34,20 @@ import {
   Table as TableIcon,
   Eraser,
   Check,
-  Map as MapIcon,
   Navigation,
   Globe,
   Filter,
   Activity,
-  LocateFixed
+  LocateFixed,
+  Info,
+  UserPlus,
+  ArrowRight,
+  ShieldCheck,
+  Download,
+  X
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 const TOTAL_UNIVERSE = 830; 
@@ -66,6 +65,7 @@ export default function ProgramsPage() {
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
+  const [conoceSubTab, setConoceSubTab] = useState('info')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -76,6 +76,16 @@ export default function ProgramsPage() {
   const [mapValleFilter, setMapValleFilter] = useState('all')
   const [mapModalidadFilter, setMapModalidadFilter] = useState('all')
   const [geoSearchTerm, setGeoSearchTerm] = useState('')
+
+  // "Conoce mi escuela" filters
+  const [conoceValle, setConoceValle] = useState('all')
+  const [conoceMod, setConoceMod] = useState('all')
+  const [conoceSector, setConoceSector] = useState('all')
+  const [conoceMun, setConoceMun] = useState('all')
+
+  // "Incorporación" logic
+  const [incCct, setIncCct] = useState('')
+  const [generatedPass, setGeneratedPass] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,6 +143,31 @@ export default function ProgramsPage() {
     }))
   }, [activeTab])
 
+  const handleGeneratePass = () => {
+    if (incCct.length < 10) {
+      toast({ variant: "destructive", title: "CCT Inválido", description: "Ingrese los 10 caracteres del CCT." })
+      return
+    }
+    const school = schoolsDirectory.find(s => s.cct === incCct.toUpperCase())
+    if (!school) {
+      toast({ variant: "destructive", title: "No encontrado", description: "El CCT no existe en el directorio oficial." })
+      return
+    }
+    const pass = Math.random().toString(36).substring(2, 10).toUpperCase()
+    setGeneratedPass(pass)
+    toast({ title: "Acceso Generado", description: `Se ha creado la contraseña para ${incCct}.` })
+  }
+
+  const consultaResults = useMemo(() => {
+    return schoolsDirectory.filter(s => {
+      const matchValle = conoceValle === 'all' || s.valle === conoceValle;
+      const matchMod = conoceMod === 'all' || s.modalidad === conoceMod;
+      const matchSec = conoceSector === 'all' || s.sectorNum === conoceSector;
+      const matchMun = conoceMun === 'all' || s.municipio === conoceMun;
+      return matchValle && matchMod && matchSec && matchMun;
+    });
+  }, [conoceValle, conoceMod, conoceSector, conoceMun]);
+
   const rubroStats = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
       const rubroRecords = records.filter(r => r.name === name || (name.startsWith('Cuentas') && (r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI'))));
@@ -152,9 +187,11 @@ export default function ProgramsPage() {
     });
   }, [records]);
 
-  const isLibraryTab = activeTab === 'Biblioteca Digital';
-  const isCuentasTab = activeTab.startsWith('Cuentas Institucionales');
-  const isGeoTab = activeTab === 'Geoposición';
+  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
+  const isLibraryTab = activeTabClean === 'Biblioteca Digital';
+  const isCuentasTab = activeTabClean === 'Cuentas Institucionales';
+  const isGeoTab = activeTabClean === 'Geoposición';
+  const isConoceTab = activeTabClean === 'Conoce mi Escuela';
   
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
 
@@ -162,148 +199,13 @@ export default function ProgramsPage() {
     if (!isGeoTab) return [];
     return schoolsDirectory.filter(s => {
       const matchValle = mapValleFilter === 'all' || s.valle === mapValleFilter;
-      const matchModalidad = mapModalidadFilter === 'all' || 
-        (mapModalidadFilter === 'GENERAL' && s.modalidad === 'DES') ||
-        (mapModalidadFilter === 'TECNICA' && s.modalidad === 'DST') ||
-        (mapModalidadFilter === 'TELESECUNDARIA' && s.modalidad === 'DTV');
+      const matchModalidad = mapModalidadFilter === 'all' || s.modalidad === mapModalidadFilter;
       const matchSearch = !geoSearchTerm || 
         s.cct.toUpperCase().includes(geoSearchTerm.toUpperCase()) || 
-        s.nombre.toUpperCase().includes(geoSearchTerm.toUpperCase()) ||
-        s.municipio.toUpperCase().includes(geoSearchTerm.toUpperCase());
+        s.nombre.toUpperCase().includes(geoSearchTerm.toUpperCase());
       return matchValle && matchModalidad && matchSearch;
     });
   }, [isGeoTab, mapValleFilter, mapModalidadFilter, geoSearchTerm]);
-
-  const geoStats = useMemo(() => {
-    const total = geoSchools.length;
-    const toluca = geoSchools.filter(s => s.valle === 'TOLUCA').length;
-    const mexico = geoSchools.filter(s => s.valle === 'MEXICO').length;
-    const generales = geoSchools.filter(s => s.modalidad === 'DES').length;
-    const tecnicas = geoSchools.filter(s => s.modalidad === 'DST').length;
-    const teles = geoSchools.filter(s => s.modalidad === 'DTV').length;
-    return { total, toluca, mexico, generales, tecnicas, teles };
-  }, [geoSchools]);
-
-  const accountsData = useMemo(() => {
-    if (!isCuentasTab) return [];
-    
-    return records.filter(r => 
-      r.name.startsWith('Cuentas Institucionales') || 
-      r.id.startsWith('PROG-CI') || 
-      r.id.startsWith('IMP-')
-    ).map(rec => {
-      const ast = (rec.asistentes && rec.asistentes.length > 0) ? rec.asistentes[0] : initialAssistant;
-      return {
-        id: rec.id,
-        email: ast.email || '-',
-        cct: ast.cct || rec.cct || '-',
-        sector: ast.sector || rec.sector || '-',
-        zona: ast.ze || rec.zonaEscolar || '-',
-        valle: ast.valle || rec.valle || '-',
-        dominio: (ast.email && ast.email.includes('@')) ? `@${ast.email.split('@')[1]}` : '-',
-        status: (rec.status === 'activo' || rec.status === 'inactivo') ? rec.status : 'activo',
-        originalRecord: rec
-      };
-    });
-  }, [records, isCuentasTab, initialAssistant]);
-
-  const handleClearAccounts = () => {
-    if (window.confirm('¿Está seguro de borrar TODOS los registros importados de Cuentas Institucionales? Esta acción no se puede deshacer.')) {
-      const filtered = records.filter(r => 
-        !r.name.startsWith('Cuentas Institucionales') && 
-        !r.id.startsWith('IMP-') && 
-        !r.id.startsWith('PROG-CI')
-      );
-      setRecords(filtered);
-      localStorage.setItem('programs_full', JSON.stringify(filtered));
-      toast({ title: "Auditoría Limpiada", description: "Se han removido todos los registros de cuentas." });
-    }
-  };
-
-  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const bstr = event.target?.result;
-        const workbook = XLSX.read(bstr, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(sheet) as any[];
-
-        const findKey = (obj: any, variants: string[]) => {
-          const keys = Object.keys(obj);
-          for (const v of variants) {
-            const found = keys.find(k => k.toLowerCase().trim().replace(/[^a-z0-9]/g, '').includes(v.toLowerCase().replace(/[^a-z0-9]/g, '')));
-            if (found) return obj[found];
-          }
-          return undefined;
-        };
-
-        const newRecords: ProgramStatus[] = data.map((row, idx) => {
-          const cct = String(findKey(row, ['cct', 'centro', 'clave', 'ct', 'trabajo']) || '').toUpperCase();
-          const email = String(findKey(row, ['correo', 'email', 'cuenta', 'user', 'usuario', 'mail']) || '').toLowerCase().trim();
-          const statusVal = String(findKey(row, ['estatus', 'status', 'estado']) || 'activo').toLowerCase();
-          const finalStatus = (statusVal === 'inactivo' || statusVal === 'desactivado') ? 'inactivo' : 'activo';
-          
-          const school = schoolsDirectory.find(s => s.cct === cct);
-          
-          const assistant: ProgramAssistant = {
-            paterno: String(findKey(row, ['paterno', 'apellidop']) || ''),
-            materno: String(findKey(row, ['materno', 'apellidom']) || ''),
-            nombres: String(findKey(row, ['nombre', 'nom']) || ''),
-            rfc: String(findKey(row, ['rfc', 'curp']) || '').toUpperCase(),
-            genero: (String(findKey(row, ['genero', 'sexo', 'g']) || '').toUpperCase().startsWith('M')) ? 'MASCULINO' : 'FEMENINO',
-            funcion: String(findKey(row, ['funcion', 'cargo', 'puesto']) || 'DOCENTE'),
-            email: email,
-            cct: cct,
-            nombreCT: school?.nombre || String(findKey(row, ['escuela', 'nombrect', 'plantel']) || ''),
-            ze: String(findKey(row, ['zona', 'ze', 'z', 'escolar']) || school?.zonaEscolar || ''),
-            sector: String(findKey(row, ['sector', 's']) || school?.sector || ''),
-            modalidad: String(findKey(row, ['modalidad', 'nivel', 'mod']) || school?.modalidad || ''),
-            municipio: String(findKey(row, ['municipio', 'mun']) || school?.municipio || ''),
-            region: String(findKey(row, ['region', 'reg']) || school?.region || ''),
-            valle: String(findKey(row, ['valle', 'v']) || school?.valle || ''),
-            departamento: String(findKey(row, ['departamento', 'depto', 'area', 'oficina']) || 'TECNICO')
-          };
-
-          return {
-            ...initialFormState,
-            id: `IMP-${Date.now()}-${idx}`,
-            name: PROGRAM_RUBROS[1],
-            status: finalStatus as any,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            asistentes: [assistant],
-            totalParticipantes: 1,
-            capacitacion: 'S',
-            cct: assistant.cct,
-            schoolName: assistant.nombreCT,
-            zonaEscolar: assistant.ze,
-            sector: assistant.sector,
-            modalidad: assistant.modalidad,
-            municipio: assistant.municipio,
-            region: assistant.region,
-            valle: assistant.valle,
-            observaciones: 'Importación individual desde Excel para auditoría de cuentas.'
-          };
-        });
-
-        if (newRecords.length > 0) {
-          const updated = [...newRecords, ...records];
-          setRecords(updated);
-          localStorage.setItem('programs_full', JSON.stringify(updated));
-          toast({ title: "Importación Exitosa", description: `Se han cargado ${newRecords.length} cuentas institucionales.` });
-        }
-      } catch (err) {
-        console.error(err);
-        toast({ variant: "destructive", title: "Error al leer archivo", description: "Asegúrate de que el archivo sea un Excel válido." });
-      }
-    };
-    reader.readAsBinaryString(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   const handleSelectSchool = (cct: string) => {
     const school = schoolsDirectory.find(s => s.cct === cct);
@@ -338,7 +240,7 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
-    if (!formData.id || (!formData.cct && !formData.name?.startsWith('Cuentas'))) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
+    if (!formData.id || (!formData.cct && !isCuentasTab)) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
@@ -364,43 +266,24 @@ export default function ProgramsPage() {
 
   const saveInlineEdit = () => {
     if (!inlineFormData) return;
-    
     const updatedRecords = records.map(r => {
       if (r.id === inlineFormData.id) {
         const updatedAsistentes = [...(r.asistentes || [])];
         if (updatedAsistentes.length > 0) {
-          updatedAsistentes[0] = {
-            ...updatedAsistentes[0],
-            email: inlineFormData.email,
-            cct: inlineFormData.cct,
-            ze: inlineFormData.zona,
-            sector: inlineFormData.sector,
-            valle: inlineFormData.valle
-          };
+          updatedAsistentes[0] = { ...updatedAsistentes[0], email: inlineFormData.email, cct: inlineFormData.cct };
         }
-        return { 
-          ...r, 
-          status: inlineFormData.status, 
-          asistentes: updatedAsistentes,
-          cct: inlineFormData.cct,
-          zonaEscolar: inlineFormData.zona,
-          sector: inlineFormData.sector,
-          valle: inlineFormData.valle
-        };
+        return { ...r, status: inlineFormData.status, asistentes: updatedAsistentes, cct: inlineFormData.cct };
       }
       return r;
     });
-
     setRecords(updatedRecords);
     localStorage.setItem('programs_full', JSON.stringify(updatedRecords));
     setEditingRowId(null);
     setInlineFormData(null);
-    toast({ title: "Cambios guardados exitosamente" });
+    toast({ title: "Cambios guardados" });
   }
 
   if (!mounted) return null
-
-  const isCuentasInDialog = formData.name?.startsWith('Cuentas');
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
@@ -427,516 +310,594 @@ export default function ProgramsPage() {
           ))}
         </TabsList>
 
-        {currentStats && (
-          <TabsContent value={activeTab} className="space-y-10 animate-in zoom-in-95 duration-500">
-            <Card className="executive-card p-10 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
-               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
-                  <div className="flex items-center gap-8">
-                     <div className="h-24 w-24 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/5 shadow-inner">
-                        {isLibraryTab ? <MonitorCheck className="h-12 w-12 text-primary" /> : isCuentasTab ? <Mail className="h-12 w-12 text-primary" /> : isGeoTab ? <LocateFixed className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
-                     </div>
-                     <div className="space-y-2">
-                        <div className="flex items-center gap-4">
-                           <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800 leading-none">
-                             {isCuentasTab ? "Cuentas Institucionales" : activeTab}
-                           </h3>
-                           <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats.status}</Badge>
-                        </div>
-                        
-                        {!isCuentasTab && !isGeoTab && (
-                          <div className="flex flex-wrap items-center gap-8 pt-3">
-                            <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                                <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats.lastUpdate ?? ''}
-                            </div>
-                            <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
-                                <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
-                            </div>
-                            {isLibraryTab && (
-                              <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
-                                  <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats.totalEquipos}
-                              </div>
-                            )}
+        <TabsContent value={activeTab} className="space-y-10 animate-in zoom-in-95 duration-500">
+           {isConoceTab ? (
+              <div className="space-y-10">
+                 <Card className="executive-card p-10 relative overflow-hidden border-t-8 border-t-primary">
+                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                       <School className="h-48 w-48 text-primary" />
+                    </div>
+                    <div className="relative z-10 max-w-4xl space-y-8">
+                       <div className="flex items-center gap-6">
+                          <div className="h-20 w-20 rounded-2xl bg-primary text-white flex items-center justify-center shadow-2xl">
+                             <School className="h-10 w-10" />
                           </div>
-                        )}
-
-                        {isGeoTab && (
-                          <div className="flex flex-wrap items-center gap-6 pt-3">
-                             <div className="flex items-center gap-2 bg-white px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">
-                               <Navigation className="h-3.5 w-3.5 text-primary" />
-                               <span className="text-[10px] font-black uppercase text-slate-500">Valle México: <span className="text-primary">{geoStats.mexico}</span></span>
-                             </div>
-                             <div className="flex items-center gap-2 bg-white px-4 py-1.5 rounded-xl border border-primary/5 shadow-sm">
-                               <Navigation className="h-3.5 w-3.5 text-primary" />
-                               <span className="text-[10px] font-black uppercase text-slate-500">Valle Toluca: <span className="text-primary">{geoStats.toluca}</span></span>
-                             </div>
-                             <div className="flex items-center gap-2 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100 shadow-sm">
-                               <Globe className="h-3.5 w-3.5 text-emerald-600" />
-                               <span className="text-[10px] font-black uppercase text-emerald-700">Total Federal SEIEM: <span className="text-emerald-900">{geoStats.total}</span></span>
-                             </div>
+                          <div>
+                             <h3 className="text-4xl font-black uppercase tracking-tighter text-primary leading-none">Conoce mi Escuela</h3>
+                             <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em] mt-2">Departamento de Computación Electrónica (COEES)</p>
                           </div>
-                        )}
+                       </div>
+                       <div className="space-y-6 text-slate-600 font-medium leading-relaxed">
+                          <p>
+                            <strong>Conoce mi Escuela</strong>, es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES), el cual inició en el 2006 y a la fecha se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para compartir información de interés general para proyectar su trabajo hacia la comunidad, padres de familia y autoridades educativas.
+                          </p>
+                          <p>
+                            A través de Conoce mi Escuela, los directores escolares tienen la oportunidad de dar a conocer, los detalles e información que caracterizan y diferencian a su escuela: historia de la institución, infraestructura, actividades que emprenden a lo largo de cada ciclo escolar, logros y reconocimientos a los que se han hecho acreedores por el buen desempeño docente, así como su participación en concursos académicos, deportivos o culturales; a nivel zona o sector, o a nivel estado.
+                          </p>
+                          <p className="bg-primary/5 p-6 rounded-2xl border-l-4 border-l-primary font-bold italic">
+                            Con este programa, se aspira a que todos los centros de trabajo sean reconocidos por la comunidad, dando a conocer información cuantitativa y cualitativa de nuestras escuelas, coadyuvando al aumento de la matrícula escolar.
+                          </p>
+                       </div>
+                    </div>
+                 </Card>
 
-                        {isCuentasTab && (
-                          <div className="space-y-4 pt-3">
-                             <div className="flex flex-wrap items-center gap-4">
-                                <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
-                                    <Mail className="h-4 w-4" /> Cuentas Activas: {accountsData.length}
+                 <Tabs value={conoceSubTab} onValueChange={setConoceSubTab} className="space-y-8">
+                    <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14">
+                       <TabsTrigger value="info" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Info className="h-4 w-4" /> Información</TabsTrigger>
+                       <TabsTrigger value="incorp" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><UserPlus className="h-4 w-4" /> Incorporación</TabsTrigger>
+                       <TabsTrigger value="list" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><TableIcon className="h-4 w-4" /> Escuelas Incorporadas</TabsTrigger>
+                       <TabsTrigger value="search" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Search className="h-4 w-4" /> Consulta tu Escuela</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="info" className="animate-in fade-in slide-in-from-bottom-4">
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                          {[
+                             { t: "PROYECCIÓN COMUNITARIA", d: "Espacio web oficial para compartir logros e historia institucional.", i: <Globe className="h-6 w-6" /> },
+                             { t: "GESTIÓN DIRECTIVA", d: "Herramienta autorizada para la actualización de infraestructura y servicios.", i: <ShieldCheck className="h-6 w-6" /> },
+                             { t: "INCREMENTO DE MATRÍCULA", d: "Atracción de nuevos alumnos mediante transparencia y calidad educativa.", i: <Activity className="h-6 w-6" /> }
+                          ].map((item, idx) => (
+                             <Card key={idx} className="p-8 space-y-4 hover:shadow-xl transition-all border-none shadow-lg">
+                                <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">{item.i}</div>
+                                <h4 className="font-black text-sm uppercase text-slate-800">{item.t}</h4>
+                                <p className="text-xs text-slate-500 leading-relaxed font-bold">{item.d}</p>
+                             </Card>
+                          ))}
+                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="incorp" className="animate-in fade-in slide-in-from-bottom-4">
+                       <Card className="p-10 bg-white shadow-2xl rounded-[3rem] border-none">
+                          <div className="max-w-xl mx-auto space-y-10 text-center">
+                             <div className="space-y-2">
+                                <h3 className="text-3xl font-black uppercase text-primary tracking-tighter">Incorporación al Programa</h3>
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Generación de Acceso Seguro para Planteles</p>
+                             </div>
+                             <div className="space-y-4">
+                                <Label className="text-[11px] font-black uppercase text-slate-600 block text-left pl-2">Ingrese el CCT de la Escuela</Label>
+                                <div className="flex gap-4">
+                                   <Input 
+                                      className="h-16 rounded-2xl font-black text-lg text-center uppercase tracking-[0.2em] bg-slate-50 shadow-inner" 
+                                      placeholder="15DES0000X" 
+                                      maxLength={10}
+                                      value={incCct}
+                                      onChange={(e) => setIncCct(e.target.value.toUpperCase())}
+                                    />
+                                   <Button onClick={handleGeneratePass} className="h-16 px-10 rounded-2xl font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white shadow-xl">
+                                      Generar Acceso <ArrowRight className="h-5 w-5 ml-2" />
+                                   </Button>
                                 </div>
                              </div>
-                          </div>
-                        )}
-                     </div>
-                  </div>
 
-                  {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
-                    <div className="text-right bg-slate-50 p-8 rounded-[2rem] border-2 border-white shadow-inner min-w-[220px]">
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Avance Global</p>
-                      <p className="text-6xl font-black text-primary leading-none tracking-tighter">{currentStats.progress}<span className="text-2xl text-accent ml-1">%</span></p>
-                    </div>
-                  )}
-
-                  {isGeoTab && (
-                    <div className="flex flex-col gap-2 min-w-[250px]">
-                       <div className="p-4 bg-slate-50 rounded-2xl border-2 border-white shadow-inner">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Modalidades Federales</p>
-                          <div className="space-y-2">
-                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">S. Generales</span> <Badge className="bg-primary text-white text-[9px]">{geoStats.generales}</Badge></div>
-                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">S. Técnicas</span> <Badge className="bg-accent text-white text-[9px]">{geoStats.tecnicas}</Badge></div>
-                             <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-600">Telesecundarias</span> <Badge className="bg-slate-700 text-white text-[9px]">{geoStats.teles}</Badge></div>
-                          </div>
-                       </div>
-                    </div>
-                  )}
-               </div>
-
-               {isGeoTab && (
-                 <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border-2 border-primary/5 shadow-lg">
-                       <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Filter className="h-5 w-5" /></div>
-                          <span className="text-[11px] font-black uppercase text-primary tracking-widest">Auditoría Territorial (CCT):</span>
-                       </div>
-                       <div className="flex flex-wrap gap-4 flex-1 justify-end">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input 
-                              placeholder="BUSCAR CCT, ESCUELA O MUNICIPIO..." 
-                              className="h-12 w-64 rounded-xl font-black text-[10px] uppercase pl-10 border-slate-200"
-                              value={geoSearchTerm}
-                              onChange={(e) => setGeoSearchTerm(e.target.value)}
-                            />
-                          </div>
-                          <Select value={mapValleFilter} onValueChange={setMapValleFilter}>
-                            <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="VALLE" /></SelectTrigger>
-                            <SelectContent className="font-black">
-                               <SelectItem value="all">TODOS LOS VALLES</SelectItem>
-                               <SelectItem value="MEXICO">VALLE DE MÉXICO</SelectItem>
-                               <SelectItem value="TOLUCA">VALLE DE TOLUCA</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select value={mapModalidadFilter} onValueChange={setMapModalidadFilter}>
-                            <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="MODALIDAD" /></SelectTrigger>
-                            <SelectContent className="font-black">
-                               <SelectItem value="all">TODAS LAS MODALIDADES</SelectItem>
-                               <SelectItem value="GENERAL">S. GENERALES</SelectItem>
-                               <SelectItem value="TECNICA">S. TÉCNICAS</SelectItem>
-                               <SelectItem value="TELESECUNDARIA">TELESECUNDARIAS</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl text-slate-400 hover:text-primary" onClick={() => { setMapValleFilter('all'); setMapModalidadFilter('all'); setGeoSearchTerm(''); }}>
-                            <History className="h-5 w-5" />
-                          </Button>
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                       <Card className="lg:col-span-2 rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white">
-                          <CardHeader className="p-8 border-b bg-slate-50/50">
-                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><TableIcon className="h-5 w-5" /></div>
-                                   <CardTitle className="text-sm font-black uppercase text-primary tracking-widest">Base de Datos de Planteles</CardTitle>
+                             {generatedPass && (
+                                <div className="p-10 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 space-y-6 animate-in zoom-in-95 duration-500">
+                                   <div className="flex justify-center"><Check className="h-12 w-12 text-emerald-600" /></div>
+                                   <div className="space-y-2">
+                                      <p className="text-[10px] font-black uppercase text-emerald-800 tracking-widest">Contraseña Generada para {incCct}</p>
+                                      <div className="text-5xl font-black text-emerald-900 tracking-[0.2em] font-mono">{generatedPass}</div>
+                                   </div>
+                                   <Button variant="outline" className="border-emerald-200 text-emerald-700 bg-white rounded-xl gap-2 font-black uppercase text-[10px]">
+                                      <Download className="h-4 w-4" /> Descargar Ficha de Acceso
+                                   </Button>
                                 </div>
-                                <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black px-4 py-1.5 rounded-full">Mostrando {geoSchools.length} registros</Badge>
-                             </div>
+                             )}
+                          </div>
+                       </Card>
+                    </TabsContent>
+
+                    <TabsContent value="list" className="animate-in fade-in slide-in-from-bottom-4">
+                       <Card className="executive-card border-none">
+                          <CardHeader className="p-8 border-b bg-slate-50/50 flex flex-row items-center justify-between">
+                             <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                                <TableIcon className="h-6 w-6" /> Escuelas Incorporadas
+                             </CardTitle>
+                             <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl">Consolidado Oficial 2024</Badge>
                           </CardHeader>
                           <ScrollArea className="h-[600px]">
                              <Table>
-                                <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                <TableHeader className="bg-white sticky top-0 z-10">
                                    <TableRow>
-                                      <TableHead className="text-[10px] font-black uppercase py-4 pl-10">CCT</TableHead>
-                                      <TableHead className="text-[10px] font-black uppercase">Nombre de la Escuela</TableHead>
-                                      <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
-                                      <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
-                                      <TableHead className="text-[10px] font-black uppercase text-right pr-10">Valle</TableHead>
+                                      <TableHead className="w-16 text-center font-black text-[10px] uppercase py-6">Núm.</TableHead>
+                                      <TableHead className="w-32 font-black text-[10px] uppercase">Clave (CCT)</TableHead>
+                                      <TableHead className="font-black text-[10px] uppercase">Nombre del Centro de Trabajo</TableHead>
+                                      <TableHead className="font-black text-[10px] uppercase">Municipio</TableHead>
+                                      <TableHead className="font-black text-[10px] uppercase">Localidad</TableHead>
+                                      <TableHead className="font-black text-[10px] uppercase">Sector / Modalidad / Valle</TableHead>
                                    </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                   {geoSchools.map((school, i) => (
-                                      <TableRow key={i} className="hover:bg-slate-50 transition-colors border-slate-100">
-                                         <TableCell className="py-4 pl-10 font-black text-xs text-primary">{school.cct}</TableCell>
-                                         <TableCell className="font-bold text-[11px] text-slate-700 uppercase">{school.nombre}</TableCell>
+                                   {schoolsDirectory.map((school, i) => (
+                                      <TableRow key={i} className="hover:bg-slate-50 transition-all border-slate-100">
+                                         <TableCell className="text-center font-bold text-slate-400 py-4">{i + 1}</TableCell>
+                                         <TableCell className="font-black text-xs text-primary">{school.cct}</TableCell>
+                                         <TableCell className="font-black text-[11px] text-slate-700 uppercase">{school.nombre}</TableCell>
                                          <TableCell className="font-bold text-[10px] text-slate-500 uppercase">{school.municipio}</TableCell>
+                                         <TableCell className="font-bold text-[10px] text-slate-500 uppercase">{school.localidad}</TableCell>
                                          <TableCell>
-                                            <Badge className={cn(
-                                               "text-[9px] font-black border-none uppercase px-2 py-0.5",
-                                               school.modalidad === 'DES' ? 'bg-primary text-white' : school.modalidad === 'DST' ? 'bg-accent text-white' : 'bg-slate-400 text-white'
-                                            )}>
-                                               {school.modalidad === 'DES' ? 'General' : school.modalidad === 'DST' ? 'Técnica' : 'Tele'}
-                                            </Badge>
-                                         </TableCell>
-                                         <TableCell className="text-right pr-10">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase">{school.valle}</span>
+                                            <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{school.sector}</span>
                                          </TableCell>
                                       </TableRow>
                                    ))}
-                                   {geoSchools.length === 0 && (
-                                      <TableRow><TableCell colSpan={5} className="text-center py-20 text-[10px] font-black uppercase text-slate-300">No se encontraron escuelas con los filtros actuales</TableCell></TableRow>
-                                   )}
                                 </TableBody>
                              </Table>
                           </ScrollArea>
                        </Card>
+                    </TabsContent>
 
-                       {/* Tablero de Municipios Identificados */}
-                       <Card className="rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col">
-                          <CardHeader className="p-8 border-b bg-slate-50/50">
-                             <div className="flex items-center gap-4 mb-1">
-                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Activity className="h-5 w-5" /></div>
-                                <CardTitle className="text-sm font-black uppercase text-primary tracking-widest">Impacto Municipal</CardTitle>
-                             </div>
-                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400 pl-14">Centros de Trabajo Localizados</CardDescription>
-                          </CardHeader>
-                          <div className="flex-1 overflow-hidden">
-                             <ScrollArea className="h-[600px]">
-                                <div className="p-8 space-y-4">
-                                   {Array.from(new Set(geoSchools.map(s => s.municipio))).sort().map((mun, i) => {
-                                      const munSchools = geoSchools.filter(s => s.municipio === mun);
-                                      return (
-                                        <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-primary/5 hover:bg-white hover:shadow-xl transition-all group">
-                                           <div className="flex justify-between items-center mb-3">
-                                              <span className="text-[11px] font-black text-slate-700 uppercase group-hover:text-primary transition-colors">{mun}</span>
-                                              <Badge className="bg-primary text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">{munSchools.length}</Badge>
-                                           </div>
-                                           <div className="flex gap-2 flex-wrap">
-                                              {munSchools.slice(0, 15).map((s, idx) => (
-                                                 <div 
-                                                  key={idx} 
-                                                  className={cn("h-1.5 w-4 rounded-full shadow-sm", s.modalidad === 'DTV' ? 'bg-slate-300' : s.modalidad === 'DST' ? 'bg-accent/60' : 'bg-primary/60')} 
-                                                  title={`${s.cct} - ${s.modalidad}`}
-                                                />
-                                              ))}
-                                              {munSchools.length > 15 && <span className="text-[9px] font-black text-slate-300 ml-1">+{munSchools.length - 15}</span>}
-                                           </div>
-                                        </div>
-                                      );
-                                   })}
+                    <TabsContent value="search" className="animate-in fade-in slide-in-from-bottom-4">
+                       <div className="space-y-8">
+                          <Card className="p-8 bg-white shadow-xl rounded-[2.5rem] border-none">
+                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div className="space-y-2">
+                                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Valle</Label>
+                                   <Select value={conoceValle} onValueChange={setConoceValle}>
+                                      <SelectTrigger className="h-12 rounded-xl font-black bg-slate-50 border-none"><SelectValue placeholder="--Seleccione Valle--" /></SelectTrigger>
+                                      <SelectContent className="font-black"><SelectItem value="all">TODOS</SelectItem><SelectItem value="MEXICO">VALLE DE MÉXICO</SelectItem><SelectItem value="TOLUCA">VALLE DE TOLUCA</SelectItem></SelectContent>
+                                   </Select>
                                 </div>
+                                <div className="space-y-2">
+                                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Modalidad</Label>
+                                   <Select value={conoceMod} onValueChange={setConoceMod}>
+                                      <SelectTrigger className="h-12 rounded-xl font-black bg-slate-50 border-none"><SelectValue placeholder="--Seleccione Modalidad--" /></SelectTrigger>
+                                      <SelectContent className="font-black"><SelectItem value="all">TODAS</SelectItem><SelectItem value="DES">GENERAL</SelectItem><SelectItem value="DST">TÉCNICA</SelectItem><SelectItem value="DTV">TELESECUNDARIA</SelectItem></SelectContent>
+                                   </Select>
+                                </div>
+                                <div className="space-y-2">
+                                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Sector</Label>
+                                   <Select value={conoceSector} onValueChange={setConoceSector}>
+                                      <SelectTrigger className="h-12 rounded-xl font-black bg-slate-50 border-none"><SelectValue placeholder="--Seleccione Sector--" /></SelectTrigger>
+                                      <SelectContent className="font-black">
+                                         <SelectItem value="all">TODOS</SelectItem>
+                                         {Array.from(new Set(schoolsDirectory.map(s => s.sectorNum))).sort().map(s => <SelectItem key={s} value={s}>SECTOR {s}</SelectItem>)}
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                                <div className="space-y-2">
+                                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Municipio</Label>
+                                   <Select value={conoceMun} onValueChange={setConoceMun}>
+                                      <SelectTrigger className="h-12 rounded-xl font-black bg-slate-50 border-none"><SelectValue placeholder="--Seleccione Municipio--" /></SelectTrigger>
+                                      <SelectContent className="font-black">
+                                         <SelectItem value="all">TODOS</SelectItem>
+                                         {Array.from(new Set(schoolsDirectory.map(s => s.municipio))).sort().map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                             </div>
+                             <div className="flex justify-end mt-6">
+                                <Button variant="ghost" className="font-black uppercase text-[10px] text-rose-600" onClick={() => { setConoceValle('all'); setConoceMod('all'); setConoceSector('all'); setConoceMun('all'); }}>Reiniciar Filtros</Button>
+                             </div>
+                          </Card>
+
+                          <Card className="executive-card">
+                             <ScrollArea className="h-[500px]">
+                                <Table>
+                                   <TableHeader className="bg-slate-50">
+                                      <TableRow>
+                                         <TableHead className="font-black text-[10px] uppercase py-6 pl-10">Clave</TableHead>
+                                         <TableHead className="font-black text-[10px] uppercase">Nombre</TableHead>
+                                         <TableHead className="font-black text-[10px] uppercase">Localidad / Municipio</TableHead>
+                                         <TableHead className="font-black text-[10px] uppercase text-right pr-10">Valle</TableHead>
+                                      </TableRow>
+                                   </TableHeader>
+                                   <TableBody>
+                                      {consultaResults.map((s, i) => (
+                                         <TableRow key={i} className="hover:bg-primary/5 transition-all">
+                                            <TableCell className="font-black text-xs text-primary py-4 pl-10">{s.cct}</TableCell>
+                                            <TableCell className="font-black text-[11px] text-slate-700 uppercase">{s.nombre}</TableCell>
+                                            <TableCell>
+                                               <div className="flex flex-col">
+                                                  <span className="font-bold text-[10px] text-slate-600">{s.localidad}</span>
+                                                  <span className="text-[9px] text-slate-400 font-bold uppercase">{s.municipio}</span>
+                                               </div>
+                                            </TableCell>
+                                            <TableCell className="text-right pr-10 font-black text-[10px] text-slate-400 uppercase">{s.valle}</TableCell>
+                                         </TableRow>
+                                      ))}
+                                      {consultaResults.length === 0 && (
+                                         <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase text-slate-300">No hay resultados para los filtros seleccionados</TableCell></TableRow>
+                                      )}
+                                   </TableBody>
+                                </Table>
                              </ScrollArea>
+                          </Card>
+                       </div>
+                    </TabsContent>
+                 </Tabs>
+              </div>
+           ) : isGeoTab ? (
+             <div className="mt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border-2 border-primary/5 shadow-lg">
+                   <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Filter className="h-5 w-5" /></div>
+                      <span className="text-[11px] font-black uppercase text-primary tracking-widest">Auditoría Territorial (CCT):</span>
+                   </div>
+                   <div className="flex flex-wrap gap-4 flex-1 justify-end">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input 
+                          placeholder="BUSCAR CCT O ESCUELA..." 
+                          className="h-12 w-64 rounded-xl font-black text-[10px] uppercase pl-10 border-slate-200"
+                          value={geoSearchTerm}
+                          onChange={(e) => setGeoSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <Select value={mapValleFilter} onValueChange={setMapValleFilter}>
+                        <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="VALLE" /></SelectTrigger>
+                        <SelectContent className="font-black">
+                           <SelectItem value="all">TODOS LOS VALLES</SelectItem>
+                           <SelectItem value="MEXICO">VALLE DE MÉXICO</SelectItem>
+                           <SelectItem value="TOLUCA">VALLE DE TOLUCA</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={mapModalidadFilter} onValueChange={setMapModalidadFilter}>
+                        <SelectTrigger className="h-12 w-48 rounded-xl font-black text-[10px] uppercase border-slate-200"><SelectValue placeholder="MODALIDAD" /></SelectTrigger>
+                        <SelectContent className="font-black">
+                           <SelectItem value="all">TODAS LAS MODALIDADES</SelectItem>
+                           <SelectItem value="DES">S. GENERALES</SelectItem>
+                           <SelectItem value="DST">S. TÉCNICAS</SelectItem>
+                           <SelectItem value="DTV">TELESECUNDARIAS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                   <Card className="lg:col-span-2 rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white">
+                      <CardHeader className="p-8 border-b bg-slate-50/50">
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><TableIcon className="h-5 w-5" /></div>
+                               <CardTitle className="text-sm font-black uppercase text-primary tracking-widest">Base de Datos de Planteles</CardTitle>
+                            </div>
+                            <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black px-4 py-1.5 rounded-full">Mostrando {geoSchools.length} registros</Badge>
+                         </div>
+                      </CardHeader>
+                      <ScrollArea className="h-[600px]">
+                         <Table>
+                            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                               <TableRow>
+                                  <TableHead className="text-[10px] font-black uppercase py-4 pl-10">CCT</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase">Nombre de la Escuela</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-right pr-10">Valle</TableHead>
+                               </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {geoSchools.map((school, i) => (
+                                  <TableRow key={i} className="hover:bg-slate-50 transition-colors border-slate-100">
+                                     <TableCell className="py-4 pl-10 font-black text-xs text-primary">{school.cct}</TableCell>
+                                     <TableCell className="font-bold text-[11px] text-slate-700 uppercase">{school.nombre}</TableCell>
+                                     <TableCell className="font-bold text-[10px] text-slate-500 uppercase">{school.municipio}</TableCell>
+                                     <TableCell>
+                                        <Badge className={cn(
+                                           "text-[9px] font-black border-none uppercase px-2 py-0.5",
+                                           school.modalidad === 'DES' ? 'bg-primary text-white' : school.modalidad === 'DST' ? 'bg-accent text-white' : 'bg-slate-400 text-white'
+                                        )}>
+                                           {school.modalidad === 'DES' ? 'General' : school.modalidad === 'DST' ? 'Técnica' : 'Tele'}
+                                        </Badge>
+                                     </TableCell>
+                                     <TableCell className="text-right pr-10">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{school.valle}</span>
+                                     </TableCell>
+                                  </TableRow>
+                               ))}
+                            </TableBody>
+                         </Table>
+                      </ScrollArea>
+                   </Card>
+
+                   <Card className="rounded-[3rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col">
+                      <CardHeader className="p-8 border-b bg-slate-50/50">
+                         <div className="flex items-center gap-4 mb-1">
+                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Activity className="h-5 w-5" /></div>
+                            <CardTitle className="text-sm font-black uppercase text-primary tracking-widest">Impacto Municipal</CardTitle>
+                         </div>
+                      </CardHeader>
+                      <div className="flex-1 overflow-hidden">
+                         <ScrollArea className="h-[600px]">
+                            <div className="p-8 space-y-4">
+                               {Array.from(new Set(geoSchools.map(s => s.municipio))).sort().map((mun, i) => {
+                                  const munSchools = geoSchools.filter(s => s.municipio === mun);
+                                  return (
+                                    <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-primary/5 hover:bg-white hover:shadow-xl transition-all group">
+                                       <div className="flex justify-between items-center mb-3">
+                                          <span className="text-[11px] font-black text-slate-700 uppercase group-hover:text-primary transition-colors">{mun}</span>
+                                          <Badge className="bg-primary text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">{munSchools.length}</Badge>
+                                       </div>
+                                       <div className="flex gap-2 flex-wrap">
+                                          {munSchools.slice(0, 10).map((s, idx) => (
+                                             <div key={idx} className={cn("h-1.5 w-4 rounded-full shadow-sm", s.modalidad === 'DTV' ? 'bg-slate-300' : s.modalidad === 'DST' ? 'bg-accent/60' : 'bg-primary/60')} />
+                                          ))}
+                                          {munSchools.length > 10 && <span className="text-[9px] font-black text-slate-300 ml-1">+{munSchools.length - 10}</span>}
+                                       </div>
+                                    </div>
+                                  );
+                               })}
+                            </div>
+                         </ScrollArea>
+                      </div>
+                   </Card>
+                </div>
+             </div>
+           ) : (
+            <>
+              <Card className="executive-card p-10 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
+                    <div className="flex items-center gap-8">
+                       <div className="h-24 w-24 rounded-3xl bg-primary/5 flex items-center justify-center border-2 border-primary/5 shadow-inner">
+                          {isLibraryTab ? <MonitorCheck className="h-12 w-12 text-primary" /> : isCuentasTab ? <Mail className="h-12 w-12 text-primary" /> : <Layers className="h-12 w-12 text-primary" />}
+                       </div>
+                       <div className="space-y-2">
+                          <div className="flex items-center gap-4">
+                             <h3 className="text-3xl font-black uppercase tracking-tight text-slate-800 leading-none">
+                               {isCuentasTab ? "Cuentas Institucionales" : activeTab}
+                             </h3>
+                             <Badge className="bg-accent/10 text-accent border-none uppercase font-black text-[9px] px-4 py-1.5 rounded-full tracking-widest">{currentStats?.status}</Badge>
                           </div>
-                       </Card>
-                    </div>
-                 </div>
-               )}
+                          
+                          {!isCuentasTab && (
+                            <div className="flex flex-wrap items-center gap-8 pt-3">
+                              <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                                  <Calendar className="h-4 w-4 text-primary" /> Act: {currentStats?.lastUpdate ?? ''}
+                              </div>
+                              <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-slate-400">
+                                  <School className="h-4 w-4 text-primary" /> Planteles: <span className="text-primary">{currentStats?.count}</span> {(!isLibraryTab && !isCuentasTab) && `/ ${TOTAL_UNIVERSE}`}
+                              </div>
+                              {isLibraryTab && (
+                                <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-emerald-600 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                                    <MonitorCheck className="h-4 w-4" /> Equipos: {currentStats?.totalEquipos}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-               {isLibraryTab && (
-                 <div className="mt-12 space-y-8">
-                    <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
-                       <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
-                          <History className="h-5 w-5" /> Detalle Operativo por Modalidad
-                       </h4>
-                       <div className="flex items-center gap-4">
-                          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 shadow-md">
-                             <PlusCircle className="h-4 w-4" /> Nueva Ficha
-                          </Button>
-                          <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría Institucional</Badge>
+                          {isCuentasTab && (
+                            <div className="space-y-4 pt-3">
+                               <div className="flex flex-wrap items-center gap-4">
+                                  <div className="flex items-center gap-2.5 text-[11px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
+                                      <Mail className="h-4 w-4" /> Cuentas Activas: {rubroStats.find(s => s.name.includes('Cuentas'))?.count}
+                                  </div>
+                               </div>
+                            </div>
+                          )}
                        </div>
                     </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
-                       <Table className="min-w-[1000px]">
-                          <TableHeader className="bg-white/80">
-                             <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio / Oficio</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">ZE/SEC</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Género (M/F)</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right">Equipos</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
-                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                             {currentStats.records.map((rec, idx) => (
-                               <TableRow key={idx} className="hover:bg-white transition-all border-slate-100 group">
-                                  <TableCell className="py-6 pl-10">
-                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-primary">{rec.id}</span>
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{rec.numeroOficio || '-'}</span>
-                                     </div>
-                                  </TableCell>
-                                  <TableCell>
-                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-slate-700">{rec.cct}</span>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[150px]">{rec.schoolName}</span>
-                                     </div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     <div className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">ZE:{rec.zonaEscolar} / S:{rec.sector}</div>
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     {rec.capacitacion === 'S' ? (
-                                       <div className="flex items-center justify-center gap-2">
-                                          <Badge className="bg-blue-500 text-white border-none text-[8px] font-black rounded-lg h-5 w-8 flex items-center justify-center">M:{rec.asistentes?.filter(a => a.genero === 'MASCULINO').length}</Badge>
-                                          <Badge className="bg-pink-500 text-white border-none text-[8px] font-black rounded-lg h-5 w-8 flex items-center justify-center">F:{rec.asistentes?.filter(a => a.genero === 'FEMENINO').length}</Badge>
-                                       </div>
-                                     ) : <span className="text-[9px] font-black text-slate-300">-</span>}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                        <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
-                                        <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
-                                     </div>
-                                  </TableCell>
-                                  <TableCell className="text-right text-xs font-black text-emerald-600 pr-4">
-                                     {rec.numeroEquipos} <MonitorCheck className="h-3 w-3 inline ml-1" />
-                                  </TableCell>
-                                  <TableCell className="text-right pr-10">
-                                     <div className="flex justify-end gap-2">
-                                        <button className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
-                                           <Pencil className="h-4 w-4" />
-                                        </button>
-                                        <button className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro institucional de Biblioteca Digital?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
-                                           <Trash2 className="h-4 w-4" />
-                                        </button>
-                                     </div>
-                                  </TableCell>
+
+                    {!isLibraryTab && !isCuentasTab && (
+                      <div className="text-right bg-slate-50 p-8 rounded-[2rem] border-2 border-white shadow-inner min-w-[220px]">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Avance Global</p>
+                        <p className="text-6xl font-black text-primary leading-none tracking-tighter">{currentStats?.progress}<span className="text-2xl text-accent ml-1">%</span></p>
+                      </div>
+                    )}
+                 </div>
+
+                 {isLibraryTab && (
+                   <div className="mt-12 space-y-8">
+                      <div className="flex items-center justify-between border-b-2 border-slate-50 pb-6">
+                         <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
+                            <History className="h-5 w-5" /> Detalle Operativo por Modalidad
+                         </h4>
+                         <div className="flex items-center gap-4">
+                            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 shadow-md">
+                               <PlusCircle className="h-4 w-4" /> Nueva Ficha
+                            </Button>
+                            <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Auditoría Institucional</Badge>
+                         </div>
+                      </div>
+                      <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm">
+                         <Table className="min-w-[1000px]">
+                            <TableHeader className="bg-white/80">
+                               <TableRow className="border-none">
+                                  <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio / Oficio</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-center">ZE/SEC</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-right">Equipos</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
                                </TableRow>
-                             ))}
-                             {currentStats.records.length === 0 && (
-                               <TableRow><TableCell colSpan={7} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">Sin registros en este rubro</TableCell></TableRow>
-                             )}
-                          </TableBody>
-                       </Table>
-                    </div>
-                 </div>
-               )}
-
-               {isCuentasTab && (
-                 <div className="mt-12 space-y-8">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-50 pb-6 gap-4">
-                       <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
-                          <Mail className="h-5 w-5" /> Progreso de Cobertura Institucional (Cuentas)
-                       </h4>
-                       <div className="flex flex-wrap gap-4">
-                          <input type="file" className="hidden" ref={fileInputRef} accept=".xlsx, .xls" onChange={handleExcelUpload} />
-                          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-primary/20 text-primary hover:bg-primary/5 gap-2 shadow-sm">
-                             <FileUp className="h-4 w-4" /> Importar Auditoría Excel
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={handleClearAccounts} className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-rose-200 text-rose-600 hover:bg-rose-50 gap-2 shadow-sm">
-                             <Eraser className="h-4 w-4" /> Limpiar Auditoría
-                          </Button>
-                       </div>
-                    </div>
-                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm relative">
-                       <Table className="min-w-[950px]">
-                          <TableHeader className="bg-white/80 sticky top-0 z-20">
-                             <TableRow className="border-none">
-                                <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[280px]">Correo Institucional</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase min-w-[140px]">CCT</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Sector / ZE</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[120px]">Valle</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Estatus</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[140px] sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l z-30">Acción</TableHead>
-                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                             {accountsData.map((acc, idx) => {
-                               const isEditing = editingRowId === acc.id;
-                               
-                               return (
-                               <TableRow key={idx} className={cn("transition-all border-slate-100 group relative", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
-                                  <TableCell className="py-6 pl-10">
-                                     {isEditing ? (
-                                       <Input 
-                                          className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" 
-                                          value={inlineFormData?.email ?? ''} 
-                                          onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} 
-                                        />
-                                     ) : (
+                            </TableHeader>
+                            <TableBody>
+                               {currentStats?.records.map((rec, idx) => (
+                                 <TableRow key={idx} className="hover:bg-white transition-all border-slate-100 group">
+                                    <TableCell className="py-6 pl-10">
                                        <div className="flex flex-col">
-                                          <span className="text-xs font-black text-primary lowercase">{acc.email}</span>
-                                          <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[8px] w-fit mt-1">{acc.dominio}</Badge>
+                                          <span className="text-xs font-black text-primary">{rec.id}</span>
+                                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{rec.numeroOficio || '-'}</span>
                                        </div>
-                                     )}
-                                  </TableCell>
-                                  <TableCell>
-                                     {isEditing ? (
-                                       <Input 
-                                          className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" 
-                                          value={inlineFormData?.cct ?? ''} 
-                                          onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} 
-                                          maxLength={10}
-                                        />
-                                     ) : (
-                                       <span className="text-xs font-black text-slate-700 uppercase">{acc.cct}</span>
-                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     {isEditing ? (
-                                       <div className="flex gap-2 justify-center">
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData?.sector ?? ''} onChange={e => setInlineFormData({...inlineFormData, sector: e.target.value})} placeholder="S" />
-                                          <Input className="h-9 text-[10px] font-black w-14 bg-white text-center border-primary/20" value={inlineFormData?.zona ?? ''} onChange={e => setInlineFormData({...inlineFormData, zona: e.target.value})} placeholder="ZE" />
+                                    </TableCell>
+                                    <TableCell>
+                                       <div className="flex flex-col">
+                                          <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[150px]">{rec.schoolName}</span>
                                        </div>
-                                     ) : (
-                                       <span className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">S:{acc.sector} / ZE:{acc.zona}</span>
-                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     {isEditing ? (
-                                       <Input 
-                                          className="h-9 text-[10px] font-black uppercase w-full bg-white text-center border-primary/20" 
-                                          value={inlineFormData?.valle ?? ''} 
-                                          onChange={e => setInlineFormData({...inlineFormData, valle: e.target.value.toUpperCase()})} 
-                                        />
-                                     ) : (
-                                       <Badge className="bg-slate-200 text-slate-700 border-none font-black text-[9px] uppercase">{acc.valle}</Badge>
-                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                     {isEditing ? (
-                                       <Select value={inlineFormData?.status ?? 'activo'} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
-                                          <SelectTrigger className="h-9 w-full text-[10px] font-black uppercase bg-white border-primary/20">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent className="font-black">
-                                            <SelectItem value="activo">ACTIVO</SelectItem>
-                                            <SelectItem value="inactivo">INACTIVO</SelectItem>
-                                          </SelectContent>
-                                       </Select>
-                                     ) : (
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                       <div className="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border shadow-sm">ZE:{rec.zonaEscolar} / S:{rec.sector}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
                                        <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                          <Circle className={cn("h-2 w-2 fill-current", acc.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
-                                          <span className="text-[9px] font-black uppercase text-slate-500">{acc.status}</span>
+                                          <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                          <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
                                        </div>
-                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-right pr-10 sticky right-0 z-30 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">
-                                     <div className="flex justify-end gap-2">
-                                        {isEditing ? (
-                                          <>
-                                            <button className="h-9 w-9 bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={saveInlineEdit}>
-                                              <Check className="h-4 w-4" />
-                                            </button>
-                                            <button className="h-9 w-9 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={cancelInlineEdit}>
-                                              <X className="h-4 w-4" />
-                                            </button>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => startInlineEdit(acc)}>
-                                               <Pencil className="h-4 w-4" />
-                                            </button>
-                                            <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
-                                               <Trash2 className="h-4 w-4" />
-                                            </button>
-                                          </>
-                                        )}
-                                     </div>
-                                  </TableCell>
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs font-black text-emerald-600 pr-4">
+                                       {rec.numeroEquipos} <MonitorCheck className="h-3 w-3 inline ml-1" />
+                                    </TableCell>
+                                    <TableCell className="text-right pr-10">
+                                       <div className="flex justify-end gap-2">
+                                          <button className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                             <Pencil className="h-4 w-4" />
+                                          </button>
+                                          <button className="h-10 w-10 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Eliminado"}); } }}>
+                                             <Trash2 className="h-4 w-4" />
+                                          </button>
+                                       </div>
+                                    </TableCell>
+                                 </TableRow>
+                               ))}
+                            </TableBody>
+                         </Table>
+                      </div>
+                   </div>
+                 )}
+
+                 {isCuentasTab && (
+                   <div className="mt-12 space-y-8">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-slate-50 pb-6 gap-4">
+                         <h4 className="text-[12px] font-black uppercase text-slate-500 flex items-center gap-3 tracking-[0.2em]">
+                            <Mail className="h-5 w-5" /> Progreso de Cobertura Institucional (Cuentas)
+                         </h4>
+                         <div className="flex flex-wrap gap-4">
+                            <input type="file" className="hidden" ref={fileInputRef} accept=".xlsx, .xls" />
+                            <Button variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-primary/20 text-primary hover:bg-primary/5 gap-2 shadow-sm">
+                               <FileUp className="h-4 w-4" /> Importar Auditoría
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] border-rose-200 text-rose-600 hover:bg-rose-50 gap-2 shadow-sm">
+                               <Eraser className="h-4 w-4" /> Limpiar Auditoría
+                            </Button>
+                         </div>
+                      </div>
+                      <div className="rounded-3xl border border-slate-100 bg-slate-50/50 overflow-x-auto shadow-sm relative">
+                         <Table className="min-w-[950px]">
+                            <TableHeader className="bg-white/80 sticky top-0 z-20">
+                               <TableRow className="border-none">
+                                  <TableHead className="text-[10px] font-black uppercase py-6 pl-10 min-w-[280px]">Correo Institucional</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase min-w-[140px]">CCT</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-center min-w-[140px]">Estatus</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-right pr-10 min-w-[140px] sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l z-30">Acción</TableHead>
                                </TableRow>
-                             )})}
-                             {accountsData.length === 0 && (
-                               <TableRow><TableCell colSpan={6} className="text-center py-10 text-[10px] font-black uppercase text-slate-300">No se han registrado cuentas institucionales aún</TableCell></TableRow>
-                             )}
-                          </TableBody>
-                       </Table>
-                    </div>
-                 </div>
-               )}
+                            </TableHeader>
+                            <TableBody>
+                               {records.filter(r => r.name.includes('Cuentas')).map((rec, idx) => {
+                                 const acc = (rec.asistentes && rec.asistentes.length > 0) ? rec.asistentes[0] : initialAssistant;
+                                 const isEditing = editingRowId === rec.id;
+                                 return (
+                                 <TableRow key={idx} className={cn("transition-all border-slate-100 group relative", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
+                                    <TableCell className="py-6 pl-10">
+                                       {isEditing ? (
+                                         <Input className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" value={inlineFormData?.email ?? ''} onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} />
+                                       ) : (
+                                         <div className="flex flex-col">
+                                            <span className="text-xs font-black text-primary lowercase">{acc.email || '-'}</span>
+                                            <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[8px] w-fit mt-1">@desysa.edu.mx</Badge>
+                                         </div>
+                                       )}
+                                    </TableCell>
+                                    <TableCell>
+                                       {isEditing ? (
+                                         <Input className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" value={inlineFormData?.cct ?? ''} onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} maxLength={10} />
+                                       ) : (
+                                         <span className="text-xs font-black text-slate-700 uppercase">{rec.cct || '-'}</span>
+                                       )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                       {isEditing ? (
+                                         <Select value={inlineFormData?.status ?? 'activo'} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
+                                            <SelectTrigger className="h-9 w-full text-[10px] font-black uppercase bg-white border-primary/20"><SelectValue /></SelectTrigger>
+                                            <SelectContent className="font-black"><SelectItem value="activo">ACTIVO</SelectItem><SelectItem value="inactivo">INACTIVO</SelectItem></SelectContent>
+                                         </Select>
+                                       ) : (
+                                         <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
+                                            <Circle className={cn("h-2 w-2 fill-current", rec.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
+                                            <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
+                                         </div>
+                                       )}
+                                    </TableCell>
+                                    <TableCell className="text-right pr-10 sticky right-0 z-30 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.03)] border-l">
+                                       <div className="flex justify-end gap-2">
+                                          {isEditing ? (
+                                            <>
+                                              <button className="h-9 w-9 bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={saveInlineEdit}><Check className="h-4 w-4" /></button>
+                                              <button className="h-9 w-9 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={cancelInlineEdit}><X className="h-4 w-4" /></button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => startInlineEdit({id: rec.id, email: acc.email, cct: rec.cct, status: rec.status})}><Pencil className="h-4 w-4" /></button>
+                                              <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Eliminado"}); } }}><Trash2 className="h-4 w-4" /></button>
+                                            </>
+                                          )}
+                                       </div>
+                                    </TableCell>
+                                 </TableRow>
+                               )})}
+                            </TableBody>
+                         </Table>
+                      </div>
+                   </div>
+                 )}
+              </Card>
 
-               {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
-                 <div className="mt-12 space-y-6 bg-slate-50 p-10 rounded-[3rem] border border-white shadow-inner">
-                    <div className="flex justify-between items-end">
-                       <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">Progreso de Cobertura Institucional</span>
-                       <span className="text-sm font-black text-primary uppercase tracking-tighter">{currentStats.count} Escuelas <span className="text-slate-300 font-bold mx-2">/</span> {TOTAL_UNIVERSE}</span>
-                    </div>
-                    <div className="relative h-6 w-full bg-white rounded-full overflow-hidden shadow-inner border-2 border-white p-1">
-                       <div className="absolute inset-y-1 left-1 bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000 ease-out shadow-lg shadow-primary/20" style={{ width: `calc(${currentStats.progress}% - 8px)` }} />
-                    </div>
-                    <div className="flex justify-between text-[10px] font-black text-slate-300 uppercase tracking-[0.25em] pt-2">
-                       <span>Inicio 0%</span>
-                       <div className="flex items-center gap-2"><div className="h-1.5 w-1.5 rounded-full bg-accent" /> Proceso 50%</div>
-                       <span>Meta 100%</span>
-                    </div>
-                 </div>
-               )}
-            </Card>
-
-            {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
-               <Card className="executive-card">
-                  <CardHeader className="p-8 border-b border-slate-50">
-                    <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
-                      <History className="h-6 w-6" /> Historial de Intervenciones: {activeTab}
-                    </CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mt-1">Auditoría pormenorizada de registros técnicos en centros de trabajo</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table className="min-w-[900px]">
-                        <TableHeader className="bg-slate-50/50">
-                          <TableRow className="border-none">
-                            <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Municipio / Modalidad</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right">Impacto (Eq)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentStats.records.map((rec, idx) => (
-                            <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
-                              <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
-                              <TableCell>
-                                 <div className="flex flex-col">
-                                    <span className="text-xs font-black text-slate-700">{rec.cct}</span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{rec.schoolName}</span>
-                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black uppercase text-slate-600">{rec.municipio}</span>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase">{rec.modalidad}</span>
-                                 </div>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                 <div className="flex items-center justify-center gap-2">
-                                    <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
-                                    <span className="text-[10px] font-black uppercase text-slate-500">{rec.status}</span>
-                                 </div>
-                              </TableCell>
-                              <TableCell className="text-right text-xs font-black text-slate-700">{rec.numeroEquipos}</TableCell>
-                              <TableCell className="text-right pr-10">
-                                 <div className="flex justify-end gap-2">
-                                    <button className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg flex items-center justify-center" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
-                                       <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
-                                       <Trash2 className="h-4 w-4" />
-                                    </button>
-                                 </div>
-                              </TableCell>
+              {(!isLibraryTab && !isCuentasTab && !isGeoTab) && (
+                 <Card className="executive-card mt-10">
+                    <CardHeader className="p-8 border-b border-slate-50">
+                      <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                        <History className="h-6 w-6" /> Historial de Intervenciones
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table className="min-w-[900px]">
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow className="border-none">
+                              <TableHead className="text-[10px] font-black uppercase py-6 pl-10">Folio</TableHead>
+                              <TableHead className="text-[10px] font-black uppercase">Centro de Trabajo (CCT)</TableHead>
+                              <TableHead className="text-[10px] font-black uppercase text-center">Estatus</TableHead>
+                              <TableHead className="text-[10px] font-black uppercase text-right pr-10">Acción</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-               </Card>
-            )}
-          </TabsContent>
-        )}
+                          </TableHeader>
+                          <TableBody>
+                            {currentStats?.records.map((rec, idx) => (
+                              <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
+                                <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
+                                <TableCell>
+                                   <div className="flex flex-col">
+                                      <span className="text-xs font-black text-slate-700">{rec.cct || '-'}</span>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{rec.schoolName || '-'}</span>
+                                   </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                   <div className="flex items-center justify-center gap-2 bg-white px-4 py-1 rounded-full border shadow-sm w-fit mx-auto">
+                                      <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                      <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
+                                   </div>
+                                </TableCell>
+                                <TableCell className="text-right pr-10">
+                                   <div className="flex justify-end gap-2">
+                                      <button className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg flex items-center justify-center" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}><Pencil className="h-4 w-4" /></button>
+                                   </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                 </Card>
+              )}
+            </>
+           )}
+        </TabsContent>
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
@@ -946,7 +907,7 @@ export default function ProgramsPage() {
                <Settings2 className="h-8 w-8 text-primary" />
             </div>
             <DialogTitle className="uppercase font-black text-primary text-4xl tracking-tighter flex items-center gap-6 leading-none">
-              Ficha Técnica <br /> <span className="text-xl text-slate-400 font-bold">{formData.name || activeTab}</span>
+              Ficha Técnica <br /> <span className="text-xl text-slate-400 font-bold">{activeTabClean}</span>
             </DialogTitle>
             <DialogDescription className="font-black text-[11px] uppercase text-slate-400 tracking-[0.4em] mt-3">Expediente de Registro Técnico Administrativo</DialogDescription>
           </DialogHeader>
@@ -956,11 +917,11 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-3 col-span-2">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
-                  <Input value={formData.id ?? ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
+                  <Input value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
                 </div>
               </div>
 
-              {!isCuentasInDialog && (
+              {!isCuentasTab && (
                 <div className="p-10 bg-primary/[0.03] rounded-[3rem] space-y-8 border-4 border-white shadow-xl shadow-slate-100">
                   <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
                      <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Search className="h-6 w-6" /></div>
@@ -970,7 +931,7 @@ export default function ProgramsPage() {
                     <Input 
                       placeholder="ESCRIBE CCT O NOMBRE PARA IDENTIFICAR PLANTEL..." 
                       className="bg-white h-16 font-black uppercase px-8 rounded-2xl border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
-                      value={searchTerm ?? ''} 
+                      value={searchTerm || ''} 
                       onChange={e => setSearchTerm(e.target.value)} 
                     />
                     {searchTerm.length > 2 && (
@@ -994,7 +955,7 @@ export default function ProgramsPage() {
                          <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner"><School className="h-8 w-8" /></div>
                          <div className="flex-1 overflow-hidden">
                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Nombre del Centro de Trabajo</p>
-                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName ?? ''}</p>
+                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName || ''}</p>
                          </div>
                       </div>
                       {[
@@ -1006,7 +967,7 @@ export default function ProgramsPage() {
                       ].map((item, i) => (
                         <div key={i} className="p-6 bg-white rounded-3xl border border-primary/5 shadow-sm">
                           <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">{item.l}</p>
-                          <p className="text-sm font-black text-slate-800 uppercase">{item.v ?? ''}</p>
+                          <p className="text-sm font-black text-slate-800 uppercase">{item.v || ''}</p>
                         </div>
                       ))}
                     </div>
@@ -1014,122 +975,77 @@ export default function ProgramsPage() {
                 </div>
               )}
 
-              {!isCuentasInDialog && (
+              {isLibraryTab && (
                 <div className="space-y-8">
                   <div className="flex items-center gap-4 border-b border-primary/5 pb-6">
                      <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg"><Zap className="h-6 w-6" /></div>
-                     <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas y Operativas</h3>
+                     <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos ?? 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo ?? ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Entrada</Label><Input type="date" value={formData.fechaEntrada ?? ''} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Salida</Label><Input type="date" value={formData.fechaSalida ?? ''} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos || 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo || ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
                   </div>
                 </div>
               )}
 
-              {(isLibraryTab || isCuentasInDialog) && (
-                <div className={cn("space-y-10 p-10 rounded-[3rem] border-4 border-white shadow-xl", isLibraryTab ? "bg-emerald-50/30 shadow-emerald-50" : "bg-blue-50/30 shadow-blue-50")}>
+              {(isLibraryTab || isCuentasTab) && (
+                <div className={cn("space-y-10 p-10 rounded-[3rem] border-4 border-white shadow-xl", isLibraryTab ? "bg-emerald-50/30" : "bg-blue-50/30")}>
                    <div className={cn("flex items-center justify-between border-b pb-8", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
                       <div className="flex items-center gap-4">
-                         <div className={cn("h-12 w-12 rounded-2xl text-white flex items-center justify-center shadow-lg", isLibraryTab ? "bg-emerald-600 shadow-emerald-200" : "bg-blue-600 shadow-blue-200")}><Users className="h-6 w-6" /></div>
-                         <h3 className={cn("text-sm font-black uppercase tracking-[0.2em]", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
-                           {isCuentasInDialog ? "Registro de Cuentas Institucionales" : "Seguimiento Pedagógico: Capacitación"}
-                         </h3>
-                      </div>
-                      <div className="space-y-1 text-right">
-                         <Label className={cn("text-[11px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-600" : "text-blue-600")}>
-                           {isCuentasInDialog ? "¿Registrar Cuentas?" : "¿Capacitación?"}
-                         </Label>
-                         <Select value={formData.capacitacion || 'N'} onValueChange={(val: any) => setFormData({...formData, capacitacion: val})}>
-                           <SelectTrigger className={cn("h-12 w-64 rounded-2xl font-black bg-white shadow-sm", isLibraryTab ? "border-emerald-200" : "border-blue-200")}><SelectValue /></SelectTrigger>
-                           <SelectContent className="rounded-2xl border-none shadow-2xl font-black"><SelectItem value="S">SÍ, BRINDADA</SelectItem><SelectItem value="N">NO BRINDADA</SelectItem></SelectContent>
-                         </Select>
+                         <div className={cn("h-12 w-12 rounded-2xl text-white flex items-center justify-center shadow-lg", isLibraryTab ? "bg-emerald-600" : "bg-blue-600")}><Users className="h-6 w-6" /></div>
+                         <h3 className={cn("text-sm font-black uppercase tracking-[0.2em]", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Registro de Usuarios y Capacitación</h3>
                       </div>
                    </div>
 
-                   {formData.capacitacion === 'S' && (
-                      <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-4">
-                             <Star className={cn("h-5 w-5 fill-current", isLibraryTab ? "text-emerald-600" : "text-blue-600")} />
-                             <h4 className={cn("text-[12px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>
-                               {isCuentasInDialog ? "Datos Maestros del Usuario" : "Registro de Asistentes y RFC"}
-                             </h4>
-                          </div>
-                          {!isCuentasInDialog && (
-                            <Button variant="outline" size="sm" onClick={handleAddAssistant} className={cn("h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white shadow-sm gap-3 transition-all", isLibraryTab ? "border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white" : "border-blue-300 text-blue-700 hover:bg-blue-600 hover:text-white")}>
-                              <Plus className="h-4 w-4" /> Añadir Registro
-                            </Button>
-                          )}
+                   <div className="space-y-8">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                           <Star className={cn("h-5 w-5 fill-current", isLibraryTab ? "text-emerald-600" : "text-blue-600")} />
+                           <h4 className={cn("text-[12px] font-black uppercase tracking-widest", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Lista de Asistentes y Cuentas</h4>
                         </div>
-
-                        <div className={cn("rounded-[2.5rem] border-2 overflow-hidden bg-white shadow-2xl", isLibraryTab ? "border-emerald-100" : "border-blue-100")}>
-                           <ScrollArea className="w-full">
-                              <Table>
-                                <TableHeader className={isLibraryTab ? "bg-emerald-50/50" : "bg-blue-50/50"}>
-                                  <TableRow className="border-none">
-                                    <TableHead className={cn("w-12 text-[10px] font-black uppercase py-6 pl-10", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>#</TableHead>
-                                    <TableHead className={cn("min-w-[180px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Paterno / Materno / Nombre</TableHead>
-                                    <TableHead className={cn("min-w-[150px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>RFC (13)</TableHead>
-                                    <TableHead className={cn("min-w-[200px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Correo / Usuario</TableHead>
-                                    <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Valle</TableHead>
-                                    <TableHead className={cn("min-w-[120px] text-[10px] font-black uppercase", isLibraryTab ? "text-emerald-800" : "text-blue-800")}>Género</TableHead>
-                                    {!isCuentasInDialog && <TableHead className={cn("w-12 sticky right-0 bg-white/95", isLibraryTab ? "border-emerald-50" : "border-blue-50")}></TableHead>}
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {formData.asistentes?.map((ast, idx) => (
-                                    <TableRow key={idx} className={cn("transition-colors border-b", isLibraryTab ? "hover:bg-emerald-50/20 border-emerald-50" : "hover:bg-blue-50/20 border-blue-50")}>
-                                      <TableCell className={cn("text-center font-black text-xs pl-10", isLibraryTab ? "text-emerald-300" : "text-blue-300")}>{idx + 1}</TableCell>
-                                      <TableCell className="p-4">
-                                         <div className="flex gap-2">
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.paterno ?? ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="PAT." />
-                                            <Input className="h-10 text-[10px] font-bold rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.materno ?? ''} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} placeholder="MAT." />
-                                            <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 border-slate-200 uppercase" value={ast.nombres ?? ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOM." />
-                                         </div>
-                                      </TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 text-primary uppercase" value={ast.rfc ?? ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email ?? ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
-                                      <TableCell className="p-4"><Input className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 uppercase" value={ast.valle ?? ''} onChange={e => updateAssistant(idx, 'valle', e.target.value.toUpperCase())} placeholder="VALLE" /></TableCell>
-                                      <TableCell className="p-4">
-                                        <Select value={ast.genero || ''} onValueChange={v => updateAssistant(idx, 'genero', v as any)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-black rounded-xl bg-white border-slate-200 shadow-sm"><SelectValue /></SelectTrigger>
-                                          <SelectContent className="font-black"><SelectItem value="MASCULINO">MASC</SelectItem><SelectItem value="FEMENINO">FEM</SelectItem></SelectContent>
-                                        </Select>
-                                      </TableCell>
-                                      {!isCuentasInDialog && (
-                                        <TableCell className="p-4 sticky right-0 bg-white/95 backdrop-blur-sm">
-                                          <button className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center transition-colors" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></button>
-                                        </TableCell>
-                                      )}
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                              <ScrollBar orientation="horizontal" />
-                           </ScrollArea>
-                        </div>
+                        <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-12 px-8 rounded-2xl font-black uppercase text-[10px] bg-white gap-3">
+                           <Plus className="h-4 w-4" /> Añadir Registro
+                        </Button>
                       </div>
-                   )}
+
+                      <div className="rounded-[2.5rem] border-2 bg-white overflow-hidden shadow-2xl">
+                         <ScrollArea className="w-full">
+                            <Table>
+                              <TableHeader className="bg-slate-50">
+                                <TableRow className="border-none">
+                                  <TableHead className="w-12 text-[10px] font-black uppercase py-6 pl-10">#</TableHead>
+                                  <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Nombre(s) y Apellidos</TableHead>
+                                  <TableHead className="min-w-[150px] text-[10px] font-black uppercase">RFC</TableHead>
+                                  <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Correo Institucional</TableHead>
+                                  <TableHead className="w-12 sticky right-0 bg-white/95"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {formData.asistentes?.map((ast, idx) => (
+                                  <TableRow key={idx} className="transition-colors border-b">
+                                    <TableCell className="text-center font-black text-xs pl-10 text-slate-300">{idx + 1}</TableCell>
+                                    <TableCell className="p-4">
+                                       <div className="flex gap-2">
+                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.nombres || ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOMBRES" />
+                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.paterno || ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="AP. PATERNO" />
+                                       </div>
+                                    </TableCell>
+                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 uppercase" value={ast.rfc || ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email || ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
+                                    <TableCell className="p-4 sticky right-0 bg-white/95"><button className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></button></TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            <ScrollBar orientation="horizontal" />
+                         </ScrollArea>
+                      </div>
+                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                {!isCuentasInDialog && (
-                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio ?? ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
-                )}
-                {!isCuentasInDialog && (
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">¿Semana SETES?</Label>
-                    <Select value={formData.setes || 'N'} onValueChange={v => setFormData({...formData, setes: v as any})}>
-                      <SelectTrigger className="h-16 rounded-[1.5rem] font-black bg-white border-purple-200 shadow-lg shadow-purple-50"><SelectValue /></SelectTrigger>
-                      <SelectContent className="font-black rounded-2xl"><SelectItem value="S">SÍ, SEMANA SETES</SelectItem><SelectItem value="N">NO, ATENCIÓN REGULAR</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className={cn("space-y-3", isCuentasInDialog ? "col-span-3" : "")}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-3">
                   <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
                   <Select value={formData.status || 'planeacion'} onValueChange={v => setFormData({...formData, status: v as any})}>
                     <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
@@ -1140,12 +1056,15 @@ export default function ProgramsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {!isCuentasTab && (
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio || ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                )}
               </div>
 
-              {!isCuentasInDialog && (
+              {!isCuentasTab && (
                 <div className="space-y-4">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
-                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones ?? ''} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
+                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
                 </div>
               )}
             </div>
@@ -1153,7 +1072,7 @@ export default function ProgramsPage() {
           
           <DialogFooter className="p-10 bg-slate-50/80 backdrop-blur-md border-t flex justify-end gap-6">
              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="h-16 px-12 rounded-2xl font-black uppercase text-[11px] tracking-widest border-slate-300 bg-white">Cancelar</Button>
-             <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Finalizar y Sincronizar Registro</Button>
+             <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Sincronizar Registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
