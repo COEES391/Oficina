@@ -10,6 +10,7 @@ export type SchoolInfo = {
   tipo: 'FEDERAL' | 'PARTICULAR';
 };
 
+// Procesamiento de la lista oficial de CCT proporcionada
 const rawData: any[][] = [
   ['MEXICO', 'AMECAMECA', 'SECUNDARIA GENERAL', '15DES0065B', 'MATUTINO'],
   ['MEXICO', 'AMECAMECA', 'SECUNDARIA GENERAL PARTICULAR', '15PES0127C', 'MATUTINO'],
