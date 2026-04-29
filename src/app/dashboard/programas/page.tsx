@@ -43,7 +43,8 @@ import {
   Navigation,
   Globe,
   Filter,
-  Activity
+  Activity,
+  LocateFixed
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -536,49 +537,65 @@ export default function ProgramsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                       <Card className="lg:col-span-2 h-[750px] rounded-[3rem] border-4 border-white shadow-2xl overflow-hidden bg-slate-100 relative group">
-                          {/* Mapa Geográfico del Estado de México */}
-                          <div className="absolute inset-0 p-12 flex items-center justify-center">
-                             <div className="relative w-full h-full max-w-[600px] flex items-center justify-center">
-                                {/* Silueta Geográfica Profesional de Edoméx (SVG optimizado) */}
+                       <Card className="lg:col-span-2 h-[800px] rounded-[3rem] border-4 border-white shadow-2xl overflow-hidden bg-slate-50 relative group">
+                          <div className="absolute inset-0 p-8 flex items-center justify-center">
+                             <div className="relative w-full h-full max-w-[700px] flex items-center justify-center">
+                                {/* Silueta Geográfica Profesional de Edoméx (SVG Mejorado) */}
                                 <svg 
                                   viewBox="0 0 1000 1000" 
-                                  className="w-full h-full drop-shadow-2xl filter blur-[1px] opacity-10"
-                                  fill="currentColor"
+                                  className="w-full h-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)] transition-all duration-1000"
                                 >
-                                  <path d="M450,50 L520,70 L600,120 L650,110 L780,200 L850,280 L900,450 L880,550 L820,680 L750,820 L600,920 L450,950 L300,920 L150,850 L80,720 L40,550 L50,420 L120,250 L250,150 L380,80 Z" className="text-primary/20" />
-                                  <path d="M480,80 L540,95 L610,150 L670,140 L790,220 L840,300 L880,450 L860,530 L800,650 L730,780 L580,880 L440,910 L310,880 L180,820 L110,700 L70,540 L80,410 L140,260 L260,160 L390,100 Z" fill="white" />
+                                  {/* Trazado Exterior del Estado */}
+                                  <path 
+                                    d="M 480,50 L 550,75 L 620,130 L 680,120 L 800,210 L 870,300 L 920,450 L 900,560 L 840,700 L 780,830 L 620,930 L 480,960 L 320,930 L 160,860 L 90,730 L 50,560 L 60,430 L 130,260 L 260,160 L 390,90 Z M 520,380 L 680,380 L 710,510 L 640,630 L 500,610 L 460,490 Z" 
+                                    fill="white" 
+                                    stroke="#e2e8f0" 
+                                    strokeWidth="4"
+                                    fillRule="evenodd"
+                                  />
+                                  <path 
+                                    d="M 480,50 L 550,75 L 620,130 L 680,120 L 800,210 L 870,300 L 920,450 L 900,560 L 840,700 L 780,830 L 620,930 L 480,960 L 320,930 L 160,860 L 90,730 L 50,560 L 60,430 L 130,260 L 260,160 L 390,90 Z M 520,380 L 680,380 L 710,510 L 640,630 L 500,610 L 460,490 Z" 
+                                    fill="url(#gradientMap)" 
+                                    className="opacity-5"
+                                    fillRule="evenodd"
+                                  />
+                                  <defs>
+                                    <linearGradient id="gradientMap" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stopColor="#621132" />
+                                      <stop offset="100%" stopColor="#B38E5D" />
+                                    </linearGradient>
+                                  </defs>
                                 </svg>
                                 
-                                {/* Representación de Valle de México (Oriente/Norte) */}
-                                <div className={cn("absolute top-[15%] right-[10%] w-[50%] h-[65%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'MEXICO' ? 'border-primary/60 bg-primary/[0.05] scale-105 z-20' : 'border-slate-200')}>
-                                   <div className="absolute top-4 right-10 text-[9px] font-black text-primary/40 uppercase tracking-[0.4em]">VALLE DE MÉXICO (ORIENTE/NORTE)</div>
-                                   <div className="w-full h-full p-8 flex flex-wrap gap-4 items-center justify-center content-center">
-                                      {geoSchools.filter(s => s.valle === 'MEXICO').slice(0, 200).map((s, i) => (
+                                {/* Puntos de Escuelas (CCT) en el Valle de México */}
+                                <div className={cn("absolute top-[18%] right-[8%] w-[48%] h-[62%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'MEXICO' ? 'border-primary/60 bg-primary/[0.05] scale-105 z-20' : 'border-slate-100')}>
+                                   <div className="absolute top-4 right-12 text-[8px] font-black text-primary/30 uppercase tracking-[0.5em]">VALLE DE MÉXICO (ORIENTE / NORTE)</div>
+                                   <div className="w-full h-full p-8 flex flex-wrap gap-3 items-center justify-center content-center overflow-hidden">
+                                      {geoSchools.filter(s => s.valle === 'MEXICO').slice(0, 180).map((s, i) => (
                                          <div 
                                           key={i} 
                                           className={cn(
-                                            "h-2 w-2 rounded-full shadow-lg transition-all hover:scale-[2.5] cursor-pointer animate-pulse",
-                                            s.modalidad === 'DTV' ? 'bg-slate-500' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
+                                            "h-2.5 w-2.5 rounded-full shadow-md transition-all hover:scale-[4] cursor-help animate-in zoom-in duration-300",
+                                            s.modalidad === 'DTV' ? 'bg-slate-400' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
                                           )} 
-                                          title={`${s.cct} - ${s.municipio} - ${s.nombre}`} 
+                                          title={`CCT: ${s.cct}\n${s.municipio}\n${s.nombre}`} 
                                         />
                                       ))}
                                    </div>
                                 </div>
 
-                                {/* Representación de Valle de Toluca (Poniente) */}
-                                <div className={cn("absolute bottom-[10%] left-[5%] w-[45%] h-[60%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'TOLUCA' ? 'border-accent/60 bg-accent/[0.05] scale-105 z-20' : 'border-slate-200')}>
-                                   <div className="absolute bottom-4 left-10 text-[9px] font-black text-accent/40 uppercase tracking-[0.4em]">VALLE DE TOLUCA (PONIENTE)</div>
-                                   <div className="w-full h-full p-8 flex flex-wrap gap-4 items-center justify-center content-center">
-                                      {geoSchools.filter(s => s.valle === 'TOLUCA').slice(0, 150).map((s, i) => (
+                                {/* Puntos de Escuelas (CCT) en el Valle de Toluca */}
+                                <div className={cn("absolute bottom-[12%] left-[6%] w-[42%] h-[58%] border-2 border-dashed rounded-[3rem] transition-all duration-700", mapValleFilter === 'TOLUCA' ? 'border-accent/60 bg-accent/[0.05] scale-105 z-20' : 'border-slate-100')}>
+                                   <div className="absolute bottom-4 left-12 text-[8px] font-black text-accent/30 uppercase tracking-[0.5em]">VALLE DE TOLUCA (PONIENTE / CENTRO)</div>
+                                   <div className="w-full h-full p-8 flex flex-wrap gap-3 items-center justify-center content-center overflow-hidden">
+                                      {geoSchools.filter(s => s.valle === 'TOLUCA').slice(0, 140).map((s, i) => (
                                          <div 
                                           key={i} 
                                           className={cn(
-                                            "h-2 w-2 rounded-full shadow-lg transition-all hover:scale-[2.5] cursor-pointer animate-pulse",
-                                            s.modalidad === 'DTV' ? 'bg-slate-500' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
+                                            "h-2.5 w-2.5 rounded-full shadow-md transition-all hover:scale-[4] cursor-help animate-in zoom-in duration-300",
+                                            s.modalidad === 'DTV' ? 'bg-slate-400' : s.modalidad === 'DST' ? 'bg-accent' : 'bg-primary'
                                           )} 
-                                          title={`${s.cct} - ${s.municipio} - ${s.nombre}`} 
+                                          title={`CCT: ${s.cct}\n${s.municipio}\n${s.nombre}`} 
                                         />
                                       ))}
                                    </div>
@@ -586,49 +603,72 @@ export default function ProgramsPage() {
                              </div>
                           </div>
 
-                          <div className="absolute top-10 left-10 flex flex-col gap-3">
-                             <Badge className="bg-primary text-white border-none font-black text-[13px] uppercase px-8 py-3.5 rounded-2xl shadow-[0_20px_40px_rgba(98,17,50,0.3)] flex items-center gap-3">
-                               <MapIcon className="h-6 w-6" /> Mapa de Cobertura Estatal (SEIEM)
+                          {/* Capas de Información Superior */}
+                          <div className="absolute top-10 left-10 flex flex-col gap-4">
+                             <Badge className="bg-primary text-white border-none font-black text-[14px] uppercase px-8 py-4 rounded-2xl shadow-[0_25px_50px_rgba(98,17,50,0.3)] flex items-center gap-3">
+                               <LocateFixed className="h-6 w-6" /> Mapa de Cobertura Estatal (CCT)
                              </Badge>
-                             <div className="bg-white/80 backdrop-blur-md px-6 py-2.5 rounded-xl border shadow-sm w-fit text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                               Auditoría de Planteles Federales
+                             <div className="bg-white/90 backdrop-blur-xl px-6 py-3 rounded-2xl border shadow-sm w-fit text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] flex items-center gap-3">
+                               <Activity className="h-4 w-4 text-emerald-500" /> Auditoría de Centros de Trabajo Federales
                              </div>
                           </div>
 
-                          <div className="absolute bottom-10 right-10 flex flex-col gap-5 bg-white/95 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-primary/5 min-w-[240px]">
-                             <div className="space-y-3">
-                                <div className="flex items-center gap-4"><div className="h-3 w-6 rounded-full bg-primary" /> <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Sec. Generales</span></div>
-                                <div className="flex items-center gap-4"><div className="h-3 w-6 rounded-full bg-accent" /> <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Sec. Técnicas</span></div>
-                                <div className="flex items-center gap-4"><div className="h-3 w-6 rounded-full bg-slate-500" /> <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Telesecundarias</span></div>
+                          {/* Leyenda de Mapa Estilizada */}
+                          <div className="absolute bottom-12 right-12 flex flex-col gap-6 bg-white/95 backdrop-blur-2xl p-10 rounded-[3rem] shadow-2xl border border-primary/5 min-w-[280px]">
+                             <p className="text-[11px] font-black text-primary uppercase tracking-[0.3em] mb-2 border-b pb-4 border-slate-100">Leyenda Operativa</p>
+                             <div className="space-y-4">
+                                <div className="flex items-center gap-5 group cursor-default">
+                                   <div className="h-4 w-10 rounded-full bg-primary shadow-lg shadow-primary/20 transition-transform group-hover:scale-110" /> 
+                                   <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Generales</span>
+                                </div>
+                                <div className="flex items-center gap-5 group cursor-default">
+                                   <div className="h-4 w-10 rounded-full bg-accent shadow-lg shadow-accent/20 transition-transform group-hover:scale-110" /> 
+                                   <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Técnicas</span>
+                                </div>
+                                <div className="flex items-center gap-5 group cursor-default">
+                                   <div className="h-4 w-10 rounded-full bg-slate-400 shadow-lg shadow-slate-200 transition-transform group-hover:scale-110" /> 
+                                   <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Telesecundarias</span>
+                                </div>
                              </div>
-                             <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Densidad:</span>
-                                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">Alta Cobertura</Badge>
+                             <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+                                <div className="flex flex-col">
+                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Estado:</span>
+                                   <span className="text-[11px] font-black text-emerald-600 uppercase tracking-tighter">Sincronizado</span>
+                                </div>
+                                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary bg-primary/5 py-1">2024-2025</Badge>
                              </div>
                           </div>
                        </Card>
 
+                       {/* Listado de Municipios Lateral */}
                        <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden flex flex-col">
                           <CardHeader className="p-8 border-b bg-slate-50/50">
-                             <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><Activity className="h-5 w-5" /> Análisis por Municipio</CardTitle>
-                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400">Distribución territorial detallada</CardDescription>
+                             <div className="flex items-center gap-4 mb-1">
+                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Activity className="h-5 w-5" /></div>
+                                <CardTitle className="text-sm font-black uppercase text-primary tracking-widest">Densidad Municipal</CardTitle>
+                             </div>
+                             <CardDescription className="text-[10px] font-bold uppercase text-slate-400 pl-14">CCT Identificados por Territorio</CardDescription>
                           </CardHeader>
                           <div className="flex-1">
-                             <ScrollArea className="h-[600px]">
+                             <ScrollArea className="h-[650px]">
                                 <div className="p-8 space-y-4">
                                    {Array.from(new Set(geoSchools.map(s => s.municipio))).sort().map((mun, i) => {
                                       const munSchools = geoSchools.filter(s => s.municipio === mun);
                                       return (
-                                        <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-primary/5 hover:bg-primary/5 transition-all">
+                                        <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-primary/5 hover:bg-white hover:shadow-lg transition-all group">
                                            <div className="flex justify-between items-center mb-3">
-                                              <span className="text-[11px] font-black text-slate-700 uppercase">{mun}</span>
-                                              <Badge className="bg-primary text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-sm">{munSchools.length}</Badge>
+                                              <span className="text-[11px] font-black text-slate-700 uppercase group-hover:text-primary transition-colors">{mun}</span>
+                                              <Badge className="bg-primary text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg shadow-primary/10">{munSchools.length}</Badge>
                                            </div>
-                                           <div className="flex gap-1.5 flex-wrap">
-                                              {munSchools.slice(0, 15).map((s, idx) => (
-                                                 <div key={idx} className={cn("h-1.5 w-3.5 rounded-full shadow-sm", s.modalidad === 'DTV' ? 'bg-slate-400' : s.modalidad === 'DST' ? 'bg-accent/70' : 'bg-primary/70')} />
+                                           <div className="flex gap-2 flex-wrap">
+                                              {munSchools.slice(0, 12).map((s, idx) => (
+                                                 <div 
+                                                  key={idx} 
+                                                  className={cn("h-1.5 w-4 rounded-full shadow-sm", s.modalidad === 'DTV' ? 'bg-slate-300' : s.modalidad === 'DST' ? 'bg-accent/60' : 'bg-primary/60')} 
+                                                  title={s.cct}
+                                                />
                                               ))}
-                                              {munSchools.length > 15 && <span className="text-[9px] font-black text-slate-300 ml-1">+{munSchools.length - 15}</span>}
+                                              {munSchools.length > 12 && <span className="text-[9px] font-black text-slate-300 ml-1">+{munSchools.length - 12}</span>}
                                            </div>
                                         </div>
                                       );
@@ -838,7 +878,7 @@ export default function ProgramsPage() {
                                             <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => startInlineEdit(acc)}>
                                                <Pencil className="h-4 w-4" />
                                             </button>
-                                            <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                            <button className="h-9 w-9 bg-white shadow-sm border border-slate-100 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro técnico de cuenta institucional?')) { const up = records.filter(r => r.id !== acc.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
                                                <Trash2 className="h-4 w-4" />
                                             </button>
                                           </>
@@ -923,7 +963,7 @@ export default function ProgramsPage() {
                                     <button className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg flex items-center justify-center" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                        <Pencil className="h-4 w-4" />
                                     </button>
-                                    <button className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminado"}); } }}>
+                                    <button className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center" onClick={() => { if(window.confirm('¿Eliminar registro?')) { const up = records.filter(r => r.id !== rec.id); setRecords(up); localStorage.setItem('programs_full', JSON.stringify(up)); toast({title:"Registro Eliminar"}); } }}>
                                        <Trash2 className="h-4 w-4" />
                                     </button>
                                  </div>
