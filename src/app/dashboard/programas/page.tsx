@@ -54,11 +54,16 @@ import {
   Target,
   Building,
   Trophy,
-  ArrowLeft
+  ArrowLeft,
+  Layout,
+  Save,
+  Eye,
+  Camera
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 const TOTAL_UNIVERSE = 830; 
 
@@ -69,6 +74,17 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela',
   'Mesa de Ayuda Técnica'
 ];
+
+type WebSchoolData = {
+  presentacion: string;
+  foto: string;
+  resenaHistorica: string;
+  mision: string;
+  vision: string;
+  infraestructura: string;
+  logros: string;
+  alumnosDistinguidos: string;
+}
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -97,8 +113,21 @@ export default function ProgramsPage() {
   const [incCct, setIncCct] = useState('')
   const [generatedPass, setGeneratedPass] = useState<string | null>(null)
   const [showWebAssistant, setShowWebAssistant] = useState(false)
+  const [assistantStep, setAssistantStep] = useState<'welcome' | 'capture' | 'preview'>('welcome')
+  
+  const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>({
+    presentacion: '',
+    foto: '',
+    resenaHistorica: '',
+    mision: '',
+    vision: '',
+    infraestructura: '',
+    logros: '',
+    alumnosDistinguidos: ''
+  })
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const webFotoRef = useRef<HTMLInputElement>(null);
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -169,6 +198,17 @@ export default function ProgramsPage() {
     setGeneratedPass(pass)
     toast({ title: "Acceso Generado", description: `Se ha creado la contraseña para ${cleanCct}.` })
   }
+
+  const handleWebFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWebSchoolData(prev => ({ ...prev, foto: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const consultaResults = useMemo(() => {
     return schoolsDirectory.filter(s => {
@@ -295,6 +335,10 @@ export default function ProgramsPage() {
     toast({ title: "Cambios guardados" });
   }
 
+  const schoolInAssistant = useMemo(() => {
+    return schoolsDirectory.find(s => s.cct === incCct);
+  }, [incCct]);
+
   if (!mounted) return null
 
   return (
@@ -379,70 +423,312 @@ export default function ProgramsPage() {
 
                     <TabsContent value="incorp" className="animate-in fade-in slide-in-from-bottom-4">
                        {showWebAssistant ? (
-                          <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden">
-                             <div className="bg-primary/5 p-6 border-b flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                   <Button variant="ghost" size="icon" onClick={() => setShowWebAssistant(false)} className="rounded-full h-10 w-10 text-primary">
-                                      <ArrowLeft className="h-5 w-5" />
-                                   </Button>
-                                   <h4 className="font-black uppercase text-sm text-primary tracking-tighter">Construya la Página de su Escuela</h4>
-                                </div>
-                                <div className="flex gap-6">
-                                   <button className="text-[10px] font-black uppercase text-slate-500 hover:text-primary">Ejemplo</button>
-                                   <button className="text-[10px] font-black uppercase text-slate-500 hover:text-primary">Enviar comentarios</button>
-                                </div>
-                             </div>
-                             
-                             <div className="p-12 max-w-4xl mx-auto space-y-12">
-                                <div className="space-y-6 text-center">
-                                   <div className="flex flex-col items-center gap-2">
-                                      <span className="font-black text-4xl text-primary tracking-tighter">SEIEM</span>
-                                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Servicios Educativos Integrados al Estado de México</p>
-                                   </div>
-                                   <div className="space-y-3">
-                                      <h3 className="text-3xl font-black text-slate-800 tracking-tight">Bienvenido al Asistente de WebEscuela</h3>
-                                      <p className="text-slate-500 font-medium text-sm leading-relaxed max-w-2xl mx-auto">
-                                         Este Asistente de WebEscuela lo guiará a través del proceso de construcción de la Página Web de su Escuela. Todo el proceso le tomará entre 10 y 15 minutos.
-                                      </p>
-                                   </div>
-                                </div>
-
-                                <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 space-y-8">
-                                   <div className="flex items-center gap-3">
-                                      <HelpCircle className="h-5 w-5 text-primary" />
-                                      <h5 className="font-black uppercase text-xs text-primary tracking-widest">Por favor tenga a la mano la siguiente información:</h5>
+                          <div className="animate-in slide-in-from-right-10 duration-700">
+                             {assistantStep === 'welcome' && (
+                                <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden">
+                                   <div className="bg-primary/5 p-6 border-b flex justify-between items-center">
+                                      <div className="flex items-center gap-4">
+                                         <Button variant="ghost" size="icon" onClick={() => setShowWebAssistant(false)} className="rounded-full h-10 w-10 text-primary">
+                                            <ArrowLeft className="h-5 w-5" />
+                                         </Button>
+                                         <h4 className="font-black uppercase text-sm text-primary tracking-tighter">Construya la Página de su Escuela</h4>
+                                      </div>
+                                      <div className="flex gap-6">
+                                         <button className="text-[10px] font-black uppercase text-slate-500 hover:text-primary">Ejemplo</button>
+                                         <button className="text-[10px] font-black uppercase text-slate-500 hover:text-primary">Enviar comentarios</button>
+                                      </div>
                                    </div>
                                    
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                      {[
-                                         { t: "Breve presentación de la escuela", i: <BookOpen className="h-4 w-4" /> },
-                                         { t: "Fotografía digital representativa (300x200)", i: <ImageIcon className="h-4 w-4" /> },
-                                         { t: "Breve reseña histórica de la escuela", i: <History className="h-4 w-4" /> },
-                                         { t: "Enunciados de la misión y visión", i: <Target className="h-4 w-4" /> },
-                                         { t: "Lista de infraestructura (aulas, labs, etc.)", i: <Building className="h-4 w-4" /> },
-                                         { t: "Logros académicos, culturales y deportivos", i: <Trophy className="h-4 w-4" /> },
-                                         { t: "Relación de alumnos distinguidos", i: <Star className="h-4 w-4" /> }
-                                      ].map((req, idx) => (
-                                         <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
-                                            <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center text-primary">{req.i}</div>
-                                            <span className="text-[11px] font-bold text-slate-600">{req.t}</span>
+                                   <div className="p-12 max-w-4xl mx-auto space-y-12">
+                                      <div className="space-y-6 text-center">
+                                         <div className="flex flex-col items-center gap-2">
+                                            <span className="font-black text-4xl text-primary tracking-tighter">SEIEM</span>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Servicios Educativos Integrados al Estado de México</p>
                                          </div>
-                                      ))}
-                                   </div>
-                                </div>
+                                         <div className="space-y-3">
+                                            <h3 className="text-3xl font-black text-slate-800 tracking-tight">Bienvenido al Asistente de WebEscuela</h3>
+                                            <p className="text-slate-500 font-medium text-sm leading-relaxed max-w-2xl mx-auto">
+                                               Este Asistente de WebEscuela lo guiará a través del proceso de construcción de la Página Web de su Escuela. Todo el proceso le tomará entre 10 y 15 minutos.
+                                            </p>
+                                         </div>
+                                      </div>
 
-                                <div className="flex flex-col items-center gap-8 pb-10">
-                                   <div className="flex items-center gap-3 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
-                                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                      <span className="text-[10px] font-black uppercase tracking-widest">Se ha encontrado información previamente capturada</span>
+                                      <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 space-y-8">
+                                         <div className="flex items-center gap-3">
+                                            <HelpCircle className="h-5 w-5 text-primary" />
+                                            <h5 className="font-black uppercase text-xs text-primary tracking-widest">Por favor tenga a la mano la siguiente información:</h5>
+                                         </div>
+                                         
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {[
+                                               { t: "Breve presentación de la escuela", i: <BookOpen className="h-4 w-4" /> },
+                                               { t: "Fotografía digital representativa (300x200)", i: <ImageIcon className="h-4 w-4" /> },
+                                               { t: "Breve reseña histórica de la escuela", i: <History className="h-4 w-4" /> },
+                                               { t: "Enunciados de la misión y visión", i: <Target className="h-4 w-4" /> },
+                                               { t: "Lista de infraestructura (aulas, labs, etc.)", i: <Building className="h-4 w-4" /> },
+                                               { t: "Logros académicos, culturales y deportivos", i: <Trophy className="h-4 w-4" /> },
+                                               { t: "Relación de alumnos distinguidos", i: <Star className="h-4 w-4" /> }
+                                            ].map((req, idx) => (
+                                               <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
+                                                  <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center text-primary">{req.i}</div>
+                                                  <span className="text-[11px] font-bold text-slate-600">{req.t}</span>
+                                               </div>
+                                            ))}
+                                         </div>
+                                      </div>
+
+                                      <div className="flex flex-col items-center gap-8 pb-10">
+                                         <div className="flex items-center gap-3 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+                                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Se ha encontrado información previamente capturada</span>
+                                         </div>
+                                         
+                                         <Button onClick={() => setAssistantStep('capture')} className="h-16 px-20 rounded-2xl font-black uppercase tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all hover:scale-105">
+                                            Empezar <ArrowRight className="h-5 w-5 ml-4" />
+                                         </Button>
+                                      </div>
                                    </div>
-                                   
-                                   <Button onClick={() => toast({ title: "Iniciando Asistente..." })} className="h-16 px-20 rounded-2xl font-black uppercase tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all hover:scale-105">
-                                      Empezar <ArrowRight className="h-5 w-5 ml-4" />
-                                   </Button>
-                                </div>
-                             </div>
-                          </Card>
+                                </Card>
+                             )}
+
+                             {assistantStep === 'capture' && (
+                                <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
+                                   <div className="bg-primary/5 p-8 border-b flex justify-between items-center">
+                                      <div className="flex items-center gap-6">
+                                         <Button variant="ghost" size="icon" onClick={() => setAssistantStep('welcome')} className="rounded-full h-12 w-12 text-primary">
+                                            <ArrowLeft className="h-6 w-6" />
+                                         </Button>
+                                         <div>
+                                            <h3 className="font-black text-2xl uppercase text-primary tracking-tighter">Captura de Información Institucional</h3>
+                                            <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Paso 2 de 3: Registro de Contenidos</p>
+                                         </div>
+                                      </div>
+                                      <div className="flex gap-4">
+                                         <Button variant="outline" onClick={() => setAssistantStep('preview')} className="rounded-xl h-12 px-8 font-black uppercase text-[10px] gap-3">
+                                            <Eye className="h-4 w-4" /> Vista Previa
+                                         </Button>
+                                         <Button className="rounded-xl h-12 px-8 font-black uppercase text-[10px] gap-3 shadow-lg shadow-primary/20">
+                                            <Save className="h-4 w-4" /> Guardar Avance
+                                         </Button>
+                                      </div>
+                                   </div>
+
+                                   <ScrollArea className="h-[70vh]">
+                                      <div className="p-12 max-w-5xl mx-auto space-y-12">
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><BookOpen className="h-4 w-4" /> Breve presentación de la escuela</Label>
+                                               <Textarea 
+                                                  className="min-h-[150px] rounded-2xl bg-slate-50 focus:bg-white border-slate-100 transition-all font-medium text-sm" 
+                                                  placeholder="Escriba aquí la introducción de su escuela..."
+                                                  value={webSchoolData.presentacion || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, presentacion: e.target.value})}
+                                                />
+                                            </div>
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Camera className="h-4 w-4" /> Fotografía Digital Representativa</Label>
+                                               <div className="h-[150px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-slate-50 relative group cursor-pointer" onClick={() => webFotoRef.current?.click()}>
+                                                  {webSchoolData.foto ? (
+                                                     <Image src={webSchoolData.foto} alt="Foto Escuela" fill className="object-cover rounded-2xl" />
+                                                  ) : (
+                                                     <>
+                                                        <ImageIcon className="h-10 w-10 text-slate-300 mb-2" />
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Haga clic para cargar (300x200)</span>
+                                                     </>
+                                                  )}
+                                                  <input type="file" ref={webFotoRef} hidden accept="image/*" onChange={handleWebFotoChange} />
+                                               </div>
+                                            </div>
+                                         </div>
+
+                                         <div className="space-y-4">
+                                            <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><History className="h-4 w-4" /> Breve reseña histórica de la escuela</Label>
+                                            <Textarea 
+                                               className="min-h-[150px] rounded-2xl bg-slate-50 focus:bg-white border-slate-100 transition-all font-medium text-sm" 
+                                               placeholder="Hitos importantes desde la fundación..."
+                                               value={webSchoolData.resenaHistorica || ''}
+                                               onChange={e => setWebSchoolData({...webSchoolData, resenaHistorica: e.target.value})}
+                                             />
+                                         </div>
+
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Target className="h-4 w-4" /> Enunciado de Misión</Label>
+                                               <Textarea 
+                                                  className="min-h-[100px] rounded-2xl bg-slate-50 focus:bg-white border-slate-100 font-medium text-sm" 
+                                                  placeholder="Propósito educativo central..."
+                                                  value={webSchoolData.mision || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, mision: e.target.value})}
+                                                />
+                                            </div>
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Globe className="h-4 w-4" /> Enunciado de Visión</Label>
+                                               <Textarea 
+                                                  className="min-h-[100px] rounded-2xl bg-slate-50 focus:bg-white border-slate-100 font-medium text-sm" 
+                                                  placeholder="Aspiraciones a largo plazo..."
+                                                  value={webSchoolData.vision || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, vision: e.target.value})}
+                                                />
+                                            </div>
+                                         </div>
+
+                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Building className="h-4 w-4" /> Infraestructura</Label>
+                                               <Textarea 
+                                                  className="min-h-[120px] rounded-2xl bg-slate-50 border-slate-100 text-xs" 
+                                                  placeholder="Aulas, laboratorios, talleres..."
+                                                  value={webSchoolData.infraestructura || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, infraestructura: e.target.value})}
+                                                />
+                                            </div>
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Trophy className="h-4 w-4" /> Logros</Label>
+                                               <Textarea 
+                                                  className="min-h-[120px] rounded-2xl bg-slate-50 border-slate-100 text-xs" 
+                                                  placeholder="Académicos, culturales, deportivos..."
+                                                  value={webSchoolData.logros || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, logros: e.target.value})}
+                                                />
+                                            </div>
+                                            <div className="space-y-4">
+                                               <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Users className="h-4 w-4" /> Alumnos Distinguidos</Label>
+                                               <Textarea 
+                                                  className="min-h-[120px] rounded-2xl bg-slate-50 border-slate-100 text-xs" 
+                                                  placeholder="Relación de méritos..."
+                                                  value={webSchoolData.alumnosDistinguidos || ''}
+                                                  onChange={e => setWebSchoolData({...webSchoolData, alumnosDistinguidos: e.target.value})}
+                                                />
+                                            </div>
+                                         </div>
+
+                                         <div className="pb-12 flex justify-center">
+                                            <Button onClick={() => setAssistantStep('preview')} size="lg" className="h-16 px-16 rounded-2xl font-black uppercase tracking-[0.2em] bg-primary text-white shadow-xl transition-all hover:scale-105">
+                                               Siguiente: Vista Previa <ArrowRight className="h-5 w-5 ml-4" />
+                                            </Button>
+                                         </div>
+                                      </div>
+                                   </ScrollArea>
+                                </Card>
+                             )}
+
+                             {assistantStep === 'preview' && (
+                                <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden animate-in zoom-in-95 duration-700">
+                                   <div className="bg-slate-900 p-6 border-b flex justify-between items-center">
+                                      <div className="flex items-center gap-6">
+                                         <Button variant="ghost" size="icon" onClick={() => setAssistantStep('capture')} className="rounded-full h-12 w-12 text-white hover:bg-white/10">
+                                            <ArrowLeft className="h-6 w-6" />
+                                         </Button>
+                                         <div>
+                                            <h3 className="font-black text-xl uppercase text-white tracking-tighter">Simulador de Portal Escolar Web</h3>
+                                            <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Así verán su página los padres de familia y la comunidad</p>
+                                         </div>
+                                      </div>
+                                      <Button onClick={() => toast({ title: "Portal Publicado", description: "La página web ha sido generada exitosamente." })} className="rounded-xl h-12 px-10 font-black uppercase text-[10px] gap-3 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-900/20">
+                                         <Globe className="h-4 w-4" /> Publicar Página Web Oficial
+                                      </Button>
+                                   </div>
+
+                                   <ScrollArea className="h-[75vh] bg-slate-100 p-10">
+                                      {/* Mock Site Container */}
+                                      <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-t-3xl overflow-hidden min-h-[1000px] border">
+                                         {/* Mock Browser Header */}
+                                         <div className="bg-slate-200 p-4 border-b flex items-center gap-3">
+                                            <div className="flex gap-1.5">
+                                               <div className="h-3 w-3 rounded-full bg-rose-400" />
+                                               <div className="h-3 w-3 rounded-full bg-amber-400" />
+                                               <div className="h-3 w-3 rounded-full bg-emerald-400" />
+                                            </div>
+                                            <div className="bg-white rounded-lg px-4 py-1.5 flex-1 text-[10px] font-bold text-slate-400">
+                                               www.seiem.gob.mx/escuelas/{incCct}
+                                            </div>
+                                         </div>
+
+                                         {/* Site Content */}
+                                         <header className="bg-primary p-8 text-white">
+                                            <div className="flex justify-between items-center mb-8">
+                                               <span className="text-2xl font-black tracking-tighter">SEIEM</span>
+                                               <nav className="flex gap-6 text-[10px] font-black uppercase tracking-widest opacity-80">
+                                                  <span>Inicio</span>
+                                                  <span>Nosotros</span>
+                                                  <span>Logros</span>
+                                                  <span>Contacto</span>
+                                               </nav>
+                                            </div>
+                                            <div className="space-y-3">
+                                               <h1 className="text-4xl font-black uppercase tracking-tighter">{schoolInAssistant?.nombre || 'Centro de Trabajo'}</h1>
+                                               <Badge className="bg-accent text-white border-none uppercase font-black text-[10px] px-4 py-1">CCT: {incCct}</Badge>
+                                            </div>
+                                         </header>
+
+                                         <div className="p-12 space-y-12">
+                                            {/* Hero Section */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                                               <div className="relative aspect-[3/2] bg-slate-100 rounded-2xl overflow-hidden shadow-xl">
+                                                  {webSchoolData.foto ? (
+                                                     <Image src={webSchoolData.foto} alt="Hero" fill className="object-cover" />
+                                                  ) : (
+                                                     <div className="flex items-center justify-center h-full"><ImageIcon className="h-16 w-16 text-slate-300" /></div>
+                                                  )}
+                                               </div>
+                                               <div className="space-y-6">
+                                                  <h2 className="text-2xl font-black uppercase text-primary border-l-4 border-l-accent pl-6">Bienvenida</h2>
+                                                  <p className="text-slate-600 leading-relaxed font-medium text-sm">
+                                                     {webSchoolData.presentacion || 'Información de bienvenida no disponible.'}
+                                                  </p>
+                                               </div>
+                                            </div>
+
+                                            {/* Info Cards */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                               <Card className="p-8 space-y-4 border-none shadow-lg bg-slate-50">
+                                                  <h3 className="font-black uppercase text-sm text-primary flex items-center gap-2"><History className="h-5 w-5 text-accent" /> Nuestra Historia</h3>
+                                                  <p className="text-xs text-slate-500 leading-relaxed font-bold">{webSchoolData.resenaHistorica || 'Reseña en actualización...'}</p>
+                                               </Card>
+                                               <Card className="p-8 space-y-4 border-none shadow-lg bg-primary/5">
+                                                  <h3 className="font-black uppercase text-sm text-primary flex items-center gap-2"><Target className="h-5 w-5 text-accent" /> Misión y Visión</h3>
+                                                  <div className="space-y-4">
+                                                     <div>
+                                                        <span className="text-[9px] font-black uppercase text-accent tracking-widest">Misión:</span>
+                                                        <p className="text-xs text-slate-600 font-bold">{webSchoolData.mision || 'Definiendo misión...'}</p>
+                                                     </div>
+                                                     <div>
+                                                        <span className="text-[9px] font-black uppercase text-accent tracking-widest">Visión:</span>
+                                                        <p className="text-xs text-slate-600 font-bold">{webSchoolData.vision || 'Definiendo visión...'}</p>
+                                                     </div>
+                                                  </div>
+                                               </Card>
+                                            </div>
+
+                                            {/* Details Section */}
+                                            <div className="space-y-10">
+                                               <div className="border-t pt-10">
+                                                  <h3 className="text-xl font-black uppercase text-primary mb-6 flex items-center gap-3"><Building className="h-6 w-6 text-accent" /> Infraestructura y Servicios</h3>
+                                                  <div className="bg-slate-50 p-6 rounded-2xl text-xs font-medium text-slate-600 whitespace-pre-wrap">{webSchoolData.infraestructura || 'Detallando instalaciones...'}</div>
+                                               </div>
+                                               
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                  <div>
+                                                     <h3 className="text-xl font-black uppercase text-primary mb-6 flex items-center gap-3"><Trophy className="h-6 w-6 text-accent" /> Logros Institucionales</h3>
+                                                     <div className="bg-primary/5 p-6 rounded-2xl text-xs font-bold text-slate-700">{webSchoolData.logros || 'Consolidando éxitos...'}</div>
+                                                  </div>
+                                                  <div>
+                                                     <h3 className="text-xl font-black uppercase text-primary mb-6 flex items-center gap-3"><Star className="h-6 w-6 text-accent" /> Alumnos Distinguidos</h3>
+                                                     <div className="bg-accent/5 p-6 rounded-2xl text-xs font-bold text-slate-700">{webSchoolData.alumnosDistinguidos || 'Seleccionando destacados...'}</div>
+                                                  </div>
+                                               </div>
+                                            </div>
+
+                                            <footer className="border-t pt-10 pb-20 text-center space-y-4">
+                                               <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">© 2024 SEIEM - Portal de Gestión Escolar</p>
+                                               <p className="text-[9px] font-bold text-slate-300 uppercase">Estado de México • Oficina de Planeación</p>
+                                            </footer>
+                                         </div>
+                                      </div>
+                                   </ScrollArea>
+                                </Card>
+                             )}
+                          </div>
                        ) : (
                           <Card className="p-10 bg-white shadow-2xl rounded-[3rem] border-none">
                              <div className="max-w-xl mx-auto space-y-10 text-center">
@@ -494,7 +780,7 @@ export default function ProgramsPage() {
                              <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
                                 <TableIcon className="h-6 w-6" /> Escuelas Incorporadas
                              </CardTitle>
-                             <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl">Consolidado Oficial 2024</Badge>
+                             <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl shadow-inner">Consolidado Oficial 2024</Badge>
                           </CardHeader>
                           <ScrollArea className="h-[600px]">
                              <Table>
@@ -880,7 +1166,7 @@ export default function ProgramsPage() {
                                  <TableRow key={idx} className={cn("transition-all border-slate-100 group relative", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
                                     <TableCell className="py-6 pl-10">
                                        {isEditing ? (
-                                         <Input className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" value={inlineFormData?.email ?? ''} onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} />
+                                         <Input className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" value={inlineFormData?.email || ''} onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} />
                                        ) : (
                                          <div className="flex flex-col">
                                             <span className="text-xs font-black text-primary lowercase">{acc.email || '-'}</span>
@@ -890,14 +1176,14 @@ export default function ProgramsPage() {
                                     </TableCell>
                                     <TableCell>
                                        {isEditing ? (
-                                         <Input className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" value={inlineFormData?.cct ?? ''} onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} maxLength={10} />
+                                         <Input className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" value={inlineFormData?.cct || ''} onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} maxLength={10} />
                                        ) : (
                                          <span className="text-xs font-black text-slate-700 uppercase">{rec.cct || '-'}</span>
                                        )}
                                     </TableCell>
                                     <TableCell className="text-center">
                                        {isEditing ? (
-                                         <Select value={inlineFormData?.status ?? 'activo'} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
+                                         <Select value={inlineFormData?.status || 'activo'} onValueChange={val => setInlineFormData({...inlineFormData, status: val})}>
                                             <SelectTrigger className="h-9 w-full text-[10px] font-black uppercase bg-white border-primary/20"><SelectValue /></SelectTrigger>
                                             <SelectContent className="font-black"><SelectItem value="activo">ACTIVO</SelectItem><SelectItem value="inactivo">INACTIVO</SelectItem></SelectContent>
                                          </Select>
@@ -1001,7 +1287,7 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-3 col-span-2">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
-                  <Input value={formData.id ?? ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
+                  <Input value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
                 </div>
               </div>
 
@@ -1015,7 +1301,7 @@ export default function ProgramsPage() {
                     <Input 
                       placeholder="ESCRIBE CCT O NOMBRE PARA IDENTIFICAR PLANTEL..." 
                       className="bg-white h-16 font-black uppercase px-8 rounded-2xl border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
-                      value={searchTerm ?? ''} 
+                      value={searchTerm || ''} 
                       onChange={e => setSearchTerm(e.target.value)} 
                     />
                     {searchTerm.length > 2 && (
@@ -1039,7 +1325,7 @@ export default function ProgramsPage() {
                          <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner"><School className="h-8 w-8" /></div>
                          <div className="flex-1 overflow-hidden">
                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">Nombre del Centro de Trabajo</p>
-                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName ?? ''}</p>
+                            <p className="text-lg font-black text-slate-800 uppercase truncate">{formData.schoolName || ''}</p>
                          </div>
                       </div>
                       {[
@@ -1051,7 +1337,7 @@ export default function ProgramsPage() {
                       ].map((item, i) => (
                         <div key={i} className="p-6 bg-white rounded-3xl border border-primary/5 shadow-sm">
                           <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1.5">{item.l}</p>
-                          <p className="text-sm font-black text-slate-800 uppercase">{item.v ?? ''}</p>
+                          <p className="text-sm font-black text-slate-800 uppercase">{item.v || ''}</p>
                         </div>
                       ))}
                     </div>
@@ -1066,8 +1352,8 @@ export default function ProgramsPage() {
                      <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos ?? 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo ?? ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos || 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
+                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo || ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
                   </div>
                 </div>
               )}
@@ -1110,12 +1396,12 @@ export default function ProgramsPage() {
                                     <TableCell className="text-center font-black text-xs pl-10 text-slate-300">{idx + 1}</TableCell>
                                     <TableCell className="p-4">
                                        <div className="flex gap-2">
-                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.nombres ?? ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOMBRES" />
-                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.paterno ?? ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="AP. PATERNO" />
+                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.nombres || ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOMBRES" />
+                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.paterno || ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="AP. PATERNO" />
                                        </div>
                                     </TableCell>
-                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 uppercase" value={ast.rfc ?? ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email ?? ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
+                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 uppercase" value={ast.rfc || ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email || ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
                                     <TableCell className="p-4 sticky right-0 bg-white/95"><button className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></button></TableCell>
                                   </TableRow>
                                 ))}
@@ -1131,7 +1417,7 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-3">
                   <Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Estatus Ejecutivo</Label>
-                  <Select value={formData.status ?? 'planeacion'} onValueChange={v => setFormData({...formData, status: v as any})}>
+                  <Select value={formData.status || 'planeacion'} onValueChange={v => setFormData({...formData, status: v as any})}>
                     <SelectTrigger className="h-16 rounded-[1.5rem] font-black shadow-lg bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent className="font-black rounded-2xl">
                       <SelectItem value="planeacion" className="text-rose-600">PLANEACIÓN / INICIO</SelectItem>
@@ -1141,14 +1427,14 @@ export default function ProgramsPage() {
                   </Select>
                 </div>
                 {!isCuentasTab && (
-                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio ?? ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio || ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
                 )}
               </div>
 
               {!isCuentasTab && (
                 <div className="space-y-4">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Bitácora de Observaciones Operativas</Label>
-                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones ?? ''} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
+                  <Textarea className="min-h-[200px] rounded-[2.5rem] p-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-primary shadow-inner font-bold text-slate-600 text-base" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="ESCRIBE AQUÍ DETALLES RELEVANTES DE LA INTERVENCIÓN..." />
                 </div>
               )}
             </div>
