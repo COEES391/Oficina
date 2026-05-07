@@ -52,7 +52,8 @@ import {
   ArrowLeft,
   Save,
   Eye,
-  Camera
+  Camera,
+  CheckCircle2
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -109,17 +110,16 @@ export default function ProgramsPage() {
   const [mapModalidadFilter, setMapModalidadFilter] = useState('all')
   const [geoSearchTerm, setGeoSearchTerm] = useState('')
 
-  // "Conoce mi escuela" filters
   const [conoceValle, setConoceValle] = useState('all')
   const [conoceMod, setConoceMod] = useState('all')
   const [conoceSector, setConoceSector] = useState('all')
   const [conoceMun, setConoceMun] = useState('all')
 
-  // "Incorporación" logic
   const [incCct, setIncCct] = useState('')
   const [generatedPass, setGeneratedPass] = useState<string | null>(null)
   const [showWebAssistant, setShowWebAssistant] = useState(false)
   const [assistantStep, setAssistantStep] = useState<'welcome' | 'capture' | 'preview'>('welcome')
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
   const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>(initialWebData)
 
@@ -181,7 +181,6 @@ export default function ProgramsPage() {
     }))
   }, [activeTab])
 
-  // Load web data when CCT changes
   useEffect(() => {
     if (incCct && incCct.length === 10) {
       const stored = localStorage.getItem(`web_school_data_${incCct}`)
@@ -223,10 +222,7 @@ export default function ProgramsPage() {
   const handleSaveWebProgress = () => {
     if (!incCct) return;
     localStorage.setItem(`web_school_data_${incCct}`, JSON.stringify(webSchoolData));
-    toast({ 
-      title: "Avance Guardado con Éxito", 
-      description: `Los datos para ${incCct} han sido almacenados para revisión editorial.` 
-    })
+    setShowSuccessDialog(true);
   }
 
   const consultaResults = useMemo(() => {
@@ -653,9 +649,7 @@ export default function ProgramsPage() {
                                    </div>
 
                                    <ScrollArea className="h-[75vh] bg-slate-100 p-10">
-                                      {/* Mock Site Container */}
                                       <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-t-3xl overflow-hidden min-h-[1000px] border">
-                                         {/* Mock Browser Header */}
                                          <div className="bg-slate-200 p-4 border-b flex items-center gap-3">
                                             <div className="flex gap-1.5">
                                                <div className="h-3 w-3 rounded-full bg-rose-400" />
@@ -667,7 +661,6 @@ export default function ProgramsPage() {
                                             </div>
                                          </div>
 
-                                         {/* Site Content */}
                                          <header className="bg-primary p-8 text-white">
                                             <div className="flex justify-between items-center mb-8">
                                                <span className="text-2xl font-black tracking-tighter">SEIEM</span>
@@ -685,7 +678,6 @@ export default function ProgramsPage() {
                                          </header>
 
                                          <div className="p-12 space-y-12">
-                                            {/* Hero Section */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                                                <div className="relative aspect-[3/2] bg-slate-100 rounded-2xl overflow-hidden shadow-xl">
                                                   {webSchoolData.foto ? (
@@ -702,7 +694,6 @@ export default function ProgramsPage() {
                                                </div>
                                             </div>
 
-                                            {/* Info Cards */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                <Card className="p-8 space-y-4 border-none shadow-lg bg-slate-50">
                                                   <h3 className="font-black uppercase text-sm text-primary flex items-center gap-2"><History className="h-5 w-5 text-accent" /> Nuestra Historia</h3>
@@ -723,7 +714,6 @@ export default function ProgramsPage() {
                                                </Card>
                                             </div>
 
-                                            {/* Details Section */}
                                             <div className="space-y-10">
                                                <div className="border-t pt-10">
                                                   <h3 className="text-xl font-black uppercase text-primary mb-6 flex items-center gap-3"><Building className="h-6 w-6 text-accent" /> Infraestructura y Servicios</h3>
@@ -762,8 +752,8 @@ export default function ProgramsPage() {
                                 <div className="space-y-4">
                                    <Label className="text-[11px] font-black uppercase text-slate-600 block text-left pl-2">Ingrese el CCT de la Escuela</Label>
                                    <div className="flex gap-4">
-                                      <Input 
-                                         className="h-16 rounded-2xl font-black text-lg text-center uppercase tracking-[0.2em] bg-slate-50 shadow-inner" 
+                                      <input 
+                                         className="flex h-16 w-full rounded-2xl font-black text-lg text-center uppercase tracking-[0.2em] bg-slate-50 shadow-inner border border-input px-3 py-2" 
                                          placeholder="15DES0000X" 
                                          maxLength={10}
                                          value={incCct || ''}
@@ -926,9 +916,9 @@ export default function ProgramsPage() {
                    <div className="flex flex-wrap gap-4 flex-1 justify-end">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input 
+                        <input 
                           placeholder="BUSCAR CCT O ESCUELA..." 
-                          className="h-12 w-64 rounded-xl font-black text-[10px] uppercase pl-10 border-slate-200"
+                          className="flex h-12 w-64 rounded-xl font-black text-[10px] uppercase pl-10 border border-slate-200 bg-white px-3 py-2"
                           value={geoSearchTerm || ''}
                           onChange={(e) => setGeoSearchTerm(e.target.value)}
                         />
@@ -1189,7 +1179,7 @@ export default function ProgramsPage() {
                                  <TableRow key={idx} className={cn("transition-all border-slate-100 group relative", isEditing ? "bg-primary/[0.02]" : "hover:bg-white")}>
                                     <TableCell className="py-6 pl-10">
                                        {isEditing ? (
-                                         <Input className="h-9 text-xs font-black lowercase text-primary w-full bg-white border-primary/20" value={inlineFormData?.email || ''} onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} />
+                                         <input className="flex h-9 w-full rounded-md border border-primary/20 bg-white px-3 py-2 text-xs font-black lowercase text-primary" value={inlineFormData?.email || ''} onChange={e => setInlineFormData({...inlineFormData, email: e.target.value})} />
                                        ) : (
                                          <div className="flex flex-col">
                                             <span className="text-xs font-black text-primary lowercase">{acc.email || '-'}</span>
@@ -1199,7 +1189,7 @@ export default function ProgramsPage() {
                                     </TableCell>
                                     <TableCell>
                                        {isEditing ? (
-                                         <Input className="h-9 text-xs font-black uppercase w-full bg-white border-primary/20" value={inlineFormData?.cct || ''} onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} maxLength={10} />
+                                         <input className="flex h-9 w-full rounded-md border border-primary/20 bg-white px-3 py-2 text-xs font-black uppercase" value={inlineFormData?.cct || ''} onChange={e => setInlineFormData({...inlineFormData, cct: e.target.value.toUpperCase()})} maxLength={10} />
                                        ) : (
                                          <span className="text-xs font-black text-slate-700 uppercase">{rec.cct || '-'}</span>
                                        )}
@@ -1310,7 +1300,7 @@ export default function ProgramsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-3 col-span-2">
                   <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Folio de Registro (Oficial)</Label>
-                  <Input value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="h-16 rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8" disabled={!!editingId} />
+                  <input value={formData.id || ''} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="P-001" className="flex h-16 w-full rounded-[1.5rem] font-black text-lg border-primary/10 bg-slate-50/50 shadow-inner px-8 border" disabled={!!editingId} />
                 </div>
               </div>
 
@@ -1321,9 +1311,9 @@ export default function ProgramsPage() {
                      <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Geolocalización del Centro de Trabajo</h3>
                   </div>
                   <div className="relative">
-                    <Input 
+                    <input 
                       placeholder="ESCRIBE CCT O NOMBRE PARA IDENTIFICAR PLANTEL..." 
-                      className="bg-white h-16 font-black uppercase px-8 rounded-2xl border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
+                      className="bg-white h-16 w-full font-black uppercase px-8 rounded-2xl border border-primary/10 shadow-lg text-lg placeholder:text-slate-300" 
                       value={searchTerm || ''} 
                       onChange={e => setSearchTerm(e.target.value)} 
                     />
@@ -1375,8 +1365,8 @@ export default function ProgramsPage() {
                      <h3 className="text-sm font-black uppercase text-primary tracking-[0.2em]">Especificaciones Técnicas</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><Input type="number" value={formData.numeroEquipos || 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-slate-50/50" /></div>
-                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><Input value={formData.descripcionEquipo || ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="h-14 rounded-2xl font-black bg-slate-50/50 px-8" /></div>
+                     <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Equipos</Label><input type="number" value={formData.numeroEquipos || 0} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="flex h-14 w-full rounded-2xl font-black bg-slate-50/50 border border-input px-3 py-2" /></div>
+                     <div className="col-span-3 space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">Descripción del Equipamiento</Label><input value={formData.descripcionEquipo || ''} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: SERVIDOR, 20 LAPTOPS, ROUTER..." className="flex h-14 w-full rounded-2xl font-black bg-slate-50/50 px-8 border border-input py-2" /></div>
                   </div>
                 </div>
               )}
@@ -1419,12 +1409,12 @@ export default function ProgramsPage() {
                                     <TableCell className="text-center font-black text-xs pl-10 text-slate-300">{idx + 1}</TableCell>
                                     <TableCell className="p-4">
                                        <div className="flex gap-2">
-                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.nombres || ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOMBRES" />
-                                          <Input className="h-10 text-[10px] font-black rounded-xl bg-slate-50 uppercase" value={ast.paterno || ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="AP. PATERNO" />
+                                          <input className="flex h-10 w-full rounded-xl bg-slate-50 uppercase px-3 py-2 border border-input text-[10px] font-black" value={ast.nombres || ''} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} placeholder="NOMBRES" />
+                                          <input className="flex h-10 w-full rounded-xl bg-slate-50 uppercase px-3 py-2 border border-input text-[10px] font-black" value={ast.paterno || ''} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} placeholder="AP. PATERNO" />
                                        </div>
                                     </TableCell>
-                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-mono font-black rounded-xl bg-white border-slate-300 uppercase" value={ast.rfc || ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                    <TableCell className="p-4"><Input className="h-10 text-[11px] font-bold rounded-xl bg-white border-slate-300 text-blue-600 lowercase" value={ast.email || ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
+                                    <TableCell className="p-4"><input className="flex h-10 w-full rounded-xl bg-white border border-slate-300 uppercase px-3 py-2 text-[11px] font-mono font-black" value={ast.rfc || ''} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
+                                    <TableCell className="p-4"><input className="flex h-10 w-full rounded-xl bg-white border border-slate-300 text-blue-600 lowercase px-3 py-2 text-[11px] font-bold" value={ast.email || ''} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} placeholder="correo@desysa.edu.mx" /></TableCell>
                                     <TableCell className="p-4 sticky right-0 bg-white/95"><button className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center" onClick={() => handleRemoveAssistant(idx)} disabled={formData.asistentes?.length === 1}><Trash2 className="h-4 w-4" /></button></TableCell>
                                   </TableRow>
                                 ))}
@@ -1450,7 +1440,7 @@ export default function ProgramsPage() {
                   </Select>
                 </div>
                 {!isCuentasTab && (
-                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><Input value={formData.numeroOficio || ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="h-16 rounded-[1.5rem] font-black bg-slate-50/50" /></div>
+                   <div className="space-y-3"><Label className="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-2">No. de Oficio Oficial</Label><input value={formData.numeroOficio || ''} onChange={e => setFormData({...formData, numeroOficio: e.target.value.toUpperCase()})} placeholder="EJ: DESYSA/PL/2024/001" className="flex h-16 w-full rounded-[1.5rem] font-black bg-slate-50/50 border border-input px-3 py-2" /></div>
                 )}
               </div>
 
@@ -1468,6 +1458,36 @@ export default function ProgramsPage() {
              <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Sincronizar Registro</Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+         <DialogContent className="sm:max-w-[550px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white/95 backdrop-blur-2xl">
+            <div className="p-12 text-center space-y-8">
+               <div className="mx-auto h-24 w-24 bg-emerald-50 rounded-full flex items-center justify-center border-4 border-white shadow-xl">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+               </div>
+               <div className="space-y-4">
+                  <h3 className="text-2xl font-black uppercase text-primary tracking-tighter">Información Recibida</h3>
+                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                     <p className="text-sm font-bold text-slate-600 leading-relaxed uppercase">
+                        Se procederá a su revisión por el grupo editorial. Si hay cambios, el grupo se contactará para su corrección. Si no, lo verá publicado en 3 días hábiles.
+                     </p>
+                  </div>
+               </div>
+               <Button 
+                  onClick={() => {
+                     setShowSuccessDialog(false);
+                     setShowWebAssistant(false);
+                     setAssistantStep('welcome');
+                     setIncCct('');
+                     setGeneratedPass(null);
+                  }} 
+                  className="h-16 px-12 rounded-2xl font-black uppercase tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all hover:scale-105"
+               >
+                  Finalizar y Cerrar
+               </Button>
+            </div>
+         </DialogContent>
       </Dialog>
     </div>
   )
