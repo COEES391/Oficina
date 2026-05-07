@@ -26,10 +26,17 @@ export default function LoginPage() {
 
   const handleLogin = () => {
     const cleanRfc = rfc.trim().toUpperCase()
-    // Credenciales oficiales: COEES / 123456
+    
+    // Credenciales oficiales: 
+    // COEES / 123456 (Analista Senior)
+    // CEDTORIAL / SEIEM (Administrador Editorial)
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso concedido", description: "Bienvenido al Sistema de Gestión de Planeación." })
+      toast({ title: "Acceso concedido", description: "Bienvenido, Analista de Planeación." })
+      router.push('/dashboard')
+    } else if (cleanRfc === 'CEDTORIAL' && password === 'SEIEM') {
+      localStorage.setItem('userRfc', cleanRfc)
+      toast({ title: "Acceso Administrativo", description: "Bienvenido, Administrador Editorial SEIEM." })
       router.push('/dashboard')
     } else {
       toast({ variant: "destructive", title: "Credenciales incorrectas", description: "El usuario o la contraseña son inválidos." })

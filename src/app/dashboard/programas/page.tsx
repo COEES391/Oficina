@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import * as XLSX from 'xlsx'
 import { 
   PlusCircle, 
   Search, 
@@ -34,11 +33,9 @@ import {
   Table as TableIcon,
   Eraser,
   Check,
-  Navigation,
   Globe,
   Filter,
   Activity,
-  LocateFixed,
   Info,
   UserPlus,
   ArrowRight,
@@ -47,15 +44,12 @@ import {
   X,
   Circle,
   HelpCircle,
-  ExternalLink,
-  MessageSquare,
   BookOpen,
   Image as ImageIcon,
   Target,
   Building,
   Trophy,
   ArrowLeft,
-  Layout,
   Save,
   Eye,
   Camera
@@ -86,9 +80,21 @@ type WebSchoolData = {
   alumnosDistinguidos: string;
 }
 
+const initialWebData: WebSchoolData = {
+  presentacion: '',
+  foto: '',
+  resenaHistorica: '',
+  mision: '',
+  vision: '',
+  infraestructura: '',
+  logros: '',
+  alumnosDistinguidos: ''
+}
+
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
+  const [userRfc, setUserRfc] = useState<string | null>(null)
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [conoceSubTab, setConoceSubTab] = useState('info')
@@ -115,16 +121,7 @@ export default function ProgramsPage() {
   const [showWebAssistant, setShowWebAssistant] = useState(false)
   const [assistantStep, setAssistantStep] = useState<'welcome' | 'capture' | 'preview'>('welcome')
   
-  const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>({
-    presentacion: '',
-    foto: '',
-    resenaHistorica: '',
-    mision: '',
-    vision: '',
-    infraestructura: '',
-    logros: '',
-    alumnosDistinguidos: ''
-  })
+  const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>(initialWebData)
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webFotoRef = useRef<HTMLInputElement>(null);
@@ -166,6 +163,7 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     setMounted(true)
+    setUserRfc(localStorage.getItem('userRfc'))
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     if (stored.length > 0) {
       setRecords(stored)
@@ -182,6 +180,18 @@ export default function ProgramsPage() {
       fechaEntrada: format(new Date(), 'yyyy-MM-dd')
     }))
   }, [activeTab])
+
+  // Load web data when CCT changes
+  useEffect(() => {
+    if (incCct && incCct.length === 10) {
+      const stored = localStorage.getItem(`web_school_data_${incCct}`)
+      if (stored) {
+        setWebSchoolData(JSON.parse(stored))
+      } else {
+        setWebSchoolData(initialWebData)
+      }
+    }
+  }, [incCct])
 
   const handleGeneratePass = () => {
     const cleanCct = incCct.trim().toUpperCase();
@@ -209,6 +219,15 @@ export default function ProgramsPage() {
       reader.readAsDataURL(file);
     }
   };
+
+  const handleSaveWebProgress = () => {
+    if (!incCct) return;
+    localStorage.setItem(`web_school_data_${incCct}`, JSON.stringify(webSchoolData));
+    toast({ 
+      title: "Avance Guardado con Éxito", 
+      description: `Los datos para ${incCct} han sido almacenados para revisión editorial.` 
+    })
+  }
 
   const consultaResults = useMemo(() => {
     return schoolsDirectory.filter(s => {
@@ -338,6 +357,8 @@ export default function ProgramsPage() {
   const schoolInAssistant = useMemo(() => {
     return schoolsDirectory.find(s => s.cct === incCct);
   }, [incCct]);
+
+  const isAdminEditorial = userRfc === 'CEDTORIAL';
 
   if (!mounted) return null
 
@@ -507,7 +528,7 @@ export default function ProgramsPage() {
                                          <Button variant="outline" onClick={() => setAssistantStep('preview')} className="rounded-xl h-12 px-8 font-black uppercase text-[10px] gap-3">
                                             <Eye className="h-4 w-4" /> Vista Previa
                                          </Button>
-                                         <Button className="rounded-xl h-12 px-8 font-black uppercase text-[10px] gap-3 shadow-lg shadow-primary/20">
+                                         <Button onClick={handleSaveWebProgress} className="rounded-xl h-12 px-8 font-black uppercase text-[10px] gap-3 bg-primary text-white shadow-lg shadow-primary/20">
                                             <Save className="h-4 w-4" /> Guardar Avance
                                          </Button>
                                       </div>
@@ -624,9 +645,11 @@ export default function ProgramsPage() {
                                             <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Así verán su página los padres de familia y la comunidad</p>
                                          </div>
                                       </div>
-                                      <Button onClick={() => toast({ title: "Portal Publicado", description: "La página web ha sido generada exitosamente." })} className="rounded-xl h-12 px-10 font-black uppercase text-[10px] gap-3 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-900/20">
-                                         <Globe className="h-4 w-4" /> Publicar Página Web Oficial
-                                      </Button>
+                                      {isAdminEditorial && (
+                                        <Button onClick={() => toast({ title: "Portal Publicado", description: "La página web ha sido generada exitosamente." })} className="rounded-xl h-12 px-10 font-black uppercase text-[10px] gap-3 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-900/20">
+                                           <Globe className="h-4 w-4" /> Publicar Página Web Oficial
+                                        </Button>
+                                      )}
                                    </div>
 
                                    <ScrollArea className="h-[75vh] bg-slate-100 p-10">
