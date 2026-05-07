@@ -382,7 +382,7 @@ export default function ProgramsPage() {
     return schoolsDirectory.find(s => s.cct === incCct);
   }, [incCct]);
 
-  const isAdminEditorial = userRfc === 'CEDITORIAL';
+  const isAdminEditorial = userRfc === 'CEDITORIAL' || userRfc === 'CEDTORIAL';
 
   if (!mounted) return null
 
@@ -502,8 +502,8 @@ export default function ProgramsPage() {
                                          <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[9px] uppercase px-4 py-1">Información Guardada</Badge>
                                       </TableCell>
                                       <TableCell className="text-right pr-10">
-                                         <Button onClick={() => handleReviewSubmission(sub.cct)} variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white transition-all">
-                                            <Eye className="h-4 w-4" /> Revisar y Publicar
+                                         <Button onClick={() => handleReviewSubmission(sub.cct)} variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white transition-all shadow-sm">
+                                            <ClipboardCheck className="h-4 w-4" /> Revisar y Publicar
                                          </Button>
                                       </TableCell>
                                    </TableRow>
