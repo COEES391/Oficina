@@ -53,7 +53,8 @@ import {
   Save,
   Eye,
   Camera,
-  CheckCircle2
+  CheckCircle2,
+  ClipboardCheck
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -122,6 +123,7 @@ export default function ProgramsPage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
   const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>(initialWebData)
+  const [savedSubmissions, setSavedSubmissions] = useState<{cct: string, name: string}[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webFotoRef = useRef<HTMLInputElement>(null);
@@ -163,14 +165,29 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     setMounted(true)
-    setUserRfc(localStorage.getItem('userRfc'))
+    const rfc = localStorage.getItem('userRfc')
+    setUserRfc(rfc)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     if (stored.length > 0) {
       setRecords(stored)
     } else {
       setRecords(programsData)
     }
+    loadSubmissions()
   }, [])
+
+  const loadSubmissions = () => {
+    const subs: {cct: string, name: string}[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('web_school_data_')) {
+        const cct = key.replace('web_school_data_', '');
+        const school = schoolsDirectory.find(s => s.cct === cct);
+        subs.push({ cct, name: school?.nombre || 'Escuela Desconocida' });
+      }
+    }
+    setSavedSubmissions(subs);
+  }
 
   useEffect(() => {
     setFormData(prev => ({ 
@@ -223,6 +240,18 @@ export default function ProgramsPage() {
     if (!incCct) return;
     localStorage.setItem(`web_school_data_${incCct}`, JSON.stringify(webSchoolData));
     setShowSuccessDialog(true);
+    loadSubmissions();
+  }
+
+  const handleReviewSubmission = (cct: string) => {
+    setIncCct(cct);
+    const stored = localStorage.getItem(`web_school_data_${cct}`);
+    if (stored) {
+      setWebSchoolData(JSON.parse(stored));
+      setShowWebAssistant(true);
+      setAssistantStep('preview');
+      setConoceSubTab('incorp');
+    }
   }
 
   const consultaResults = useMemo(() => {
@@ -263,7 +292,6 @@ export default function ProgramsPage() {
   const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
 
   const geoSchools = useMemo(() => {
-    if (!isGeoTab) return [];
     return schoolsDirectory.filter(s => {
       const matchValle = mapValleFilter === 'all' || s.valle === mapValleFilter;
       const matchModalidad = mapModalidadFilter === 'all' || s.modalidad === mapModalidadFilter;
@@ -272,7 +300,7 @@ export default function ProgramsPage() {
         s.nombre.toUpperCase().includes(geoSearchTerm.toUpperCase());
       return matchValle && matchModalidad && matchSearch;
     });
-  }, [isGeoTab, mapValleFilter, mapModalidadFilter, geoSearchTerm]);
+  }, [mapValleFilter, mapModalidadFilter, geoSearchTerm]);
 
   const handleSelectSchool = (cct: string) => {
     const school = schoolsDirectory.find(s => s.cct === cct);
@@ -354,7 +382,7 @@ export default function ProgramsPage() {
     return schoolsDirectory.find(s => s.cct === incCct);
   }, [incCct]);
 
-  const isAdminEditorial = userRfc === 'CEDTORIAL';
+  const isAdminEditorial = userRfc === 'CEDITORIAL';
 
   if (!mounted) return null
 
@@ -418,6 +446,11 @@ export default function ProgramsPage() {
                     <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14">
                        <TabsTrigger value="info" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Info className="h-4 w-4" /> Información</TabsTrigger>
                        <TabsTrigger value="incorp" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><UserPlus className="h-4 w-4" /> Incorporación</TabsTrigger>
+                       {isAdminEditorial && (
+                         <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                           <ClipboardCheck className="h-4 w-4" /> Revisión Editorial
+                         </TabsTrigger>
+                       )}
                        <TabsTrigger value="list" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><TableIcon className="h-4 w-4" /> Escuelas Incorporadas</TabsTrigger>
                        <TabsTrigger value="search" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Search className="h-4 w-4" /> Consulta tu Escuela</TabsTrigger>
                     </TabsList>
@@ -436,6 +469,51 @@ export default function ProgramsPage() {
                              </Card>
                           ))}
                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="editorial" className="animate-in fade-in slide-in-from-bottom-4">
+                       <Card className="executive-card">
+                          <CardHeader className="p-8 border-b bg-amber-50/50">
+                             <div className="flex items-center justify-between">
+                                <div>
+                                   <CardTitle className="text-lg font-black uppercase text-amber-900 flex items-center gap-3">
+                                      <ClipboardCheck className="h-6 w-6" /> Control Editorial de Espacios Web
+                                   </CardTitle>
+                                   <CardDescription className="text-[10px] font-black uppercase tracking-widest mt-1">Supervisión de Información Institucional Capturada</CardDescription>
+                                </div>
+                                <Badge className="bg-amber-100 text-amber-800 border-none text-[10px] font-black px-6 py-2 rounded-xl">Solicitudes: {savedSubmissions.length}</Badge>
+                             </div>
+                          </CardHeader>
+                          <Table>
+                             <TableHeader className="bg-slate-50">
+                                <TableRow>
+                                   <TableHead className="py-6 pl-10 font-black text-[10px] uppercase">CCT</TableHead>
+                                   <TableHead className="font-black text-[10px] uppercase">Centro de Trabajo</TableHead>
+                                   <TableHead className="font-black text-[10px] uppercase text-center">Estado Captura</TableHead>
+                                   <TableHead className="text-right pr-10 font-black text-[10px] uppercase">Acciones</TableHead>
+                                </TableRow>
+                             </TableHeader>
+                             <TableBody>
+                                {savedSubmissions.map((sub, i) => (
+                                   <TableRow key={i} className="hover:bg-slate-50 transition-all border-slate-100 group">
+                                      <TableCell className="py-6 pl-10 font-black text-xs text-primary">{sub.cct}</TableCell>
+                                      <TableCell className="font-bold text-xs uppercase text-slate-700">{sub.name}</TableCell>
+                                      <TableCell className="text-center">
+                                         <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[9px] uppercase px-4 py-1">Información Guardada</Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right pr-10">
+                                         <Button onClick={() => handleReviewSubmission(sub.cct)} variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white transition-all">
+                                            <Eye className="h-4 w-4" /> Revisar y Publicar
+                                         </Button>
+                                      </TableCell>
+                                   </TableRow>
+                                ))}
+                                {savedSubmissions.length === 0 && (
+                                   <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase text-slate-300">No hay capturas pendientes de revisión editorial</TableCell></TableRow>
+                                )}
+                             </TableBody>
+                          </Table>
+                       </Card>
                     </TabsContent>
 
                     <TabsContent value="incorp" className="animate-in fade-in slide-in-from-bottom-4">

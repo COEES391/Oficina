@@ -29,12 +29,12 @@ export default function LoginPage() {
     
     // Credenciales oficiales: 
     // COEES / 123456 (Analista Senior)
-    // CEDTORIAL / SEIEM (Administrador Editorial)
+    // CEDITORIAL / SEIEM (Administrador Editorial)
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
       toast({ title: "Acceso concedido", description: "Bienvenido, Analista de Planeación." })
       router.push('/dashboard')
-    } else if (cleanRfc === 'CEDTORIAL' && password === 'SEIEM') {
+    } else if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
       localStorage.setItem('userRfc', cleanRfc)
       toast({ title: "Acceso Administrativo", description: "Bienvenido, Administrador Editorial SEIEM." })
       router.push('/dashboard')
