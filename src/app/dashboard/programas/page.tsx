@@ -125,6 +125,10 @@ export default function ProgramsPage() {
   const [assistantStep, setAssistantStep] = useState<'welcome' | 'capture' | 'preview'>('welcome')
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
+  // Editorial Auth State
+  const [isEditorialAuthOpen, setIsEditorialAuthOpen] = useState(false)
+  const [editorialCredentials, setEditorialCredentials] = useState({ user: '', pass: '' })
+
   const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>(initialWebData)
   const [savedSubmissions, setSavedSubmissions] = useState<{cct: string, name: string, date: string}[]>([])
 
@@ -191,7 +195,7 @@ export default function ProgramsPage() {
         subs.push({ 
           cct, 
           name: school?.nombre || 'Escuela Desconocida',
-          date: '2025/09/01' // Mock date for legacy look
+          date: format(new Date(), 'yyyy/MM/dd')
         });
       }
     }
@@ -217,6 +221,19 @@ export default function ProgramsPage() {
       }
     }
   }, [incCct])
+
+  const handleEditorialLogin = () => {
+    if (editorialCredentials.user.toUpperCase() === 'CEDITORIAL' && editorialCredentials.pass === 'SEIEM') {
+      localStorage.setItem('userRfc', 'CEDITORIAL');
+      setUserRfc('CEDITORIAL');
+      setConoceSubTab('editorial');
+      setIsEditorialAuthOpen(false);
+      toast({ title: "Sesión Editorial Iniciada", description: "Bienvenido al portal de revisión de SEIEM." });
+      loadSubmissions();
+    } else {
+      toast({ variant: "destructive", title: "Credenciales Incorrectas", description: "Verifique su usuario y contraseña editorial." });
+    }
+  }
 
   const handleGeneratePass = () => {
     const cleanCct = incCct.trim().toUpperCase();
@@ -259,7 +276,6 @@ export default function ProgramsPage() {
       setWebSchoolData(JSON.parse(stored));
       setShowWebAssistant(true);
       setAssistantStep('preview');
-      setConoceSubTab('editorial');
     }
   }
 
@@ -446,16 +462,17 @@ export default function ProgramsPage() {
                             Con este programa, se aspira a que todos los centros de trabajo sean reconocidos por la comunidad, dando a conocer información cuantitativa y cualitativa de nuestras escuelas, coadyuvando al aumento de la matrícula escolar.
                           </p>
                        </div>
-                       {isAdminEditorial && (
-                         <div className="pt-4 animate-in fade-in slide-in-from-left-4 duration-700">
-                           <Button 
-                             onClick={() => setConoceSubTab('editorial')}
-                             className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs px-10 h-14 rounded-2xl shadow-xl shadow-amber-900/20 gap-3 border-2 border-white/20"
-                           >
-                             <ClipboardCheck className="h-6 w-6" /> Sección Editorial de WebEscuela
-                           </Button>
-                         </div>
-                       )}
+                       <div className="pt-4 animate-in fade-in slide-in-from-left-4 duration-700">
+                         <Button 
+                           onClick={() => {
+                             if (isAdminEditorial) setConoceSubTab('editorial');
+                             else setIsEditorialAuthOpen(true);
+                           }}
+                           className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs px-10 h-14 rounded-2xl shadow-xl shadow-amber-900/20 gap-3 border-2 border-white/20"
+                         >
+                           <ClipboardCheck className="h-6 w-6" /> Sección Editorial de WebEscuela
+                         </Button>
+                       </div>
                     </div>
                  </Card>
 
@@ -1451,7 +1468,7 @@ export default function ProgramsPage() {
                           </TableHeader>
                           <TableBody>
                             {currentStats?.records.map((rec, idx) => (
-                              <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-50 group">
+                              <TableRow key={idx} className="hover:bg-slate-50/50 transition-all border-slate-100 group">
                                 <TableCell className="py-6 pl-10 text-xs font-black text-primary">{rec.id}</TableCell>
                                 <TableCell>
                                    <div className="flex flex-col">
@@ -1657,6 +1674,47 @@ export default function ProgramsPage() {
              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }} className="h-16 px-12 rounded-2xl font-black uppercase text-[11px] tracking-widest border-slate-300 bg-white">Cancelar</Button>
              <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-[0_20px_40px_rgba(98,17,50,0.3)] transition-all hover:scale-105 active:scale-95">Sincronizar Registro</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editorial Auth Dialog */}
+      <Dialog open={isEditorialAuthOpen} onOpenChange={setIsEditorialAuthOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white/95 backdrop-blur-2xl">
+          <div className="bg-amber-600 p-8 text-white text-center space-y-4">
+             <div className="mx-auto h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <ShieldCheck className="h-10 w-10 text-white" />
+             </div>
+             <div>
+                <h3 className="text-xl font-black uppercase tracking-tight">Acceso Editorial</h3>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Módulo de Revisión y Publicación</p>
+             </div>
+          </div>
+          <div className="p-10 space-y-6">
+             <div className="space-y-4">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Usuario</Label>
+                   <Input 
+                      className="h-12 rounded-xl bg-slate-50 border-none font-black uppercase" 
+                      value={editorialCredentials.user} 
+                      onChange={e => setEditorialCredentials({...editorialCredentials, user: e.target.value.toUpperCase()})}
+                      placeholder="CEDITORIAL"
+                    />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Contraseña</Label>
+                   <Input 
+                      type="password"
+                      className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                      value={editorialCredentials.pass} 
+                      onChange={e => setEditorialCredentials({...editorialCredentials, pass: e.target.value})}
+                      placeholder="••••••••"
+                    />
+                </div>
+             </div>
+             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black uppercase tracking-[0.1em] shadow-lg">
+                Autenticar Acceso <ArrowRight className="h-5 w-5 ml-2" />
+             </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
