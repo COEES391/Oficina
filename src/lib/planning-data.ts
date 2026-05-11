@@ -149,7 +149,6 @@ export const supportData: SupportTicket[] = [
 
 export const trainingRecords: TrainingRecord[] = [];
 
-// Base de datos de Cuentas Institucionales (231 registros) normalizada con MÉXICO
 const ciRaw = [
   { s: "1", mod: "PES GOB", v: "MÉXICO", u: "1", a: "PLANTEL", z: "4", e: "PES0007Q@desysa.gob.mx", st: "APROBADO" },
   { s: "1", mod: "PES GOB", v: "MÉXICO", u: "2", a: "PLANTEL", z: "5", e: "PES0010D@desysa.gob.mx", st: "APROBADO" },
@@ -395,8 +394,8 @@ export const programsData: ProgramStatus[] = [
     status: r.st === 'APROBADO' ? 'concluido' : 'planeacion',
     date: '2025-05-22',
     cct: r.e.split('@')[0].length === 8 ? `15${r.e.split('@')[0]}` : r.e.split('@')[0],
-    valle: r.v,
-    modalidad: r.mod,
+    valle: r.v.toUpperCase(),
+    modalidad: r.mod.toUpperCase(),
     sector: r.s,
     zonaEscolar: r.z,
     asistentes: [{
@@ -411,11 +410,11 @@ export const programsData: ProgramStatus[] = [
       nombreCT: `ESCUELA ${r.e.split('@')[0]}`,
       ze: r.z,
       sector: r.s,
-      modalidad: r.mod,
+      modalidad: r.mod.toUpperCase(),
       municipio: 'MUNICIPIO PENDIENTE',
-      region: r.v,
-      valle: r.v,
-      departamento: r.a
+      region: r.v.toUpperCase(),
+      valle: r.v.toUpperCase(),
+      departamento: r.a.toUpperCase()
     }] as ProgramAssistant[]
   } as ProgramStatus))
 ];
