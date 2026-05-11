@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -13,6 +14,19 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer, 
+  Cell,
+  PieChart,
+  Pie,
+  Legend
+} from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
@@ -38,7 +52,10 @@ import {
   ImageIcon,
   Circle,
   X,
-  GraduationCap
+  GraduationCap,
+  Layout,
+  BarChart3,
+  MapPin
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -54,6 +71,19 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela',
   'Mesa de Ayuda Técnica'
 ];
+
+const MODALIDADES_GRID = [
+  'COEES EDU', 'COEES GOB', 'DES GOB', 'DESYSA',
+  'DESySA G...', 'DSN GOB', 'DST GOB', 'DTV GOB',
+  'EM GOB', 'ET GOB', 'FIS', 'FIS GOB',
+  'FISICA', 'FISICA GOB', 'FJE', 'FJE GOB',
+  'FJT', 'FJT GOB', 'FTS', 'FTV',
+  'FZF', 'FZF GOB', 'FZT', 'GM',
+  'GM GOB', 'GT', 'GT GOB', 'PES'
+];
+
+const AREAS_PICKER = ['ADMIN', 'PLANTEL'];
+const VALLES_PICKER = ['MEXICO', 'TOLUCA'];
 
 const FUNCIONES = [
   "ADMINISTRATIVO",
@@ -93,10 +123,16 @@ export default function ProgramsPage() {
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [conoceSubTab, setConoceSubTab] = useState('info')
+  const [cuentasSubTab, setCuentasSubTab] = useState('dashboard')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   
+  // Dashboard Filters
+  const [modalidadSubFilter, setModalidadSubFilter] = useState('all')
+  const [sectorSubFilter, setSectorSubFilter] = useState('all')
+  const [areaSubFilter, setAreaSubFilter] = useState('all')
+  const [valleSubFilter, setValleSubFilter] = useState('all')
+
   const [incCct, setIncCct] = useState('')
   const [generatedPass, setGeneratedPass] = useState<string | null>(null)
   const [showWebAssistant, setShowWebAssistant] = useState(false)
@@ -333,6 +369,28 @@ export default function ProgramsPage() {
     return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && (r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas'))));
   }, [records, activeTab, activeTabClean]);
 
+  // Dashboard calculations for Cuentas Institucionales
+  const cuentasStats = useMemo(() => {
+    const desysaCoeesData = [
+      { name: 'En proceso', value: 33, fill: '#EAB308' },
+      { name: 'No iniciado', value: 424, fill: '#EF4444' },
+      { name: 'SIN PAGINA', value: 881, fill: '#3B82F6' },
+      { name: 'Terminado', value: 370, fill: '#22C55E' },
+    ];
+
+    const conoceMiEscuelaChartData = [
+      { name: 'No publicada', value: 378, fill: '#3B82F6' },
+      { name: 'Publicada', value: 445, fill: '#6366F1' },
+    ];
+
+    const accountsData = [
+      { name: 'En Uso', value: 72, fill: '#621132' },
+      { name: 'Libre', value: 28, fill: '#cbd5e1' },
+    ];
+
+    return { desysaCoeesData, conoceMiEscuelaChartData, accountsData };
+  }, []);
+
   if (!mounted) return null
 
   return (
@@ -393,7 +451,7 @@ export default function ProgramsPage() {
                        <TabsTrigger value="info" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Info className="h-4 w-4" /> Información</TabsTrigger>
                        <TabsTrigger value="incorp" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><UserPlus className="h-4 w-4" /> Incorporación</TabsTrigger>
                        <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
-                           <ClipboardCheck className="h-4 w-4" /> SECCIÓN EDITORIAL DE WEBESCUELA
+                           <ClipboardCheck className="h-4 w-4" /> Sección Editorial de WebEscuela
                        </TabsTrigger>
                     </TabsList>
 
@@ -420,7 +478,7 @@ export default function ProgramsPage() {
                                   <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Zona</TableHead>
                                   <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center text-emerald-600">Revisión</TableHead>
                                   <TableHead className="min-w-[300px] font-black text-[9px] uppercase border-r">Observaciones</TableHead>
-                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase text-right pr-6 bg-slate-100 sticky right-0 z-10">Acciones</TableHead>
+                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase text-right pr-6 bg-slate-100 sticky right-0 z-10">Acciones a Realizar</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -565,7 +623,7 @@ export default function ProgramsPage() {
                                          </div>
                                          <div className="mt-12 space-y-10">
                                             <section>
-                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter flex items-center gap-3"><History className="h-5 w-5" /> Nuestra Historia</h3>
+                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter flex items-center gap-3"> Nuestra Historia</h3>
                                                <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">{webSchoolData.resenaHistorica}</p>
                                             </section>
                                             <div className="grid grid-cols-2 gap-10">
@@ -608,6 +666,272 @@ export default function ProgramsPage() {
                     </TabsContent>
                  </Tabs>
               </div>
+           ) : isCuentasTab ? (
+             <div className="space-y-10">
+                <Tabs value={cuentasSubTab} onValueChange={setCuentasSubTab} className="space-y-8">
+                   <div className="flex justify-between items-center">
+                      <TabsList className="bg-slate-100 p-1 rounded-2xl h-12">
+                        <TabsTrigger value="dashboard" className="rounded-xl px-6 font-black uppercase text-[10px] gap-2"><BarChart3 className="h-4 w-4" /> Dashboard de Monitoreo</TabsTrigger>
+                        <TabsTrigger value="listado" className="rounded-xl px-6 font-black uppercase text-[10px] gap-2"><TableIcon className="h-4 w-4" /> Listado Detallado</TabsTrigger>
+                      </TabsList>
+                   </div>
+
+                   <TabsContent value="dashboard" className="animate-in fade-in zoom-in-95 duration-700">
+                      <div className="space-y-10">
+                        {/* Header Monitor */}
+                        <div className="flex items-center gap-6">
+                           <div className="h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl">
+                              <Zap className="h-8 w-8 text-white" />
+                           </div>
+                           <div>
+                              <h2 className="text-3xl font-black text-primary uppercase tracking-tighter leading-none">Herramienta de Monitoreo</h2>
+                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] mt-1">Control Analítico de Cuentas Institucionales</p>
+                           </div>
+                        </div>
+
+                        {/* Top Filters and Stats */}
+                        <div className="grid grid-cols-12 gap-8">
+                           {/* Left Slicers */}
+                           <div className="col-span-3 space-y-8">
+                              <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
+                                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">MODALIDAD</Label>
+                                 <div className="grid grid-cols-2 gap-2 h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                                    {MODALIDADES_GRID.map(m => (
+                                       <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[8px] font-black uppercase p-1 rounded-xl shadow-sm" onClick={() => setModalidadSubFilter(m)}>
+                                          {m}
+                                       </Button>
+                                    ))}
+                                 </div>
+                              </Card>
+
+                              <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
+                                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">Sector</Label>
+                                 <div className="grid grid-cols-3 gap-2">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(s => (
+                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className={cn("h-10 text-[10px] font-black rounded-xl", sectorSubFilter === s.toString() ? 'bg-emerald-600' : '')} onClick={() => setSectorSubFilter(s.toString())}>
+                                          {s}
+                                       </Button>
+                                    ))}
+                                 </div>
+                              </Card>
+                           </div>
+
+                           {/* Center Gauges & KPI */}
+                           <div className="col-span-4 space-y-8 flex flex-col items-center">
+                              {/* Total Card */}
+                              <Card className="w-full executive-card p-10 flex flex-col items-center justify-center relative bg-white shadow-2xl overflow-hidden">
+                                 <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500" />
+                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Total de Cuentas @desysa.gob.mx</span>
+                                 <div className="text-6xl font-black text-slate-800 tracking-tighter">1,709</div>
+                              </Card>
+
+                              {/* Donut Gauge */}
+                              <div className="relative h-[250px] w-full flex flex-col items-center justify-center">
+                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">% CORREO EN USO @desysa.gob.mx</Label>
+                                 <div className="relative">
+                                    <ResponsiveContainer width={200} height={200}>
+                                       <PieChart>
+                                          <Pie data={cuentasStats.accountsData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                             {cuentasStats.accountsData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                          </Pie>
+                                       </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                       <span className="text-3xl font-black text-primary">72%</span>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Geoposition Battery */}
+                              <div className="w-full flex flex-col items-center gap-4 mt-10">
+                                 <Label className="text-[10px] font-black uppercase text-blue-500 tracking-widest">Geoposición</Label>
+                                 <div className="w-32 h-48 border-4 border-slate-300 rounded-[2rem] p-1.5 relative overflow-hidden bg-slate-100 shadow-inner">
+                                    <div 
+                                      className="absolute bottom-0 left-0 w-full bg-emerald-500 transition-all duration-1000 flex items-center justify-center shadow-[0_-10px_20px_rgba(16,185,129,0.3)]"
+                                      style={{ height: '58%' }}
+                                    >
+                                       <span className="text-xl font-black text-white">58%</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Right Column Pickers & Charts */}
+                           <div className="col-span-5 space-y-8">
+                              <div className="grid grid-cols-2 gap-8">
+                                 <Card className="executive-card p-6 bg-orange-50/50 border-2 border-white">
+                                    <Label className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-4 block">AREA</Label>
+                                    <div className="space-y-2">
+                                       {AREAS_PICKER.map(a => (
+                                          <div key={a} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", areaSubFilter === a ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-orange-600 hover:bg-orange-100')} onClick={() => setAreaSubFilter(a)}>
+                                             {a}
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </Card>
+
+                                 <Card className="executive-card p-6 bg-amber-50/50 border-2 border-white">
+                                    <Label className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-4 block">VALLE</Label>
+                                    <div className="space-y-2">
+                                       {VALLES_PICKER.map(v => (
+                                          <div key={v} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", valleSubFilter === v ? 'bg-amber-600 text-white shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100')} onClick={() => setValleSubFilter(v)}>
+                                             {v}
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </Card>
+                              </div>
+
+                              <Card className="executive-card p-8 bg-white shadow-2xl relative overflow-hidden h-[350px]">
+                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                    <Layout className="h-24 w-24" />
+                                 </div>
+                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8">DESYSA - COEES</CardTitle>
+                                 <ResponsiveContainer width="100%" height={250}>
+                                    <BarChart data={cuentasStats.desysaCoeesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700 }} />
+                                       <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} />
+                                       <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={40}>
+                                          {cuentasStats.desysaCoeesData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                       </Bar>
+                                    </BarChart>
+                                 </ResponsiveContainer>
+                                 <div className="flex justify-between mt-4">
+                                    {cuentasStats.desysaCoeesData.map(d => (
+                                       <div key={d.name} className="flex flex-col items-center">
+                                          <span className="text-[10px] font-black text-slate-800">{d.value}</span>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </Card>
+
+                              <Card className="executive-card p-8 bg-white shadow-2xl relative h-[350px] flex flex-col items-center justify-center">
+                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8 w-full">CONOCE MI ESCUELA - SEIEM</CardTitle>
+                                 <div className="flex gap-20 items-end">
+                                    {cuentasStats.conoceMiEscuelaChartData.map(d => (
+                                       <div key={d.name} className="flex flex-col items-center group">
+                                          <div className="relative">
+                                             <div className="w-0 h-0 border-l-[60px] border-l-transparent border-r-[60px] border-r-transparent border-b-[180px] opacity-80 group-hover:opacity-100 transition-opacity" style={{ borderBottomColor: d.fill }}></div>
+                                             <div className="absolute inset-0 flex items-center justify-center pt-20">
+                                                <span className="text-2xl font-black text-white">{d.value}</span>
+                                             </div>
+                                          </div>
+                                          <span className="text-[10px] font-black uppercase text-slate-500 mt-4">{d.name}</span>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </Card>
+                           </div>
+                        </div>
+
+                        {/* Audit Table Bottom */}
+                        <Card className="executive-card overflow-hidden">
+                           <CardHeader className="bg-slate-50 border-b p-6 flex flex-row items-center justify-between">
+                              <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><MapPin className="h-5 w-5" /> Auditoría de Geoposicionamiento</CardTitle>
+                              <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Sincronizado SIP</Badge>
+                           </CardHeader>
+                           <Table>
+                              <TableHeader className="bg-slate-100/50">
+                                 <TableRow>
+                                    <TableHead className="font-black text-[9px] uppercase pl-8">CCT / Escuela</TableHead>
+                                    <TableHead className="font-black text-[9px] uppercase">LATITUD</TableHead>
+                                    <TableHead className="font-black text-[9px] uppercase">LONGITUD</TableHead>
+                                    <TableHead className="font-black text-[9px] uppercase text-right pr-8">Dominio Principal</TableHead>
+                                 </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                 {schoolsDirectory.slice(0, 10).map((school, i) => (
+                                    <TableRow key={i} className="text-[10px] font-bold">
+                                       <TableCell className="pl-8 text-primary font-black uppercase">{school.cct}</TableCell>
+                                       <TableCell className="font-mono">{ (19.0 + Math.random()).toFixed(6) }</TableCell>
+                                       <TableCell className="font-mono">{ (-99.0 - Math.random()).toFixed(6) }</TableCell>
+                                       <TableCell className="text-right pr-8 text-blue-600">@desysa.gob.mx</TableCell>
+                                    </TableRow>
+                                 ))}
+                              </TableBody>
+                           </Table>
+                        </Card>
+                      </div>
+                   </TabsContent>
+
+                   <TabsContent value="listado" className="animate-in slide-in-from-right-10 duration-700">
+                      <Card className="executive-card">
+                        <CardHeader className="bg-slate-50/50 p-8 border-b">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-xl font-black uppercase text-primary">{activeTabClean}</CardTitle>
+                              <CardDescription className="text-[10px] font-black uppercase tracking-widest">Control y Seguimiento de Implementación</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-4">
+                               <div className="text-right">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase">Impacto Global</span>
+                                  <div className="text-lg font-black text-primary">{filteredRecords.length} Escuelas</div>
+                               </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <Table>
+                            <TableHeader className="bg-slate-100/50">
+                              <TableRow>
+                                <TableHead className="font-black text-[10px] uppercase pl-8">CCT / Escuela</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase">Responsable / eContacto</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase">Dominio</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase text-center">Estatus</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase text-right pr-8">Acciones</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredRecords.length > 0 ? filteredRecords.map((rec) => (
+                                <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
+                                  <TableCell className="pl-8">
+                                     <div className="flex flex-col">
+                                        <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                                        <span className="text-[10px] text-muted-foreground font-bold">{rec.schoolName}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                       <span className="text-[10px] font-black text-slate-700">{rec.asistentes?.[0]?.nombres} {rec.asistentes?.[0]?.paterno}</span>
+                                       <span className="text-[9px] text-blue-600 font-bold lowercase">{rec.asistentes?.[0]?.email}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                     <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">
+                                        {rec.asistentes?.[0]?.email?.split('@')[1] || 'desysa.gob.mx'}
+                                     </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
+                                        <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                        <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-right pr-8">
+                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                        <Pencil className="h-4 w-4" />
+                                     </Button>
+                                  </TableCell>
+                                </TableRow>
+                              )) : (
+                                <TableRow>
+                                  <TableCell colSpan={6} className="text-center py-20 bg-slate-50/50">
+                                     <div className="flex flex-col items-center gap-2 opacity-30">
+                                        <MonitorCheck className="h-10 w-10 text-primary" />
+                                        <p className="font-black text-xs uppercase">Sin registros en este rubro para mostrar.</p>
+                                     </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
+                   </TabsContent>
+                </Tabs>
+             </div>
            ) : (
              <Card className="executive-card">
                <CardHeader className="bg-slate-50/50 p-8 border-b">
@@ -636,12 +960,6 @@ export default function ProgramsPage() {
                            <TableHead className="font-black text-[10px] uppercase text-center">Capacitación</TableHead>
                          </>
                        )}
-                       {isCuentasTab && (
-                         <>
-                           <TableHead className="font-black text-[10px] uppercase">Responsable / eContacto</TableHead>
-                           <TableHead className="font-black text-[10px] uppercase">Dominio</TableHead>
-                         </>
-                       )}
                        <TableHead className="font-black text-[10px] uppercase text-center">Estatus</TableHead>
                        <TableHead className="font-black text-[10px] uppercase text-right pr-8">Acciones</TableHead>
                      </TableRow>
@@ -662,21 +980,6 @@ export default function ProgramsPage() {
                              <TableCell className="text-center">
                                 <Badge variant={rec.capacitacion === 'S' ? 'default' : 'outline'} className="text-[9px] font-black px-4">
                                    {rec.capacitacion === 'S' ? 'SÍ' : 'NO'}
-                                </Badge>
-                             </TableCell>
-                           </>
-                         )}
-                         {isCuentasTab && (
-                           <>
-                             <TableCell>
-                               <div className="flex flex-col">
-                                  <span className="text-[10px] font-black text-slate-700">{rec.asistentes?.[0]?.nombres} {rec.asistentes?.[0]?.paterno}</span>
-                                  <span className="text-[9px] text-blue-600 font-bold lowercase">{rec.asistentes?.[0]?.email}</span>
-                               </div>
-                             </TableCell>
-                             <TableCell>
-                                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">
-                                   {rec.asistentes?.[0]?.email?.split('@')[1] || 'desysa.gob.mx'}
                                 </Badge>
                              </TableCell>
                            </>
@@ -894,10 +1197,4 @@ export default function ProgramsPage() {
       </Dialog>
     </div>
   )
-}
-
-function History({ className }: { className?: string }) {
-   return (
-      <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-   )
 }
