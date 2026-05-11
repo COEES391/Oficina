@@ -18,44 +18,24 @@ import {
   Search, 
   Pencil, 
   School, 
-  Settings2, 
+  ShieldCheck, 
   Zap,
   Calendar,
   MonitorCheck,
-  History,
   Users,
   Trash2,
   Plus,
-  Layers,
-  Star,
-  Mail,
-  FileUp,
   Table as TableIcon,
-  Eraser,
-  Check,
-  Globe,
-  Filter,
-  Activity,
+  CheckCircle2,
+  ClipboardCheck,
   Info,
   UserPlus,
   ArrowRight,
-  ShieldCheck,
-  Download,
-  X,
-  Circle,
-  HelpCircle,
-  BookOpen,
-  Image as ImageIcon,
-  Target,
-  Building,
-  Trophy,
+  Mail,
   ArrowLeft,
-  Save,
-  Eye,
-  Camera,
-  CheckCircle2,
-  ClipboardCheck,
-  Lock
+  ImageIcon,
+  Circle,
+  X
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -105,15 +85,6 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   
-  const [mapValleFilter, setMapValleFilter] = useState('all')
-  const [mapModalidadFilter, setMapModalidadFilter] = useState('all')
-  const [geoSearchTerm, setGeoSearchTerm] = useState('')
-
-  const [conoceValle, setConoceValle] = useState('all')
-  const [conoceMod, setConoceMod] = useState('all')
-  const [conoceSector, setConoceSector] = useState('all')
-  const [conoceMun, setConoceMun] = useState('all')
-
   const [incCct, setIncCct] = useState('')
   const [generatedPass, setGeneratedPass] = useState<string | null>(null)
   const [showWebAssistant, setShowWebAssistant] = useState(false)
@@ -254,54 +225,11 @@ export default function ProgramsPage() {
     });
   }
 
-  const consultaResults = useMemo(() => {
-    return schoolsDirectory.filter(s => {
-      const matchValle = conoceValle === 'all' || s.valle === conoceValle;
-      const matchMod = conoceMod === 'all' || s.modalidad === conoceMod;
-      const matchSec = conoceSector === 'all' || s.sectorNum === conoceSector;
-      const matchMun = conoceMun === 'all' || s.municipio === conoceMun;
-      return matchValle && matchMod && matchSec && matchMun;
-    });
-  }, [conoceValle, conoceMod, conoceSector, conoceMun]);
-
-  const rubroStats = useMemo(() => {
-    return PROGRAM_RUBROS.map(name => {
-      const rubroRecords = records.filter(r => r.name === name || (name.startsWith('Cuentas') && (r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI'))));
-      const uniqueSchools = new Set(rubroRecords.map(r => r.cct).filter(Boolean)).size;
-      const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
-      const lastUpdate = rubroRecords.length > 0 
-        ? rubroRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date 
-        : format(new Date(), 'yyyy-MM-dd');
-      
-      let status: 'planeacion' | 'activo' | 'concluido' = 'planeacion';
-      if (progress > 0) status = 'activo';
-      if (progress >= 100) status = 'concluido';
-
-      return { name, progress, status, lastUpdate, count: uniqueSchools, records: rubroRecords };
-    });
-  }, [records]);
-
-  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
-  const isLibraryTab = activeTabClean === 'Biblioteca Digital';
-  const isCuentasTab = activeTabClean === 'Cuentas Institucionales';
-  const isGeoTab = activeTabClean === 'Geoposición';
-  const isConoceTab = activeTabClean === 'Conoce mi Escuela';
-  
-  const currentStats = useMemo(() => rubroStats.find(s => s.name === activeTab), [rubroStats, activeTab]);
-
-  const geoSchools = useMemo(() => {
-    return schoolsDirectory.filter(s => {
-      const matchValle = mapValleFilter === 'all' || s.valle === mapValleFilter;
-      const matchModalidad = mapModalidadFilter === 'all' || s.modalidad === mapModalidadFilter;
-      const matchSearch = !geoSearchTerm || 
-        s.cct.toUpperCase().includes(geoSearchTerm.toUpperCase()) || 
-        s.nombre.toUpperCase().includes(geoSearchTerm.toUpperCase());
-      return matchValle && matchModalidad && matchSearch;
-    });
-  }, [mapValleFilter, mapModalidadFilter, geoSearchTerm]);
-
   const handleSave = () => {
-    if (!formData.id || (!formData.cct && !isCuentasTab)) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
+    if (!formData.id || (!formData.cct && !activeTab.startsWith('Cuentas'))) { 
+      toast({ variant: "destructive", title: "Datos incompletos" }); 
+      return; 
+    }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
@@ -333,6 +261,15 @@ export default function ProgramsPage() {
     loadSubmissions();
   }
 
+  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
+  const isLibraryTab = activeTabClean === 'Biblioteca Digital';
+  const isCuentasTab = activeTabClean === 'Cuentas Institucionales';
+  const isConoceTab = activeTabClean === 'Conoce mi Escuela';
+
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && (r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas'))));
+  }, [records, activeTab, activeTabClean]);
+
   if (!mounted) return null
 
   return (
@@ -345,6 +282,9 @@ export default function ProgramsPage() {
              <p className="text-muted-foreground font-black text-[11px] uppercase tracking-[0.3em]">Seguimiento Estratégico Oficina de Planeación</p>
           </div>
         </div>
+        <Button className="gap-2 font-black uppercase h-12 px-8 shadow-lg" onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+           <PlusCircle className="h-5 w-5" /> Nuevo Registro {activeTabClean}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
@@ -379,7 +319,7 @@ export default function ProgramsPage() {
                        </div>
                        <div className="space-y-6 text-slate-600 font-medium leading-relaxed">
                           <p>
-                            <strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES), el cual inició en el 2006. Se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para proyectar su trabajo hacia la comunidad y autoridades educativas.
+                            <strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES). Se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para proyectar su trabajo hacia la comunidad y autoridades educativas.
                           </p>
                        </div>
                     </div>
@@ -392,8 +332,6 @@ export default function ProgramsPage() {
                        <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                            <ClipboardCheck className="h-4 w-4" /> SECCIÓN EDITORIAL DE WEBESCUELA
                        </TabsTrigger>
-                       <TabsTrigger value="list" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><TableIcon className="h-4 w-4" /> Escuelas Incorporadas</TabsTrigger>
-                       <TabsTrigger value="search" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Search className="h-4 w-4" /> Consulta tu Escuela</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="editorial" className="animate-in fade-in slide-in-from-bottom-4">
@@ -417,13 +355,8 @@ export default function ProgramsPage() {
                                   <TableHead className="w-20 font-black text-[9px] uppercase border-r text-center">Vertiente</TableHead>
                                   <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Sector</TableHead>
                                   <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Zona</TableHead>
-                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Alta</TableHead>
-                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Mod.</TableHead>
                                   <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center text-emerald-600">Revisión</TableHead>
-                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Pub.</TableHead>
-                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Susp.</TableHead>
                                   <TableHead className="min-w-[300px] font-black text-[9px] uppercase border-r">Observaciones</TableHead>
-                                  <TableHead className="min-w-[180px] font-black text-[9px] uppercase border-r">eContacto</TableHead>
                                   <TableHead className="min-w-[140px] font-black text-[9px] uppercase text-right pr-6 bg-slate-100 sticky right-0 z-10">Acciones</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -438,20 +371,13 @@ export default function ProgramsPage() {
                                       <TableCell className="text-center font-bold text-slate-700 border-r">{school?.modalidad || '-'}</TableCell>
                                       <TableCell className="text-center font-black text-slate-800 border-r">{school?.sectorNum || '-'}</TableCell>
                                       <TableCell className="text-center font-black text-slate-800 border-r">{school?.zonaEscolar || 'S/Z'}</TableCell>
-                                      <TableCell className="text-center text-slate-500 border-r">2022/10/19</TableCell>
-                                      <TableCell className="text-center text-slate-500 border-r">2022/10/20</TableCell>
                                       <TableCell className="text-center text-emerald-600 border-r font-black">{sub.date}</TableCell>
-                                      <TableCell className="text-center text-slate-500 border-r">2023/04/19</TableCell>
-                                      <TableCell className="text-center text-slate-300 border-r">-</TableCell>
                                       <TableCell className="p-4 border-r max-w-[400px]">Auditoría 2025: Validación de contenido pendiente.</TableCell>
-                                      <TableCell className="font-bold text-blue-600 lowercase border-r underline">{sub.cct.toLowerCase()}@desysa.gob.mx</TableCell>
                                       <TableCell className="text-right pr-6 sticky right-0 z-10 bg-white/95 shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">
                                          <div className="flex flex-col gap-1 items-end py-2">
                                             <button onClick={() => handleReviewSubmission(sub.cct)} className="text-[9px] font-black uppercase text-blue-600 hover:underline">Revisar</button>
                                             <button onClick={() => handleAction('publicar', sub.cct)} className="text-[9px] font-black uppercase text-emerald-600 hover:underline">Publicar</button>
                                             <button onClick={() => handleAction('suspender', sub.cct)} className="text-[9px] font-black uppercase text-rose-600 hover:underline">Suspender</button>
-                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:underline">Observaciones</button>
-                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:underline">eContacto</button>
                                             <button onClick={() => handleGeneratePass(sub.cct)} className="text-[9px] font-black uppercase text-slate-500 hover:underline">Contraseña</button>
                                          </div>
                                       </TableCell>
@@ -548,7 +474,7 @@ export default function ProgramsPage() {
                                       </Button>
                                       <h3 className="font-black text-xl uppercase text-white">Simulador Portal Escolar</h3>
                                       {isAdminEditorial && (
-                                        <Button onClick={() => toast({ title: "Portal Publicado" })} className="bg-emerald-600 text-white font-black px-10 rounded-xl">PUBLICAR PÁGINA WEB</Button>
+                                        <Button onClick={() => handleAction('publicar', incCct)} className="bg-emerald-600 text-white font-black px-10 rounded-xl">PUBLICAR PÁGINA WEB OFICIAL</Button>
                                       )}
                                    </div>
                                    <ScrollArea className="h-[75vh] bg-slate-100 p-10">
@@ -565,6 +491,10 @@ export default function ProgramsPage() {
                                                <h2 className="text-xl font-black text-primary">Bienvenida</h2>
                                                <p className="text-sm text-slate-600 leading-relaxed">{webSchoolData.presentacion}</p>
                                             </div>
+                                         </div>
+                                         <div className="mt-10 pt-10 border-t">
+                                            <h3 className="text-lg font-black text-primary mb-4">Nuestra Historia</h3>
+                                            <p className="text-sm text-slate-600">{webSchoolData.resenaHistorica}</p>
                                          </div>
                                       </div>
                                    </ScrollArea>
@@ -595,10 +525,165 @@ export default function ProgramsPage() {
                  </Tabs>
               </div>
            ) : (
-             <Card className="p-10 text-center text-slate-300 font-black uppercase">Módulo en construcción: {activeTab}</Card>
+             <Card className="executive-card">
+               <CardHeader className="bg-slate-50/50 p-8 border-b">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <CardTitle className="text-xl font-black uppercase text-primary">{activeTabClean}</CardTitle>
+                     <CardDescription className="text-[10px] font-black uppercase tracking-widest">Control y Seguimiento de Implementación</CardDescription>
+                   </div>
+                   <div className="flex items-center gap-4">
+                      <div className="text-right">
+                         <span className="text-[9px] font-black text-slate-400 uppercase">Impacto Global</span>
+                         <div className="text-lg font-black text-primary">{filteredRecords.length} Escuelas</div>
+                      </div>
+                   </div>
+                 </div>
+               </CardHeader>
+               <CardContent className="p-0">
+                 <Table>
+                   <TableHeader className="bg-slate-100/50">
+                     <TableRow>
+                       <TableHead className="font-black text-[10px] uppercase pl-8">CCT / Escuela</TableHead>
+                       {isLibraryTab && (
+                         <>
+                           <TableHead className="font-black text-[10px] uppercase text-center">Equipos</TableHead>
+                           <TableHead className="font-black text-[10px] uppercase">Descripción Técnica</TableHead>
+                         </>
+                       )}
+                       {isCuentasTab && (
+                         <>
+                           <TableHead className="font-black text-[10px] uppercase">Responsable / eContacto</TableHead>
+                           <TableHead className="font-black text-[10px] uppercase">Dominio</TableHead>
+                         </>
+                       )}
+                       <TableHead className="font-black text-[10px] uppercase text-center">Estatus</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase text-right pr-8">Acciones</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredRecords.length > 0 ? filteredRecords.map((rec) => (
+                       <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
+                         <TableCell className="pl-8">
+                            <div className="flex flex-col">
+                               <span className="text-xs font-black text-slate-700">{rec.cct}</span>
+                               <span className="text-[10px] text-muted-foreground font-bold">{rec.schoolName}</span>
+                            </div>
+                         </TableCell>
+                         {isLibraryTab && (
+                           <>
+                             <TableCell className="text-center font-black text-primary">{rec.numeroEquipos || 0}</TableCell>
+                             <TableCell className="text-[10px] font-bold text-slate-500 max-w-[200px] truncate">{rec.descripcionEquipo || 'Sin descripción'}</TableCell>
+                           </>
+                         )}
+                         {isCuentasTab && (
+                           <>
+                             <TableCell>
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-slate-700">{rec.asistentes?.[0]?.nombres} {rec.asistentes?.[0]?.paterno}</span>
+                                  <span className="text-[9px] text-blue-600 font-bold lowercase">{rec.asistentes?.[0]?.email}</span>
+                               </div>
+                             </TableCell>
+                             <TableCell>
+                                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">
+                                   {rec.asistentes?.[0]?.email?.split('@')[1] || 'desysa.gob.mx'}
+                                </Badge>
+                             </TableCell>
+                           </>
+                         )}
+                         <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
+                               <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                               <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
+                            </div>
+                         </TableCell>
+                         <TableCell className="text-right pr-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                               <Pencil className="h-4 w-4" />
+                            </Button>
+                         </TableCell>
+                       </TableRow>
+                     )) : (
+                       <TableRow>
+                         <TableCell colSpan={6} className="text-center py-20 bg-slate-50/50">
+                            <div className="flex flex-col items-center gap-2 opacity-30">
+                               <MonitorCheck className="h-10 w-10 text-primary" />
+                               <p className="font-black text-xs uppercase">Sin registros en este rubro para mostrar.</p>
+                            </div>
+                         </TableCell>
+                       </TableRow>
+                     )}
+                   </TableBody>
+                 </Table>
+               </CardContent>
+             </Card>
            )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+         <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] p-0 overflow-hidden">
+            <DialogHeader className="p-8 bg-slate-50 border-b">
+               <DialogTitle className="uppercase font-black text-primary">Captura Técnica - {activeTabClean}</DialogTitle>
+               <DialogDescription className="text-xs font-bold">Complete la información del programa para el centro de trabajo.</DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] p-8">
+               <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Folio</Label><Input className="font-bold" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Estatus</Label>
+                        <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
+                           <SelectTrigger><SelectValue /></SelectTrigger>
+                           <SelectContent>
+                              <SelectItem value="planeacion">PLANEACIÓN</SelectItem>
+                              <SelectItem value="activo">ACTIVO</SelectItem>
+                              <SelectItem value="concluido">CONCLUIDO</SelectItem>
+                           </SelectContent>
+                        </Select>
+                     </div>
+                  </div>
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase">CCT (Autocompletado)</Label>
+                     <Input className="font-mono" value={formData.cct} onChange={e => {
+                        const val = e.target.value.toUpperCase();
+                        const school = schoolsDirectory.find(s => s.cct === val);
+                        if (school) {
+                           setFormData({...formData, cct: val, schoolName: school.nombre, municipio: school.municipio, region: school.region, valle: school.valle});
+                        } else {
+                           setFormData({...formData, cct: val});
+                        }
+                     }} />
+                  </div>
+                  {isLibraryTab && (
+                     <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">No. Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Descripción Técnica</Label><Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} /></div>
+                     </div>
+                  )}
+                  {isCuentasTab && (
+                     <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase">Datos del Responsable</Label>
+                        <Input placeholder="Nombre Completo" value={formData.asistentes?.[0]?.nombres} onChange={e => {
+                           const ast = [...(formData.asistentes || [initialAssistant])];
+                           ast[0] = {...ast[0], nombres: e.target.value};
+                           setFormData({...formData, asistentes: ast});
+                        }} />
+                        <Input placeholder="Correo Institucional" value={formData.asistentes?.[0]?.email} onChange={e => {
+                           const ast = [...(formData.asistentes || [initialAssistant])];
+                           ast[0] = {...ast[0], email: e.target.value};
+                           setFormData({...formData, asistentes: ast});
+                        }} />
+                     </div>
+                  )}
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Observaciones</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+               </div>
+            </ScrollArea>
+            <DialogFooter className="p-8 bg-slate-50 border-t">
+               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-bold uppercase text-xs">Cancelar</Button>
+               <Button onClick={handleSave} className="font-black uppercase text-xs px-10">Guardar Información</Button>
+            </DialogFooter>
+         </DialogContent>
+      </Dialog>
 
       <Dialog open={isEditorialAuthOpen} onOpenChange={setIsEditorialAuthOpen}>
         <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-white">
