@@ -54,7 +54,10 @@ import {
   Eye,
   Camera,
   CheckCircle2,
-  ClipboardCheck
+  ClipboardCheck,
+  MessageSquare,
+  Lock,
+  PauseCircle
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -123,7 +126,7 @@ export default function ProgramsPage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
   const [webSchoolData, setWebSchoolData] = useState<WebSchoolData>(initialWebData)
-  const [savedSubmissions, setSavedSubmissions] = useState<{cct: string, name: string}[]>([])
+  const [savedSubmissions, setSavedSubmissions] = useState<{cct: string, name: string, date: string}[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webFotoRef = useRef<HTMLInputElement>(null);
@@ -179,13 +182,17 @@ export default function ProgramsPage() {
   }, [])
 
   const loadSubmissions = () => {
-    const subs: {cct: string, name: string}[] = [];
+    const subs: {cct: string, name: string, date: string}[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith('web_school_data_')) {
         const cct = key.replace('web_school_data_', '');
         const school = schoolsDirectory.find(s => s.cct === cct);
-        subs.push({ cct, name: school?.nombre || 'Escuela Desconocida' });
+        subs.push({ 
+          cct, 
+          name: school?.nombre || 'Escuela Desconocida',
+          date: '2025/09/01' // Mock date for legacy look
+        });
       }
     }
     setSavedSubmissions(subs);
@@ -472,47 +479,77 @@ export default function ProgramsPage() {
                     </TabsContent>
 
                     <TabsContent value="editorial" className="animate-in fade-in slide-in-from-bottom-4">
-                       <Card className="executive-card">
-                          <CardHeader className="p-8 border-b bg-amber-50/50">
-                             <div className="flex items-center justify-between">
-                                <div>
-                                   <CardTitle className="text-lg font-black uppercase text-amber-900 flex items-center gap-3">
-                                      <ClipboardCheck className="h-6 w-6" /> Control Editorial de Espacios Web
-                                   </CardTitle>
-                                   <CardDescription className="text-[10px] font-black uppercase tracking-widest mt-1">Supervisión de Información Institucional Capturada</CardDescription>
-                                </div>
-                                <Badge className="bg-amber-100 text-amber-800 border-none text-[10px] font-black px-6 py-2 rounded-xl">Solicitudes: {savedSubmissions.length}</Badge>
+                       <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white">
+                          <div className="bg-slate-50 p-8 border-b">
+                             <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-black uppercase text-primary tracking-tighter">Bienvenido a la Sección Editorial de WebEscuela</h3>
+                                <Button variant="ghost" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] bg-white border border-slate-200" onClick={() => setConoceSubTab('info')}><ArrowLeft className="h-4 w-4 mr-2" /> Cerrar</Button>
                              </div>
-                          </CardHeader>
-                          <Table>
-                             <TableHeader className="bg-slate-50">
+                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                               En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                             </p>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[1400px]">
+                              <TableHeader className="bg-slate-100/50">
                                 <TableRow>
-                                   <TableHead className="py-6 pl-10 font-black text-[10px] uppercase">CCT</TableHead>
-                                   <TableHead className="font-black text-[10px] uppercase">Centro de Trabajo</TableHead>
-                                   <TableHead className="font-black text-[10px] uppercase text-center">Estado Captura</TableHead>
-                                   <TableHead className="text-right pr-10 font-black text-[10px] uppercase">Acciones</TableHead>
+                                  <TableHead className="w-10 text-center font-black text-[9px] uppercase border-r py-4">No.</TableHead>
+                                  <TableHead className="min-w-[120px] font-black text-[9px] uppercase border-r">Centro de Trabajo</TableHead>
+                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase border-r">Agrupado</TableHead>
+                                  <TableHead className="w-20 font-black text-[9px] uppercase border-r text-center">Vertiente</TableHead>
+                                  <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Sector</TableHead>
+                                  <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Zona</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Alta</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Modificación</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Revisión</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Publicación</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Suspensión</TableHead>
+                                  <TableHead className="min-w-[300px] font-black text-[9px] uppercase border-r">Observaciones</TableHead>
+                                  <TableHead className="min-w-[180px] font-black text-[9px] uppercase border-r">eContacto</TableHead>
+                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase text-right pr-6 bg-slate-100 sticky right-0 z-10 shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">Acciones a Realizar</TableHead>
                                 </TableRow>
-                             </TableHeader>
-                             <TableBody>
-                                {savedSubmissions.map((sub, i) => (
-                                   <TableRow key={i} className="hover:bg-slate-50 transition-all border-slate-100 group">
-                                      <TableCell className="py-6 pl-10 font-black text-xs text-primary">{sub.cct}</TableCell>
-                                      <TableCell className="font-bold text-xs uppercase text-slate-700">{sub.name}</TableCell>
-                                      <TableCell className="text-center">
-                                         <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[9px] uppercase px-4 py-1">Información Guardada</Badge>
+                              </TableHeader>
+                              <TableBody>
+                                {savedSubmissions.map((sub, i) => {
+                                  const school = schoolsDirectory.find(s => s.cct === sub.cct);
+                                  return (
+                                   <TableRow key={i} className="hover:bg-slate-50 transition-all border-b text-[10px]">
+                                      <TableCell className="text-center font-bold text-slate-400 border-r">{i + 1}</TableCell>
+                                      <TableCell className="font-black text-primary border-r">{sub.cct}</TableCell>
+                                      <TableCell className="font-bold text-slate-500 uppercase border-r">DESMEXICO{school?.sectorNum || '00'}{school?.zonaEscolar || '000'}</TableCell>
+                                      <TableCell className="text-center font-bold text-slate-700 border-r">{school?.modalidad || '-'}</TableCell>
+                                      <TableCell className="text-center font-black text-slate-800 border-r">{school?.sectorNum || '-'}</TableCell>
+                                      <TableCell className="text-center font-black text-slate-800 border-r">{school?.zonaEscolar || 'S/Z'}</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2022/10/19</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2022/10/20</TableCell>
+                                      <TableCell className="text-center text-emerald-600 border-r font-black">{sub.date}</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2023/04/19</TableCell>
+                                      <TableCell className="text-center text-slate-300 border-r">-</TableCell>
+                                      <TableCell className="p-4 border-r max-w-[400px]">
+                                         <p className="line-clamp-4 leading-relaxed text-slate-500 italic font-medium">
+                                            Información recibida para auditoría 2025. Se requiere validar la fotografía y los logros académicos reportados por el centro de trabajo.
+                                         </p>
                                       </TableCell>
-                                      <TableCell className="text-right pr-10">
-                                         <Button onClick={() => handleReviewSubmission(sub.cct)} variant="outline" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[10px] gap-2 border-amber-200 text-amber-700 hover:bg-amber-600 hover:text-white transition-all shadow-sm">
-                                            <ClipboardCheck className="h-4 w-4" /> Revisar y Publicar
-                                         </Button>
+                                      <TableCell className="font-bold text-blue-600 lowercase border-r underline decoration-blue-200">{sub.cct.toLowerCase()}@desysa.gob.mx</TableCell>
+                                      <TableCell className="text-right pr-6 sticky right-0 z-10 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">
+                                         <div className="flex flex-col gap-1 items-end py-2">
+                                            <button onClick={() => handleReviewSubmission(sub.cct)} className="text-[9px] font-black uppercase text-blue-600 hover:text-blue-800 underline">Revisar</button>
+                                            <button className="text-[9px] font-black uppercase text-emerald-600 hover:text-emerald-800 underline">Publicar</button>
+                                            <button className="text-[9px] font-black uppercase text-rose-600 hover:text-rose-800 underline">Suspender</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">Observaciones</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">eContacto</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">Contraseña</button>
+                                         </div>
                                       </TableCell>
                                    </TableRow>
-                                ))}
+                                  )
+                                })}
                                 {savedSubmissions.length === 0 && (
-                                   <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase text-slate-300">No hay capturas pendientes de revisión editorial</TableCell></TableRow>
+                                   <TableRow><TableCell colSpan={14} className="text-center py-20 font-black uppercase text-slate-300">No hay capturas de escuelas para revisión editorial</TableCell></TableRow>
                                 )}
-                             </TableBody>
-                          </Table>
+                              </TableBody>
+                            </Table>
+                          </div>
                        </Card>
                     </TabsContent>
 
@@ -1198,7 +1235,7 @@ export default function ProgramsPage() {
                                     </TableCell>
                                     <TableCell className="text-center">
                                        <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                          <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                          <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
                                           <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
                                        </div>
                                     </TableCell>
@@ -1280,7 +1317,7 @@ export default function ProgramsPage() {
                                          </Select>
                                        ) : (
                                          <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                            <Circle className={cn("h-2 w-2 fill-current", rec.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
+                                            <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
                                             <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
                                          </div>
                                        )}
@@ -1339,7 +1376,7 @@ export default function ProgramsPage() {
                                 </TableCell>
                                 <TableCell className="text-center">
                                    <div className="flex items-center justify-center gap-2 bg-white px-4 py-1 rounded-full border shadow-sm w-fit mx-auto">
-                                      <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                      <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
                                       <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
                                    </div>
                                 </TableCell>
