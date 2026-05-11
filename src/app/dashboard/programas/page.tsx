@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -127,6 +128,8 @@ export default function ProgramsPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const webFotoRef = useRef<HTMLInputElement>(null);
+
+  const isAdminEditorial = userRfc?.toUpperCase() === 'CEDITORIAL' || userRfc?.toUpperCase() === 'CEDTORIAL';
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -382,8 +385,6 @@ export default function ProgramsPage() {
     return schoolsDirectory.find(s => s.cct === incCct);
   }, [incCct]);
 
-  const isAdminEditorial = userRfc === 'CEDITORIAL' || userRfc === 'CEDTORIAL';
-
   if (!mounted) return null
 
   return (
@@ -443,11 +444,11 @@ export default function ProgramsPage() {
                  </Card>
 
                  <Tabs value={conoceSubTab} onValueChange={setConoceSubTab} className="space-y-8">
-                    <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14">
+                    <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14 w-full flex overflow-x-auto justify-start">
                        <TabsTrigger value="info" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Info className="h-4 w-4" /> Información</TabsTrigger>
                        <TabsTrigger value="incorp" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><UserPlus className="h-4 w-4" /> Incorporación</TabsTrigger>
                        {isAdminEditorial && (
-                         <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                         <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white animate-pulse">
                            <ClipboardCheck className="h-4 w-4" /> Revisión Editorial
                          </TabsTrigger>
                        )}
@@ -970,7 +971,7 @@ export default function ProgramsPage() {
                                                   <span className="text-[9px] text-slate-400 font-bold uppercase">{s.municipio}</span>
                                                </div>
                                             </TableCell>
-                                            <TableCell className="text-right pr-10 font-black text-[10px] text-slate-400 uppercase">{s.valle}</TableCell>
+                                            <TableCell className="text-right pr-10 font-black text-[10px] text-slate-400 uppercase">{s.valle}</SelectItem>
                                          </TableRow>
                                       ))}
                                       {consultaResults.length === 0 && (
