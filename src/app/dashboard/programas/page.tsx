@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -73,7 +72,7 @@ const PROGRAM_RUBROS = [
 ];
 
 const MODALIDADES_GRID = [
-  'SECUNDARIA GENERAL', 'SECUNDARIA TECNICA', 'TELESECUNDARIA', 'PARTICULAR'
+  'PES GOB', 'PES', 'PST GOB', 'PST'
 ];
 
 const AREAS_PICKER = ['ADMIN', 'PLANTEL'];
@@ -121,7 +120,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   
-  // Dashboard Filters
   const [modalidadSubFilter, setModalidadSubFilter] = useState('all')
   const [sectorSubFilter, setSectorSubFilter] = useState('all')
   const [areaSubFilter, setAreaSubFilter] = useState('all')
@@ -195,6 +193,7 @@ export default function ProgramsPage() {
       setRecords(stored)
     } else {
       setRecords(programsData)
+      localStorage.setItem('programs_full', JSON.stringify(programsData))
     }
     loadSubmissions()
   }, [])
@@ -220,10 +219,10 @@ export default function ProgramsPage() {
 
   const filteredCuentasRecords = useMemo(() => {
     return records.filter(r => {
-      const isCuentas = r.name === activeTab || r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas');
+      const isCuentas = r.name === activeTab || r.id.startsWith('PROG-CI');
       if (!isCuentas) return false;
 
-      const matchModalidad = modalidadSubFilter === 'all' || r.modalidad === modalidadSubFilter || (modalidadSubFilter === 'PARTICULAR' && r.tipo === 'PARTICULAR');
+      const matchModalidad = modalidadSubFilter === 'all' || r.modalidad === modalidadSubFilter;
       const matchSector = sectorSubFilter === 'all' || r.sector === sectorSubFilter;
       const matchArea = areaSubFilter === 'all' || r.asistentes?.[0]?.departamento === areaSubFilter;
       const matchValle = valleSubFilter === 'all' || r.valle === valleSubFilter;
@@ -240,7 +239,7 @@ export default function ProgramsPage() {
     const inactivos = filteredCuentasRecords.filter(r => r.status === 'inactivo').length;
 
     const usagePercent = totalCuentas > 0 ? Math.round((terminados / totalCuentas) * 100) : 0;
-    const geoposicionPercent = 58; // Mock value for visual battery
+    const geoposicionPercent = 58; 
 
     const desysaCoeesData = [
       { name: 'En proceso', value: enProceso, fill: '#EAB308' },
@@ -286,18 +285,13 @@ export default function ProgramsPage() {
   const handleGeneratePass = (targetCct?: string) => {
     const cctToUse = targetCct || incCct;
     const cleanCct = cctToUse.trim().toUpperCase();
-    if (cleanCct.length < 10) {
-      toast({ variant: "destructive", title: "CCT Inválido", description: "Ingrese los 10 caracteres del CCT." })
-      return
-    }
-    const school = schoolsDirectory.find(s => s.cct === cleanCct)
-    if (!school) {
-      toast({ variant: "destructive", title: "No encontrado", description: "El CCT no existe en el directorio oficial." })
+    if (cleanCct.length < 8) {
+      toast({ variant: "destructive", title: "CCT Inválido" })
       return
     }
     const pass = Math.random().toString(36).substring(2, 10).toUpperCase()
     setGeneratedPass(pass)
-    toast({ title: "Contraseña Generada", description: `Acceso para ${cleanCct} creado exitosamente.` })
+    toast({ title: "Contraseña Generada", description: `Acceso para ${cleanCct} creado.` })
   }
 
   const handleReviewSubmission = (cct: string) => {
@@ -307,17 +301,13 @@ export default function ProgramsPage() {
       setWebSchoolData(JSON.parse(stored));
       setShowWebAssistant(true);
       setAssistantStep('preview');
-      toast({ title: "Cargando Vista de Revisión", description: `Auditoría para el plantel ${cct}.` });
     } else {
-      toast({ variant: "destructive", title: "Sin datos", description: "No hay captura previa para este CCT." });
+      toast({ variant: "destructive", title: "Sin datos capturados" });
     }
   }
 
   const handleAction = (type: 'publicar' | 'suspender' | 'observaciones', cct: string) => {
-    toast({ 
-      title: type.toUpperCase(), 
-      description: `Acción aplicada al plantel ${cct} de forma satisfactoria.` 
-    });
+    toast({ title: type.toUpperCase(), description: `Acción aplicada al plantel ${cct}.` });
   }
 
   const handleSave = () => {
@@ -405,7 +395,7 @@ export default function ProgramsPage() {
   const isConoceTab = activeTabClean === 'Conoce mi Escuela';
 
   const filteredRecords = useMemo(() => {
-    return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && (r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas'))));
+    return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && r.id.startsWith('PROG-CI')));
   }, [records, activeTab, activeTabClean]);
 
   if (!mounted) return null
@@ -457,7 +447,7 @@ export default function ProgramsPage() {
                        </div>
                        <div className="space-y-6 text-slate-600 font-medium leading-relaxed">
                           <p>
-                            <strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES). Se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para proyectar su trabajo hacia la comunidad y autoridades educativas.
+                            <strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES).
                           </p>
                        </div>
                     </div>
@@ -480,7 +470,7 @@ export default function ProgramsPage() {
                                 <Button variant="ghost" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] bg-white border border-slate-200" onClick={() => setConoceSubTab('info')}><ArrowLeft className="h-4 w-4 mr-2" /> Cerrar</Button>
                              </div>
                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-                               Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                               Revise las solicitudes de publicación enviadas por los planteles escolares.
                              </p>
                           </div>
                           <div className="overflow-x-auto">
@@ -510,7 +500,7 @@ export default function ProgramsPage() {
                                       <TableCell className="text-center font-black text-slate-800 border-r">{school?.sectorNum || '-'}</TableCell>
                                       <TableCell className="text-center font-black text-slate-800 border-r">{school?.zonaEscolar || 'S/Z'}</TableCell>
                                       <TableCell className="text-center text-emerald-600 border-r font-black">{sub.date}</TableCell>
-                                      <TableCell className="p-4 border-r max-w-[400px]">Auditoría 2025: Validación de contenido pendiente.</TableCell>
+                                      <TableCell className="p-4 border-r max-w-[400px]">Auditoría SIP: Pendiente revisión.</TableCell>
                                       <TableCell className="text-right pr-6 sticky right-0 z-10 bg-white/95 shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">
                                          <div className="flex flex-col gap-1 items-end py-2">
                                             <button onClick={() => handleReviewSubmission(sub.cct)} className="text-[9px] font-black uppercase text-blue-600 hover:underline">Revisar</button>
@@ -538,31 +528,13 @@ export default function ProgramsPage() {
                                          <Button variant="ghost" size="icon" onClick={() => setShowWebAssistant(false)} className="rounded-full h-10 w-10 text-primary">
                                             <ArrowLeft className="h-5 w-5" />
                                          </Button>
-                                         <h4 className="font-black uppercase text-sm text-primary">Construya la Página de su Escuela</h4>
+                                         <h4 className="font-black uppercase text-sm text-primary">Asistente WebEscuela</h4>
                                       </div>
                                    </div>
-                                   <div className="p-12 max-w-4xl mx-auto space-y-12 text-center">
-                                      <div className="space-y-6">
-                                         <h3 className="text-3xl font-black text-slate-800 tracking-tight">Bienvenido al Asistente de WebEscuela</h3>
-                                         <p className="text-slate-500 font-medium text-sm leading-relaxed max-w-2xl mx-auto">
-                                            Este Asistente de WebEscuela lo guiará a través del proceso de construcción de la Página Web de su Escuela. Todo el proceso le tomará entre 10 y 15 minutos.
-                                         </p>
-                                      </div>
-                                      <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 text-left space-y-8">
-                                         <h5 className="font-black uppercase text-xs text-primary">Tenga a la mano la siguiente información:</h5>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {["Breve presentación de la escuela", "Fotografía digital (300x200)", "Reseña histórica", "Misión y Visión", "Infraestructura", "Logros Académicos/Deportivos", "Alumnos Distinguidos"].map(t => (
-                                               <div key={t} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
-                                                  <div className="h-2 w-2 rounded-full bg-primary" />
-                                                  <span className="text-[11px] font-bold text-slate-600">{t}</span>
-                                               </div>
-                                            ))}
-                                         </div>
-                                      </div>
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Se ha encontrado información previamente capturada.</p>
-                                      <Button onClick={() => setAssistantStep('capture')} className="h-16 px-20 rounded-2xl font-black uppercase bg-primary text-white shadow-2xl transition-all">
-                                         Empezar <ArrowRight className="h-5 w-5 ml-4" />
-                                      </Button>
+                                   <div className="p-12 text-center space-y-6">
+                                      <h3 className="text-3xl font-black text-slate-800">Bienvenido al Asistente</h3>
+                                      <p className="text-slate-500 text-sm max-w-2xl mx-auto">Complete la información de su escuela para construir su portal oficial.</p>
+                                      <Button onClick={() => setAssistantStep('capture')} className="h-16 px-20 rounded-2xl font-black uppercase bg-primary text-white shadow-2xl">Empezar <ArrowRight className="h-5 w-5 ml-4" /></Button>
                                    </div>
                                 </Card>
                              )}
@@ -571,9 +543,7 @@ export default function ProgramsPage() {
                                 <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden">
                                    <div className="bg-primary/5 p-8 border-b flex justify-between items-center">
                                       <div className="flex items-center gap-6">
-                                         <Button variant="ghost" size="icon" onClick={() => setAssistantStep('welcome')} className="rounded-full h-12 w-12 text-primary">
-                                            <ArrowLeft className="h-6 w-6" />
-                                         </Button>
+                                         <Button variant="ghost" size="icon" onClick={() => setAssistantStep('welcome')} className="rounded-full h-12 w-12 text-primary"><ArrowLeft className="h-6 w-6" /></Button>
                                          <h3 className="font-black text-2xl uppercase text-primary">Captura de Información</h3>
                                       </div>
                                       <div className="flex gap-4">
@@ -582,31 +552,17 @@ export default function ProgramsPage() {
                                       </div>
                                    </div>
                                    <ScrollArea className="h-[70vh] p-12">
-                                      <div className="max-w-5xl mx-auto space-y-12 pb-20">
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="space-y-4">
-                                               <Label className="text-[11px] font-black uppercase text-primary">Presentación</Label>
-                                               <Textarea className="min-h-[150px]" value={webSchoolData.presentacion} onChange={e => setWebSchoolData({...webSchoolData, presentacion: e.target.value})} />
-                                            </div>
-                                            <div className="space-y-4">
-                                               <Label className="text-[11px] font-black uppercase text-primary">Foto (300x200)</Label>
-                                               <div className="h-[150px] rounded-2xl border-2 border-dashed flex items-center justify-center relative cursor-pointer" onClick={() => webFotoRef.current?.click()}>
-                                                  {webSchoolData.foto ? <Image src={webSchoolData.foto} alt="Foto" fill className="object-cover rounded-2xl" /> : <ImageIcon className="h-10 w-10 text-slate-300" />}
-                                                  <input type="file" ref={webFotoRef} hidden accept="image/*" onChange={handleWebFotoChange} />
+                                      <div className="max-w-5xl mx-auto space-y-8">
+                                         <div className="grid grid-cols-2 gap-8">
+                                            <div className="space-y-2"><Label className="text-xs font-black uppercase">Presentación</Label><Textarea value={webSchoolData.presentacion} onChange={e => setWebSchoolData({...webSchoolData, presentacion: e.target.value})} /></div>
+                                            <div className="space-y-2"><Label className="text-xs font-black uppercase">Foto Escolar</Label>
+                                               <div className="h-40 border-2 border-dashed rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => webFotoRef.current?.click()}>
+                                                  {webSchoolData.foto ? <Image src={webSchoolData.foto} alt="f" fill className="object-cover rounded-2xl" /> : <ImageIcon className="h-10 w-10 text-slate-300" />}
+                                                  <input type="file" ref={webFotoRef} hidden onChange={handleWebFotoChange} />
                                                </div>
                                             </div>
                                          </div>
-                                         <div className="space-y-4">
-                                            <Label className="text-[11px] font-black uppercase text-primary">Reseña Histórica</Label>
-                                            <Textarea className="min-h-[150px]" value={webSchoolData.resenaHistorica} onChange={e => setWebSchoolData({...webSchoolData, resenaHistorica: e.target.value})} />
-                                         </div>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Misión</Label><Textarea value={webSchoolData.mision} onChange={e => setWebSchoolData({...webSchoolData, mision: e.target.value})} /></div>
-                                            <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Visión</Label><Textarea value={webSchoolData.vision} onChange={e => setWebSchoolData({...webSchoolData, vision: e.target.value})} /></div>
-                                         </div>
-                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Infraestructura</Label><Textarea value={webSchoolData.infraestructura} onChange={e => setWebSchoolData({...webSchoolData, infraestructura: e.target.value})} /></div>
-                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Logros</Label><Textarea value={webSchoolData.logros} onChange={e => setWebSchoolData({...webSchoolData, logros: e.target.value})} /></div>
-                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Alumnos Distinguidos</Label><Textarea value={webSchoolData.alumnosDistinguidos} onChange={e => setWebSchoolData({...webSchoolData, alumnosDistinguidos: e.target.value})} /></div>
+                                         <div className="space-y-2"><Label className="text-xs font-black uppercase">Reseña Histórica</Label><Textarea value={webSchoolData.resenaHistorica} onChange={e => setWebSchoolData({...webSchoolData, resenaHistorica: e.target.value})} /></div>
                                       </div>
                                    </ScrollArea>
                                 </Card>
@@ -615,46 +571,14 @@ export default function ProgramsPage() {
                              {assistantStep === 'preview' && (
                                 <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden">
                                    <div className="bg-slate-900 p-6 flex justify-between items-center">
-                                      <Button variant="ghost" size="icon" onClick={() => setAssistantStep('capture')} className="text-white">
-                                         <ArrowLeft className="h-6 w-6" />
-                                      </Button>
-                                      <h3 className="font-black text-xl uppercase text-white">Simulador Portal Escolar</h3>
-                                      {isAdminEditorial && (
-                                        <Button onClick={() => handleAction('publicar', incCct)} className="bg-emerald-600 text-white font-black px-10 rounded-xl">PUBLICAR PÁGINA WEB OFICIAL</Button>
-                                      )}
+                                      <Button variant="ghost" size="icon" onClick={() => setAssistantStep('capture')} className="text-white"><ArrowLeft className="h-6 w-6" /></Button>
+                                      <h3 className="font-black text-xl uppercase text-white">Vista Previa Editorial</h3>
+                                      {isAdminEditorial && <Button onClick={() => handleAction('publicar', incCct)} className="bg-emerald-600 text-white font-black px-10 rounded-xl">PUBLICAR PÁGINA WEB</Button>}
                                    </div>
                                    <ScrollArea className="h-[75vh] bg-slate-100 p-10">
-                                      <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-3xl p-12 min-h-[800px]">
-                                         <header className="bg-primary p-8 rounded-2xl text-white mb-10 text-center">
-                                            <h1 className="text-3xl font-black">{(schoolsDirectory.find(s => s.cct === incCct))?.nombre || 'Centro de Trabajo'}</h1>
-                                            <p className="text-xs opacity-80 mt-2">CCT: {incCct}</p>
-                                         </header>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="relative aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
-                                               {webSchoolData.foto && <Image src={webSchoolData.foto} alt="Hero" fill className="object-cover" />}
-                                            </div>
-                                            <div className="space-y-6">
-                                               <h2 className="text-2xl font-black text-primary border-b-2 border-primary/10 pb-2">Bienvenida</h2>
-                                               <p className="text-sm text-slate-600 leading-relaxed italic">{webSchoolData.presentacion || 'Información de bienvenida pendiente...'}</p>
-                                            </div>
-                                         </div>
-                                         <div className="mt-12 space-y-10">
-                                            <section>
-                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter flex items-center gap-3"> Nuestra Historia</h3>
-                                               <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">{webSchoolData.resenaHistorica}</p>
-                                            </section>
-                                            <div className="grid grid-cols-2 gap-10">
-                                               <section className="bg-primary/5 p-6 rounded-2xl border border-primary/10"><h4 className="font-black text-primary uppercase text-xs mb-3">Misión</h4><p className="text-xs text-slate-600 leading-relaxed">{webSchoolData.mision}</p></section>
-                                               <section className="bg-accent/5 p-6 rounded-2xl border border-accent/10"><h4 className="font-black text-accent uppercase text-xs mb-3">Visión</h4><p className="text-xs text-slate-600 leading-relaxed">{webSchoolData.vision}</p></section>
-                                            </div>
-                                            <section>
-                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter">Infraestructura y Logros</h3>
-                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                  <div className="space-y-3"><Label className="text-[10px] font-black uppercase text-slate-400">Instalaciones</Label><p className="text-xs font-medium">{webSchoolData.infraestructura}</p></div>
-                                                  <div className="space-y-3"><Label className="text-[10px] font-black uppercase text-slate-400">Excelencia</Label><p className="text-xs font-medium">{webSchoolData.logros}</p></div>
-                                               </div>
-                                            </section>
-                                         </div>
+                                      <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-3xl p-12 min-h-[500px]">
+                                         <header className="bg-primary p-8 rounded-2xl text-white mb-10 text-center"><h1 className="text-3xl font-black">{incCct}</h1></header>
+                                         <p className="text-sm text-slate-600 leading-relaxed italic">{webSchoolData.presentacion || 'Sin información.'}</p>
                                       </div>
                                    </ScrollArea>
                                 </Card>
@@ -667,7 +591,7 @@ export default function ProgramsPage() {
                                 <div className="space-y-4">
                                    <Label className="text-[11px] font-black uppercase text-slate-600">CCT de la Escuela</Label>
                                    <div className="flex gap-4">
-                                      <input className="flex h-16 w-full rounded-2xl font-black text-lg text-center uppercase tracking-widest bg-slate-50 border px-3" placeholder="15DES0000X" maxLength={10} value={incCct} onChange={(e) => setIncCct(e.target.value.toUpperCase())} />
+                                      <input className="flex h-16 w-full rounded-2xl font-black text-lg text-center uppercase bg-slate-50 border px-3" placeholder="15DES0000X" maxLength={10} value={incCct} onChange={(e) => setIncCct(e.target.value.toUpperCase())} />
                                       <Button onClick={() => handleGeneratePass()} className="h-16 px-10 rounded-2xl font-black uppercase bg-primary text-white shadow-xl">GENERAR ACCESO</Button>
                                    </div>
                                 </div>
@@ -695,190 +619,138 @@ export default function ProgramsPage() {
 
                    <TabsContent value="dashboard" className="animate-in fade-in zoom-in-95 duration-700">
                       <div className="space-y-10">
-                        {/* Header Monitor */}
                         <div className="flex items-center gap-6">
-                           <div className="h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl">
-                              <Zap className="h-8 w-8 text-white" />
-                           </div>
+                           <div className="h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl"><Zap className="h-8 w-8 text-white" /></div>
                            <div>
                               <h2 className="text-3xl font-black text-primary uppercase tracking-tighter leading-none">Herramienta de Monitoreo</h2>
                               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] mt-1">Control Analítico de Cuentas Institucionales</p>
                            </div>
                         </div>
 
-                        {/* Top Filters and Stats */}
                         <div className="grid grid-cols-12 gap-8">
-                           {/* Left Slicers */}
                            <div className="col-span-3 space-y-8">
                               <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
-                                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">MODALIDAD</Label>
-                                 <div className="grid grid-cols-1 gap-2 h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                                 <Label className="text-[10px] font-black uppercase text-primary mb-4 block">MODALIDAD</Label>
+                                 <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2">
                                     <Button variant={modalidadSubFilter === 'all' ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase rounded-xl" onClick={() => setModalidadSubFilter('all')}>TODAS</Button>
                                     {MODALIDADES_GRID.map(m => (
-                                       <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase p-1 rounded-xl shadow-sm" onClick={() => setModalidadSubFilter(m)}>
-                                          {m}
-                                       </Button>
+                                       <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase rounded-xl" onClick={() => setModalidadSubFilter(m)}>{m}</Button>
                                     ))}
                                  </div>
                               </Card>
 
                               <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
-                                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">Sector</Label>
+                                 <Label className="text-[10px] font-black uppercase text-primary mb-4 block">SECTOR</Label>
                                  <div className="grid grid-cols-3 gap-2">
                                     <Button variant={sectorSubFilter === 'all' ? 'default' : 'outline'} className="col-span-3 h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter('all')}>TODOS</Button>
                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(s => (
-                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className={cn("h-10 text-[10px] font-black rounded-xl")} onClick={() => setSectorSubFilter(s.toString())}>
-                                          {s}
-                                       </Button>
+                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className="h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter(s.toString())}>{s}</Button>
                                     ))}
                                  </div>
                               </Card>
                            </div>
 
-                           {/* Center Gauges & KPI */}
-                           <div className="col-span-4 space-y-8 flex flex-col items-center">
-                              {/* Total Card */}
-                              <Card className="w-full executive-card p-10 flex flex-col items-center justify-center relative bg-white shadow-2xl overflow-hidden">
+                           <div className="col-span-4 flex flex-col items-center gap-8">
+                              <Card className="w-full executive-card p-10 flex flex-col items-center justify-center bg-white shadow-2xl relative">
                                  <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500" />
                                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Total de Cuentas Filtradas</span>
-                                 <div className="text-6xl font-black text-slate-800 tracking-tighter">{cuentasStats.totalCuentas.toLocaleString()}</div>
+                                 <div className="text-6xl font-black text-slate-800 tracking-tighter">{cuentasStats.totalCuentas}</div>
                               </Card>
 
-                              {/* Donut Gauge */}
-                              <div className="relative h-[250px] w-full flex flex-col items-center justify-center">
-                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">% CORREO EN USO (CONCLUIDO)</Label>
-                                 <div className="relative">
-                                    <ResponsiveContainer width={200} height={200}>
-                                       <PieChart>
-                                          <Pie data={cuentasStats.accountsData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                             {cuentasStats.accountsData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                                          </Pie>
-                                       </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                       <span className="text-3xl font-black text-primary">{cuentasStats.usagePercent}%</span>
-                                    </div>
-                                 </div>
+                              <div className="relative h-[250px] w-full flex flex-col items-center">
+                                 <Label className="text-[10px] font-black uppercase text-slate-400 mb-6">% CORREO ACTIVO (APROBADO)</Label>
+                                 <ResponsiveContainer width={200} height={200}>
+                                    <PieChart>
+                                       <Pie data={cuentasStats.accountsData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                          {cuentasStats.accountsData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                       </Pie>
+                                    </PieChart>
+                                 </ResponsiveContainer>
+                                 <div className="absolute inset-0 flex items-center justify-center pt-10"><span className="text-3xl font-black text-primary">{cuentasStats.usagePercent}%</span></div>
                               </div>
 
-                              {/* Geoposition Battery */}
-                              <div className="w-full flex flex-col items-center gap-4 mt-10">
-                                 <Label className="text-[10px] font-black uppercase text-blue-500 tracking-widest">Geoposición Global</Label>
-                                 <div className="w-32 h-48 border-4 border-slate-300 rounded-[2rem] p-1.5 relative overflow-hidden bg-slate-100 shadow-inner">
-                                    <div 
-                                      className="absolute bottom-0 left-0 w-full bg-emerald-500 transition-all duration-1000 flex items-center justify-center shadow-[0_-10px_20px_rgba(16,185,129,0.3)]"
-                                      style={{ height: `${cuentasStats.geoposicionPercent}%` }}
-                                    >
-                                       <span className="text-xl font-black text-white">{cuentasStats.geoposicionPercent}%</span>
+                              <div className="w-full flex flex-col items-center gap-4">
+                                 <Label className="text-[10px] font-black uppercase text-blue-500">Avance Geoposición</Label>
+                                 <div className="w-32 h-40 border-4 border-slate-300 rounded-[2rem] relative overflow-hidden bg-slate-100">
+                                    <div className="absolute bottom-0 left-0 w-full bg-emerald-500 flex items-center justify-center" style={{ height: `${cuentasStats.geoposicionPercent}%` }}>
+                                       <span className="text-lg font-black text-white">{cuentasStats.geoposicionPercent}%</span>
                                     </div>
                                  </div>
                               </div>
                            </div>
 
-                           {/* Right Column Pickers & Charts */}
                            <div className="col-span-5 space-y-8">
-                              <div className="grid grid-cols-2 gap-8">
-                                 <Card className="executive-card p-6 bg-orange-50/50 border-2 border-white">
-                                    <Label className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-4 block">AREA</Label>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <Card className="executive-card p-4 bg-orange-50/5 border-2 border-white">
+                                    <Label className="text-[9px] font-black uppercase text-orange-600 mb-4 block">AREA</Label>
                                     <div className="space-y-2">
-                                       <div className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", areaSubFilter === 'all' ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-orange-600 hover:bg-orange-100')} onClick={() => setAreaSubFilter('all')}>TODAS</div>
-                                       {AREAS_PICKER.map(a => (
-                                          <div key={a} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", areaSubFilter === a ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-orange-600 hover:bg-orange-100')} onClick={() => setAreaSubFilter(a)}>
-                                             {a}
-                                          </div>
-                                       ))}
+                                       <div className={cn("p-2 rounded-lg text-[9px] font-black uppercase cursor-pointer", areaSubFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-white')} onClick={() => setAreaSubFilter('all')}>TODAS</div>
+                                       {AREAS_PICKER.map(a => <div key={a} className={cn("p-2 rounded-lg text-[9px] font-black uppercase cursor-pointer", areaSubFilter === a ? 'bg-orange-600 text-white' : 'bg-white')} onClick={() => setAreaSubFilter(a)}>{a}</div>)}
                                     </div>
                                  </Card>
-
-                                 <Card className="executive-card p-6 bg-amber-50/50 border-2 border-white">
-                                    <Label className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-4 block">VALLE</Label>
+                                 <Card className="executive-card p-4 bg-amber-50/5 border-2 border-white">
+                                    <Label className="text-[9px] font-black uppercase text-amber-600 mb-4 block">VALLE</Label>
                                     <div className="space-y-2">
-                                       <div className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", valleSubFilter === 'all' ? 'bg-amber-600 text-white shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100')} onClick={() => setValleSubFilter('all')}>TODOS</div>
-                                       {VALLES_PICKER.map(v => (
-                                          <div key={v} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", valleSubFilter === v ? 'bg-amber-600 text-white shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100')} onClick={() => setValleSubFilter(v)}>
-                                             {v}
-                                          </div>
-                                       ))}
+                                       <div className={cn("p-2 rounded-lg text-[9px] font-black uppercase cursor-pointer", valleSubFilter === 'all' ? 'bg-amber-600 text-white' : 'bg-white')} onClick={() => setValleSubFilter('all')}>TODOS</div>
+                                       {VALLES_PICKER.map(v => <div key={v} className={cn("p-2 rounded-lg text-[9px] font-black uppercase cursor-pointer", valleSubFilter === v ? 'bg-amber-600 text-white' : 'bg-white')} onClick={() => setValleSubFilter(v)}>{v}</div>)}
                                     </div>
                                  </Card>
                               </div>
 
-                              <Card className="executive-card p-8 bg-white shadow-2xl relative overflow-hidden h-[350px]">
-                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                                    <Layout className="h-24 w-24" />
-                                 </div>
-                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8">ESTATUS OPERATIVO FILTRADO</CardTitle>
-                                 <ResponsiveContainer width="100%" height={250}>
-                                    <BarChart data={cuentasStats.desysaCoeesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                              <Card className="executive-card p-6 bg-white shadow-2xl h-[300px]">
+                                 <CardTitle className="text-xs font-black uppercase text-slate-700 mb-6">ESTATUS OPERATIVO FILTRADO</CardTitle>
+                                 <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={cuentasStats.desysaCoeesData}>
                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700 }} />
-                                       <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} />
-                                       <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={40}>
-                                          {cuentasStats.desysaCoeesData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                       <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} />
+                                       <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={35}>
+                                          {cuentasStats.desysaCoeesData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                        </Bar>
                                     </BarChart>
                                  </ResponsiveContainer>
                               </Card>
-
-                              <Card className="executive-card p-8 bg-white shadow-2xl relative h-[350px] flex flex-col items-center justify-center">
-                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8 w-full">ESTADO DE PUBLICACIÓN</CardTitle>
-                                 <div className="flex gap-20 items-end">
-                                    {cuentasStats.conoceMiEscuelaChartData.map(d => (
-                                       <div key={d.name} className="flex flex-col items-center group">
-                                          <div className="relative">
-                                             <div className="w-0 h-0 border-l-[60px] border-l-transparent border-r-[60px] border-r-transparent border-b-[180px] opacity-80 group-hover:opacity-100 transition-opacity" style={{ borderBottomColor: d.fill }}></div>
-                                             <div className="absolute inset-0 flex items-center justify-center pt-20">
-                                                <span className="text-2xl font-black text-white">{d.value}</span>
-                                             </div>
-                                          </div>
-                                          <span className="text-[10px] font-black uppercase text-slate-500 mt-4">{d.name}</span>
-                                       </div>
-                                    ))}
-                                 </div>
-                              </Card>
                            </div>
                         </div>
 
-                        {/* Audit Table Bottom */}
                         <Card className="executive-card overflow-hidden">
                            <CardHeader className="bg-slate-50 border-b p-6 flex flex-row items-center justify-between">
                               <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><MapPin className="h-5 w-5" /> Auditoría de Geoposicionamiento (Filtros Activos)</CardTitle>
-                              <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Sincronizado SIP</Badge>
+                              <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Base de Datos 231 Registros</Badge>
                            </CardHeader>
-                           <Table>
-                              <TableHeader className="bg-slate-100/50">
-                                 <TableRow>
-                                    <TableHead className="font-black text-[9px] uppercase pl-8">CCT / Escuela</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">LATITUD</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">LONGITUD</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase text-right pr-8">Estatus</TableHead>
-                                 </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                 {filteredCuentasRecords.length > 0 ? filteredCuentasRecords.slice(0, 15).map((rec, i) => (
-                                    <TableRow key={i} className="text-[10px] font-bold">
-                                       <TableCell className="pl-8 text-primary font-black uppercase">
-                                          <div className="flex flex-col">
-                                             <span>{rec.cct}</span>
-                                             <span className="text-[8px] text-muted-foreground">{rec.schoolName}</span>
-                                          </div>
-                                       </TableCell>
-                                       <TableCell className="font-mono">{ (19.0 + Math.random()).toFixed(6) }</TableCell>
-                                       <TableCell className="font-mono">{ (-99.0 - Math.random()).toFixed(6) }</TableCell>
-                                       <TableCell className="text-right pr-8">
-                                          <Badge className={cn("text-[8px] font-black uppercase", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-amber-500')}>
-                                             {rec.status}
-                                          </Badge>
-                                       </TableCell>
-                                    </TableRow>
-                                 )) : (
+                           <div className="overflow-x-auto">
+                              <Table>
+                                 <TableHeader className="bg-slate-100/50">
                                     <TableRow>
-                                       <TableCell colSpan={4} className="text-center py-10 font-black uppercase text-slate-300">No hay datos que coincidan con los filtros</TableCell>
+                                       <TableHead className="font-black text-[9px] uppercase pl-8"># USUARIO / CCT</TableHead>
+                                       <TableHead className="font-black text-[9px] uppercase">MODALIDAD</TableHead>
+                                       <TableHead className="font-black text-[9px] uppercase">CORREO DESYSA</TableHead>
+                                       <TableHead className="font-black text-[9px] uppercase text-right pr-8">ESTATUS</TableHead>
                                     </TableRow>
-                                 )}
-                              </TableBody>
-                           </Table>
+                                 </TableHeader>
+                                 <TableBody>
+                                    {filteredCuentasRecords.length > 0 ? filteredCuentasRecords.map((rec, i) => (
+                                       <TableRow key={i} className="text-[10px] font-bold">
+                                          <TableCell className="pl-8 text-primary font-black uppercase">
+                                             <div className="flex flex-col">
+                                                <span>{rec.id.split('-').pop()}</span>
+                                                <span className="text-[8px] text-muted-foreground">{rec.cct}</span>
+                                             </div>
+                                          </TableCell>
+                                          <TableCell className="uppercase text-[9px]">{rec.modalidad}</TableCell>
+                                          <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
+                                          <TableCell className="text-right pr-8">
+                                             <Badge className={cn("text-[8px] font-black uppercase", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-rose-500')}>
+                                                {rec.status === 'concluido' ? 'APROBADO' : 'DESAPROBADO'}
+                                             </Badge>
+                                          </TableCell>
+                                       </TableRow>
+                                    )) : (
+                                       <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-slate-300">No hay datos que coincidan</TableCell></TableRow>
+                                    )}
+                                 </TableBody>
+                              </Table>
+                           </div>
                         </Card>
                       </div>
                    </TabsContent>
@@ -886,55 +758,40 @@ export default function ProgramsPage() {
                    <TabsContent value="listado" className="animate-in slide-in-from-right-10 duration-700">
                       <Card className="executive-card">
                         <CardHeader className="bg-slate-50/50 p-8 border-b">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-xl font-black uppercase text-primary">{activeTabClean}</CardTitle>
-                              <CardDescription className="text-[10px] font-black uppercase tracking-widest">Control y Seguimiento de Implementación</CardDescription>
-                            </div>
-                            <div className="flex items-center gap-4">
-                               <div className="text-right">
-                                  <span className="text-[9px] font-black text-slate-400 uppercase">Impacto Global</span>
-                                  <div className="text-lg font-black text-primary">{filteredRecords.length} Escuelas</div>
-                               </div>
-                            </div>
-                          </div>
+                          <CardTitle className="text-xl font-black uppercase text-primary">{activeTabClean}</CardTitle>
+                          <CardDescription className="text-[10px] font-black uppercase tracking-widest">Base de Datos de Cuentas Institucionales SEIEM</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                           <Table>
                             <TableHeader className="bg-slate-100/50">
                               <TableRow>
-                                <TableHead className="font-black text-[10px] uppercase pl-8">CCT / Escuela</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase">Responsable / eContacto</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase">Dominio</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase text-center">Estatus</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase pl-8"># USUARIO / CCT</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase">MODALIDAD / VALLE</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase">CORREO INSTITUCIONAL</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase text-center">ESTATUS ACTIVO</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase text-right pr-8">Acciones</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {filteredRecords.length > 0 ? filteredRecords.map((rec) => (
+                              {filteredCuentasRecords.map((rec) => (
                                 <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
                                   <TableCell className="pl-8">
                                      <div className="flex flex-col">
-                                        <span className="text-xs font-black text-slate-700">{rec.cct}</span>
-                                        <span className="text-[10px] text-muted-foreground font-bold">{rec.schoolName}</span>
+                                        <span className="text-xs font-black text-slate-700">{rec.id.split('-').pop()}</span>
+                                        <span className="text-[10px] text-muted-foreground font-bold">{rec.cct}</span>
                                      </div>
                                   </TableCell>
                                   <TableCell>
                                     <div className="flex flex-col">
-                                       <span className="text-[10px] font-black text-slate-700">{rec.asistentes?.[0]?.nombres} {rec.asistentes?.[0]?.paterno}</span>
-                                       <span className="text-[9px] text-blue-600 font-bold lowercase">{rec.asistentes?.[0]?.email}</span>
+                                       <span className="text-[10px] font-black text-slate-700">{rec.modalidad}</span>
+                                       <span className="text-[9px] text-slate-400 font-bold uppercase">{rec.valle}</span>
                                     </div>
                                   </TableCell>
-                                  <TableCell>
-                                     <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">
-                                        {rec.asistentes?.[0]?.email?.split('@')[1] || 'desysa.gob.mx'}
-                                     </Badge>
-                                  </TableCell>
+                                  <TableCell className="font-mono text-[10px] text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
                                   <TableCell className="text-center">
-                                     <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                        <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
-                                        <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
-                                     </div>
+                                     <Badge className={cn("text-[9px] font-black px-4", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-rose-500')}>
+                                        {rec.status === 'concluido' ? 'APROBADO' : 'DESAPROBADO'}
+                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right pr-8">
                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
@@ -942,16 +799,7 @@ export default function ProgramsPage() {
                                      </Button>
                                   </TableCell>
                                 </TableRow>
-                              )) : (
-                                <TableRow>
-                                  <TableCell colSpan={6} className="text-center py-20 bg-slate-50/50">
-                                     <div className="flex flex-col items-center gap-2 opacity-30">
-                                        <MonitorCheck className="h-10 w-10 text-primary" />
-                                        <p className="font-black text-xs uppercase">Sin registros en este rubro para mostrar.</p>
-                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
+                              ))}
                             </TableBody>
                           </Table>
                         </CardContent>
@@ -1028,7 +876,7 @@ export default function ProgramsPage() {
                          <TableCell colSpan={6} className="text-center py-20 bg-slate-50/50">
                             <div className="flex flex-col items-center gap-2 opacity-30">
                                <MonitorCheck className="h-10 w-10 text-primary" />
-                               <p className="font-black text-xs uppercase">Sin registros en este rubro para mostrar.</p>
+                               <p className="font-black text-xs uppercase">Sin registros en este rubro.</p>
                             </div>
                          </TableCell>
                        </TableRow>
@@ -1045,7 +893,7 @@ export default function ProgramsPage() {
          <DialogContent className="sm:max-w-[1200px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
             <DialogHeader className="p-8 bg-slate-50 border-b">
                <DialogTitle className="uppercase font-black text-primary">Captura Técnica - {activeTabClean}</DialogTitle>
-               <DialogDescription className="text-xs font-bold">Complete la información del programa para el centro de trabajo.</DialogDescription>
+               <DialogDescription className="text-xs font-bold">Complete la información del programa.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 p-8">
                <div className="space-y-10">
@@ -1106,16 +954,11 @@ export default function ProgramsPage() {
                                       <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Grupo</Label><Input className="h-9 text-xs" value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
                                       <div className="md:col-span-2 space-y-2"><Label className="text-[9px] font-black uppercase">Nombre del Curso</Label><Input className="h-9 text-xs" value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
                                    </div>
-                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Fecha Inicio</Label><Input type="date" className="h-9 text-xs" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
-                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Fecha Término</Label><Input type="date" className="h-9 text-xs" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} /></div>
-                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Horas</Label><Input type="number" className="h-9 text-xs" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
-                                   </div>
                                 </div>
 
                                 <div className="space-y-4">
                                    <div className="flex justify-between items-center">
-                                      <h4 className="text-[10px] font-black uppercase text-primary">Lista de Asistentes al Curso</h4>
+                                      <h4 className="text-[10px] font-black uppercase text-primary">Lista de Asistentes</h4>
                                       <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 gap-2 font-black uppercase text-[9px]"><Plus className="h-3 w-3" /> Añadir Asistente</Button>
                                    </div>
                                    <div className="border rounded-2xl bg-white overflow-hidden">
@@ -1189,10 +1032,7 @@ export default function ProgramsPage() {
                               setFormData({...formData, asistentes: ast});
                            }}>
                               <SelectTrigger className="bg-white"><SelectValue placeholder="ÁREA" /></SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="ADMIN">ADMIN</SelectItem>
-                                 <SelectItem value="PLANTEL">PLANTEL</SelectItem>
-                              </SelectContent>
+                              <SelectContent><SelectItem value="ADMIN">ADMIN</SelectItem><SelectItem value="PLANTEL">PLANTEL</SelectItem></SelectContent>
                            </Select>
                         </div>
                      </div>
@@ -1203,7 +1043,7 @@ export default function ProgramsPage() {
             </ScrollArea>
             <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6">
                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 px-10 rounded-2xl font-bold uppercase text-[10px]">Cancelar</Button>
-               <Button onClick={handleSave} className="h-12 px-12 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20">Guardar Información del Programa</Button>
+               <Button onClick={handleSave} className="h-12 px-12 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20">Guardar Información</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>
