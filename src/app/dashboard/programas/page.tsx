@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
@@ -35,7 +37,8 @@ import {
   ArrowLeft,
   ImageIcon,
   Circle,
-  X
+  X,
+  GraduationCap
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -51,6 +54,15 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela',
   'Mesa de Ayuda Técnica'
 ];
+
+const FUNCIONES = [
+  "ADMINISTRATIVO",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
 
 type WebSchoolData = {
   presentacion: string;
@@ -91,7 +103,6 @@ export default function ProgramsPage() {
   const [assistantStep, setAssistantStep] = useState<'welcome' | 'capture' | 'preview'>('welcome')
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   
-  // Editorial Auth State
   const [isEditorialAuthOpen, setIsEditorialAuthOpen] = useState(false)
   const [editorialCredentials, setEditorialCredentials] = useState({ user: '', pass: '' })
 
@@ -100,7 +111,7 @@ export default function ProgramsPage() {
 
   const webFotoRef = useRef<HTMLInputElement>(null);
 
-  const isAdminEditorial = userRfc?.toUpperCase() === 'CEDITORIAL';
+  const isAdminEditorial = userRfc?.toUpperCase() === 'CEDITORIAL' || userRfc?.toUpperCase() === 'CEDTORIAL';
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -132,7 +143,15 @@ export default function ProgramsPage() {
     evidencePhotos: [],
     capacitacion: 'N',
     totalParticipantes: 0,
-    asistentes: [initialAssistant]
+    asistentes: [initialAssistant],
+    cursoFolio: '',
+    cursoGrupo: '',
+    cursoNombre: '',
+    duracionHoras: 0,
+    fechaInicio: '',
+    fechaTermino: '',
+    instructores: ['', '', ''],
+    cctSede: ''
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -239,8 +258,52 @@ export default function ProgramsPage() {
   }
 
   const resetForm = () => {
-    setFormData({ ...initialFormState, name: activeTab, date: format(new Date(), 'yyyy-MM-dd'), fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
+    const today = format(new Date(), 'yyyy-MM-dd');
+    setFormData({ 
+      ...initialFormState, 
+      name: activeTab, 
+      date: today, 
+      fechaEntrada: today,
+      fechaInicio: today,
+      fechaTermino: today
+    })
     setEditingId(null)
+  }
+
+  const updateAssistant = (index: number, field: keyof ProgramAssistant, value: string) => {
+    const newAssistants = [...(formData.asistentes || [initialAssistant])]
+    newAssistants[index] = { ...newAssistants[index], [field]: value }
+
+    if (field === 'cct') {
+      const cleanValue = value.trim().toUpperCase()
+      if (cleanValue.length === 10) {
+        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+        if (school) {
+          newAssistants[index] = {
+            ...newAssistants[index],
+            cct: school.cct,
+            nombreCT: school.nombre,
+            ze: school.zonaEscolar,
+            sector: school.sector,
+            modalidad: school.modalidad,
+            municipio: school.municipio,
+            region: school.region,
+            valle: school.valle
+          }
+        }
+      }
+    }
+    setFormData({ ...formData, asistentes: newAssistants })
+  }
+
+  const handleAddAssistant = () => {
+    setFormData({ ...formData, asistentes: [...(formData.asistentes || []), initialAssistant] })
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    const ast = [...(formData.asistentes || [])];
+    if (ast.length === 1) return;
+    setFormData({ ...formData, asistentes: ast.filter((_, i) => i !== index) })
   }
 
   const handleWebFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,13 +470,13 @@ export default function ProgramsPage() {
                                       <div className="space-y-6">
                                          <h3 className="text-3xl font-black text-slate-800 tracking-tight">Bienvenido al Asistente de WebEscuela</h3>
                                          <p className="text-slate-500 font-medium text-sm leading-relaxed max-w-2xl mx-auto">
-                                            Este Asistente lo guiará a través del proceso de construcción de su Página Web oficial. Le tomará entre 10 y 15 minutos.
+                                            Este Asistente de WebEscuela lo guiará a través del proceso de construcción de la Página Web de su Escuela. Todo el proceso le tomará entre 10 y 15 minutos.
                                          </p>
                                       </div>
                                       <div className="bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 text-left space-y-8">
                                          <h5 className="font-black uppercase text-xs text-primary">Tenga a la mano la siguiente información:</h5>
                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {["Presentación", "Foto 300x200", "Reseña histórica", "Misión y Visión", "Infraestructura", "Logros", "Alumnos Distinguidos"].map(t => (
+                                            {["Breve presentación de la escuela", "Fotografía digital (300x200)", "Reseña histórica", "Misión y Visión", "Infraestructura", "Logros Académicos/Deportivos", "Alumnos Distinguidos"].map(t => (
                                                <div key={t} className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-50">
                                                   <div className="h-2 w-2 rounded-full bg-primary" />
                                                   <span className="text-[11px] font-bold text-slate-600">{t}</span>
@@ -421,6 +484,7 @@ export default function ProgramsPage() {
                                             ))}
                                          </div>
                                       </div>
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Se ha encontrado información previamente capturada.</p>
                                       <Button onClick={() => setAssistantStep('capture')} className="h-16 px-20 rounded-2xl font-black uppercase bg-primary text-white shadow-2xl transition-all">
                                          Empezar <ArrowRight className="h-5 w-5 ml-4" />
                                       </Button>
@@ -461,6 +525,13 @@ export default function ProgramsPage() {
                                             <Label className="text-[11px] font-black uppercase text-primary">Reseña Histórica</Label>
                                             <Textarea className="min-h-[150px]" value={webSchoolData.resenaHistorica} onChange={e => setWebSchoolData({...webSchoolData, resenaHistorica: e.target.value})} />
                                          </div>
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Misión</Label><Textarea value={webSchoolData.mision} onChange={e => setWebSchoolData({...webSchoolData, mision: e.target.value})} /></div>
+                                            <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Visión</Label><Textarea value={webSchoolData.vision} onChange={e => setWebSchoolData({...webSchoolData, vision: e.target.value})} /></div>
+                                         </div>
+                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Infraestructura</Label><Textarea value={webSchoolData.infraestructura} onChange={e => setWebSchoolData({...webSchoolData, infraestructura: e.target.value})} /></div>
+                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Logros</Label><Textarea value={webSchoolData.logros} onChange={e => setWebSchoolData({...webSchoolData, logros: e.target.value})} /></div>
+                                         <div className="space-y-4"><Label className="text-[11px] font-black uppercase text-primary">Alumnos Distinguidos</Label><Textarea value={webSchoolData.alumnosDistinguidos} onChange={e => setWebSchoolData({...webSchoolData, alumnosDistinguidos: e.target.value})} /></div>
                                       </div>
                                    </ScrollArea>
                                 </Card>
@@ -479,22 +550,35 @@ export default function ProgramsPage() {
                                    </div>
                                    <ScrollArea className="h-[75vh] bg-slate-100 p-10">
                                       <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-3xl p-12 min-h-[800px]">
-                                         <header className="bg-primary p-8 rounded-2xl text-white mb-10">
+                                         <header className="bg-primary p-8 rounded-2xl text-white mb-10 text-center">
                                             <h1 className="text-3xl font-black">{(schoolsDirectory.find(s => s.cct === incCct))?.nombre || 'Centro de Trabajo'}</h1>
-                                            <p className="text-xs opacity-80">CCT: {incCct}</p>
+                                            <p className="text-xs opacity-80 mt-2">CCT: {incCct}</p>
                                          </header>
                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="relative aspect-video bg-slate-100 rounded-2xl">
-                                               {webSchoolData.foto && <Image src={webSchoolData.foto} alt="Hero" fill className="object-cover rounded-2xl" />}
+                                            <div className="relative aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                                               {webSchoolData.foto && <Image src={webSchoolData.foto} alt="Hero" fill className="object-cover" />}
                                             </div>
-                                            <div className="space-y-4">
-                                               <h2 className="text-xl font-black text-primary">Bienvenida</h2>
-                                               <p className="text-sm text-slate-600 leading-relaxed">{webSchoolData.presentacion}</p>
+                                            <div className="space-y-6">
+                                               <h2 className="text-2xl font-black text-primary border-b-2 border-primary/10 pb-2">Bienvenida</h2>
+                                               <p className="text-sm text-slate-600 leading-relaxed italic">{webSchoolData.presentacion || 'Información de bienvenida pendiente...'}</p>
                                             </div>
                                          </div>
-                                         <div className="mt-10 pt-10 border-t">
-                                            <h3 className="text-lg font-black text-primary mb-4">Nuestra Historia</h3>
-                                            <p className="text-sm text-slate-600">{webSchoolData.resenaHistorica}</p>
+                                         <div className="mt-12 space-y-10">
+                                            <section>
+                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter flex items-center gap-3"><History className="h-5 w-5" /> Nuestra Historia</h3>
+                                               <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">{webSchoolData.resenaHistorica}</p>
+                                            </section>
+                                            <div className="grid grid-cols-2 gap-10">
+                                               <section className="bg-primary/5 p-6 rounded-2xl border border-primary/10"><h4 className="font-black text-primary uppercase text-xs mb-3">Misión</h4><p className="text-xs text-slate-600 leading-relaxed">{webSchoolData.mision}</p></section>
+                                               <section className="bg-accent/5 p-6 rounded-2xl border border-accent/10"><h4 className="font-black text-accent uppercase text-xs mb-3">Visión</h4><p className="text-xs text-slate-600 leading-relaxed">{webSchoolData.vision}</p></section>
+                                            </div>
+                                            <section>
+                                               <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter">Infraestructura y Logros</h3>
+                                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  <div className="space-y-3"><Label className="text-[10px] font-black uppercase text-slate-400">Instalaciones</Label><p className="text-xs font-medium">{webSchoolData.infraestructura}</p></div>
+                                                  <div className="space-y-3"><Label className="text-[10px] font-black uppercase text-slate-400">Excelencia</Label><p className="text-xs font-medium">{webSchoolData.logros}</p></div>
+                                               </div>
+                                            </section>
                                          </div>
                                       </div>
                                    </ScrollArea>
@@ -549,6 +633,7 @@ export default function ProgramsPage() {
                          <>
                            <TableHead className="font-black text-[10px] uppercase text-center">Equipos</TableHead>
                            <TableHead className="font-black text-[10px] uppercase">Descripción Técnica</TableHead>
+                           <TableHead className="font-black text-[10px] uppercase text-center">Capacitación</TableHead>
                          </>
                        )}
                        {isCuentasTab && (
@@ -574,6 +659,11 @@ export default function ProgramsPage() {
                            <>
                              <TableCell className="text-center font-black text-primary">{rec.numeroEquipos || 0}</TableCell>
                              <TableCell className="text-[10px] font-bold text-slate-500 max-w-[200px] truncate">{rec.descripcionEquipo || 'Sin descripción'}</TableCell>
+                             <TableCell className="text-center">
+                                <Badge variant={rec.capacitacion === 'S' ? 'default' : 'outline'} className="text-[9px] font-black px-4">
+                                   {rec.capacitacion === 'S' ? 'SÍ' : 'NO'}
+                                </Badge>
+                             </TableCell>
                            </>
                          )}
                          {isCuentasTab && (
@@ -622,18 +712,18 @@ export default function ProgramsPage() {
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-         <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] p-0 overflow-hidden">
+         <DialogContent className="sm:max-w-[1200px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
             <DialogHeader className="p-8 bg-slate-50 border-b">
                <DialogTitle className="uppercase font-black text-primary">Captura Técnica - {activeTabClean}</DialogTitle>
                <DialogDescription className="text-xs font-bold">Complete la información del programa para el centro de trabajo.</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh] p-8">
-               <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Folio</Label><Input className="font-bold" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
-                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Estatus</Label>
+            <ScrollArea className="flex-1 p-8">
+               <div className="space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Folio Registro</Label><Input className="font-bold border-primary/20" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Estatus General</Label>
                         <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
-                           <SelectTrigger><SelectValue /></SelectTrigger>
+                           <SelectTrigger className="border-primary/20"><SelectValue /></SelectTrigger>
                            <SelectContent>
                               <SelectItem value="planeacion">PLANEACIÓN</SelectItem>
                               <SelectItem value="activo">ACTIVO</SelectItem>
@@ -641,46 +731,137 @@ export default function ProgramsPage() {
                            </SelectContent>
                         </Select>
                      </div>
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-primary">CCT Centro de Trabajo</Label>
+                        <Input className="font-mono uppercase border-primary/20" value={formData.cct} onChange={e => {
+                           const val = e.target.value.toUpperCase();
+                           const school = schoolsDirectory.find(s => s.cct === val);
+                           if (school) {
+                              setFormData({...formData, cct: val, schoolName: school.nombre, municipio: school.municipio, region: school.region, valle: school.valle});
+                           } else {
+                              setFormData({...formData, cct: val});
+                           }
+                        }} />
+                     </div>
                   </div>
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase">CCT (Autocompletado)</Label>
-                     <Input className="font-mono" value={formData.cct} onChange={e => {
-                        const val = e.target.value.toUpperCase();
-                        const school = schoolsDirectory.find(s => s.cct === val);
-                        if (school) {
-                           setFormData({...formData, cct: val, schoolName: school.nombre, municipio: school.municipio, region: school.region, valle: school.valle});
-                        } else {
-                           setFormData({...formData, cct: val});
-                        }
-                     }} />
-                  </div>
+
                   {isLibraryTab && (
-                     <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">No. Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Descripción Técnica</Label><Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} /></div>
-                     </div>
+                    <div className="space-y-8 animate-in fade-in">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">No. Equipos</Label><Input type="number" className="border-primary/20" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} /></div>
+                          <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Descripción Técnica</Label><Input className="border-primary/20" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} /></div>
+                       </div>
+                       
+                       <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/5 space-y-6">
+                          <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-3">
+                                <GraduationCap className="h-6 w-6 text-primary" />
+                                <Label className="text-sm font-black uppercase text-primary">¿Se requiere registro de Capacitación?</Label>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <span className={cn("text-[10px] font-black uppercase", formData.capacitacion === 'N' ? 'text-primary' : 'text-slate-300')}>NO</span>
+                                <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                                <span className={cn("text-[10px] font-black uppercase", formData.capacitacion === 'S' ? 'text-primary' : 'text-slate-300')}>SÍ</span>
+                             </div>
+                          </div>
+
+                          {formData.capacitacion === 'S' && (
+                             <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
+                                <Separator />
+                                <div className="space-y-4">
+                                   <h3 className="text-xs font-black uppercase text-primary flex items-center gap-2"><Zap className="h-4 w-4" /> Gestión de Curso y Asistentes</h3>
+                                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Folio Curso</Label><Input className="h-9 text-xs" value={formData.cursoFolio} onChange={e => setFormData({...formData, cursoFolio: e.target.value.toUpperCase()})} /></div>
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Grupo</Label><Input className="h-9 text-xs" value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
+                                      <div className="md:col-span-2 space-y-2"><Label className="text-[9px] font-black uppercase">Nombre del Curso</Label><Input className="h-9 text-xs" value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
+                                   </div>
+                                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Fecha Inicio</Label><Input type="date" className="h-9 text-xs" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Fecha Término</Label><Input type="date" className="h-9 text-xs" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} /></div>
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Horas</Label><Input type="number" className="h-9 text-xs" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
+                                   </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                   <div className="flex justify-between items-center">
+                                      <h4 className="text-[10px] font-black uppercase text-primary">Lista de Asistentes al Curso</h4>
+                                      <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 gap-2 font-black uppercase text-[9px]"><Plus className="h-3 w-3" /> Añadir Asistente</Button>
+                                   </div>
+                                   <div className="border rounded-2xl bg-white overflow-hidden">
+                                      <ScrollArea className="max-h-[300px]">
+                                         <Table>
+                                            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                               <TableRow>
+                                                  <TableHead className="w-10 text-[9px] font-black">#</TableHead>
+                                                  <TableHead className="min-w-[150px] text-[9px] font-black">PATERNO</TableHead>
+                                                  <TableHead className="min-w-[150px] text-[9px] font-black">MATERNO</TableHead>
+                                                  <TableHead className="min-w-[150px] text-[9px] font-black">NOMBRE(S)</TableHead>
+                                                  <TableHead className="min-w-[150px] text-[9px] font-black">RFC</TableHead>
+                                                  <TableHead className="min-w-[120px] text-[9px] font-black">CCT ORIGEN</TableHead>
+                                                  <TableHead className="min-w-[180px] text-[9px] font-black">FUNCIÓN</TableHead>
+                                                  <TableHead className="w-10"></TableHead>
+                                               </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                               {(formData.asistentes || []).map((ast, idx) => (
+                                                  <TableRow key={idx}>
+                                                     <TableCell className="text-center font-bold text-xs">{idx + 1}</TableCell>
+                                                     <TableCell className="p-2"><Input className="h-8 text-[10px]" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value)} /></TableCell>
+                                                     <TableCell className="p-2"><Input className="h-8 text-[10px]" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value)} /></TableCell>
+                                                     <TableCell className="p-2"><Input className="h-8 text-[10px] font-bold" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} /></TableCell>
+                                                     <TableCell className="p-2"><Input className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} /></TableCell>
+                                                     <TableCell className="p-2"><Input className="h-8 text-[10px] font-mono uppercase" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} /></TableCell>
+                                                     <TableCell className="p-2">
+                                                        <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                                           <SelectTrigger className="h-8 text-[10px]"><SelectValue /></SelectTrigger>
+                                                           <SelectContent>
+                                                              {FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px]">{f}</SelectItem>)}
+                                                           </SelectContent>
+                                                        </Select>
+                                                     </TableCell>
+                                                     <TableCell className="p-2">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveAssistant(idx)} disabled={(formData.asistentes || []).length === 1}>
+                                                           <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                     </TableCell>
+                                                  </TableRow>
+                                               ))}
+                                            </TableBody>
+                                         </Table>
+                                         <ScrollBar orientation="horizontal" />
+                                      </ScrollArea>
+                                   </div>
+                                </div>
+                             </div>
+                          )}
+                       </div>
+                    </div>
                   )}
+
                   {isCuentasTab && (
-                     <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase">Datos del Responsable</Label>
-                        <Input placeholder="Nombre Completo" value={formData.asistentes?.[0]?.nombres} onChange={e => {
-                           const ast = [...(formData.asistentes || [initialAssistant])];
-                           ast[0] = {...ast[0], nombres: e.target.value};
-                           setFormData({...formData, asistentes: ast});
-                        }} />
-                        <Input placeholder="Correo Institucional" value={formData.asistentes?.[0]?.email} onChange={e => {
-                           const ast = [...(formData.asistentes || [initialAssistant])];
-                           ast[0] = {...ast[0], email: e.target.value};
-                           setFormData({...formData, asistentes: ast});
-                        }} />
+                     <div className="space-y-4 p-8 bg-blue-50/50 rounded-[2rem] border border-blue-100">
+                        <Label className="text-xs font-black uppercase text-blue-700 flex items-center gap-2"><Mail className="h-4 w-4" /> Datos del Responsable de eContacto</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <Input placeholder="Nombre Completo" className="bg-white" value={formData.asistentes?.[0]?.nombres} onChange={e => {
+                              const ast = [...(formData.asistentes || [initialAssistant])];
+                              ast[0] = {...ast[0], nombres: e.target.value};
+                              setFormData({...formData, asistentes: ast});
+                           }} />
+                           <Input placeholder="Correo Institucional" className="bg-white" value={formData.asistentes?.[0]?.email} onChange={e => {
+                              const ast = [...(formData.asistentes || [initialAssistant])];
+                              ast[0] = {...ast[0], email: e.target.value};
+                              setFormData({...formData, asistentes: ast});
+                           }} />
+                        </div>
                      </div>
                   )}
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Observaciones</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Observaciones Técnicas Generales</Label><Textarea className="min-h-[120px] rounded-2xl border-primary/20" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
                </div>
             </ScrollArea>
-            <DialogFooter className="p-8 bg-slate-50 border-t">
-               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="font-bold uppercase text-xs">Cancelar</Button>
-               <Button onClick={handleSave} className="font-black uppercase text-xs px-10">Guardar Información</Button>
+            <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6">
+               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 px-10 rounded-2xl font-bold uppercase text-[10px]">Cancelar</Button>
+               <Button onClick={handleSave} className="h-12 px-12 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20">Guardar Información del Programa</Button>
             </DialogFooter>
          </DialogContent>
       </Dialog>
@@ -713,4 +894,10 @@ export default function ProgramsPage() {
       </Dialog>
     </div>
   )
+}
+
+function History({ className }: { className?: string }) {
+   return (
+      <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+   )
 }

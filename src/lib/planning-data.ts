@@ -107,6 +107,15 @@ export type ProgramStatus = {
   capacitacion?: 'S' | 'N';
   totalParticipantes?: number;
   asistentes?: ProgramAssistant[];
+  // Campos de curso integrados
+  cursoGrupo?: string;
+  cursoNombre?: string;
+  cursoFolio?: string;
+  duracionHoras?: number;
+  fechaInicio?: string;
+  fechaTermino?: string;
+  instructores?: string[];
+  cctSede?: string;
 };
 
 export const supportData: SupportTicket[] = [
