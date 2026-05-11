@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -971,7 +970,7 @@ export default function ProgramsPage() {
                                                   <span className="text-[9px] text-slate-400 font-bold uppercase">{s.municipio}</span>
                                                </div>
                                             </TableCell>
-                                            <TableCell className="text-right pr-10 font-black text-[10px] text-slate-400 uppercase">{s.valle}</SelectItem>
+                                            <TableCell className="text-right pr-10 font-black text-[10px] text-slate-400 uppercase">{s.valle}</TableCell>
                                          </TableRow>
                                       ))}
                                       {consultaResults.length === 0 && (
@@ -1199,7 +1198,7 @@ export default function ProgramsPage() {
                                     </TableCell>
                                     <TableCell className="text-center">
                                        <div className="flex items-center justify-center gap-2 bg-white px-4 py-1.5 rounded-2xl border shadow-sm w-fit mx-auto">
-                                          <Circle className={cn("h-2.5 w-2.5 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
+                                          <Circle className={cn("h-2 w-2 fill-current", rec.status === 'concluido' ? 'text-emerald-500' : rec.status === 'activo' ? 'text-amber-500' : 'text-rose-500')} />
                                           <span className="text-[9px] font-black uppercase text-slate-500">{rec.status}</span>
                                        </div>
                                     </TableCell>
