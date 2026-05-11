@@ -643,8 +643,8 @@ export default function ProgramsPage() {
                                  <Label className="text-[10px] font-black uppercase text-primary mb-4 block">SECTOR</Label>
                                  <div className="grid grid-cols-3 gap-2">
                                     <Button variant={sectorSubFilter === 'all' ? 'default' : 'outline'} className="col-span-3 h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter('all')}>TODOS</Button>
-                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(s => (
-                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className="h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter(s.toString())}>{s}</Button>
+                                    {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(s => (
+                                       <Button key={s} variant={sectorSubFilter === s ? 'default' : 'outline'} className="h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter(s)}>{s}</Button>
                                     ))}
                                  </div>
                               </Card>
@@ -716,7 +716,7 @@ export default function ProgramsPage() {
                         <Card className="executive-card overflow-hidden">
                            <CardHeader className="bg-slate-50 border-b p-6 flex flex-row items-center justify-between">
                               <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><MapPin className="h-5 w-5" /> Auditoría de Geoposicionamiento (Filtros Activos)</CardTitle>
-                              <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Base de Datos 231 Registros</Badge>
+                              <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Base de Datos {filteredCuentasRecords.length} Registros</Badge>
                            </CardHeader>
                            <div className="overflow-x-auto">
                               <Table>
@@ -794,9 +794,11 @@ export default function ProgramsPage() {
                                      </Badge>
                                   </TableCell>
                                   <TableCell className="text-right pr-8">
-                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
-                                        <Pencil className="h-4 w-4" />
-                                     </Button>
+                                     <div className="flex justify-end gap-2">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                           <Pencil className="h-4 w-4" />
+                                        </Button>
+                                     </div>
                                   </TableCell>
                                 </TableRow>
                               ))}
