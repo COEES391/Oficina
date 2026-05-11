@@ -259,7 +259,7 @@ export default function ProgramsPage() {
       setWebSchoolData(JSON.parse(stored));
       setShowWebAssistant(true);
       setAssistantStep('preview');
-      setConoceSubTab('incorp');
+      setConoceSubTab('editorial');
     }
   }
 
@@ -446,6 +446,16 @@ export default function ProgramsPage() {
                             Con este programa, se aspira a que todos los centros de trabajo sean reconocidos por la comunidad, dando a conocer información cuantitativa y cualitativa de nuestras escuelas, coadyuvando al aumento de la matrícula escolar.
                           </p>
                        </div>
+                       {isAdminEditorial && (
+                         <div className="pt-4 animate-in fade-in slide-in-from-left-4 duration-700">
+                           <Button 
+                             onClick={() => setConoceSubTab('editorial')}
+                             className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs px-10 h-14 rounded-2xl shadow-xl shadow-amber-900/20 gap-3 border-2 border-white/20"
+                           >
+                             <ClipboardCheck className="h-6 w-6" /> Sección Editorial de WebEscuela
+                           </Button>
+                         </div>
+                       )}
                     </div>
                  </Card>
 
@@ -454,8 +464,8 @@ export default function ProgramsPage() {
                        <TabsTrigger value="info" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><Info className="h-4 w-4" /> Información</TabsTrigger>
                        <TabsTrigger value="incorp" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><UserPlus className="h-4 w-4" /> Incorporación</TabsTrigger>
                        {isAdminEditorial && (
-                         <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white animate-pulse">
-                           <ClipboardCheck className="h-4 w-4" /> Revisión Editorial
+                         <TabsTrigger value="editorial" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2 bg-amber-50 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                           <ClipboardCheck className="h-4 w-4" /> Sección Editorial de WebEscuela
                          </TabsTrigger>
                        )}
                        <TabsTrigger value="list" className="rounded-xl px-8 font-black uppercase text-[10px] gap-2"><TableIcon className="h-4 w-4" /> Escuelas Incorporadas</TabsTrigger>
@@ -900,6 +910,81 @@ export default function ProgramsPage() {
                              </div>
                           </Card>
                        )}
+                    </TabsContent>
+
+                    <TabsContent value="editorial" className="animate-in fade-in slide-in-from-bottom-4">
+                       <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white">
+                          <div className="bg-slate-50 p-8 border-b">
+                             <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-black uppercase text-primary tracking-tighter">Bienvenido a la Sección Editorial de WebEscuela</h3>
+                                <Button variant="ghost" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] bg-white border border-slate-200" onClick={() => setConoceSubTab('info')}><ArrowLeft className="h-4 w-4 mr-2" /> Cerrar</Button>
+                             </div>
+                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                               En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                             </p>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[1400px]">
+                              <TableHeader className="bg-slate-100/50">
+                                <TableRow>
+                                  <TableHead className="w-10 text-center font-black text-[9px] uppercase border-r py-4">No.</TableHead>
+                                  <TableHead className="min-w-[120px] font-black text-[9px] uppercase border-r">Centro de Trabajo</TableHead>
+                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase border-r">Agrupado</TableHead>
+                                  <TableHead className="w-20 font-black text-[9px] uppercase border-r text-center">Vertiente</TableHead>
+                                  <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Sector</TableHead>
+                                  <TableHead className="w-16 font-black text-[9px] uppercase border-r text-center">Zona</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Alta</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Modificación</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Revisión</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Publicación</TableHead>
+                                  <TableHead className="min-w-[100px] font-black text-[9px] uppercase border-r text-center">Fecha de Suspensión</TableHead>
+                                  <TableHead className="min-w-[300px] font-black text-[9px] uppercase border-r">Observaciones</TableHead>
+                                  <TableHead className="min-w-[180px] font-black text-[9px] uppercase border-r">eContacto</TableHead>
+                                  <TableHead className="min-w-[140px] font-black text-[9px] uppercase text-right pr-6 bg-slate-100 sticky right-0 z-10 shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">Acciones a Realizar</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {savedSubmissions.map((sub, i) => {
+                                  const school = schoolsDirectory.find(s => s.cct === sub.cct);
+                                  return (
+                                   <TableRow key={i} className="hover:bg-slate-50 transition-all border-b text-[10px]">
+                                      <TableCell className="text-center font-bold text-slate-400 border-r">{i + 1}</TableCell>
+                                      <TableCell className="font-black text-primary border-r">{sub.cct}</TableCell>
+                                      <TableCell className="font-bold text-slate-500 uppercase border-r">DESMEXICO{school?.sectorNum || '00'}{school?.zonaEscolar || '000'}</TableCell>
+                                      <TableCell className="text-center font-bold text-slate-700 border-r">{school?.modalidad || '-'}</TableCell>
+                                      <TableCell className="text-center font-black text-slate-800 border-r">{school?.sectorNum || '-'}</TableCell>
+                                      <TableCell className="text-center font-black text-slate-800 border-r">{school?.zonaEscolar || 'S/Z'}</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2022/10/19</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2022/10/20</TableCell>
+                                      <TableCell className="text-center text-emerald-600 border-r font-black">{sub.date}</TableCell>
+                                      <TableCell className="text-center text-slate-500 border-r font-medium">2023/04/19</TableCell>
+                                      <TableCell className="text-center text-slate-300 border-r">-</TableCell>
+                                      <TableCell className="p-4 border-r max-w-[400px]">
+                                         <p className="line-clamp-4 leading-relaxed text-slate-500 italic font-medium">
+                                            Información recibida para auditoría 2025. Se requiere validar la fotografía y los logros académicos reportados por el centro de trabajo.
+                                         </p>
+                                      </TableCell>
+                                      <TableCell className="font-bold text-blue-600 lowercase border-r underline decoration-blue-200">{sub.cct.toLowerCase()}@desysa.gob.mx</TableCell>
+                                      <TableCell className="text-right pr-6 sticky right-0 z-10 bg-white/95 backdrop-blur-md shadow-[-10px_0_15px_rgba(0,0,0,0.02)]">
+                                         <div className="flex flex-col gap-1 items-end py-2">
+                                            <button onClick={() => handleReviewSubmission(sub.cct)} className="text-[9px] font-black uppercase text-blue-600 hover:text-blue-800 underline">Revisar</button>
+                                            <button className="text-[9px] font-black uppercase text-emerald-600 hover:text-emerald-800 underline">Publicar</button>
+                                            <button className="text-[9px] font-black uppercase text-rose-600 hover:text-rose-800 underline">Suspender</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">Observaciones</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">eContacto</button>
+                                            <button className="text-[9px] font-black uppercase text-slate-500 hover:text-slate-800 underline">Contraseña</button>
+                                         </div>
+                                      </TableCell>
+                                   </TableRow>
+                                  )
+                                })}
+                                {savedSubmissions.length === 0 && (
+                                   <TableRow><TableCell colSpan={14} className="text-center py-20 font-black uppercase text-slate-300">No hay capturas de escuelas para revisión editorial</TableCell></TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                       </Card>
                     </TabsContent>
 
                     <TabsContent value="list" className="animate-in fade-in slide-in-from-bottom-4">
