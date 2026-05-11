@@ -462,17 +462,6 @@ export default function ProgramsPage() {
                             Con este programa, se aspira a que todos los centros de trabajo sean reconocidos por la comunidad, dando a conocer información cuantitativa y cualitativa de nuestras escuelas, coadyuvando al aumento de la matrícula escolar.
                           </p>
                        </div>
-                       <div className="pt-4 animate-in fade-in slide-in-from-left-4 duration-700">
-                         <Button 
-                           onClick={() => {
-                             if (isAdminEditorial) setConoceSubTab('editorial');
-                             else setIsEditorialAuthOpen(true);
-                           }}
-                           className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs px-10 h-14 rounded-2xl shadow-xl shadow-amber-900/20 gap-3 border-2 border-white/20"
-                         >
-                           <ClipboardCheck className="h-6 w-6" /> Sección Editorial de WebEscuela
-                         </Button>
-                       </div>
                     </div>
                  </Card>
 
@@ -1058,7 +1047,7 @@ export default function ProgramsPage() {
                                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Modalidad</Label>
                                    <Select value={conoceMod} onValueChange={setConoceMod}>
                                       <SelectTrigger className="h-12 rounded-xl font-black bg-slate-50 border-none"><SelectValue placeholder="--Seleccione Modalidad--" /></SelectTrigger>
-                                      <SelectContent className="font-black"><SelectItem value="all">TODAS</SelectItem><SelectItem value="DES">GENERAL</SelectItem><SelectItem value="DST">TÉCNICA</SelectItem><SelectItem value="DTV">TELESECUNDARIA</SelectItem></SelectContent>
+                                      <SelectContent className="font-black"><SelectItem value="all">TODAS</SelectItem><SelectItem value="DES">GENERAL</SelectItem><SelectItem value="DST">TÉCNICA</SelectItem><SelectItem value="DTV">TELESECUNDARIAS</SelectItem></SelectContent>
                                    </Select>
                                 </div>
                                 <div className="space-y-2">
