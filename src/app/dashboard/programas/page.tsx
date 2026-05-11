@@ -73,13 +73,7 @@ const PROGRAM_RUBROS = [
 ];
 
 const MODALIDADES_GRID = [
-  'COEES EDU', 'COEES GOB', 'DES GOB', 'DESYSA',
-  'DESySA G...', 'DSN GOB', 'DST GOB', 'DTV GOB',
-  'EM GOB', 'ET GOB', 'FIS', 'FIS GOB',
-  'FISICA', 'FISICA GOB', 'FJE', 'FJE GOB',
-  'FJT', 'FJT GOB', 'FTS', 'FTV',
-  'FZF', 'FZF GOB', 'FZT', 'GM',
-  'GM GOB', 'GT', 'GT GOB', 'PES'
+  'SECUNDARIA GENERAL', 'SECUNDARIA TECNICA', 'TELESECUNDARIA', 'PARTICULAR'
 ];
 
 const AREAS_PICKER = ['ADMIN', 'PLANTEL'];
@@ -222,6 +216,52 @@ export default function ProgramsPage() {
     setSavedSubmissions(subs);
   }
 
+  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
+
+  const filteredCuentasRecords = useMemo(() => {
+    return records.filter(r => {
+      const isCuentas = r.name === activeTab || r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas');
+      if (!isCuentas) return false;
+
+      const matchModalidad = modalidadSubFilter === 'all' || r.modalidad === modalidadSubFilter || (modalidadSubFilter === 'PARTICULAR' && r.tipo === 'PARTICULAR');
+      const matchSector = sectorSubFilter === 'all' || r.sector === sectorSubFilter;
+      const matchArea = areaSubFilter === 'all' || r.asistentes?.[0]?.departamento === areaSubFilter;
+      const matchValle = valleSubFilter === 'all' || r.valle === valleSubFilter;
+
+      return matchModalidad && matchSector && matchArea && matchValle;
+    });
+  }, [records, activeTab, modalidadSubFilter, sectorSubFilter, areaSubFilter, valleSubFilter]);
+
+  const cuentasStats = useMemo(() => {
+    const totalCuentas = filteredCuentasRecords.length;
+    const terminados = filteredCuentasRecords.filter(r => r.status === 'concluido').length;
+    const enProceso = filteredCuentasRecords.filter(r => r.status === 'activo').length;
+    const planeacion = filteredCuentasRecords.filter(r => r.status === 'planeacion').length;
+    const inactivos = filteredCuentasRecords.filter(r => r.status === 'inactivo').length;
+
+    const usagePercent = totalCuentas > 0 ? Math.round((terminados / totalCuentas) * 100) : 0;
+    const geoposicionPercent = 58; // Mock value for visual battery
+
+    const desysaCoeesData = [
+      { name: 'En proceso', value: enProceso, fill: '#EAB308' },
+      { name: 'No iniciado', value: planeacion, fill: '#EF4444' },
+      { name: 'SIN PAGINA', value: inactivos, fill: '#3B82F6' },
+      { name: 'Terminado', value: terminados, fill: '#22C55E' },
+    ];
+
+    const conoceMiEscuelaChartData = [
+      { name: 'No publicada', value: planeacion + enProceso, fill: '#3B82F6' },
+      { name: 'Publicada', value: terminados, fill: '#6366F1' },
+    ];
+
+    const accountsData = [
+      { name: 'En Uso', value: usagePercent, fill: '#621132' },
+      { name: 'Libre', value: 100 - usagePercent, fill: '#cbd5e1' },
+    ];
+
+    return { totalCuentas, usagePercent, geoposicionPercent, desysaCoeesData, conoceMiEscuelaChartData, accountsData };
+  }, [filteredCuentasRecords]);
+
   const handleEditorialTabClick = (val: string) => {
     if (val === 'editorial' && !isAdminEditorial) {
       setIsEditorialAuthOpen(true);
@@ -360,7 +400,6 @@ export default function ProgramsPage() {
     loadSubmissions();
   }
 
-  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
   const isLibraryTab = activeTabClean === 'Biblioteca Digital';
   const isCuentasTab = activeTabClean === 'Cuentas Institucionales';
   const isConoceTab = activeTabClean === 'Conoce mi Escuela';
@@ -368,28 +407,6 @@ export default function ProgramsPage() {
   const filteredRecords = useMemo(() => {
     return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && (r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas'))));
   }, [records, activeTab, activeTabClean]);
-
-  // Dashboard calculations for Cuentas Institucionales
-  const cuentasStats = useMemo(() => {
-    const desysaCoeesData = [
-      { name: 'En proceso', value: 33, fill: '#EAB308' },
-      { name: 'No iniciado', value: 424, fill: '#EF4444' },
-      { name: 'SIN PAGINA', value: 881, fill: '#3B82F6' },
-      { name: 'Terminado', value: 370, fill: '#22C55E' },
-    ];
-
-    const conoceMiEscuelaChartData = [
-      { name: 'No publicada', value: 378, fill: '#3B82F6' },
-      { name: 'Publicada', value: 445, fill: '#6366F1' },
-    ];
-
-    const accountsData = [
-      { name: 'En Uso', value: 72, fill: '#621132' },
-      { name: 'Libre', value: 28, fill: '#cbd5e1' },
-    ];
-
-    return { desysaCoeesData, conoceMiEscuelaChartData, accountsData };
-  }, []);
 
   if (!mounted) return null
 
@@ -695,9 +712,10 @@ export default function ProgramsPage() {
                            <div className="col-span-3 space-y-8">
                               <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
                                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">MODALIDAD</Label>
-                                 <div className="grid grid-cols-2 gap-2 h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                                 <div className="grid grid-cols-1 gap-2 h-[350px] overflow-y-auto pr-2 scrollbar-thin">
+                                    <Button variant={modalidadSubFilter === 'all' ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase rounded-xl" onClick={() => setModalidadSubFilter('all')}>TODAS</Button>
                                     {MODALIDADES_GRID.map(m => (
-                                       <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[8px] font-black uppercase p-1 rounded-xl shadow-sm" onClick={() => setModalidadSubFilter(m)}>
+                                       <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase p-1 rounded-xl shadow-sm" onClick={() => setModalidadSubFilter(m)}>
                                           {m}
                                        </Button>
                                     ))}
@@ -707,8 +725,9 @@ export default function ProgramsPage() {
                               <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
                                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest mb-4 block">Sector</Label>
                                  <div className="grid grid-cols-3 gap-2">
+                                    <Button variant={sectorSubFilter === 'all' ? 'default' : 'outline'} className="col-span-3 h-10 text-[10px] font-black rounded-xl" onClick={() => setSectorSubFilter('all')}>TODOS</Button>
                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(s => (
-                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className={cn("h-10 text-[10px] font-black rounded-xl", sectorSubFilter === s.toString() ? 'bg-emerald-600' : '')} onClick={() => setSectorSubFilter(s.toString())}>
+                                       <Button key={s} variant={sectorSubFilter === s.toString() ? 'default' : 'outline'} className={cn("h-10 text-[10px] font-black rounded-xl")} onClick={() => setSectorSubFilter(s.toString())}>
                                           {s}
                                        </Button>
                                     ))}
@@ -721,13 +740,13 @@ export default function ProgramsPage() {
                               {/* Total Card */}
                               <Card className="w-full executive-card p-10 flex flex-col items-center justify-center relative bg-white shadow-2xl overflow-hidden">
                                  <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-500" />
-                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Total de Cuentas @desysa.gob.mx</span>
-                                 <div className="text-6xl font-black text-slate-800 tracking-tighter">1,709</div>
+                                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Total de Cuentas Filtradas</span>
+                                 <div className="text-6xl font-black text-slate-800 tracking-tighter">{cuentasStats.totalCuentas.toLocaleString()}</div>
                               </Card>
 
                               {/* Donut Gauge */}
                               <div className="relative h-[250px] w-full flex flex-col items-center justify-center">
-                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">% CORREO EN USO @desysa.gob.mx</Label>
+                                 <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-6">% CORREO EN USO (CONCLUIDO)</Label>
                                  <div className="relative">
                                     <ResponsiveContainer width={200} height={200}>
                                        <PieChart>
@@ -737,20 +756,20 @@ export default function ProgramsPage() {
                                        </PieChart>
                                     </ResponsiveContainer>
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                       <span className="text-3xl font-black text-primary">72%</span>
+                                       <span className="text-3xl font-black text-primary">{cuentasStats.usagePercent}%</span>
                                     </div>
                                  </div>
                               </div>
 
                               {/* Geoposition Battery */}
                               <div className="w-full flex flex-col items-center gap-4 mt-10">
-                                 <Label className="text-[10px] font-black uppercase text-blue-500 tracking-widest">Geoposición</Label>
+                                 <Label className="text-[10px] font-black uppercase text-blue-500 tracking-widest">Geoposición Global</Label>
                                  <div className="w-32 h-48 border-4 border-slate-300 rounded-[2rem] p-1.5 relative overflow-hidden bg-slate-100 shadow-inner">
                                     <div 
                                       className="absolute bottom-0 left-0 w-full bg-emerald-500 transition-all duration-1000 flex items-center justify-center shadow-[0_-10px_20px_rgba(16,185,129,0.3)]"
-                                      style={{ height: '58%' }}
+                                      style={{ height: `${cuentasStats.geoposicionPercent}%` }}
                                     >
-                                       <span className="text-xl font-black text-white">58%</span>
+                                       <span className="text-xl font-black text-white">{cuentasStats.geoposicionPercent}%</span>
                                     </div>
                                  </div>
                               </div>
@@ -762,6 +781,7 @@ export default function ProgramsPage() {
                                  <Card className="executive-card p-6 bg-orange-50/50 border-2 border-white">
                                     <Label className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-4 block">AREA</Label>
                                     <div className="space-y-2">
+                                       <div className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", areaSubFilter === 'all' ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-orange-600 hover:bg-orange-100')} onClick={() => setAreaSubFilter('all')}>TODAS</div>
                                        {AREAS_PICKER.map(a => (
                                           <div key={a} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", areaSubFilter === a ? 'bg-orange-600 text-white shadow-lg' : 'bg-white text-orange-600 hover:bg-orange-100')} onClick={() => setAreaSubFilter(a)}>
                                              {a}
@@ -773,6 +793,7 @@ export default function ProgramsPage() {
                                  <Card className="executive-card p-6 bg-amber-50/50 border-2 border-white">
                                     <Label className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-4 block">VALLE</Label>
                                     <div className="space-y-2">
+                                       <div className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", valleSubFilter === 'all' ? 'bg-amber-600 text-white shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100')} onClick={() => setValleSubFilter('all')}>TODOS</div>
                                        {VALLES_PICKER.map(v => (
                                           <div key={v} className={cn("p-3 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all", valleSubFilter === v ? 'bg-amber-600 text-white shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100')} onClick={() => setValleSubFilter(v)}>
                                              {v}
@@ -786,7 +807,7 @@ export default function ProgramsPage() {
                                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                                     <Layout className="h-24 w-24" />
                                  </div>
-                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8">DESYSA - COEES</CardTitle>
+                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8">ESTATUS OPERATIVO FILTRADO</CardTitle>
                                  <ResponsiveContainer width="100%" height={250}>
                                     <BarChart data={cuentasStats.desysaCoeesData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -798,17 +819,10 @@ export default function ProgramsPage() {
                                        </Bar>
                                     </BarChart>
                                  </ResponsiveContainer>
-                                 <div className="flex justify-between mt-4">
-                                    {cuentasStats.desysaCoeesData.map(d => (
-                                       <div key={d.name} className="flex flex-col items-center">
-                                          <span className="text-[10px] font-black text-slate-800">{d.value}</span>
-                                       </div>
-                                    ))}
-                                 </div>
                               </Card>
 
                               <Card className="executive-card p-8 bg-white shadow-2xl relative h-[350px] flex flex-col items-center justify-center">
-                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8 w-full">CONOCE MI ESCUELA - SEIEM</CardTitle>
+                                 <CardTitle className="text-sm font-black uppercase text-slate-700 mb-8 w-full">ESTADO DE PUBLICACIÓN</CardTitle>
                                  <div className="flex gap-20 items-end">
                                     {cuentasStats.conoceMiEscuelaChartData.map(d => (
                                        <div key={d.name} className="flex flex-col items-center group">
@@ -829,7 +843,7 @@ export default function ProgramsPage() {
                         {/* Audit Table Bottom */}
                         <Card className="executive-card overflow-hidden">
                            <CardHeader className="bg-slate-50 border-b p-6 flex flex-row items-center justify-between">
-                              <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><MapPin className="h-5 w-5" /> Auditoría de Geoposicionamiento</CardTitle>
+                              <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><MapPin className="h-5 w-5" /> Auditoría de Geoposicionamiento (Filtros Activos)</CardTitle>
                               <Badge className="bg-blue-600 text-white font-black text-[9px] uppercase px-4 py-1 rounded-full">Sincronizado SIP</Badge>
                            </CardHeader>
                            <Table>
@@ -838,18 +852,31 @@ export default function ProgramsPage() {
                                     <TableHead className="font-black text-[9px] uppercase pl-8">CCT / Escuela</TableHead>
                                     <TableHead className="font-black text-[9px] uppercase">LATITUD</TableHead>
                                     <TableHead className="font-black text-[9px] uppercase">LONGITUD</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase text-right pr-8">Dominio Principal</TableHead>
+                                    <TableHead className="font-black text-[9px] uppercase text-right pr-8">Estatus</TableHead>
                                  </TableRow>
                               </TableHeader>
                               <TableBody>
-                                 {schoolsDirectory.slice(0, 10).map((school, i) => (
+                                 {filteredCuentasRecords.length > 0 ? filteredCuentasRecords.slice(0, 15).map((rec, i) => (
                                     <TableRow key={i} className="text-[10px] font-bold">
-                                       <TableCell className="pl-8 text-primary font-black uppercase">{school.cct}</TableCell>
+                                       <TableCell className="pl-8 text-primary font-black uppercase">
+                                          <div className="flex flex-col">
+                                             <span>{rec.cct}</span>
+                                             <span className="text-[8px] text-muted-foreground">{rec.schoolName}</span>
+                                          </div>
+                                       </TableCell>
                                        <TableCell className="font-mono">{ (19.0 + Math.random()).toFixed(6) }</TableCell>
                                        <TableCell className="font-mono">{ (-99.0 - Math.random()).toFixed(6) }</TableCell>
-                                       <TableCell className="text-right pr-8 text-blue-600">@desysa.gob.mx</TableCell>
+                                       <TableCell className="text-right pr-8">
+                                          <Badge className={cn("text-[8px] font-black uppercase", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-amber-500')}>
+                                             {rec.status}
+                                          </Badge>
+                                       </TableCell>
                                     </TableRow>
-                                 ))}
+                                 )) : (
+                                    <TableRow>
+                                       <TableCell colSpan={4} className="text-center py-10 font-black uppercase text-slate-300">No hay datos que coincidan con los filtros</TableCell>
+                                    </TableRow>
+                                 )}
                               </TableBody>
                            </Table>
                         </Card>
@@ -1031,6 +1058,7 @@ export default function ProgramsPage() {
                               <SelectItem value="planeacion">PLANEACIÓN</SelectItem>
                               <SelectItem value="activo">ACTIVO</SelectItem>
                               <SelectItem value="concluido">CONCLUIDO</SelectItem>
+                              <SelectItem value="inactivo">INACTIVO / SIN PAGINA</SelectItem>
                            </SelectContent>
                         </Select>
                      </div>
@@ -1040,7 +1068,7 @@ export default function ProgramsPage() {
                            const val = e.target.value.toUpperCase();
                            const school = schoolsDirectory.find(s => s.cct === val);
                            if (school) {
-                              setFormData({...formData, cct: val, schoolName: school.nombre, municipio: school.municipio, region: school.region, valle: school.valle});
+                              setFormData({...formData, cct: val, schoolName: school.nombre, municipio: school.municipio, region: school.region, valle: school.valle, modalidad: school.modalidad, sector: school.sectorNum});
                            } else {
                               setFormData({...formData, cct: val});
                            }
@@ -1144,7 +1172,7 @@ export default function ProgramsPage() {
                   {isCuentasTab && (
                      <div className="space-y-4 p-8 bg-blue-50/50 rounded-[2rem] border border-blue-100">
                         <Label className="text-xs font-black uppercase text-blue-700 flex items-center gap-2"><Mail className="h-4 w-4" /> Datos del Responsable de eContacto</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                            <Input placeholder="Nombre Completo" className="bg-white" value={formData.asistentes?.[0]?.nombres} onChange={e => {
                               const ast = [...(formData.asistentes || [initialAssistant])];
                               ast[0] = {...ast[0], nombres: e.target.value};
@@ -1155,6 +1183,17 @@ export default function ProgramsPage() {
                               ast[0] = {...ast[0], email: e.target.value};
                               setFormData({...formData, asistentes: ast});
                            }} />
+                           <Select value={formData.asistentes?.[0]?.departamento} onValueChange={(val:any) => {
+                              const ast = [...(formData.asistentes || [initialAssistant])];
+                              ast[0] = {...ast[0], departamento: val};
+                              setFormData({...formData, asistentes: ast});
+                           }}>
+                              <SelectTrigger className="bg-white"><SelectValue placeholder="ÁREA" /></SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                 <SelectItem value="PLANTEL">PLANTEL</SelectItem>
+                              </SelectContent>
+                           </Select>
                         </div>
                      </div>
                   )}
