@@ -54,7 +54,8 @@ import {
   GraduationCap,
   Layout,
   BarChart3,
-  MapPin
+  MapPin,
+  ClipboardList
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -76,7 +77,7 @@ const MODALIDADES_GRID = [
 ];
 
 const AREAS_PICKER = ['ADMIN', 'PLANTEL'];
-const VALLES_PICKER = ['MEXICO', 'TOLUCA'];
+const VALLES_PICKER = ['MÉXICO', 'TOLUCA'];
 
 const FUNCIONES = [
   "ADMINISTRATIVO",
@@ -188,12 +189,14 @@ export default function ProgramsPage() {
     setMounted(true)
     const rfc = localStorage.getItem('userRfc')
     setUserRfc(rfc)
+    
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
-    if (stored.length > 0) {
-      setRecords(stored)
-    } else {
+    // Force reload if data is old or missing the 231 CI records
+    if (stored.length < 200) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
+    } else {
+      setRecords(stored)
     }
     loadSubmissions()
   }, [])
@@ -215,21 +218,21 @@ export default function ProgramsPage() {
     setSavedSubmissions(subs);
   }
 
-  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
-
   const filteredCuentasRecords = useMemo(() => {
     return records.filter(r => {
-      const isCuentas = r.name === activeTab || r.id.startsWith('PROG-CI');
+      const isCuentas = r.name?.includes('Cuentas') || r.id?.startsWith('PROG-CI');
       if (!isCuentas) return false;
 
-      const matchModalidad = modalidadSubFilter === 'all' || r.modalidad === modalidadSubFilter;
-      const matchSector = sectorSubFilter === 'all' || r.sector === sectorSubFilter;
-      const matchArea = areaSubFilter === 'all' || r.asistentes?.[0]?.departamento === areaSubFilter;
-      const matchValle = valleSubFilter === 'all' || r.valle === valleSubFilter;
+      const norm = (s: string | undefined) => (s || '').trim().toUpperCase().replace(/[ÁÉÍÓÚ]/g, (m) => ({'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U'}[m] || m));
+
+      const matchModalidad = modalidadSubFilter === 'all' || norm(r.modalidad) === norm(modalidadSubFilter);
+      const matchSector = sectorSubFilter === 'all' || norm(r.sector) === norm(sectorSubFilter);
+      const matchArea = areaSubFilter === 'all' || norm(r.asistentes?.[0]?.departamento) === norm(areaSubFilter);
+      const matchValle = valleSubFilter === 'all' || norm(r.valle) === norm(valleSubFilter);
 
       return matchModalidad && matchSector && matchArea && matchValle;
     });
-  }, [records, activeTab, modalidadSubFilter, sectorSubFilter, areaSubFilter, valleSubFilter]);
+  }, [records, modalidadSubFilter, sectorSubFilter, areaSubFilter, valleSubFilter]);
 
   const cuentasStats = useMemo(() => {
     const totalCuentas = filteredCuentasRecords.length;
@@ -239,7 +242,7 @@ export default function ProgramsPage() {
     const inactivos = filteredCuentasRecords.filter(r => r.status === 'inactivo').length;
 
     const usagePercent = totalCuentas > 0 ? Math.round((terminados / totalCuentas) * 100) : 0;
-    const geoposicionPercent = 58; 
+    const geoposicionPercent = totalCuentas > 0 ? Math.round((terminados / totalCuentas) * 100) : 58; 
 
     const desysaCoeesData = [
       { name: 'En proceso', value: enProceso, fill: '#EAB308' },
@@ -248,17 +251,12 @@ export default function ProgramsPage() {
       { name: 'Terminado', value: terminados, fill: '#22C55E' },
     ];
 
-    const conoceMiEscuelaChartData = [
-      { name: 'No publicada', value: planeacion + enProceso, fill: '#3B82F6' },
-      { name: 'Publicada', value: terminados, fill: '#6366F1' },
-    ];
-
     const accountsData = [
       { name: 'En Uso', value: usagePercent, fill: '#621132' },
       { name: 'Libre', value: 100 - usagePercent, fill: '#cbd5e1' },
     ];
 
-    return { totalCuentas, usagePercent, geoposicionPercent, desysaCoeesData, conoceMiEscuelaChartData, accountsData };
+    return { totalCuentas, usagePercent, geoposicionPercent, desysaCoeesData, accountsData };
   }, [filteredCuentasRecords]);
 
   const handleEditorialTabClick = (val: string) => {
@@ -311,7 +309,7 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
-    if (!formData.id || (!formData.cct && !activeTab.startsWith('Cuentas'))) { 
+    if (!formData.id || (!formData.cct && !activeTab.includes('Cuentas'))) { 
       toast({ variant: "destructive", title: "Datos incompletos" }); 
       return; 
     }
@@ -390,13 +388,14 @@ export default function ProgramsPage() {
     loadSubmissions();
   }
 
+  const activeTabClean = activeTab.includes('(') ? activeTab.split('(')[0].trim() : activeTab;
   const isLibraryTab = activeTabClean === 'Biblioteca Digital';
   const isCuentasTab = activeTabClean === 'Cuentas Institucionales';
   const isConoceTab = activeTabClean === 'Conoce mi Escuela';
 
   const filteredRecords = useMemo(() => {
-    return records.filter(r => r.name === activeTab || (activeTabClean === 'Cuentas Institucionales' && r.id.startsWith('PROG-CI')));
-  }, [records, activeTab, activeTabClean]);
+    return records.filter(r => r.name === activeTab || (isCuentasTab && r.id.startsWith('PROG-CI')));
+  }, [records, activeTab, isCuentasTab]);
 
   if (!mounted) return null
 
@@ -446,9 +445,7 @@ export default function ProgramsPage() {
                           </div>
                        </div>
                        <div className="space-y-6 text-slate-600 font-medium leading-relaxed">
-                          <p>
-                            <strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES).
-                          </p>
+                          <p><strong>Conoce mi Escuela</strong> es un programa creado y administrado por el Departamento de Computación Electrónica en la Educación Secundaria (COEES).</p>
                        </div>
                     </div>
                  </Card>
@@ -469,9 +466,6 @@ export default function ProgramsPage() {
                                 <h3 className="text-xl font-black uppercase text-primary tracking-tighter">Bienvenido a la Sección Editorial de WebEscuela</h3>
                                 <Button variant="ghost" size="sm" className="h-10 px-6 rounded-xl font-black uppercase text-[9px] bg-white border border-slate-200" onClick={() => setConoceSubTab('info')}><ArrowLeft className="h-4 w-4 mr-2" /> Cerrar</Button>
                              </div>
-                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-                               Revise las solicitudes de publicación enviadas por los planteles escolares.
-                             </p>
                           </div>
                           <div className="overflow-x-auto">
                             <Table className="min-w-[1500px]">
@@ -525,15 +519,12 @@ export default function ProgramsPage() {
                                 <Card className="p-0 bg-white shadow-2xl rounded-[3rem] border-none overflow-hidden">
                                    <div className="bg-primary/5 p-6 border-b flex justify-between items-center">
                                       <div className="flex items-center gap-4">
-                                         <Button variant="ghost" size="icon" onClick={() => setShowWebAssistant(false)} className="rounded-full h-10 w-10 text-primary">
-                                            <ArrowLeft className="h-5 w-5" />
-                                         </Button>
+                                         <Button variant="ghost" size="icon" onClick={() => setShowWebAssistant(false)} className="rounded-full h-10 w-10 text-primary"><ArrowLeft className="h-5 w-5" /></Button>
                                          <h4 className="font-black uppercase text-sm text-primary">Asistente WebEscuela</h4>
                                       </div>
                                    </div>
                                    <div className="p-12 text-center space-y-6">
                                       <h3 className="text-3xl font-black text-slate-800">Bienvenido al Asistente</h3>
-                                      <p className="text-slate-500 text-sm max-w-2xl mx-auto">Complete la información de su escuela para construir su portal oficial.</p>
                                       <Button onClick={() => setAssistantStep('capture')} className="h-16 px-20 rounded-2xl font-black uppercase bg-primary text-white shadow-2xl">Empezar <ArrowRight className="h-5 w-5 ml-4" /></Button>
                                    </div>
                                 </Card>
@@ -556,13 +547,12 @@ export default function ProgramsPage() {
                                          <div className="grid grid-cols-2 gap-8">
                                             <div className="space-y-2"><Label className="text-xs font-black uppercase">Presentación</Label><Textarea value={webSchoolData.presentacion} onChange={e => setWebSchoolData({...webSchoolData, presentacion: e.target.value})} /></div>
                                             <div className="space-y-2"><Label className="text-xs font-black uppercase">Foto Escolar</Label>
-                                               <div className="h-40 border-2 border-dashed rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => webFotoRef.current?.click()}>
+                                               <div className="h-40 border-2 border-dashed rounded-2xl flex items-center justify-center cursor-pointer relative" onClick={() => webFotoRef.current?.click()}>
                                                   {webSchoolData.foto ? <Image src={webSchoolData.foto} alt="f" fill className="object-cover rounded-2xl" /> : <ImageIcon className="h-10 w-10 text-slate-300" />}
                                                   <input type="file" ref={webFotoRef} hidden onChange={handleWebFotoChange} />
                                                </div>
                                             </div>
                                          </div>
-                                         <div className="space-y-2"><Label className="text-xs font-black uppercase">Reseña Histórica</Label><Textarea value={webSchoolData.resenaHistorica} onChange={e => setWebSchoolData({...webSchoolData, resenaHistorica: e.target.value})} /></div>
                                       </div>
                                    </ScrollArea>
                                 </Card>
@@ -672,7 +662,7 @@ export default function ProgramsPage() {
                               <div className="w-full flex flex-col items-center gap-4">
                                  <Label className="text-[10px] font-black uppercase text-blue-500">Avance Geoposición</Label>
                                  <div className="w-32 h-40 border-4 border-slate-300 rounded-[2rem] relative overflow-hidden bg-slate-100">
-                                    <div className="absolute bottom-0 left-0 w-full bg-emerald-500 flex items-center justify-center" style={{ height: `${cuentasStats.geoposicionPercent}%` }}>
+                                    <div className="absolute bottom-0 left-0 w-full bg-emerald-500 flex items-center justify-center transition-all duration-700" style={{ height: `${cuentasStats.geoposicionPercent}%` }}>
                                        <span className="text-lg font-black text-white">{cuentasStats.geoposicionPercent}%</span>
                                     </div>
                                  </div>
@@ -740,13 +730,13 @@ export default function ProgramsPage() {
                                           <TableCell className="uppercase text-[9px]">{rec.modalidad}</TableCell>
                                           <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
                                           <TableCell className="text-right pr-8">
-                                             <Badge className={cn("text-[8px] font-black uppercase", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-rose-500')}>
+                                             <Badge className={cn("text-[8px] font-black uppercase", rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')}>
                                                 {rec.status === 'concluido' ? 'APROBADO' : 'DESAPROBADO'}
                                              </Badge>
                                           </TableCell>
                                        </TableRow>
                                     )) : (
-                                       <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-slate-300">No hay datos que coincidan</TableCell></TableRow>
+                                       <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-slate-300">No hay datos que coincidan con los filtros</TableCell></TableRow>
                                     )}
                                  </TableBody>
                               </Table>
@@ -789,7 +779,7 @@ export default function ProgramsPage() {
                                   </TableCell>
                                   <TableCell className="font-mono text-[10px] text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
                                   <TableCell className="text-center">
-                                     <Badge className={cn("text-[9px] font-black px-4", rec.status === 'concluido' ? 'bg-emerald-500' : 'bg-rose-500')}>
+                                     <Badge className={cn("text-[9px] font-black px-4", rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')}>
                                         {rec.status === 'concluido' ? 'APROBADO' : 'DESAPROBADO'}
                                      </Badge>
                                   </TableCell>
@@ -895,7 +885,6 @@ export default function ProgramsPage() {
          <DialogContent className="sm:max-w-[1200px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden flex flex-col">
             <DialogHeader className="p-8 bg-slate-50 border-b">
                <DialogTitle className="uppercase font-black text-primary">Captura Técnica - {activeTabClean}</DialogTitle>
-               <DialogDescription className="text-xs font-bold">Complete la información del programa.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 p-8">
                <div className="space-y-10">
@@ -1070,9 +1059,7 @@ export default function ProgramsPage() {
          <DialogContent className="sm:max-w-[550px] rounded-[3rem] p-12 text-center bg-white">
             <CheckCircle2 className="h-16 w-16 text-emerald-600 mx-auto mb-8" />
             <h3 className="text-2xl font-black uppercase text-primary mb-6">Información Recibida</h3>
-            <p className="text-sm font-bold text-slate-600 leading-relaxed uppercase mb-10">
-               Se procederá a su revisión por el grupo editorial. Si hay cambios se le contactará. Si no, lo verá publicado en 3 días hábiles.
-            </p>
+            <p className="text-sm font-bold text-slate-600 leading-relaxed uppercase mb-10">Se procederá a su revisión por el grupo editorial. Si hay cambios se le contactará. Si no, lo verá publicado en 3 días hábiles.</p>
             <Button onClick={() => { setShowSuccessDialog(false); setShowWebAssistant(false); }} className="h-16 px-16 rounded-2xl font-black uppercase bg-primary text-white shadow-2xl">FINALIZAR Y CERRAR</Button>
          </DialogContent>
       </Dialog>
