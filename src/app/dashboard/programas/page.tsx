@@ -39,7 +39,10 @@ import {
   X,
   ChevronUp,
   ChevronDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Lock,
+  User,
+  ExternalLink
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
@@ -53,7 +56,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_full_sync_v25_final_actions";
+const DB_VERSION = "827_full_sync_v28_final_actions_fixed";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -79,7 +82,7 @@ export default function ProgramsPage() {
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'planeacion', date: new Date().toISOString(), cct: '', schoolName: '', zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, descripcionEquipo: '', responsables: ['', '', ''], setes: 'N', observaciones: '', capacitacion: 'N', asistentes: [initialAssistant],
-    cursoGrupo: '', cursoNombre: '', duracionHoras: 0, fechaInicio: '', fechaTermino: '', instructores: ['', '', ''], cctSede: ''
+    cursoGrupo: '', cursoNombre: '', duracionHoras: 0, fechaInicio: '', fechaTermino: '', instructores: ['', '', ''], cctSede: '', numeroOficio: ''
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -90,11 +93,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_final_v25')
+    const storedVersion = localStorage.getItem('programs_db_version_v28')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_final_v25', DB_VERSION)
+      localStorage.setItem('programs_db_version_v28', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -197,7 +200,7 @@ export default function ProgramsPage() {
                <Monitor className="h-6 w-6" /> Equipamiento y Capacitación
              </h3>
              <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
-                <PlusCircle className="h-4 w-4" /> Nueva Captura Técnica
+                <PlusCircle className="h-4 w-4" /> Nueva Captura de Programa
              </Button>
           </div>
           <Card className="executive-card">
@@ -643,6 +646,59 @@ export default function ProgramsPage() {
                       </Select>
                    </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Oficio</Label>
+                      <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="DESySA/PL/000/2024" />
+                   </div>
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Semana SETES</Label>
+                      <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as 'S' | 'N'})}>
+                         <SelectTrigger className="h-12 bg-white font-black px-6"><SelectValue /></SelectTrigger>
+                         <SelectContent>
+                            <SelectItem value="S" className="font-black uppercase">SÍ</SelectItem>
+                            <SelectItem value="N" className="font-black uppercase">NO</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+                </div>
+
+                {activeTab === 'Biblioteca Digital' && (
+                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-primary/10 rounded-3xl">
+                     <h4 className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                        <Monitor className="h-5 w-5" /> Datos de Equipamiento (Biblioteca Digital)
+                     </h4>
+                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase">Cant. Equipos</Label>
+                           <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="bg-white" />
+                        </div>
+                        <div className="md:col-span-3 space-y-2">
+                           <Label className="text-[10px] font-black uppercase">Descripción del Equipo</Label>
+                           <Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} className="bg-white" placeholder="EJ: Laptops HP 240 G8" />
+                        </div>
+                     </div>
+                     <div className="space-y-4 pt-4 border-t">
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Responsables Técnicos del Plantel</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           {[0, 1, 2].map(idx => (
+                              <Input 
+                                 key={idx} 
+                                 placeholder={`Responsable ${idx + 1}`} 
+                                 value={formData.responsables?.[idx] || ''} 
+                                 onChange={e => {
+                                    const newResp = [...(formData.responsables || ['', '', ''])];
+                                    newResp[idx] = e.target.value;
+                                    setFormData({...formData, responsables: newResp});
+                                 }}
+                                 className="bg-white text-[11px]" 
+                              />
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                )}
 
                 <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
                    <div className="flex-1">
