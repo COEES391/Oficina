@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
 import { 
   BarChart, 
   Bar, 
@@ -64,7 +63,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_official_v23_editorial_final";
+const DB_VERSION = "1709_official_v24_editorial_fixed";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -129,7 +128,7 @@ export default function ProgramsPage() {
   }
 
   const ciRecords = useMemo(() => {
-    return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
+    return records.filter(r => r.name?.includes('Cuentas') || r.id.startsWith('PROG-CI'));
   }, [records]);
 
   const ciDashboardData = useMemo(() => {
@@ -192,7 +191,7 @@ export default function ProgramsPage() {
   }
 
   const handleAction = (action: string, cct: string) => {
-    toast({ title: `${action} iniciado para ${cct}`, description: "Sincronizando con el servidor central..." });
+    toast({ title: `${action} iniciado para ${cct}`, description: "Sincronizando con el servidor central de WebEscuela..." });
   }
 
   if (!mounted) return null
@@ -514,7 +513,7 @@ export default function ProgramsPage() {
                 </div>
 
                 <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white/90 backdrop-blur-xl">
-                   <ScrollArea className="w-full">
+                   <ScrollArea className="w-full h-auto">
                       <Table className="border-collapse">
                          <TableHeader className="bg-slate-100/80">
                             <TableRow className="h-16">
@@ -531,14 +530,14 @@ export default function ProgramsPage() {
                                <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Suspensión</TableHead>
                                <TableHead className="text-[10px] font-black border-r px-6 min-w-[200px] uppercase">Observaciones</TableHead>
                                <TableHead className="text-[10px] font-black border-r px-6 min-w-[220px] uppercase">eContacto</TableHead>
-                               <TableHead className="text-[10px] font-black px-10 text-center sticky right-0 bg-slate-100/95 z-30 shadow-[-10px_0_30px_rgba(0,0,0,0.1)] uppercase">
+                               <TableHead className="text-[10px] font-black px-10 text-center sticky right-0 bg-slate-200/95 z-40 shadow-[-10px_0_30px_rgba(0,0,0,0.1)] uppercase">
                                   Acciones a Realizar
                                </TableHead>
                             </TableRow>
                          </TableHeader>
                          <TableBody>
                             {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.id.startsWith('PROG-CI')).slice(0, 50).map((rec, idx) => {
-                               const agrupador = `${rec.modalidad?.split(' ')[0] || 'DES'}${rec.valle || 'MEXICO'}${rec.sector || '00'}${rec.zonaEscolar || '000'}`.toUpperCase();
+                               const agrupador = `${rec.modalidad?.split(' ')[0] || 'DES'}${rec.valle || 'MEXICO'}${rec.sector || '00'}${rec.zonaEscolar || '000'}`.toUpperCase().replace(/\s/g, '');
                                return (
                                <TableRow key={rec.id} className="text-[11px] h-20 border-b hover:bg-slate-50 transition-colors">
                                   <TableCell className="border-r text-center font-black text-slate-400">{idx + 1}</TableCell>
@@ -556,31 +555,31 @@ export default function ProgramsPage() {
                                      <div className="text-slate-500 italic max-w-[200px] leading-relaxed line-clamp-2">Auditado por COEES para ciclo vigente...</div>
                                   </TableCell>
                                   <TableCell className="border-r px-6 font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || `${rec.cct?.toLowerCase()}@desysa.gob.mx`}</TableCell>
-                                  <TableCell className="px-6 sticky right-0 bg-white/95 backdrop-blur-md shadow-[-10px_0_30px_rgba(0,0,0,0.05)] z-20">
-                                     <div className="flex items-center gap-3 justify-center py-4 whitespace-nowrap">
+                                  <TableCell className="px-6 sticky right-0 bg-white/95 backdrop-blur-md shadow-[-15px_0_40px_rgba(0,0,0,0.15)] z-20 border-l">
+                                     <div className="flex items-center gap-3 justify-center py-4 whitespace-nowrap min-w-[500px]">
                                         <button onClick={() => handleAction('Revisar', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all"><Globe className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">Revisar</span>
+                                           <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm"><Globe className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-blue-800">Revisar</span>
                                         </button>
                                         <button onClick={() => handleAction('Publicar', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all"><CheckCircle2 className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">Publicar</span>
+                                           <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm"><CheckCircle2 className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-emerald-800">Publicar</span>
                                         </button>
                                         <button onClick={() => handleAction('Suspender', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all"><AlertCircle className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">Suspender</span>
+                                           <div className="h-8 w-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm"><AlertCircle className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-rose-800">Suspender</span>
                                         </button>
                                         <button onClick={() => handleAction('Observaciones', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all"><FileText className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">Observac.</span>
+                                           <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-amber-800">Observac.</span>
                                         </button>
                                         <button onClick={() => handleAction('eContacto', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all"><Mail className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">eContacto</span>
+                                           <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm"><Mail className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-indigo-800">eContacto</span>
                                         </button>
                                         <button onClick={() => handleAction('Contraseña', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all"><Key className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase">Contraseña</span>
+                                           <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm"><Key className="h-4 w-4" /></div>
+                                           <span className="text-[7px] font-black uppercase text-slate-800">Contraseña</span>
                                         </button>
                                      </div>
                                   </TableCell>
