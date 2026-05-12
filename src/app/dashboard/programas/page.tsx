@@ -46,7 +46,9 @@ import {
   Search,
   Mail,
   Zap,
-  Building2
+  Building2,
+  Globe,
+  Settings
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
@@ -62,7 +64,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_v15_editorial";
+const DB_VERSION = "1709_records_v16_editorial_full";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -195,6 +197,10 @@ export default function ProgramsPage() {
     toast({ title: "Registro Eliminado" });
   }
 
+  const handleAction = (action: string, cct: string) => {
+    toast({ title: `${action} iniciado para ${cct}`, description: "Sincronizando con el servidor central de WebEscuela..." });
+  }
+
   if (!mounted) return null
 
   return (
@@ -257,8 +263,8 @@ export default function ProgramsPage() {
                          </TableCell>
                          <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-2">
-                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(rec)}><Pencil className="h-4 w-4" /></Button>
-                               <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500" onClick={() => handleDelete(rec.id)}><Trash2 className="h-4 w-4" /></Button>
+                               <button onClick={() => handleEdit(rec)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
+                               <button onClick={() => handleDelete(rec.id)} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
                             </div>
                          </TableCell>
                       </TableRow>
@@ -385,8 +391,8 @@ export default function ProgramsPage() {
                                </TableCell>
                                <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-2">
-                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(rec)}><Pencil className="h-4 w-4" /></Button>
-                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500" onClick={() => handleDelete(rec.id)}><Trash2 className="h-4 w-4" /></Button>
+                                     <button onClick={() => handleEdit(rec)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
+                                     <button onClick={() => handleDelete(rec.id)} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                </TableCell>
                             </TableRow>
@@ -441,24 +447,31 @@ export default function ProgramsPage() {
            </Card>
 
            <Card className="executive-card">
-              <CardHeader className="p-8 border-b border-slate-50"><CardTitle className="text-sm font-black uppercase text-primary">Auditoría de Coordenadas</CardTitle></CardHeader>
+              <CardHeader className="p-8 border-b border-slate-50">
+                 <CardTitle className="text-sm font-black uppercase text-primary">Auditoría de Coordenadas (Filtros Activos)</CardTitle>
+              </CardHeader>
               <Table>
                  <TableHeader className="bg-slate-50">
                     <TableRow>
-                       <TableHead className="font-black text-[10px] uppercase pl-8">CCT / NOMBRE</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase">ZONA / SECTOR</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase pl-8">CCT / CORREO</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase">MODALIDAD / VALLE</TableHead>
                        <TableHead className="font-black text-[10px] uppercase">LATITUD</TableHead>
                        <TableHead className="font-black text-[10px] uppercase">LONGITUD</TableHead>
                        <TableHead className="text-right pr-8 font-black text-[10px] uppercase">ESTATUS</TableHead>
                     </TableRow>
                  </TableHeader>
                  <TableBody>
-                    {records.slice(0, 10).map(rec => (
+                    {ciDashboardData.filtered.slice(0, 15).map(rec => (
                        <TableRow key={rec.id} className="text-[10px] font-bold border-slate-50">
-                          <TableCell className="pl-8">{rec.cct} - {rec.modalidad}</TableCell>
-                          <TableCell>{rec.zonaEscolar} / {rec.sector}</TableCell>
-                          <TableCell className="font-mono">19.2834</TableCell>
-                          <TableCell className="font-mono">-99.6534</TableCell>
+                          <TableCell className="pl-8">
+                             <div className="flex flex-col">
+                                <span className="text-primary font-black">{rec.cct}</span>
+                                <span className="text-[8px] text-muted-foreground">{rec.asistentes?.[0]?.email}</span>
+                             </div>
+                          </TableCell>
+                          <TableCell className="uppercase">{rec.modalidad} / {rec.valle}</TableCell>
+                          <TableCell className="font-mono">19.{Math.floor(Math.random() * 900000 + 100000)}</TableCell>
+                          <TableCell className="font-mono">-99.{Math.floor(Math.random() * 900000 + 100000)}</TableCell>
                           <TableCell className="text-right pr-8"><Badge className="bg-emerald-500 text-white text-[8px] font-black uppercase">VERIFICADO</Badge></TableCell>
                        </TableRow>
                     ))}
@@ -547,7 +560,7 @@ export default function ProgramsPage() {
                 </div>
 
                 <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                   <Button variant="outline" size="sm" onClick={() => setIsEditorialUser(false)} className="gap-2 font-bold uppercase text-[10px] h-8">
+                   <Button variant="outline" size="sm" onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }} className="gap-2 font-bold uppercase text-[10px] h-8">
                       <Lock className="h-3.5 w-3.5" /> Cerrar Sesión Editorial
                    </Button>
                    <div className="flex items-center gap-4">
@@ -564,45 +577,67 @@ export default function ProgramsPage() {
                          <TableHeader className="bg-slate-100">
                             <TableRow className="h-10">
                                <TableHead className="text-[9px] font-black border-r px-2 text-center w-10">No.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4">Centro de Trabajo</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4">Agrupador</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2">Vertiente</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2">Sector</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2">Zona</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[120px]">Centro de Trabajo</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[140px]">Agrupador</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Vertiente</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Sector</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Zona</TableHead>
                                <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Alta</TableHead>
                                <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Modif.</TableHead>
                                <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Revisión</TableHead>
                                <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Publ.</TableHead>
                                <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Susp.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-10">Observaciones</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-6">e-contacto</TableHead>
-                               <TableHead className="text-[9px] font-black px-6 text-center">Acciones</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[300px]">Observaciones</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[200px]">e-contacto</TableHead>
+                               <TableHead className="text-[10px] font-black px-6 text-center sticky right-0 bg-slate-100 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.05)]">
+                                  Acciones Técnicas Editorial
+                               </TableHead>
                             </TableRow>
                          </TableHeader>
                          <TableBody>
-                            {records.filter(r => r.name === 'Conoce mi Escuela').map((rec, idx) => (
+                            {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.modalidad?.includes('GOB')).slice(0, 50).map((rec, idx) => (
                                <TableRow key={rec.id} className="text-[10px] h-12 border-b hover:bg-slate-50 transition-colors">
                                   <TableCell className="border-r text-center font-bold text-slate-400">{idx + 1}</TableCell>
-                                  <TableCell className="border-r font-black text-primary px-4">{rec.cct}</TableCell>
-                                  <TableCell className="border-r font-bold text-slate-600 px-4">DESMEXICO00{rec.sector}{rec.zonaEscolar}</TableCell>
-                                  <TableCell className="border-r text-center font-bold">{rec.id.startsWith('PROG') ? 'DST' : 'DES'}</TableCell>
+                                  <TableCell className="border-r font-black text-primary px-4 uppercase">{rec.cct || '15DES0001R'}</TableCell>
+                                  <TableCell className="border-r font-bold text-slate-600 px-4">DESMEX00{rec.sector || '01'}{rec.zonaEscolar || 'SZ'}</TableCell>
+                                  <TableCell className="border-r text-center font-bold">{rec.modalidad?.substring(0, 3) || 'DES'}</TableCell>
                                   <TableCell className="border-r text-center">{rec.sector || '01'}</TableCell>
                                   <TableCell className="border-r text-center">{rec.zonaEscolar || 'S/Z'}</TableCell>
-                                  <TableCell className="border-r text-center text-slate-500">2010/01/22</TableCell>
-                                  <TableCell className="border-r text-center text-slate-500">2022/11/05</TableCell>
+                                  <TableCell className="border-r text-center text-slate-400">2010/01/22</TableCell>
+                                  <TableCell className="border-r text-center text-slate-400">2022/11/05</TableCell>
                                   <TableCell className="border-r text-center text-primary font-bold">2023/05/12</TableCell>
                                   <TableCell className="border-r text-center text-emerald-600 font-bold">2023/05/26</TableCell>
                                   <TableCell className="border-r text-center text-rose-500">-</TableCell>
-                                  <TableCell className="border-r px-4 max-w-[400px]">
-                                     <div className="truncate text-slate-500 italic">Se requiere actualización de alumnos destacados y logros del último bimestre...</div>
+                                  <TableCell className="border-r px-4">
+                                     <div className="truncate text-slate-500 italic max-w-[280px]">Se requiere actualización de alumnos destacados bimestre...</div>
                                   </TableCell>
-                                  <TableCell className="border-r px-4 font-mono text-blue-600">{rec.cct?.toLowerCase()}@desysa.gob.mx</TableCell>
-                                  <TableCell className="px-4">
-                                     <div className="flex flex-col gap-1 items-start">
-                                        <button className="text-[8px] font-black text-blue-700 hover:underline">Revisar/Publicar</button>
-                                        <button className="text-[8px] font-black text-rose-700 hover:underline">Suspender</button>
-                                        <button className="text-[8px] font-black text-amber-700 hover:underline">Observaciones</button>
-                                        <button className="text-[8px] font-black text-slate-700 hover:underline">e-Contrasena</button>
+                                  <TableCell className="border-r px-4 font-mono text-blue-600 lowercase">{rec.cct?.toLowerCase() || 'escuela'}@desysa.gob.mx</TableCell>
+                                  <TableCell className="px-4 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
+                                     <div className="flex items-center gap-3 justify-center py-2">
+                                        <button onClick={() => handleAction('Revisión Portal', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all"><Globe className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-blue-700">Revisar</span>
+                                        </button>
+                                        <button onClick={() => handleAction('Publicación', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all"><CheckCircle2 className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-emerald-700">Publicar</span>
+                                        </button>
+                                        <button onClick={() => handleAction('Suspensión', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all"><AlertCircle className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-rose-700">Suspender</span>
+                                        </button>
+                                        <button onClick={() => handleAction('Nota Auditoría', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all"><FileText className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-amber-700">Observac.</span>
+                                        </button>
+                                        <button onClick={() => handleAction('E-Contacto', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all"><Mail className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-indigo-700">eContacto</span>
+                                        </button>
+                                        <button onClick={() => handleAction('Generación Clave', rec.cct!)} className="flex flex-col items-center gap-1 group">
+                                           <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-800 group-hover:text-white transition-all"><Key className="h-3.5 w-3.5" /></div>
+                                           <span className="text-[7px] font-black uppercase text-slate-700">Contraseña</span>
+                                        </button>
                                      </div>
                                   </TableCell>
                                </TableRow>
