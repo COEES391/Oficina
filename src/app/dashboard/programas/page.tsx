@@ -26,6 +26,7 @@ import {
   Pie
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
+import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   Pencil, 
@@ -39,7 +40,10 @@ import {
   ArrowUpDown,
   Building2,
   Calendar,
-  Clock
+  Clock,
+  Users,
+  CheckCircle2,
+  Plus
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
@@ -53,7 +57,16 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_full_sync_v30_final_fix";
+const FUNCIONES = [
+  "ADMINISTRATIVO",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
+
+const DB_VERSION = "827_full_sync_v32_asistentes";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -90,11 +103,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v30')
+    const storedVersion = localStorage.getItem('programs_db_version_v32')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v30', DB_VERSION)
+      localStorage.setItem('programs_db_version_v32', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -125,6 +138,47 @@ export default function ProgramsPage() {
     setEditingId(null)
     setFormData(initialFormState)
     toast({ title: "Registro guardado" })
+  }
+
+  const handleAddAssistantRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      asistentes: [...(prev.asistentes || []), { ...initialAssistant }]
+    }))
+  }
+
+  const handleRemoveAssistantRow = (index: number) => {
+    if ((formData.asistentes?.length || 0) <= 1) return
+    setFormData(prev => ({
+      ...prev,
+      asistentes: prev.asistentes?.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateAssistantField = (index: number, field: keyof ProgramAssistant, value: string) => {
+    const newAsistentes = [...(formData.asistentes || [])]
+    newAsistentes[index] = { ...newAsistentes[index], [field]: value }
+
+    if (field === 'cct') {
+      const cleanValue = value.trim().toUpperCase()
+      if (cleanValue.length === 10) {
+        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+        if (school) {
+          newAsistentes[index] = {
+            ...newAsistentes[index],
+            cct: school.cct,
+            nombreCT: school.nombre,
+            ze: school.zonaEscolar,
+            sector: school.sector,
+            modalidad: school.modalidad,
+            municipio: school.municipio,
+            region: school.region,
+            valle: school.valle
+          }
+        }
+      }
+    }
+    setFormData(prev => ({ ...prev, asistentes: newAsistentes }))
   }
 
   const bdRecords = useMemo(() => records.filter(r => r.name === 'Biblioteca Digital'), [records]);
@@ -534,8 +588,8 @@ export default function ProgramsPage() {
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Suspensión</TableHead>
                                   <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
-                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.1)] min-w-[180px]">
-                                     Acciones a Realizar
+                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.1)] min-w-[200px]">
+                                     ACCIONES A REALIZAR
                                   </TableHead>
                                </TableRow>
                             </TableHeader>
@@ -559,7 +613,7 @@ export default function ProgramsPage() {
                                         </div>
                                      </TableCell>
                                      <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[180px]">
+                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[200px]">
                                         <div className="flex flex-col gap-1 font-black text-blue-700 underline underline-offset-2 text-left text-[10px] uppercase">
                                            <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
                                            <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
@@ -607,176 +661,287 @@ export default function ProgramsPage() {
       </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-8 border-b bg-slate-50">
+        <DialogContent className="sm:max-w-[1400px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 pb-4 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
                 {editingId ? 'Actualización de Registro Técnico' : 'Nueva Captura de Programa'}
              </DialogTitle>
              <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión de Información y Capacitación Institucional</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 p-8">
-             <div className="space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
-                      <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                   </div>
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
-                      <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
-                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
-                            <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
-                         </SelectContent>
-                      </Select>
-                   </div>
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Operativo</Label>
-                      <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                        <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN</SelectItem>
-                           <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO</SelectItem>
-                           <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO</SelectItem>
-                        </SelectContent>
-                      </Select>
-                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Oficio</Label>
-                      <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="DESySA/PL/000/2024" />
-                   </div>
-                   <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Semana SETES</Label>
-                      <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as 'S' | 'N'})}>
-                         <SelectTrigger className="h-12 bg-white font-black px-6"><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="S" className="font-black uppercase">SÍ</SelectItem>
-                            <SelectItem value="N" className="font-black uppercase">NO</SelectItem>
-                         </SelectContent>
-                      </Select>
-                   </div>
-                </div>
+          <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-white">
+              <TabsList className="bg-transparent h-12 p-0 gap-8">
+                <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">1. Datos del Programa / Curso</TabsTrigger>
+                <TabsTrigger value="asistentes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">2. Lista de Asistentes (Captura Directa)</TabsTrigger>
+              </TabsList>
+            </div>
 
-                {activeTab === 'Biblioteca Digital' && (
-                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-primary/10 rounded-3xl">
-                     <h4 className="text-lg font-black uppercase text-primary flex items-center gap-3">
-                        <Monitor className="h-5 w-5" /> Datos de Equipamiento (Biblioteca Digital)
-                     </h4>
-                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase">Cant. Equipos</Label>
-                           <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="bg-white" />
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="datos" className="h-full m-0">
+                <ScrollArea className="h-full p-8">
+                   <div className="space-y-10">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                         <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
+                            <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
+                         </div>
+                         <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
+                            <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
+                               <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
+                               <SelectContent>
+                                  <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
+                                  <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
+                               </SelectContent>
+                            </Select>
+                         </div>
+                         <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Operativo</Label>
+                            <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                              <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN</SelectItem>
+                                 <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO</SelectItem>
+                                 <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO</SelectItem>
+                              </SelectContent>
+                            </Select>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
+                         <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Oficio</Label>
+                            <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="DESySA/PL/000/2024" />
+                         </div>
+                         <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase text-primary ml-2">Semana SETES</Label>
+                            <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as 'S' | 'N'})}>
+                               <SelectTrigger className="h-12 bg-white font-black px-6"><SelectValue /></SelectTrigger>
+                               <SelectContent>
+                                  <SelectItem value="S" className="font-black uppercase">SÍ</SelectItem>
+                                  <SelectItem value="N" className="font-black uppercase">NO</SelectItem>
+                               </SelectContent>
+                            </Select>
+                         </div>
+                      </div>
+
+                      {activeTab === 'Biblioteca Digital' && (
+                        <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-primary/10 rounded-3xl">
+                           <h4 className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                              <Monitor className="h-5 w-5" /> Datos de Equipamiento (Biblioteca Digital)
+                           </h4>
+                           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                              <div className="space-y-2">
+                                 <Label className="text-[10px] font-black uppercase">Cant. Equipos</Label>
+                                 <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="bg-white" />
+                              </div>
+                              <div className="md:col-span-3 space-y-2">
+                                 <Label className="text-[10px] font-black uppercase">Descripción del Equipo</Label>
+                                 <Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} className="bg-white" placeholder="EJ: Laptops HP 240 G8" />
+                              </div>
+                           </div>
+                           <div className="space-y-4 pt-4 border-t">
+                              <Label className="text-[10px] font-black uppercase text-slate-500">Responsables Técnicos del Plantel</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                 {[0, 1, 2].map(idx => (
+                                    <Input 
+                                       key={idx} 
+                                       placeholder={`Responsable ${idx + 1}`} 
+                                       value={formData.responsables?.[idx] || ''} 
+                                       onChange={e => {
+                                          const newResp = [...(formData.responsables || ['', '', ''])];
+                                          newResp[idx] = e.target.value;
+                                          setFormData({...formData, responsables: newResp});
+                                       }}
+                                       className="bg-white text-[11px]" 
+                                    />
+                                 ))}
+                              </div>
+                           </div>
                         </div>
-                        <div className="md:col-span-3 space-y-2">
-                           <Label className="text-[10px] font-black uppercase">Descripción del Equipo</Label>
-                           <Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} className="bg-white" placeholder="EJ: Laptops HP 240 G8" />
+                      )}
+
+                      <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                         <div className="flex-1">
+                            <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
+                         </div>
+                         <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
+                            <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                         </div>
+                      </div>
+
+                      {formData.capacitacion === 'S' && (
+                        <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
+                           <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3">
+                              <Activity className="h-5 w-5" /> Gestión de Curso e Instructores
+                           </h4>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">Nombre del Curso / Taller</Label>
+                                 <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="bg-slate-50" />
+                              </div>
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
+                                 <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
+                              </div>
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">Horas</Label>
+                                 <div className="relative">
+                                   <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50 pl-10" />
+                                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                 </div>
+                              </div>
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Inicio</Label>
+                                 <div className="relative">
+                                   <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50 pl-10" />
+                                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                 </div>
+                              </div>
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Término</Label>
+                                 <div className="relative">
+                                   <Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} className="bg-slate-50 pl-10" />
+                                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                 </div>
+                              </div>
+                              <div className="space-y-3">
+                                 <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede</Label>
+                                 <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono" placeholder="15DESXXXXX" maxLength={10} />
+                              </div>
+                           </div>
+                           <div className="space-y-4 pt-4 border-t">
+                              <Label className="text-[10px] font-black uppercase text-slate-500">Instructores Ponentes</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                 {[0, 1, 2].map(idx => (
+                                    <Input 
+                                       key={idx} 
+                                       placeholder={`Nombre Instructor ${idx + 1}`} 
+                                       value={formData.instructores?.[idx] || ''} 
+                                       onChange={e => {
+                                          const newInst = [...(formData.instructores || ['', '', ''])];
+                                          newInst[idx] = e.target.value;
+                                          setFormData({...formData, instructores: newInst});
+                                       }}
+                                       className="bg-slate-50 text-[11px]" 
+                                    />
+                                 ))}
+                              </div>
+                           </div>
                         </div>
-                     </div>
-                     <div className="space-y-4 pt-4 border-t">
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Responsables Técnicos del Plantel</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           {[0, 1, 2].map(idx => (
-                              <Input 
-                                 key={idx} 
-                                 placeholder={`Responsable ${idx + 1}`} 
-                                 value={formData.responsables?.[idx] || ''} 
-                                 onChange={e => {
-                                    const newResp = [...(formData.responsables || ['', '', ''])];
-                                    newResp[idx] = e.target.value;
-                                    setFormData({...formData, responsables: newResp});
-                                 }}
-                                 className="bg-white text-[11px]" 
-                              />
-                           ))}
-                        </div>
-                     </div>
+                      )}
+
+                      <div className="space-y-3">
+                         <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora</Label>
+                         <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
+                      </div>
+                   </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="asistentes" className="h-full m-0 flex flex-col">
+                <div className="p-8 pb-4 flex justify-between items-center bg-white border-b">
+                  <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 flex-1 mr-4">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                    <p className="text-[11px] font-bold text-slate-700 uppercase leading-relaxed">
+                      Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos y del plantel automáticamente.
+                    </p>
                   </div>
-                )}
+                  <Button variant="outline" size="sm" onClick={handleAddAssistantRow} className="gap-2 font-black uppercase h-14 px-8 rounded-2xl border-primary text-primary hover:bg-primary/5 shadow-sm">
+                    <Plus className="h-5 w-5" /> Añadir Asistente
+                  </Button>
+                </div>
 
-                <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
-                   <div className="flex-1">
-                      <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
-                   </div>
+                <div className="flex-1 overflow-hidden border-t">
+                  <ScrollArea className="h-full">
+                    <Table className="border-collapse">
+                      <TableHeader className="bg-slate-100 sticky top-0 z-20 shadow-sm">
+                        <TableRow>
+                          <TableHead className="w-12 text-[10px] font-black uppercase text-center py-4 border-r border-slate-200">#</TableHead>
+                          <TableHead className="min-w-[220px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Apellidos y Nombre(s)</TableHead>
+                          <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">RFC</TableHead>
+                          <TableHead className="min-w-[180px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Función</TableHead>
+                          <TableHead className="min-w-[140px] text-[10px] font-black uppercase py-4 border-r border-slate-200">CCT Plantel</TableHead>
+                          <TableHead className="min-w-[250px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Nombre C.T. / Zona</TableHead>
+                          <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Municipio / Región</TableHead>
+                          <TableHead className="w-16 sticky right-0 bg-slate-100 py-4"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(formData.asistentes || []).map((ast, idx) => (
+                          <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
+                            <TableCell className="text-center font-black text-xs text-muted-foreground border-r border-slate-100">{idx + 1}</TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <div className="flex flex-col gap-2">
+                                <Input placeholder="Ap. Paterno" className="h-9 text-[10px] font-bold" value={ast.paterno} onChange={e => updateAssistantField(idx, 'paterno', e.target.value)} />
+                                <Input placeholder="Ap. Materno" className="h-9 text-[10px] font-bold" value={ast.materno} onChange={e => updateAssistantField(idx, 'materno', e.target.value)} />
+                                <Input placeholder="Nombre(s)" className="h-9 text-[10px] font-black text-primary" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <Input placeholder="RFC" className="h-10 text-[10px] font-mono font-black uppercase" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
+                            </TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
+                                <SelectTrigger className="h-10 text-[10px] font-bold">
+                                  <SelectValue placeholder="Función..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {FUNCIONES.map(f => (
+                                    <SelectItem key={f} value={f} className="text-[10px] font-bold">{f}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <Input placeholder="15DESXXXXX" className="h-10 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                            </TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <div className="flex flex-col gap-2">
+                                <Input value={ast.nombreCT} readOnly className="h-9 text-[9px] bg-slate-50 font-black uppercase" placeholder="Nombre C.T." />
+                                <div className="flex gap-2">
+                                   <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center w-1/3" placeholder="ZE" />
+                                   <Input value={ast.sector} readOnly className="h-9 text-[9px] bg-slate-50 text-center flex-1" placeholder="Sector" />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-3 border-r border-slate-100">
+                              <div className="flex flex-col gap-2">
+                                <Input value={ast.municipio} readOnly className="h-9 text-[9px] bg-slate-50 uppercase" placeholder="Municipio" />
+                                <Input value={ast.region} readOnly className="h-9 text-[9px] bg-slate-50 uppercase text-center" placeholder="Región" />
+                              </div>
+                            </TableCell>
+                            <TableCell className="p-3 sticky right-0 bg-white shadow-[-10px_0_15px_rgba(0,0,0,0.03)] text-center">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistantRow(idx)} disabled={(formData.asistentes?.length || 0) <= 1}>
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                </div>
+
+                <div className="p-6 bg-slate-50 border-t flex items-center justify-between">
                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
-                      <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                      <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                        <Users className="h-5 w-5" />
+                      </div>
+                      <span className="text-[11px] font-black uppercase text-slate-500">Asistentes en lista: {(formData.asistentes || []).filter(a => a.rfc && a.nombres).length}</span>
                    </div>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase italic">Verifique que todos los datos sean correctos antes de finalizar.</p>
                 </div>
+              </TabsContent>
+            </div>
+          </Tabs>
 
-                {formData.capacitacion === 'S' && (
-                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
-                     <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3">
-                        <Activity className="h-5 w-5" /> Gestión de Curso e Instructores
-                     </h4>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Nombre del Curso / Taller</Label>
-                           <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="bg-slate-50" />
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
-                           <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Horas</Label>
-                           <div className="relative">
-                             <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50 pl-10" />
-                             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                           </div>
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Inicio</Label>
-                           <div className="relative">
-                             <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50 pl-10" />
-                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                           </div>
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Término</Label>
-                           <div className="relative">
-                             <Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} className="bg-slate-50 pl-10" />
-                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                           </div>
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede</Label>
-                           <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono" placeholder="15DESXXXXX" maxLength={10} />
-                        </div>
-                     </div>
-                     <div className="space-y-4 pt-4 border-t">
-                        <Label className="text-[10px] font-black uppercase text-slate-500">Instructores Ponentes</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           {[0, 1, 2].map(idx => (
-                              <Input 
-                                 key={idx} 
-                                 placeholder={`Nombre Instructor ${idx + 1}`} 
-                                 value={formData.instructores?.[idx] || ''} 
-                                 onChange={e => {
-                                    const newInst = [...(formData.instructores || ['', '', ''])];
-                                    newInst[idx] = e.target.value;
-                                    setFormData({...formData, instructores: newInst});
-                                 }}
-                                 className="bg-slate-50 text-[11px]" 
-                              />
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora</Label>
-                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
-                </div>
-             </div>
-          </ScrollArea>
           <DialogFooter className="p-8 border-t bg-slate-50">
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancelar</Button>
              <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20 tracking-[0.1em]">Finalizar Captura</Button>
