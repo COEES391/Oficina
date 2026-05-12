@@ -23,7 +23,8 @@ import {
   ResponsiveContainer, 
   Cell,
   PieChart,
-  Pie
+  Pie,
+  Legend
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
@@ -61,7 +62,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_records_editorial_final_v3";
+const DB_VERSION = "827_records_editorial_final_v5";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -80,7 +81,7 @@ export default function ProgramsPage() {
   const [modFilter, setModFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
   
-  // Sort State
+  // Sort State para Editorial
   const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
 
   const initialAssistant: ProgramAssistant = {
@@ -119,15 +120,10 @@ export default function ProgramsPage() {
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
       setIsLoginDialogOpen(false)
-      setActiveTab('Conoce mi Escuela')
       toast({ title: "Acceso Editorial Concedido", description: "Bienvenido al Panel de Control de WebEscuela." })
     } else {
       toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales inválidas." })
     }
-  }
-
-  const handleAction = (action: string, cct: string) => {
-    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
   }
 
   const handleSave = () => {
@@ -144,9 +140,16 @@ export default function ProgramsPage() {
     toast({ title: "Registro guardado" })
   }
 
+  const handleAction = (action: string, cct: string) => {
+    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
+  }
+
+  // Filtros y Lógica de Pestañas
+  const bdRecords = useMemo(() => records.filter(r => r.name === 'Biblioteca Digital'), [records]);
+  const ciRecords = useMemo(() => records.filter(r => r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')), [records]);
+  const geoRecords = useMemo(() => records.filter(r => r.name === 'Geoposición' || r.id.startsWith('PROG-GEO')), [records]);
   const editorialRecords = useMemo(() => {
     let filtered = records.filter(r => r.id.startsWith('ED-') || r.id.startsWith('WEB-') || r.name === 'Conoce mi Escuela');
-    
     if (sortConfig.direction !== null) {
       filtered.sort((a, b) => {
         const valA = (a.cct || '').toUpperCase();
@@ -159,42 +162,25 @@ export default function ProgramsPage() {
     return filtered;
   }, [records, sortConfig]);
 
-  const toggleSort = () => {
-    setSortConfig(prev => ({
-      key: 'cct',
-      direction: prev.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
-  const ciRecords = useMemo(() => {
-    return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
-  }, [records]);
-
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
       const mMatch = modFilter === 'all' || (r.modalidad || '').includes(modFilter);
       const vMatch = valFilter === 'all' || (r.valle || '').toUpperCase() === valFilter.toUpperCase();
       return mMatch && vMatch;
     });
-
     const approved = filtered.filter(r => r.status === 'concluido').length;
-    const usagePercent = filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0;
-
     return {
       filtered,
       total: filtered.length,
-      usagePercent,
+      usagePercent: filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0,
       pieData: [
         { name: 'USO ACTIVO', value: approved, fill: '#10b981' },
-        { name: 'PLANEACIÓN', value: filtered.length - approved, fill: '#f43f5e' }
+        { name: 'PLANEACIÓN', value: Math.max(0, filtered.length - approved), fill: '#f43f5e' }
       ],
       barData: [
         { name: 'APROBADO', value: approved, fill: '#621132' },
-        { name: 'PLANEACIÓN', value: filtered.length - approved, fill: '#cbd5e1' }
-      ],
-      options: {
-        mods: Array.from(new Set(ciRecords.map(r => r.modalidad?.split(' ')[0] || ''))).filter(Boolean).sort()
-      }
+        { name: 'PLANEACIÓN', value: Math.max(0, filtered.length - approved), fill: '#cbd5e1' }
+      ]
     };
   }, [ciRecords, modFilter, valFilter]);
 
@@ -243,7 +229,7 @@ export default function ProgramsPage() {
                     </TableRow>
                  </TableHeader>
                  <TableBody>
-                    {records.filter(r => r.name === 'Biblioteca Digital').map(rec => (
+                    {bdRecords.length > 0 ? bdRecords.map(rec => (
                       <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
                          <TableCell className="pl-8 font-black text-slate-700">{rec.cct || rec.id}</TableCell>
                          <TableCell>
@@ -265,7 +251,9 @@ export default function ProgramsPage() {
                             </div>
                          </TableCell>
                       </TableRow>
-                    ))}
+                    )) : (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground font-black uppercase text-[10px]">Sin registros en Biblioteca Digital</TableCell></TableRow>
+                    )}
                  </TableBody>
                </Table>
             </CardContent>
@@ -284,15 +272,6 @@ export default function ProgramsPage() {
              
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-3 space-y-4">
-                   <Card className="p-5 bg-white border rounded-2xl shadow-sm">
-                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                         <Button variant={modFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setModFilter('all')}>TODAS</Button>
-                         {ciDashboardData.options.mods.map(m => (
-                            <Button key={m} variant={modFilter === m ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setModFilter(m)}>{m}</Button>
-                         ))}
-                      </div>
-                   </Card>
                    <Card className="p-5 bg-white border rounded-2xl shadow-sm">
                       <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
                       <div className="flex gap-1.5">
@@ -332,7 +311,6 @@ export default function ProgramsPage() {
                             <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                               <YAxis axisLine={false} tickLine={false} hide />
                                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
                                   {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
@@ -357,13 +335,12 @@ export default function ProgramsPage() {
                          <TableRow>
                             <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase">AREA</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {ciDashboardData.filtered.slice(0, 100).map((rec) => (
+                         {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec) => (
                             <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
                                <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                <TableCell>
@@ -372,7 +349,6 @@ export default function ProgramsPage() {
                                      <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
                                   </div>
                                </TableCell>
-                               <TableCell className="uppercase text-[9px]">{rec.asistentes?.[0]?.departamento || 'PLANTEL'}</TableCell>
                                <TableCell className="font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || '-'}</TableCell>
                                <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-2">
@@ -381,7 +357,9 @@ export default function ProgramsPage() {
                                   </div>
                                </TableCell>
                             </TableRow>
-                         ))}
+                         )) : (
+                           <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-[10px]">No se encontraron cuentas con los filtros seleccionados</TableCell></TableRow>
+                         )}
                       </TableBody>
                    </Table>
                 </div>
@@ -392,10 +370,10 @@ export default function ProgramsPage() {
         <TabsContent value="Geoposición" className="space-y-8">
            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
-                { title: 'Geocodificados', value: '1,245', icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
+                { title: 'Geocodificados', value: geoRecords.length.toLocaleString(), icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
                 { title: 'Cobertura', value: '82%', icon: <Zap className="h-6 w-6" />, color: 'bg-emerald-500' },
                 { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-6 w-6" />, color: 'bg-blue-500' },
-                { title: 'Alertas', value: '12', icon: <X className="h-6 w-6" />, color: 'bg-rose-500' },
+                { title: 'Alertas', value: '0', icon: <X className="h-6 w-6" />, color: 'bg-rose-500' },
               ].map((item, i) => (
                 <Card key={i} className="executive-card p-8">
                   <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-4`}>
@@ -406,9 +384,42 @@ export default function ProgramsPage() {
                 </Card>
               ))}
            </div>
-           <Card className="executive-card p-10 text-center border-dashed border-2">
-              <MapPin className="h-20 w-20 text-primary mx-auto animate-bounce mb-4" />
-              <p className="font-black text-sm uppercase text-slate-500 tracking-widest">Módulo de Auditoría Geográfica Territorial</p>
+           
+           <Card className="executive-card overflow-hidden">
+              <CardHeader className="p-8 border-b bg-slate-50/50">
+                 <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3">
+                   <MapPin className="h-5 w-5" /> Auditoría Territorial por Centro de Trabajo
+                 </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                 <Table>
+                    <TableHeader className="bg-slate-100/50">
+                       <TableRow>
+                          <TableHead className="font-black text-[9px] pl-8">CCT / NOMBRE</TableHead>
+                          <TableHead className="font-black text-[9px]">VALLE</TableHead>
+                          <TableHead className="font-black text-[9px]">COORDENADAS (LAT/LON)</TableHead>
+                          <TableHead className="font-black text-[9px] text-right pr-8">ESTATUS GEO</TableHead>
+                       </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                       {geoRecords.map(rec => (
+                          <TableRow key={rec.id} className="text-[10px] font-bold border-slate-100">
+                             <TableCell className="pl-8">
+                                <div className="flex flex-col">
+                                   <span className="text-primary font-black uppercase">{rec.cct}</span>
+                                   <span className="text-slate-400 text-[9px] uppercase">{rec.schoolName}</span>
+                                </div>
+                             </TableCell>
+                             <TableCell className="uppercase">{rec.valle}</TableCell>
+                             <TableCell className="font-mono text-slate-600">{rec.observaciones?.split('Lat:')[1] || 'PENDIENTE'}</TableCell>
+                             <TableCell className="text-right pr-8">
+                                <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">VERIFICADO</Badge>
+                             </TableCell>
+                          </TableRow>
+                       ))}
+                    </TableBody>
+                 </Table>
+              </CardContent>
            </Card>
         </TabsContent>
 
@@ -417,28 +428,28 @@ export default function ProgramsPage() {
              <div className="bg-white shadow-2xl border border-slate-200 rounded-lg overflow-hidden max-w-5xl mx-auto font-sans">
               <div className="bg-white p-8 border-b-8 border-primary relative">
                  <div className="flex flex-col items-center text-center">
-                    <h1 className="text-2xl font-bold text-emerald-800 uppercase tracking-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
+                    <h1 className="text-2xl font-bold text-emerald-800 uppercase tracking-tight leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
                     <p className="text-sm font-medium text-slate-500">Servicios Educativos Integrados al Estado de México</p>
                  </div>
               </div>
 
               <div className="p-12 space-y-10 relative">
                  <div className="flex justify-end">
-                    <p className="text-xs font-bold text-rose-800 uppercase">
+                    <p className="text-[11px] font-bold text-rose-800 uppercase">
                        {format(new Date(), "eeee d 'de' MMMM 'de' yyyy", { locale: es })}
                     </p>
                  </div>
 
                  <div className="flex items-center gap-4 mb-8">
-                    <div className="h-6 w-10 flex flex-col border border-slate-200">
-                       <div className="flex-1 bg-emerald-700" />
+                    <div className="h-8 w-12 flex flex-col border border-slate-300">
+                       <div className="flex-1 bg-[#006847]" />
                        <div className="flex-1 bg-white" />
-                       <div className="flex-1 bg-rose-700" />
+                       <div className="flex-1 bg-[#CE1126]" />
                     </div>
-                    <h2 className="text-xl font-bold text-rose-800 uppercase">Conoce mi escuela</h2>
+                    <h2 className="text-2xl font-bold text-rose-800 uppercase tracking-tighter">Conoce mi escuela</h2>
                  </div>
 
-                 <div className="space-y-6 text-sm leading-relaxed text-slate-800 text-justify">
+                 <div className="space-y-6 text-[15px] leading-relaxed text-slate-800 text-justify">
                     <p>
                        <span className="font-bold">Conoce mi Escuela</span>, es un programa creado y administrado por el <span className="font-bold">Departamento de Computación Electrónica en la Educación Secundaria (COEES)</span>, el cual inició en el 2006 y a la fecha se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para compartir información de interés general para proyectar su trabajo hacia la comunidad, padres de familia y autoridades educativas.
                     </p>
@@ -450,24 +461,24 @@ export default function ProgramsPage() {
                     </p>
                  </div>
 
-                 <div className="pt-10 space-y-4 max-w-md">
-                    <div className="group flex items-center gap-3 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
-                       <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
-                       <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Incorporación</span>
+                 <div className="pt-10 space-y-5 max-w-md">
+                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
+                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
+                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Incorporación</span>
                     </div>
-                    <div className="group flex items-center gap-3 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
-                       <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
-                       <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Escuelas incorporadas</span>
+                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
+                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
+                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Escuelas incorporadas</span>
                     </div>
-                    <div className="group flex items-center gap-3 cursor-pointer">
-                       <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
-                       <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Consulta tu escuela</span>
+                    <div className="group flex items-center gap-4 cursor-pointer">
+                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
+                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Consulta tu escuela</span>
                     </div>
                  </div>
               </div>
 
-              <div className="bg-white border-t p-10 flex flex-col items-center text-center space-y-4">
-                 <div className="space-y-1 text-[11px] font-bold text-slate-600 uppercase leading-tight">
+              <div className="bg-slate-50 border-t p-10 flex flex-col items-center text-center space-y-4">
+                 <div className="space-y-1 text-[11px] font-bold text-slate-600 uppercase leading-tight tracking-wide">
                     <p>Gobierno del Estado de México</p>
                     <p>Secretaría de Educación</p>
                     <p>Servicios Educativos Integrados al Estado de México</p>
@@ -480,83 +491,89 @@ export default function ProgramsPage() {
               </div>
            </div>
            ) : (
-             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen font-serif p-10">
+             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen p-10 border shadow-inner rounded-3xl">
                 <div className="text-center py-6 border-b-2 border-slate-100">
                    <h1 className="text-xl font-bold text-[#4a773c] uppercase leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
                    <p className="text-sm text-slate-600 font-semibold">Servicios Educativos Integrados al Estado de México</p>
-                   <div className="mt-4 flex justify-center">
-                       <div className="relative w-full max-w-3xl h-[120px] rounded-lg overflow-hidden border shadow-inner">
-                          <Image src="https://picsum.photos/seed/webescuela/1000/200" alt="Banner Escuela" fill className="object-cover opacity-80" />
+                   <div className="mt-6 flex justify-center">
+                       <div className="relative w-full max-w-4xl h-[140px] rounded-xl overflow-hidden border shadow-lg">
+                          <Image src="https://picsum.photos/seed/editorial-banner/1200/300" alt="Banner Editorial" fill className="object-cover opacity-90" />
+                          <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                             <span className="text-white text-3xl font-serif italic drop-shadow-md">Sección Editorial WebEscuela</span>
+                          </div>
                        </div>
                    </div>
                 </div>
 
                 <div className="py-6">
-                   <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
-                   <p className="text-[11px] text-slate-600 mt-1 max-w-5xl leading-relaxed">
-                      En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
-                   </p>
-                   
-                   <div className="mt-8 flex justify-between items-center">
-                      <button 
-                        onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); }}
-                        className="bg-slate-100 border border-slate-300 px-6 py-1.5 text-[11px] font-bold rounded shadow-sm hover:bg-slate-200"
-                      >
-                         Cerrar
-                      </button>
-                      <div className="text-[10px] font-bold text-slate-400">Total de registros: {editorialRecords.length}</div>
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="space-y-2 max-w-3xl">
+                        <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
+                        <p className="text-[11px] text-slate-600 leading-relaxed text-justify">
+                           En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                         <button 
+                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(localStorage.getItem('userRfc')); }}
+                            className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
+                         >
+                            Cerrar Sesión
+                         </button>
+                         <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">REGISTROS: {editorialRecords.length}</Badge>
+                      </div>
                    </div>
-
-                   <div className="mt-4 border border-black overflow-x-auto relative">
-                      <table className="w-full border-collapse text-[10px] text-left min-w-[2000px]">
-                         <thead className="bg-slate-50">
-                            <tr className="border-b border-black">
-                               <th className="border-r border-black p-2 w-10 text-center">No.</th>
-                               <th 
-                                 className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none"
-                                 onClick={toggleSort}
+                   
+                   <div className="border border-black overflow-x-auto relative">
+                      <Table className="border-collapse text-[10px] min-w-[2500px]">
+                         <TableHeader className="bg-slate-50">
+                            <TableRow className="border-b border-black">
+                               <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
+                               <TableHead 
+                                 className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none font-black"
+                                 onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
                                >
-                                 <div className="flex items-center gap-2 underline">
+                                 <div className="flex items-center gap-2 underline uppercase">
                                     Centro de Trabajo
-                                    {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30 group-hover:opacity-100" />}
+                                    {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                                  </div>
-                               </th>
-                               <th className="border-r border-black p-2">Agrupado</th>
-                               <th className="border-r border-black p-2">Vertiente</th>
-                               <th className="border-r border-black p-2">Sector</th>
-                               <th className="border-r border-black p-2">Zona</th>
-                               <th className="border-r border-black p-2">Fecha de Alta</th>
-                               <th className="border-r border-black p-2">Fecha de Modificación</th>
-                               <th className="border-r border-black p-2">Fecha de Revisión</th>
-                               <th className="border-r border-black p-2">Fecha de Publicación</th>
-                               <th className="border-r border-black p-2">Fecha de Suspensión</th>
-                               <th className="border-r border-black p-2 min-w-[400px]">Observaciones</th>
-                               <th className="border-r border-black p-2">eContacto</th>
-                               <th className="p-2 font-bold bg-slate-100 text-center sticky right-0 z-10 border-l border-black shadow-[-5px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</th>
-                            </tr>
-                         </thead>
-                         <tbody className="bg-white">
+                               </TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Agrupado</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Vertiente</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase text-center">Sector</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase text-center">Zona</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Alta</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Modificación</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Revisión</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Publicación</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Suspensión</TableHead>
+                               <TableHead className="border-r border-black p-2 min-w-[500px] font-black uppercase">Observaciones</TableHead>
+                               <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
+                               <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-10 border-l border-black shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</TableHead>
+                            </TableRow>
+                         </TableHeader>
+                         <TableBody>
                             {editorialRecords.map((rec, idx) => (
-                               <tr key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
-                                  <td className="border-r border-black p-2 text-center font-bold">{idx + 1}</td>
-                                  <td className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</td>
-                                  <td className="border-r border-black p-2 font-mono text-slate-500">{rec.agrupado || '-'}</td>
-                                  <td className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.sector || '-'}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.zonaEscolar || '-'}</td>
-                                  <td className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaAlta || '-'}</td>
-                                  <td className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaModif || '-'}</td>
-                                  <td className="border-r border-black p-2 font-black text-slate-700 tabular-nums">{rec.fechaRevision || '-'}</td>
-                                  <td className="border-r border-black p-2 text-emerald-700 font-bold tabular-nums">{rec.date || '-'}</td>
-                                  <td className="border-r border-black p-2 text-rose-600 font-bold tabular-nums">{rec.fechaSuspension || ''}</td>
-                                  <td className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4">
-                                     <div className="max-h-[120px] overflow-y-auto scrollbar-hide italic">
+                               <TableRow key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
+                                  <TableCell className="border-r border-black p-2 text-center font-bold">{idx + 1}</TableCell>
+                                  <TableCell className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</TableCell>
+                                  <TableCell className="border-r border-black p-2 font-mono text-slate-500 uppercase">{rec.agrupado || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-center font-bold">{rec.sector || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-center font-bold">{rec.zonaEscolar || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaAlta || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaModif || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums">{rec.fechaRevision || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums">{rec.date || '-'}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-rose-600 font-black tabular-nums">{rec.fechaSuspension || ''}</TableCell>
+                                  <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
+                                     <div className="max-h-[150px] overflow-y-auto scrollbar-hide italic">
                                         {rec.observaciones || ''}
                                      </div>
-                                  </td>
-                                  <td className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</td>
-                                  <td className="p-2 bg-white sticky right-0 z-10 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[140px]">
-                                     <div className="flex flex-col gap-0.5 font-bold text-blue-700 underline underline-offset-2 text-left">
+                                  </TableCell>
+                                  <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
+                                  <TableCell className="p-2 bg-white/95 backdrop-blur-sm sticky right-0 z-10 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[150px]">
+                                     <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
                                         <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Revisar</button>
                                         <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Publicar</button>
                                         <button onClick={() => handleAction('Suspender', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Suspender</button>
@@ -564,11 +581,12 @@ export default function ProgramsPage() {
                                         <button onClick={() => handleAction('eContacto', rec.cct!)} className="text-left hover:text-blue-900 w-fit">eContacto</button>
                                         <button onClick={() => handleAction('Contraseña', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
                                      </div>
-                                  </td>
-                               </tr>
+                                  </TableCell>
+                               </TableRow>
                             ))}
-                         </tbody>
-                      </table>
+                         </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
                    </div>
                 </div>
              </div>
@@ -576,11 +594,12 @@ export default function ProgramsPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Login Dialog para Editorial */}
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
              <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial WebEscuela</DialogTitle>
-             <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Sección de Incorporación y Auditoría</DialogDescription>
+             <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Sección de Incorporación y Auditoría Técnica</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6 bg-white">
              <div className="space-y-4">
@@ -594,19 +613,20 @@ export default function ProgramsPage() {
                 </div>
              </div>
              <Button onClick={handleEditorialLogin} className="w-full h-16 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform tracking-widest text-[11px]">
-                Ingresar al Panel Editorial
+                Validar Credenciales
              </Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Formulario Técnico Principal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                {editingId ? 'Actualización de Registro Técnico' : 'Registro de Programa Estratégico'}
+                {editingId ? 'Actualización de Registro Técnico' : 'Nueva Captura de Programa'}
              </DialogTitle>
-             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Sincronización con Base de Datos Maestro</DialogDescription>
+             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión de Información y Capacitación Institucional</DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 p-8">
              <div className="space-y-10">
@@ -619,53 +639,79 @@ export default function ProgramsPage() {
                       <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
                       <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
                          <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
-                         <SelectContent><SelectItem value="MÉXICO" className="font-black">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="font-black">TOLUCA</SelectItem></SelectContent>
+                         <SelectContent>
+                            <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
+                            <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
+                         </SelectContent>
                       </Select>
                    </div>
                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus</Label>
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Operativo</Label>
                       <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="planeacion" className="text-[10px] font-black">PENDIENTE</SelectItem>
-                           <SelectItem value="concluido" className="text-[10px] font-black">APROBADO / ACTIVO</SelectItem>
+                           <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN / PENDIENTE</SelectItem>
+                           <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO / EN PROCESO</SelectItem>
+                           <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO / APROBADO</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
                 </div>
 
-                <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
-                   <div className="flex-1">
-                      <Label className="text-sm font-black uppercase text-primary">Capacitación Institucional</Label>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
-                   </div>
-                   <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
-                </div>
+                {formData.name === 'Biblioteca Digital' && (
+                  <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                     <div className="flex-1">
+                        <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
+                        <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                     </div>
+                  </div>
+                )}
 
                 {formData.capacitacion === 'S' && (
-                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
-                     <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2">Gestión de Curso y Asistentes</h4>
+                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
+                     <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3">
+                        <Activity className="h-5 w-5" /> Gestión de Curso e Instructores
+                     </h4>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
-                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Grupo</Label><Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Nombre del Curso / Taller</Label>
+                           <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="bg-slate-50" />
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
+                           <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
+                        </div>
                      </div>
-                     <div className="grid grid-cols-3 gap-6">
-                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Horas</Label><Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
-                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Fecha Inicio</Label><Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
-                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">CCT Sede</Label><Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} /></div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Duración (Horas)</Label>
+                           <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50" />
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha de Inicio</Label>
+                           <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50" />
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede del Curso</Label>
+                           <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono uppercase" maxLength={10} />
+                        </div>
                      </div>
                   </div>
                 )}
 
                 <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones</Label>
+                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora</Label>
                    <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
                 </div>
              </div>
           </ScrollArea>
           <DialogFooter className="p-8 border-t bg-slate-50">
-             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px]">Cancelar</Button>
-             <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] bg-primary text-white">Guardar Cambios</Button>
+             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancelar</Button>
+             <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20 tracking-[0.1em]">Finalizar Captura</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
