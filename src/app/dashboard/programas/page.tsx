@@ -26,7 +26,6 @@ import {
   Pie
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
-import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   Pencil, 
@@ -42,20 +41,28 @@ import {
   FileText,
   MapPin,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  Search,
+  Mail,
+  Zap,
+  Building2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import Image from 'next/image'
+import { placeholderImages } from '@/lib/placeholder-images'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
   'Cuentas Institucionales',
+  'Geoposición',
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_official_v12";
+const DB_VERSION = "1709_records_v15_editorial";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -70,14 +77,13 @@ export default function ProgramsPage() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
-  const [generatedPass, setGeneratedPass] = useState('')
 
-  // Dashboard state
+  // Dashboard filters
   const [modFilter, setModFilter] = useState('all')
   const [secFilter, setSecFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
+
+  const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: 'DOCENTE', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -100,7 +106,7 @@ export default function ProgramsPage() {
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     const storedVersion = localStorage.getItem('programs_db_version')
     
-    if (storedVersion !== DB_VERSION || stored.length < 500) {
+    if (storedVersion !== DB_VERSION || stored.length === 0) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
       localStorage.setItem('programs_db_version', DB_VERSION)
@@ -110,23 +116,23 @@ export default function ProgramsPage() {
   }, [])
 
   const handleEditorialLogin = () => {
-    if (loginForm.user.toUpperCase() === 'CEDITORIAL' && loginForm.pass === 'SEIEM') {
+    // Usuario: CEDITORIAL, Contraseña: COEES
+    if (loginForm.user.toUpperCase() === 'CEDITORIAL' && loginForm.pass === 'COEES') {
       setIsEditorialUser(true)
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
       setIsLoginDialogOpen(false)
-      toast({ title: "Acceso Editorial Concedido" })
+      toast({ title: "Acceso Editorial Concedido", description: "Bienvenido al Panel de Control de WebEscuela." })
     } else {
-      toast({ variant: "destructive", title: "Acceso Denegado" })
+      toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales inválidas para la sección editorial." })
     }
   }
 
-  // CI Filtered Logic
   const ciRecords = useMemo(() => {
     return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
   }, [records]);
 
-  const dashboardData = useMemo(() => {
+  const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
       const mMatch = modFilter === 'all' || r.modalidad === modFilter;
       const sMatch = secFilter === 'all' || r.sector === secFilter;
@@ -143,7 +149,7 @@ export default function ProgramsPage() {
       total: filtered.length,
       usagePercent,
       pieData: [
-        { name: 'APROBADO', value: approved, fill: '#10b981' },
+        { name: 'USO ACTIVO', value: approved, fill: '#10b981' },
         { name: 'PLANEACIÓN', value: pending, fill: '#f43f5e' }
       ],
       barData: [
@@ -168,16 +174,9 @@ export default function ProgramsPage() {
     setIsDialogOpen(true);
   }
 
-  const handleDelete = (id: string) => {
-    const updated = records.filter(r => r.id !== id);
-    setRecords(updated);
-    localStorage.setItem('programs_full', JSON.stringify(updated));
-    toast({ title: "Registro eliminado" });
-  }
-
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Folio y CCT obligatorios" });
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT son obligatorios." });
       return;
     }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
@@ -186,7 +185,14 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    toast({ title: "Registro guardado correctamente" })
+    toast({ title: "Registro Actualizado", description: "Los cambios se han sincronizado con la base de datos." })
+  }
+
+  const handleDelete = (id: string) => {
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    localStorage.setItem('programs_full', JSON.stringify(updated));
+    toast({ title: "Registro Eliminado" });
   }
 
   if (!mounted) return null
@@ -206,6 +212,7 @@ export default function ProgramsPage() {
         <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1 rounded-2xl shadow-inner border border-primary/5">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger key={rubro} value={rubro} className="flex-1 min-w-[150px] h-12 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
+              {rubro === 'Geoposición' ? <MapPin className="h-3.5 w-3.5 mr-2" /> : null}
               {rubro}
             </TabsTrigger>
           ))}
@@ -217,7 +224,7 @@ export default function ProgramsPage() {
                <Monitor className="h-6 w-6" /> Equipamiento y Capacitación
              </h3>
              <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
-                <PlusCircle className="h-4 w-4" /> Iniciar Captura Técnica
+                <PlusCircle className="h-4 w-4" /> Nueva Captura Técnica
              </Button>
           </div>
           <Card className="executive-card">
@@ -229,7 +236,7 @@ export default function ProgramsPage() {
                        <TableHead className="font-black text-[10px] uppercase">MODALIDAD / VALLE</TableHead>
                        <TableHead className="font-black text-[10px] uppercase text-center">EQUIPOS</TableHead>
                        <TableHead className="font-black text-[10px] uppercase text-center">CAPACITACIÓN</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase text-right pr-8">ACCIÓN</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase text-right pr-8">ACCIONES</TableHead>
                     </TableRow>
                  </TableHeader>
                  <TableBody>
@@ -249,9 +256,10 @@ export default function ProgramsPage() {
                             </Badge>
                          </TableCell>
                          <TableCell className="text-right pr-8">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)}>
-                               <Pencil className="h-4 w-4" />
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(rec)}><Pencil className="h-4 w-4" /></Button>
+                               <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500" onClick={() => handleDelete(rec.id)}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
                          </TableCell>
                       </TableRow>
                     ))}
@@ -266,29 +274,19 @@ export default function ProgramsPage() {
              <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard className="h-6 w-6 text-white" /></div>
                 <div>
-                   <h2 className="text-2xl font-black text-primary uppercase leading-none">Monitoreo de Cuentas Institucionales</h2>
+                   <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo</h2>
                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Sincronización con {ciRecords.length} Registros Oficiales</p>
                 </div>
              </div>
              
-             {/* Slicers Row */}
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-3 space-y-4">
                    <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
                       <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
                       <div className="flex flex-wrap gap-1.5">
                          <Button variant={modFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setModFilter('all')}>TODAS</Button>
-                         {dashboardData.options.mods.map(m => (
+                         {ciDashboardData.options.mods.map(m => (
                             <Button key={m} variant={modFilter === m ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setModFilter(m || 'all')}>{m}</Button>
-                         ))}
-                      </div>
-                   </Card>
-                   <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
-                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">SECTOR</Label>
-                      <div className="grid grid-cols-5 gap-1.5">
-                         <Button variant={secFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setSecFilter('all')}>T</Button>
-                         {dashboardData.options.sectors.map(s => (
-                            <Button key={s} variant={secFilter === s ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setSecFilter(s || 'all')}>{s}</Button>
                          ))}
                       </div>
                    </Card>
@@ -302,12 +300,11 @@ export default function ProgramsPage() {
                    </Card>
                 </div>
 
-                {/* Main Stats */}
                 <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
                    <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-xl relative overflow-hidden rounded-[2.5rem] border-none group">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full group-hover:scale-110 transition-transform" />
                       <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Total Cuentas Filtradas</span>
-                      <div className="text-7xl font-black text-slate-800 tracking-tighter">{dashboardData.total}</div>
+                      <div className="text-7xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
                    </Card>
 
                    <Card className="p-6 flex flex-col items-center bg-white shadow-xl rounded-[2.5rem] border-none">
@@ -315,27 +312,27 @@ export default function ProgramsPage() {
                       <div className="relative h-[200px] w-full">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                               <Pie data={dashboardData.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
-                                  {dashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
+                                  {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                </Pie>
                             </PieChart>
                          </ResponsiveContainer>
                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-4xl font-black text-primary leading-none">{dashboardData.usagePercent}%</span>
+                            <span className="text-4xl font-black text-primary leading-none">{ciDashboardData.usagePercent}%</span>
                          </div>
                       </div>
                    </Card>
 
                    <Card className="p-6 bg-white shadow-xl rounded-[2.5rem] border-none">
-                      <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO (DESYSA - COEES)</Label>
+                      <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO (APROBACIÓN)</Label>
                       <div className="h-[220px]">
                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={dashboardData.barData}>
+                            <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} hide />
                                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
-                                  {dashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                  {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
                             </BarChart>
                          </ResponsiveContainer>
@@ -346,7 +343,7 @@ export default function ProgramsPage() {
 
              <div className="flex justify-between items-center px-2">
                 <h4 className="text-lg font-black uppercase text-primary">Listado Detallado de Registros</h4>
-                <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-primary">
                    <PlusCircle className="h-4 w-4" /> Agregar Nueva Cuenta
                 </Button>
              </div>
@@ -356,18 +353,18 @@ export default function ProgramsPage() {
                    <Table>
                       <TableHeader className="bg-slate-100/50">
                          <TableRow>
-                            <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># USUARIO / CCT</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase">ÁREA / ZONA</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase">ZONA / SECTOR</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ESTATUS</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIÓN</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {dashboardData.filtered.slice(0, 100).map((rec, i) => (
+                         {ciDashboardData.filtered.slice(0, 100).map((rec, i) => (
                             <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 transition-colors border-slate-100">
-                               <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.id.split('-').pop() || i+1} | {rec.cct || 'N/A'}</TableCell>
+                               <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                <TableCell>
                                   <div className="flex flex-col">
                                      <span className="uppercase text-[9px] font-black text-slate-700">{rec.modalidad}</span>
@@ -376,11 +373,11 @@ export default function ProgramsPage() {
                                </TableCell>
                                <TableCell>
                                   <div className="flex flex-col">
-                                     <span className="uppercase text-[9px]">{rec.asistentes?.[0]?.departamento || 'PLANTEL'}</span>
-                                     <span className="text-[8px] text-muted-foreground">ZONA: {rec.zonaEscolar || 'S/Z'}</span>
+                                     <span className="uppercase text-[9px]">ZONA: {rec.zonaEscolar || 'S/Z'}</span>
+                                     <span className="text-[8px] text-muted-foreground uppercase">SECTOR: {rec.sector || '-'}</span>
                                   </div>
                                </TableCell>
-                               <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
+                               <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email || '-'}</TableCell>
                                <TableCell className="text-right pr-8">
                                   <Badge className={cn("text-[8px] font-black uppercase px-3", rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')}>
                                      {rec.status === 'concluido' ? 'APROBADO' : 'PLANEACIÓN'}
@@ -401,20 +398,85 @@ export default function ProgramsPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="Geoposición" className="space-y-8">
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[
+                { title: 'Planteles Geocodificados', value: '1,245', icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
+                { title: 'Cobertura Territorial', value: '82%', icon: <Zap className="h-6 w-6" />, color: 'bg-emerald-500' },
+                { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-6 w-6" />, color: 'bg-blue-500' },
+                { title: 'Alertas de Ubicación', value: '12', icon: <AlertCircle className="h-6 w-6" />, color: 'bg-rose-500' },
+              ].map((item, i) => (
+                <Card key={i} className="executive-card p-8">
+                  <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-4`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.title}</span>
+                  <div className="text-4xl font-black text-slate-800 mt-2">{item.value}</div>
+                </Card>
+              ))}
+           </div>
+
+           <Card className="executive-card p-10">
+              <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
+                 <div>
+                    <CardTitle className="text-xl font-black uppercase text-primary">Mapa de Distribución Estratégica</CardTitle>
+                    <CardDescription className="text-[10px] font-black uppercase mt-1">Auditoría de Coordenadas Oficiales SEIEM</CardDescription>
+                 </div>
+                 <Button variant="outline" className="gap-2 font-black text-[10px] uppercase">
+                    <ExternalLink className="h-4 w-4" /> Exportar a GIS
+                 </Button>
+              </CardHeader>
+              <div className="aspect-video bg-slate-100 rounded-[2rem] border-4 border-white shadow-inner flex items-center justify-center relative overflow-hidden">
+                 <div className="absolute inset-0 opacity-20 bg-[url('https://placehold.co/1200x600/png?text=Grid+Geográfico')] bg-cover" />
+                 <div className="text-center relative z-10 space-y-4">
+                    <MapPin className="h-20 w-20 text-primary mx-auto animate-bounce" />
+                    <p className="font-black text-sm uppercase text-slate-500">Visualización de Capas de Información Geográfica</p>
+                    <div className="flex gap-4 justify-center">
+                       <Badge className="bg-primary text-white">S. GENERAL</Badge>
+                       <Badge className="bg-emerald-600 text-white">S. TÉCNICA</Badge>
+                       <Badge className="bg-blue-600 text-white">TELESECUNDARIA</Badge>
+                    </div>
+                 </div>
+              </div>
+           </Card>
+
+           <Card className="executive-card">
+              <CardHeader className="p-8 border-b border-slate-50"><CardTitle className="text-sm font-black uppercase text-primary">Auditoría de Coordenadas</CardTitle></CardHeader>
+              <Table>
+                 <TableHeader className="bg-slate-50">
+                    <TableRow>
+                       <TableHead className="font-black text-[10px] uppercase pl-8">CCT / NOMBRE</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase">ZONA / SECTOR</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase">LATITUD</TableHead>
+                       <TableHead className="font-black text-[10px] uppercase">LONGITUD</TableHead>
+                       <TableHead className="text-right pr-8 font-black text-[10px] uppercase">ESTATUS</TableHead>
+                    </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                    {records.slice(0, 10).map(rec => (
+                       <TableRow key={rec.id} className="text-[10px] font-bold border-slate-50">
+                          <TableCell className="pl-8">{rec.cct} - {rec.modalidad}</TableCell>
+                          <TableCell>{rec.zonaEscolar} / {rec.sector}</TableCell>
+                          <TableCell className="font-mono">19.2834</TableCell>
+                          <TableCell className="font-mono">-99.6534</TableCell>
+                          <TableCell className="text-right pr-8"><Badge className="bg-emerald-500 text-white text-[8px] font-black uppercase">VERIFICADO</Badge></TableCell>
+                       </TableRow>
+                    ))}
+                 </TableBody>
+              </Table>
+           </Card>
+        </TabsContent>
+
         <TabsContent value="Conoce mi Escuela" className="animate-in fade-in duration-500">
-           <div className="bg-white shadow-2xl border border-slate-200 rounded-lg overflow-hidden max-w-5xl mx-auto font-sans">
-              {/* Portal Header */}
+           {!isEditorialUser ? (
+             <div className="bg-white shadow-2xl border border-slate-200 rounded-lg overflow-hidden max-w-5xl mx-auto font-sans">
               <div className="bg-white p-8 border-b-8 border-primary relative">
                  <div className="flex flex-col items-center text-center">
                     <h1 className="text-2xl font-bold text-emerald-800 uppercase tracking-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
                     <p className="text-sm font-medium text-slate-500">Servicios Educativos Integrados al Estado de México</p>
                  </div>
-                 <div className="flex justify-center mt-4">
-                    <div className="h-1 bg-slate-200 w-1/2 rounded-full" />
-                 </div>
               </div>
 
-              {/* Portal Body */}
               <div className="p-12 space-y-10 relative">
                  <div className="flex justify-end">
                     <p className="text-xs font-bold text-rose-800">
@@ -444,7 +506,7 @@ export default function ProgramsPage() {
                  </div>
 
                  <div className="pt-10 space-y-4 max-w-md">
-                    <div className="group flex items-center gap-3 cursor-pointer">
+                    <div className="group flex items-center gap-3 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
                        <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
                        <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Incorporación</span>
                     </div>
@@ -457,84 +519,137 @@ export default function ProgramsPage() {
                        <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Consulta tu escuela</span>
                     </div>
                  </div>
-
-                 {isEditorialUser && (
-                    <div className="mt-12 p-6 bg-slate-50 border-2 border-dashed border-primary/20 rounded-2xl animate-in zoom-in-95">
-                        <div className="flex justify-between items-center mb-6">
-                           <h3 className="font-black text-primary uppercase text-sm">Panel Editorial Activo</h3>
-                           <Badge className="bg-primary text-white">SESIÓN SEIEM</Badge>
-                        </div>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-[9px] font-black">CCT</TableHead>
-                                    <TableHead className="text-[9px] font-black">ZONA</TableHead>
-                                    <TableHead className="text-[9px] font-black">VALLE</TableHead>
-                                    <TableHead className="text-[9px] font-black text-right">AUDITORÍA</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {records.filter(r => r.id.startsWith('WEB-') || r.id.startsWith('PROG-CE-')).map(r => (
-                                    <TableRow key={r.id} className="text-[10px]">
-                                        <TableCell className="font-bold">{r.cct}</TableCell>
-                                        <TableCell>{r.zonaEscolar}</TableCell>
-                                        <TableCell>{r.valle}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" className="h-7 text-[8px]" onClick={() => handleEdit(r)}>REVISAR</Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                 )}
               </div>
 
-              {/* Portal Footer */}
-              <div className="bg-white border-t p-10 flex flex-col items-center text-center space-y-6">
+              <div className="bg-white border-t p-10 flex flex-col items-center text-center space-y-4">
                  <div className="space-y-1 text-[11px] font-bold text-slate-600 uppercase leading-tight">
                     <p>Gobierno del Estado de México</p>
                     <p>Secretaría de Educación</p>
                     <p>Servicios Educativos Integrados al Estado de México</p>
                     <p>Dirección de Educación Secundaria y Servicios de Apoyo</p>
                  </div>
-                 
-                 <div className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                 <div className="text-[10px] text-slate-500 font-medium">
                     <p>Profesor Agripín García Estrada No. 1306, Santa Cruz Atzcapotzaltongo</p>
-                    <p>Toluca, Estado de México, C.P. 50030</p>
-                    <p>Tel.: (722) 265-1200 ext. 9099 y 9021</p>
-                    <p className="text-rose-800 font-bold mt-1">www.seiem.gob.mx</p>
+                    <p>Toluca, Estado de México, C.P. 50030 | Tel.: (722) 265-1200 ext. 9099</p>
                  </div>
               </div>
            </div>
+           ) : (
+             <div className="space-y-6 animate-in zoom-in-95 duration-500">
+                <div className="bg-white border-b-4 border-primary p-6 mb-6">
+                   <div className="flex justify-center mb-4">
+                       <Image src={logoData.imageUrl} alt="DESYSA" width={300} height={100} className="object-contain" />
+                   </div>
+                   <div className="text-center">
+                       <h2 className="text-lg font-black uppercase text-primary">Bienvenidos a la Sección Editorial de WebEscuela</h2>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela</p>
+                   </div>
+                </div>
+
+                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                   <Button variant="outline" size="sm" onClick={() => setIsEditorialUser(false)} className="gap-2 font-bold uppercase text-[10px] h-8">
+                      <Lock className="h-3.5 w-3.5" /> Cerrar Sesión Editorial
+                   </Button>
+                   <div className="flex items-center gap-4">
+                      <div className="relative">
+                         <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                         <Input placeholder="Buscar CCT..." className="h-8 pl-10 text-[10px] w-64 bg-white" />
+                      </div>
+                   </div>
+                </div>
+
+                <Card className="rounded-none border-x-0 border-t-0 shadow-none overflow-hidden">
+                   <ScrollArea className="w-full whitespace-nowrap">
+                      <Table className="border border-slate-200">
+                         <TableHeader className="bg-slate-100">
+                            <TableRow className="h-10">
+                               <TableHead className="text-[9px] font-black border-r px-2 text-center w-10">No.</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4">Centro de Trabajo</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-4">Agrupador</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2">Vertiente</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2">Sector</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-2">Zona</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Alta</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Modif.</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Revisión</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Publ.</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Susp.</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-10">Observaciones</TableHead>
+                               <TableHead className="text-[9px] font-black border-r px-6">e-contacto</TableHead>
+                               <TableHead className="text-[9px] font-black px-6 text-center">Acciones</TableHead>
+                            </TableRow>
+                         </TableHeader>
+                         <TableBody>
+                            {records.filter(r => r.name === 'Conoce mi Escuela').map((rec, idx) => (
+                               <TableRow key={rec.id} className="text-[10px] h-12 border-b hover:bg-slate-50 transition-colors">
+                                  <TableCell className="border-r text-center font-bold text-slate-400">{idx + 1}</TableCell>
+                                  <TableCell className="border-r font-black text-primary px-4">{rec.cct}</TableCell>
+                                  <TableCell className="border-r font-bold text-slate-600 px-4">DESMEXICO00{rec.sector}{rec.zonaEscolar}</TableCell>
+                                  <TableCell className="border-r text-center font-bold">{rec.id.startsWith('PROG') ? 'DST' : 'DES'}</TableCell>
+                                  <TableCell className="border-r text-center">{rec.sector || '01'}</TableCell>
+                                  <TableCell className="border-r text-center">{rec.zonaEscolar || 'S/Z'}</TableCell>
+                                  <TableCell className="border-r text-center text-slate-500">2010/01/22</TableCell>
+                                  <TableCell className="border-r text-center text-slate-500">2022/11/05</TableCell>
+                                  <TableCell className="border-r text-center text-primary font-bold">2023/05/12</TableCell>
+                                  <TableCell className="border-r text-center text-emerald-600 font-bold">2023/05/26</TableCell>
+                                  <TableCell className="border-r text-center text-rose-500">-</TableCell>
+                                  <TableCell className="border-r px-4 max-w-[400px]">
+                                     <div className="truncate text-slate-500 italic">Se requiere actualización de alumnos destacados y logros del último bimestre...</div>
+                                  </TableCell>
+                                  <TableCell className="border-r px-4 font-mono text-blue-600">{rec.cct?.toLowerCase()}@desysa.gob.mx</TableCell>
+                                  <TableCell className="px-4">
+                                     <div className="flex flex-col gap-1 items-start">
+                                        <button className="text-[8px] font-black text-blue-700 hover:underline">Revisar/Publicar</button>
+                                        <button className="text-[8px] font-black text-rose-700 hover:underline">Suspender</button>
+                                        <button className="text-[8px] font-black text-amber-700 hover:underline">Observaciones</button>
+                                        <button className="text-[8px] font-black text-slate-700 hover:underline">e-Contrasena</button>
+                                     </div>
+                                  </TableCell>
+                               </TableRow>
+                            ))}
+                         </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                   </ScrollArea>
+                </Card>
+             </div>
+           )}
         </TabsContent>
       </Tabs>
 
-      {/* Login Dialog */}
+      {/* Login Dialog Administrativo */}
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
-             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial</DialogTitle>
-             <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Requiere credenciales SEIEM</DialogDescription>
+             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial WebEscuela</DialogTitle>
+             <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Sección de Incorporación y Auditoría</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6 bg-white">
              <div className="space-y-4">
-                <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6" />
-                <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6" />
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Usuario Administrador</Label>
+                   <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Clave Institucional</Label>
+                   <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
+                </div>
              </div>
-             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white shadow-xl">Ingresar al Panel</Button>
+             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform">
+                Ingresar al Panel Editorial
+             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Main Capture Dialog */}
+      {/* Captura Técnica Dinámica */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                {editingId ? 'Editar Registro Técnico' : 'Nueva Captura Técnica'}
+                {editingId ? 'Actualización de Registro Técnico' : 'Registro de Programa Estratégico'}
              </DialogTitle>
-             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión Estratégica de Programas</DialogDescription>
+             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Sincronización con Base de Datos Maestro</DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 p-8 bg-white">
@@ -542,10 +657,10 @@ export default function ProgramsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                    <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
-                      <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
+                      <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6 shadow-sm" />
                    </div>
                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle</Label>
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
                       <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
                          <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
                          <SelectContent>
@@ -555,12 +670,12 @@ export default function ProgramsPage() {
                       </Select>
                    </div>
                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus</Label>
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus de Auditoría</Label>
                       <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="planeacion" className="text-[10px] font-black">PENDIENTE / PLANEACIÓN</SelectItem>
-                           <SelectItem value="concluido" className="text-[10px] font-black">APROBADO / CONCLUIDO</SelectItem>
+                           <SelectItem value="planeacion" className="text-[10px] font-black">PENDIENTE / EN REVISIÓN</SelectItem>
+                           <SelectItem value="concluido" className="text-[10px] font-black">AUTORIZADO / PUBLICADO</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
@@ -570,13 +685,13 @@ export default function ProgramsPage() {
                   <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Equipos</Label>
+                          <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Equipos Entregados</Label>
                           <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
                        </div>
                        <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-primary/5">
                           <div className="space-y-1">
-                             <Label className="text-[11px] font-black uppercase text-primary">¿Se realizó capacitación?</Label>
-                             <p className="text-[9px] font-bold text-muted-foreground">Habilitar panel de asistentes y curso</p>
+                             <Label className="text-[11px] font-black uppercase text-primary">¿Registrar Capacitación?</Label>
+                             <p className="text-[9px] font-bold text-muted-foreground">Desplegar panel de curso e instructores</p>
                           </div>
                           <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(checked) => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} />
                        </div>
@@ -598,15 +713,15 @@ export default function ProgramsPage() {
                 )}
 
                 <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas</Label>
-                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalles adicionales..." className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
+                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas y Operativas</Label>
+                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle adicional del registro..." className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6 shadow-inner" />
                 </div>
              </div>
           </ScrollArea>
 
           <DialogFooter className="p-8 border-t bg-slate-50 flex justify-end gap-4">
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-white">Cancelar</Button>
-             <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all">
+             <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl">
                 Guardar Cambios
              </Button>
           </DialogFooter>
