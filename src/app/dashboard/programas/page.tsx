@@ -350,7 +350,7 @@ export default function ProgramsPage() {
                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                               <XAxis dataKey="name" tick={{ fontSize: 8, font-weight: 900 }} axisLine={false} tickLine={false} />
+                               <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
                                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
                                   {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
