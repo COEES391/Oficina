@@ -43,7 +43,9 @@ import {
   Clock,
   Users,
   CheckCircle2,
-  Plus
+  Plus,
+  BarChart3,
+  ListFilter
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
@@ -66,7 +68,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v40_actions_in_date";
+const DB_VERSION = "827_full_sync_v42_final_filters";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -83,7 +85,12 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeDialogTab, setActiveDialogTab] = useState('datos')
 
+  // Cuentas Institucionales Filters
   const [valFilter, setValFilter] = useState('all')
+  const [modFilter, setModFilter] = useState('all')
+  const [domFilter, setDomFilter] = useState('all')
+  const [ciActiveInternalTab, setCiActiveInternalTab] = useState('analitica')
+
   const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
 
   const initialAssistant: ProgramAssistant = {
@@ -104,11 +111,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v40')
+    const storedVersion = localStorage.getItem('programs_db_version_v42')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v40', DB_VERSION)
+      localStorage.setItem('programs_db_version_v42', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -204,7 +211,10 @@ export default function ProgramsPage() {
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
       const vMatch = valFilter === 'all' || (r.valle || '').toUpperCase() === valFilter.toUpperCase();
-      return vMatch;
+      const mMatch = modFilter === 'all' || (r.modalidad || '').includes(modFilter);
+      const email = r.asistentes?.[0]?.email || '';
+      const dMatch = domFilter === 'all' || email.toLowerCase().includes(domFilter.toLowerCase());
+      return vMatch && mMatch && dMatch;
     });
     const approved = filtered.filter(r => r.status === 'concluido').length;
     return {
@@ -220,7 +230,7 @@ export default function ProgramsPage() {
         { name: 'PENDIENTE', value: Math.max(0, filtered.length - approved), fill: '#cbd5e1' }
       ]
     };
-  }, [ciRecords, valFilter]);
+  }, [ciRecords, valFilter, modFilter, domFilter]);
 
   if (!mounted) return null
 
@@ -302,108 +312,145 @@ export default function ProgramsPage() {
 
         <TabsContent value="Cuentas Institucionales" className="space-y-8">
            <div className="space-y-6">
-             <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><Globe className="h-6 w-6 text-white" /></div>
-                <div>
-                   <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo</h2>
-                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Análisis Integral de Cuentas SEIEM</p>
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><Globe className="h-6 w-6 text-white" /></div>
+                   <div>
+                      <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo</h2>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Análisis Integral de Cuentas SEIEM</p>
+                   </div>
                 </div>
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-3">
-                   <Card className="p-5 bg-white border rounded-2xl shadow-sm">
-                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
-                      <div className="flex flex-col gap-2">
-                         <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('all')}>AMBOS VALLES</Button>
-                         <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('MÉXICO')}>VALLE DE MÉXICO</Button>
-                         <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('TOLUCA')}>VALLE DE TOLUCA</Button>
-                      </div>
-                   </Card>
-                </div>
-
-                <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-sm rounded-2xl border">
-                      <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
-                      <div className="text-6xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
-                   </Card>
-
-                   <Card className="p-6 flex flex-col items-center bg-white shadow-sm rounded-2xl border">
-                      <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% USO ACTIVO</Label>
-                      <div className="relative h-[160px] w-full">
-                         <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={5} dataKey="value">
-                                  {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                               </Pie>
-                            </PieChart>
-                         </ResponsiveContainer>
-                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-2xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
-                         </div>
-                      </div>
-                   </Card>
-
-                   <Card className="p-6 bg-white shadow-sm rounded-2xl border">
-                      <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO</Label>
-                      <div className="h-[180px]">
-                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={ciDashboardData.barData}>
-                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                               <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                               <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
-                                  {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                               </Bar>
-                            </BarChart>
-                         </ResponsiveContainer>
-                      </div>
-                   </Card>
-                </div>
-             </div>
-
-             <div className="flex justify-between items-center px-2">
-                <h4 className="text-lg font-black uppercase text-primary">Listado Detallado de Registros</h4>
                 <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-primary">
                    <PlusCircle className="h-4 w-4" /> Agregar Nueva Cuenta
                 </Button>
              </div>
 
-             <Card className="executive-card">
-                <div className="overflow-x-auto">
-                   <Table>
-                      <TableHeader className="bg-slate-100/50">
-                         <TableRow>
-                            <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
-                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                         {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec) => (
-                            <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
-                               <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
-                               <TableCell>
-                                  <div className="flex flex-col">
-                                     <span className="uppercase text-[9px] font-black text-slate-700">{rec.modalidad}</span>
-                                     <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
-                                  </div>
-                               </TableCell>
-                               <TableCell className="font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || '-'}</TableCell>
-                               <TableCell className="text-right pr-8">
-                                  <div className="flex justify-end gap-2">
-                                     <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
-                                     <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
-                                  </div>
-                               </TableCell>
-                            </TableRow>
-                         )) : (
-                           <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-[10px]">No se encontraron cuentas con los filtros seleccionados</TableCell></TableRow>
-                         )}
-                      </TableBody>
-                   </Table>
-                </div>
-             </Card>
+             <Tabs value={ciActiveInternalTab} onValueChange={setCiActiveInternalTab} className="w-full">
+                <TabsList className="bg-slate-100/50 p-1 rounded-xl mb-6">
+                   <TabsTrigger value="analitica" className="gap-2 text-[10px] font-black uppercase"><BarChart3 className="h-3.5 w-3.5" /> Analítica</TabsTrigger>
+                   <TabsTrigger value="registros" className="gap-2 text-[10px] font-black uppercase"><ListFilter className="h-3.5 w-3.5" /> Listado de Registros</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="analitica" className="space-y-6">
+                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                      <div className="md:col-span-3">
+                         <Card className="p-5 bg-white border rounded-2xl shadow-sm space-y-6">
+                            <div>
+                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
+                               <div className="flex flex-col gap-1.5">
+                                  <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('all')}>AMBOS VALLES</Button>
+                                  <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('MÉXICO')}>VALLE DE MÉXICO</Button>
+                                  <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('TOLUCA')}>VALLE DE TOLUCA</Button>
+                               </div>
+                            </div>
+                            
+                            <div>
+                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
+                               <Select value={modFilter} onValueChange={setModFilter}>
+                                  <SelectTrigger className="h-10 text-[10px] font-black"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                     <SelectItem value="all" className="text-[10px] font-black">TODAS</SelectItem>
+                                     <SelectItem value="DES" className="text-[10px] font-black">DES (GENERAL)</SelectItem>
+                                     <SelectItem value="DST" className="text-[10px] font-black">DST (TÉCNICA)</SelectItem>
+                                     <SelectItem value="DTV" className="text-[10px] font-black">DTV (TELESEC.)</SelectItem>
+                                  </SelectContent>
+                               </Select>
+                            </div>
+
+                            <div>
+                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">DOMINIO</Label>
+                               <Select value={domFilter} onValueChange={setDomFilter}>
+                                  <SelectTrigger className="h-10 text-[10px] font-black"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                     <SelectItem value="all" className="text-[10px] font-black">TODOS</SelectItem>
+                                     <SelectItem value="@desysa.gob.mx" className="text-[10px] font-black">@desysa.gob.mx</SelectItem>
+                                     <SelectItem value="@desysa.edu.mx" className="text-[10px] font-black">@desysa.edu.mx</SelectItem>
+                                     <SelectItem value="@coees.edu.mx" className="text-[10px] font-black">@coees.edu.mx</SelectItem>
+                                  </SelectContent>
+                               </Select>
+                            </div>
+                         </Card>
+                      </div>
+
+                      <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
+                         <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-sm rounded-2xl border">
+                            <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
+                            <div className="text-6xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
+                         </Card>
+
+                         <Card className="p-6 flex flex-col items-center bg-white shadow-sm rounded-2xl border">
+                            <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% USO ACTIVO</Label>
+                            <div className="relative h-[160px] w-full">
+                               <ResponsiveContainer width="100%" height="100%">
+                                  <PieChart>
+                                     <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={5} dataKey="value">
+                                        {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                     </Pie>
+                                  </PieChart>
+                               </ResponsiveContainer>
+                               <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className="text-2xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
+                               </div>
+                            </div>
+                         </Card>
+
+                         <Card className="p-6 bg-white shadow-sm rounded-2xl border">
+                            <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO</Label>
+                            <div className="h-[180px]">
+                               <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={ciDashboardData.barData}>
+                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                     <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                                     <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
+                                        {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                     </Bar>
+                                  </BarChart>
+                               </ResponsiveContainer>
+                            </div>
+                         </Card>
+                      </div>
+                   </div>
+                </TabsContent>
+
+                <TabsContent value="registros" className="animate-in fade-in duration-300">
+                   <Card className="executive-card">
+                      <div className="overflow-x-auto">
+                         <Table>
+                            <TableHeader className="bg-slate-100/50">
+                               <TableRow>
+                                  <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
+                                  <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
+                                  <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
+                                  <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
+                               </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec) => (
+                                  <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
+                                     <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
+                                     <TableCell>
+                                        <div className="flex flex-col">
+                                           <span className="uppercase text-[9px] font-black text-slate-700">{rec.modalidad}</span>
+                                           <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
+                                        </div>
+                                     </TableCell>
+                                     <TableCell className="font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || '-'}</TableCell>
+                                     <TableCell className="text-right pr-8">
+                                        <div className="flex justify-end gap-2">
+                                           <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
+                                           <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
+                                        </div>
+                                     </TableCell>
+                                  </TableRow>
+                               )) : (
+                                 <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-[10px]">No se encontraron cuentas con los filtros seleccionados</TableCell></TableRow>
+                               )}
+                            </TableBody>
+                         </Table>
+                      </div>
+                   </Card>
+                </TabsContent>
+             </Tabs>
           </div>
         </TabsContent>
 
@@ -506,14 +553,6 @@ export default function ProgramsPage() {
                        <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
                        <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Incorporación</span>
                     </div>
-                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => { setIsLoginDialogOpen(true); }}>
-                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
-                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Escuelas incorporadas</span>
-                    </div>
-                    <div className="group flex items-center gap-4 cursor-pointer">
-                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
-                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Consulta tu escuela</span>
-                    </div>
                  </div>
               </div>
 
@@ -524,10 +563,6 @@ export default function ProgramsPage() {
                     <p>Servicios Educativos Integrados al Estado de México</p>
                     <p>Dirección de Educación Secundaria y Servicios de Apoyo</p>
                  </div>
-                 <div className="text-[10px] text-slate-500 font-medium">
-                    <p>Profesor Agripín García Estrada No. 1306, Santa Cruz Atzcapotzaltongo</p>
-                    <p>Toluca, Estado de México, C.P. 50030 | Tel.: (722) 265-1200 ext. 9099</p>
-                 </div>
               </div>
            </div>
            ) : (
@@ -535,14 +570,6 @@ export default function ProgramsPage() {
                 <div className="text-center py-6 border-b-2 border-slate-100">
                    <h1 className="text-xl font-bold text-[#4a773c] uppercase leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
                    <p className="text-sm text-slate-600 font-semibold">Servicios Educativos Integrados al Estado de México</p>
-                   <div className="mt-6 flex justify-center">
-                       <div className="relative w-full max-w-4xl h-[140px] rounded-xl overflow-hidden border shadow-lg">
-                          <Image src="https://picsum.photos/seed/editorial-banner/1200/300" alt="Banner Editorial" fill className="object-cover opacity-90" />
-                          <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
-                             <span className="text-white text-3xl font-serif italic drop-shadow-md">Sección Editorial WebEscuela</span>
-                          </div>
-                       </div>
-                   </div>
                 </div>
 
                 <div className="py-6">
@@ -627,7 +654,6 @@ export default function ProgramsPage() {
                             </TableBody>
                          </Table>
                          <ScrollBar orientation="horizontal" />
-                         <ScrollBar orientation="vertical" />
                       </ScrollArea>
                    </div>
                 </div>
@@ -653,9 +679,9 @@ export default function ProgramsPage() {
                    <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
                 </div>
              </div>
-             <Button onClick={handleEditorialLogin} className="w-full h-16 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform tracking-widest text-[11px]">
+             <button onClick={handleEditorialLogin} className="w-full h-16 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform tracking-widest text-[11px]">
                 Validar Credenciales
-             </Button>
+             </button>
           </div>
         </DialogContent>
       </Dialog>
@@ -732,42 +758,6 @@ export default function ProgramsPage() {
                          </div>
                       </div>
 
-                      {activeTab === 'Biblioteca Digital' && (
-                        <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-primary/10 rounded-3xl">
-                           <h4 className="text-lg font-black uppercase text-primary flex items-center gap-3">
-                              <Monitor className="h-5 w-5" /> Datos de Equipamiento (Biblioteca Digital)
-                           </h4>
-                           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                              <div className="space-y-2">
-                                 <Label className="text-[10px] font-black uppercase">Cant. Equipos</Label>
-                                 <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="bg-white" />
-                              </div>
-                              <div className="md:col-span-3 space-y-2">
-                                 <Label className="text-[10px] font-black uppercase">Descripción del Equipo</Label>
-                                 <Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} className="bg-white" placeholder="EJ: Laptops HP 240 G8" />
-                              </div>
-                           </div>
-                           <div className="space-y-4 pt-4 border-t">
-                              <Label className="text-[10px] font-black uppercase text-slate-500">Responsables Técnicos del Plantel</Label>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                 {[0, 1, 2].map(idx => (
-                                    <Input 
-                                       key={idx} 
-                                       placeholder={`Responsable ${idx + 1}`} 
-                                       value={formData.responsables?.[idx] || ''} 
-                                       onChange={e => {
-                                          const newResp = [...(formData.responsables || ['', '', ''])];
-                                          newResp[idx] = e.target.value;
-                                          setFormData({...formData, responsables: newResp});
-                                       }}
-                                       className="bg-white text-[11px]" 
-                                    />
-                                 ))}
-                              </div>
-                           </div>
-                        </div>
-                      )}
-
                       <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
                          <div className="flex-1">
                             <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
@@ -828,24 +818,6 @@ export default function ProgramsPage() {
                                  <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono" placeholder="15DESXXXXX" maxLength={10} />
                               </div>
                            </div>
-                           <div className="space-y-4 pt-4 border-t">
-                              <Label className="text-[10px] font-black uppercase text-slate-500">Instructores Ponentes</Label>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                 {[0, 1, 2].map(idx => (
-                                    <Input 
-                                       key={idx} 
-                                       placeholder={`Nombre Instructor ${idx + 1}`} 
-                                       value={formData.instructores?.[idx] || ''} 
-                                       onChange={e => {
-                                          const newInst = [...(formData.instructores || ['', '', ''])];
-                                          newInst[idx] = e.target.value;
-                                          setFormData({...formData, instructores: newInst});
-                                       }}
-                                       className="bg-slate-50 text-[11px]" 
-                                    />
-                                 ))}
-                              </div>
-                           </div>
                         </div>
                       )}
 
@@ -862,7 +834,7 @@ export default function ProgramsPage() {
                   <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 flex-1 mr-4">
                     <CheckCircle2 className="h-6 w-6 text-primary" />
                     <p className="text-[11px] font-bold text-slate-700 uppercase leading-relaxed">
-                      Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos y del plantel automáticamente.
+                      Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos automáticamente.
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleAddAssistantRow} className="gap-2 font-black uppercase h-14 px-8 rounded-2xl border-primary text-primary hover:bg-primary/5 shadow-sm">
@@ -881,7 +853,6 @@ export default function ProgramsPage() {
                           <TableHead className="min-w-[180px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Función</TableHead>
                           <TableHead className="min-w-[140px] text-[10px] font-black uppercase py-4 border-r border-slate-200">CCT Plantel</TableHead>
                           <TableHead className="min-w-[250px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Nombre C.T. / Zona</TableHead>
-                          <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Municipio / Región</TableHead>
                           <TableHead className="w-16 sticky right-0 bg-slate-100 py-4"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -917,16 +888,7 @@ export default function ProgramsPage() {
                             <TableCell className="p-3 border-r border-slate-100">
                               <div className="flex flex-col gap-2">
                                 <Input value={ast.nombreCT} readOnly className="h-9 text-[9px] bg-slate-50 font-black uppercase" placeholder="Nombre C.T." />
-                                <div className="flex gap-2">
-                                   <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center w-1/3" placeholder="ZE" />
-                                   <Input value={ast.sector} readOnly className="h-9 text-[9px] bg-slate-50 text-center flex-1" placeholder="Sector" />
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <div className="flex flex-col gap-2">
-                                <Input value={ast.municipio} readOnly className="h-9 text-[9px] bg-slate-50 uppercase" placeholder="Municipio" />
-                                <Input value={ast.region} readOnly className="h-9 text-[9px] bg-slate-50 uppercase text-center" placeholder="Región" />
+                                <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center" placeholder="ZE" />
                               </div>
                             </TableCell>
                             <TableCell className="p-3 sticky right-0 bg-white shadow-[-10px_0_15px_rgba(0,0,0,0.03)] text-center">
@@ -940,16 +902,6 @@ export default function ProgramsPage() {
                     </Table>
                     <ScrollBar orientation="horizontal" />
                   </ScrollArea>
-                </div>
-
-                <div className="p-6 bg-slate-50 border-t flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                        <Users className="h-5 w-5" />
-                      </div>
-                      <span className="text-[11px] font-black uppercase text-slate-500">Asistentes en lista: {(formData.asistentes || []).filter(a => a.rfc && a.nombres).length}</span>
-                   </div>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase italic">Verifique que todos los datos sean correctos antes de finalizar.</p>
                 </div>
               </TabsContent>
             </div>
