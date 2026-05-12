@@ -66,7 +66,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v32_asistentes";
+const DB_VERSION = "827_full_sync_v35_dynamic_tabs";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -81,6 +81,7 @@ export default function ProgramsPage() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [activeDialogTab, setActiveDialogTab] = useState('datos')
 
   const [valFilter, setValFilter] = useState('all')
   const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
@@ -103,11 +104,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v32')
+    const storedVersion = localStorage.getItem('programs_db_version_v35')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v32', DB_VERSION)
+      localStorage.setItem('programs_db_version_v35', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -137,6 +138,7 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
+    setActiveDialogTab('datos')
     toast({ title: "Registro guardado" })
   }
 
@@ -348,7 +350,7 @@ export default function ProgramsPage() {
                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                               <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                               <XAxis dataKey="name" tick={{ fontSize: 8, font-weight: 900 }} axisLine={false} tickLine={false} />
                                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
                                   {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
@@ -553,7 +555,7 @@ export default function ProgramsPage() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                          <button 
-                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }}
+                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); setActiveDialogTab('datos'); }}
                             className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
                          >
                             Cerrar
@@ -564,7 +566,7 @@ export default function ProgramsPage() {
                    
                    <div className="border border-black w-full h-[650px] relative overflow-hidden">
                       <ScrollArea className="h-full w-full">
-                         <Table className="border-collapse text-[10px] min-w-[3200px]">
+                         <Table className="border-collapse text-[10px] min-w-[3500px]">
                             <TableHeader className="bg-slate-100">
                                <TableRow className="border-b border-black">
                                   <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
@@ -588,7 +590,7 @@ export default function ProgramsPage() {
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Suspensión</TableHead>
                                   <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
-                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.1)] min-w-[200px]">
+                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.15)] min-w-[220px]">
                                      ACCIONES A REALIZAR
                                   </TableHead>
                                </TableRow>
@@ -613,7 +615,7 @@ export default function ProgramsPage() {
                                         </div>
                                      </TableCell>
                                      <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[200px]">
+                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[220px]">
                                         <div className="flex flex-col gap-1 font-black text-blue-700 underline underline-offset-2 text-left text-[10px] uppercase">
                                            <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
                                            <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
@@ -669,11 +671,17 @@ export default function ProgramsPage() {
              <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión de Información y Capacitación Institucional</DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeDialogTab} onValueChange={setActiveDialogTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="px-8 border-b bg-white">
               <TabsList className="bg-transparent h-12 p-0 gap-8">
                 <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">1. Datos del Programa / Curso</TabsTrigger>
-                <TabsTrigger value="asistentes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">2. Lista de Asistentes (Captura Directa)</TabsTrigger>
+                <TabsTrigger 
+                  value="asistentes" 
+                  disabled={formData.capacitacion !== 'S'}
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider disabled:opacity-30 disabled:grayscale"
+                >
+                  2. Lista de Asistentes (Captura Directa)
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -769,7 +777,14 @@ export default function ProgramsPage() {
                          </div>
                          <div className="flex items-center gap-3">
                             <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
-                            <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                            <Switch 
+                              checked={formData.capacitacion === 'S'} 
+                              onCheckedChange={(val) => {
+                                const newVal = val ? 'S' : 'N';
+                                setFormData({...formData, capacitacion: newVal});
+                                if (!val) setActiveDialogTab('datos');
+                              }} 
+                            />
                          </div>
                       </div>
 
@@ -943,7 +958,7 @@ export default function ProgramsPage() {
           </Tabs>
 
           <DialogFooter className="p-8 border-t bg-slate-50">
-             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancelar</Button>
+             <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setActiveDialogTab('datos'); }} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancelar</Button>
              <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20 tracking-[0.1em]">Finalizar Captura</Button>
           </DialogFooter>
         </DialogContent>
