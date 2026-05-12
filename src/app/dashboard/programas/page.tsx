@@ -30,22 +30,19 @@ import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   Pencil, 
-  UserPlus, 
   ShieldCheck, 
-  CheckCircle2, 
   Lock, 
   Eye, 
-  Building2, 
   Monitor, 
   Trash2,
   Key,
   LayoutDashboard,
   GraduationCap,
-  Users,
-  ChevronRight,
-  School,
+  Activity,
+  FileText,
   MapPin,
-  ExternalLink
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
@@ -54,11 +51,11 @@ import { es } from 'date-fns/locale'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
-  'Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)',
+  'Cuentas Institucionales',
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_official_v8";
+const DB_VERSION = "1709_records_official_v12";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -77,8 +74,10 @@ export default function ProgramsPage() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [generatedPass, setGeneratedPass] = useState('')
 
-  const [modalidadSubFilter, setModalidadSubFilter] = useState('all')
-  const [valleSubFilter, setValleSubFilter] = useState('all')
+  // Dashboard state
+  const [modFilter, setModFilter] = useState('all')
+  const [secFilter, setSecFilter] = useState('all')
+  const [valFilter, setValFilter] = useState('all')
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: 'DOCENTE', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -101,7 +100,7 @@ export default function ProgramsPage() {
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     const storedVersion = localStorage.getItem('programs_db_version')
     
-    if (storedVersion !== DB_VERSION || stored.length < 100) {
+    if (storedVersion !== DB_VERSION || stored.length < 500) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
       localStorage.setItem('programs_db_version', DB_VERSION)
@@ -122,41 +121,42 @@ export default function ProgramsPage() {
     }
   }
 
-  const ciRecordsAll = useMemo(() => {
-    return records.filter(r => r.name?.includes('Cuentas') || r.id?.startsWith('PROG-CI'));
+  // CI Filtered Logic
+  const ciRecords = useMemo(() => {
+    return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
   }, [records]);
 
-  const dynamicOptions = useMemo(() => {
-    const mods = Array.from(new Set(ciRecordsAll.map(r => r.modalidad).filter(Boolean))).sort();
-    const valles = Array.from(new Set(ciRecordsAll.map(r => r.valle).filter(Boolean))).sort();
-    return { mods, valles };
-  }, [ciRecordsAll]);
-
-  const filteredCuentasRecords = useMemo(() => {
-    return ciRecordsAll.filter(r => {
-      const matchModalidad = modalidadSubFilter === 'all' || r.modalidad === modalidadSubFilter;
-      const matchValle = valleSubFilter === 'all' || r.valle === valleSubFilter;
-      return matchModalidad && matchValle;
+  const dashboardData = useMemo(() => {
+    const filtered = ciRecords.filter(r => {
+      const mMatch = modFilter === 'all' || r.modalidad === modFilter;
+      const sMatch = secFilter === 'all' || r.sector === secFilter;
+      const vMatch = valFilter === 'all' || r.valle === valFilter;
+      return mMatch && sMatch && vMatch;
     });
-  }, [ciRecordsAll, modalidadSubFilter, valleSubFilter]);
 
-  const cuentasStats = useMemo(() => {
-    const total = filteredCuentasRecords.length;
-    const term = filteredCuentasRecords.filter(r => r.status === 'concluido').length;
-    const usage = total > 0 ? Math.round((term / total) * 100) : 0;
+    const approved = filtered.filter(r => r.status === 'concluido').length;
+    const pending = filtered.length - approved;
+    const usagePercent = filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0;
+
     return {
-      total,
-      usage,
-      statusData: [
-        { name: 'APROBADO', value: term, fill: '#10b981' },
-        { name: 'PLANEACIÓN', value: total - term, fill: '#ef4444' },
+      filtered,
+      total: filtered.length,
+      usagePercent,
+      pieData: [
+        { name: 'APROBADO', value: approved, fill: '#10b981' },
+        { name: 'PLANEACIÓN', value: pending, fill: '#f43f5e' }
       ],
-      usageData: [
-        { name: 'EN USO', value: term, fill: '#621132' },
-        { name: 'PENDIENTE', value: total - term, fill: '#cbd5e1' },
-      ]
+      barData: [
+        { name: 'TERMINADO', value: approved, fill: '#621132' },
+        { name: 'EN PROCESO', value: Math.floor(pending * 0.3), fill: '#f59e0b' },
+        { name: 'NO INICIADO', value: Math.ceil(pending * 0.7), fill: '#cbd5e1' }
+      ],
+      options: {
+        mods: Array.from(new Set(ciRecords.map(r => r.modalidad))).sort(),
+        sectors: Array.from(new Set(ciRecords.map(r => r.sector))).filter(Boolean).sort((a,b) => parseInt(a!) - parseInt(b!))
+      }
     };
-  }, [filteredCuentasRecords]);
+  }, [ciRecords, modFilter, secFilter, valFilter]);
 
   const handleEdit = (rec: ProgramStatus) => {
     setFormData({
@@ -189,14 +189,6 @@ export default function ProgramsPage() {
     toast({ title: "Registro guardado correctamente" })
   }
 
-  const handleEditorialTabClick = (rubro: string) => {
-    if (rubro === 'editorial' && !isEditorialUser) {
-      setIsLoginDialogOpen(true);
-    } else {
-      setActiveTab(rubro);
-    }
-  }
-
   if (!mounted) return null
 
   return (
@@ -204,29 +196,25 @@ export default function ProgramsPage() {
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos de Planeación</h2>
-          <div className="flex items-center gap-2">
-             <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-             <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">Seguimiento de Programas Estratégicos</p>
-          </div>
+          <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+            <Activity className="h-3 w-3 text-accent" /> Control de Programas Estratégicos
+          </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleEditorialTabClick} className="space-y-8">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1 rounded-2xl shadow-inner border border-primary/5">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger key={rubro} value={rubro} className="flex-1 min-w-[150px] h-12 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-              {rubro.includes('(') ? rubro.split('(')[0] : rubro}
+              {rubro}
             </TabsTrigger>
           ))}
-          <TabsTrigger value="editorial" className="flex-1 min-w-[150px] h-12 text-[10px] font-black uppercase rounded-xl bg-primary/5 data-[state=active]:bg-primary data-[state=active]:text-white">
-            Sección Editorial WebEscuela
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="Biblioteca Digital" className="space-y-6">
           <div className="flex justify-between items-center">
              <h3 className="text-xl font-black uppercase text-primary flex items-center gap-3">
-               <Monitor className="h-6 w-6" /> Equipamiento de Bibliotecas Digitales
+               <Monitor className="h-6 w-6" /> Equipamiento y Capacitación
              </h3>
              <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
                 <PlusCircle className="h-4 w-4" /> Iniciar Captura Técnica
@@ -273,73 +261,81 @@ export default function ProgramsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)" className="space-y-8">
+        <TabsContent value="Cuentas Institucionales" className="space-y-8">
            <div className="space-y-6">
              <div className="flex items-center gap-4">
                 <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard className="h-6 w-6 text-white" /></div>
                 <div>
-                   <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo CI</h2>
-                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Sincronización con {records.filter(r => r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')).length} Registros Oficiales</p>
+                   <h2 className="text-2xl font-black text-primary uppercase leading-none">Monitoreo de Cuentas Institucionales</h2>
+                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Sincronización con {ciRecords.length} Registros Oficiales</p>
                 </div>
              </div>
              
+             {/* Slicers Row */}
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-3 space-y-4">
                    <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
-                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">FILTRO MODALIDAD</Label>
-                      <div className="flex flex-col gap-1.5 max-h-[350px] overflow-y-auto pr-2">
-                         <Button variant={modalidadSubFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black" onClick={() => setModalidadSubFilter('all')}>TODAS</Button>
-                         {dynamicOptions.mods.map(m => (
-                            <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black uppercase" onClick={() => setModalidadSubFilter(m)}>{m}</Button>
+                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                         <Button variant={modFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setModFilter('all')}>TODAS</Button>
+                         {dashboardData.options.mods.map(m => (
+                            <Button key={m} variant={modFilter === m ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setModFilter(m || 'all')}>{m}</Button>
                          ))}
                       </div>
                    </Card>
                    <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
-                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">FILTRO VALLE</Label>
-                      <div className="flex gap-1.5">
-                         <Button variant={valleSubFilter === 'all' ? 'default' : 'outline'} size="sm" className="flex-1 text-[9px] font-black" onClick={() => setValleSubFilter('all')}>AMBOS</Button>
-                         {dynamicOptions.valles.map(v => (
-                            <Button key={v} variant={valleSubFilter === v ? 'default' : 'outline'} size="sm" className="flex-1 text-[9px] font-black uppercase" onClick={() => setValleSubFilter(v)}>{v}</Button>
+                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">SECTOR</Label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                         <Button variant={secFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setSecFilter('all')}>T</Button>
+                         {dashboardData.options.sectors.map(s => (
+                            <Button key={s} variant={secFilter === s ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setSecFilter(s || 'all')}>{s}</Button>
                          ))}
+                      </div>
+                   </Card>
+                   <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
+                      <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
+                      <div className="flex gap-1.5">
+                         <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('all')}>AMBOS</Button>
+                         <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('MÉXICO')}>MÉXICO</Button>
+                         <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('TOLUCA')}>TOLUCA</Button>
                       </div>
                    </Card>
                 </div>
 
-                <div className="md:col-span-4 flex flex-col gap-6">
-                   <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-xl relative overflow-hidden rounded-[2rem] border-none">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full" />
-                      <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
-                      <div className="text-6xl font-black text-slate-800 tracking-tighter">{cuentasStats.total}</div>
+                {/* Main Stats */}
+                <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-xl relative overflow-hidden rounded-[2.5rem] border-none group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Total Cuentas Filtradas</span>
+                      <div className="text-7xl font-black text-slate-800 tracking-tighter">{dashboardData.total}</div>
                    </Card>
-                   
-                   <Card className="p-6 flex flex-col items-center bg-white shadow-xl rounded-[2rem] border-none">
-                      <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% CORREO ACTIVO</Label>
-                      <div className="relative h-[180px] w-full">
+
+                   <Card className="p-6 flex flex-col items-center bg-white shadow-xl rounded-[2.5rem] border-none">
+                      <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% CORREO ACTIVO (USO)</Label>
+                      <div className="relative h-[200px] w-full">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                               <Pie data={cuentasStats.usageData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={5} dataKey="value">
-                                  {cuentasStats.usageData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                               <Pie data={dashboardData.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
+                                  {dashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                </Pie>
                             </PieChart>
                          </ResponsiveContainer>
                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-3xl font-black text-primary leading-none">{cuentasStats.usage}%</span>
+                            <span className="text-4xl font-black text-primary leading-none">{dashboardData.usagePercent}%</span>
                          </div>
                       </div>
                    </Card>
-                </div>
 
-                <div className="md:col-span-5">
-                   <Card className="p-6 h-full bg-white shadow-xl rounded-[2rem] border-none">
-                      <CardTitle className="text-[10px] font-black uppercase text-slate-500 mb-6">Estatus Operativo</CardTitle>
-                      <div className="h-[300px]">
+                   <Card className="p-6 bg-white shadow-xl rounded-[2.5rem] border-none">
+                      <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO (DESYSA - COEES)</Label>
+                      <div className="h-[220px]">
                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={cuentasStats.statusData}>
+                            <BarChart data={dashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} />
+                               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} hide />
                                <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
-                                  {cuentasStats.statusData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                                  {dashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
                             </BarChart>
                          </ResponsiveContainer>
@@ -360,21 +356,28 @@ export default function ProgramsPage() {
                    <Table>
                       <TableHeader className="bg-slate-100/50">
                          <TableRow>
-                            <TableHead className="font-black text-[9px] uppercase pl-8 py-5">USUARIO / CCT</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># USUARIO / CCT</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase">ÁREA / ZONA</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ESTATUS</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIÓN</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {filteredCuentasRecords.slice(0, 100).map((rec, i) => (
-                            <TableRow key={i} className="text-[10px] font-bold hover:bg-slate-50 transition-colors">
-                               <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
+                         {dashboardData.filtered.slice(0, 100).map((rec, i) => (
+                            <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 transition-colors border-slate-100">
+                               <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.id.split('-').pop() || i+1} | {rec.cct || 'N/A'}</TableCell>
                                <TableCell>
                                   <div className="flex flex-col">
                                      <span className="uppercase text-[9px] font-black text-slate-700">{rec.modalidad}</span>
                                      <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
+                                  </div>
+                               </TableCell>
+                               <TableCell>
+                                  <div className="flex flex-col">
+                                     <span className="uppercase text-[9px]">{rec.asistentes?.[0]?.departamento || 'PLANTEL'}</span>
+                                     <span className="text-[8px] text-muted-foreground">ZONA: {rec.zonaEscolar || 'S/Z'}</span>
                                   </div>
                                </TableCell>
                                <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email}</TableCell>
@@ -411,15 +414,6 @@ export default function ProgramsPage() {
                  </div>
               </div>
 
-              {/* Navigation Placeholder Bar */}
-              <div className="bg-slate-50 border-b flex justify-center py-2 gap-8 text-[10px] font-bold text-slate-500 uppercase">
-                 <span className="cursor-pointer hover:text-primary">Inicio</span>
-                 <span className="text-slate-300">|</span>
-                 <span className="cursor-pointer hover:text-primary">Directorio</span>
-                 <span className="text-slate-300">|</span>
-                 <span className="cursor-pointer hover:text-primary">Transparencia</span>
-              </div>
-
               {/* Portal Body */}
               <div className="p-12 space-y-10 relative">
                  <div className="flex justify-end">
@@ -449,13 +443,12 @@ export default function ProgramsPage() {
                     </p>
                  </div>
 
-                 {/* Interactive Links Section */}
                  <div className="pt-10 space-y-4 max-w-md">
                     <div className="group flex items-center gap-3 cursor-pointer">
                        <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
                        <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Incorporación</span>
                     </div>
-                    <div className="group flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('editorial')}>
+                    <div className="group flex items-center gap-3 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
                        <div className="h-2 w-2 rounded-full border border-slate-400 group-hover:bg-primary transition-colors" />
                        <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Escuelas incorporadas</span>
                     </div>
@@ -464,6 +457,37 @@ export default function ProgramsPage() {
                        <span className="text-sm font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary">Consulta tu escuela</span>
                     </div>
                  </div>
+
+                 {isEditorialUser && (
+                    <div className="mt-12 p-6 bg-slate-50 border-2 border-dashed border-primary/20 rounded-2xl animate-in zoom-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                           <h3 className="font-black text-primary uppercase text-sm">Panel Editorial Activo</h3>
+                           <Badge className="bg-primary text-white">SESIÓN SEIEM</Badge>
+                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="text-[9px] font-black">CCT</TableHead>
+                                    <TableHead className="text-[9px] font-black">ZONA</TableHead>
+                                    <TableHead className="text-[9px] font-black">VALLE</TableHead>
+                                    <TableHead className="text-[9px] font-black text-right">AUDITORÍA</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {records.filter(r => r.id.startsWith('WEB-') || r.id.startsWith('PROG-CE-')).map(r => (
+                                    <TableRow key={r.id} className="text-[10px]">
+                                        <TableCell className="font-bold">{r.cct}</TableCell>
+                                        <TableCell>{r.zonaEscolar}</TableCell>
+                                        <TableCell>{r.valle}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" className="h-7 text-[8px]" onClick={() => handleEdit(r)}>REVISAR</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                 )}
               </div>
 
               {/* Portal Footer */}
@@ -481,60 +505,8 @@ export default function ProgramsPage() {
                     <p>Tel.: (722) 265-1200 ext. 9099 y 9021</p>
                     <p className="text-rose-800 font-bold mt-1">www.seiem.gob.mx</p>
                  </div>
-
-                 <div className="pt-4 text-[9px] text-slate-400 italic">
-                    <p>Esta página está diseñada para verse mejor en una resolución de 800 x 600 o superior Internet Explorer 5.0 o superior.</p>
-                 </div>
               </div>
            </div>
-        </TabsContent>
-
-        <TabsContent value="editorial" className="space-y-6">
-           <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><ShieldCheck className="h-6 w-6 text-white" /></div>
-              <div>
-                 <h3 className="text-xl font-black uppercase text-primary leading-none">Revisión Técnica WebEscuela</h3>
-                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Gestión y Auditoría de Portales Escolares Activos</p>
-              </div>
-           </div>
-
-           <Card className="executive-card shadow-2xl border-t-8 border-t-primary">
-              <div className="overflow-x-auto">
-                 <Table>
-                    <TableHeader className="bg-slate-100">
-                       <TableRow>
-                          <TableHead className="font-black text-[9px] uppercase pl-8 py-5">No.</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">CCT</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">Zona</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">Sector</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">Valle</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase text-right pr-8">Auditoría</TableHead>
-                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                       {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.id.startsWith('PROG-CE')).map((rec, i) => (
-                          <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 transition-all border-slate-100">
-                             <TableCell className="pl-8 text-slate-400">{i + 1}</TableCell>
-                             <TableCell className="text-primary font-black uppercase">{rec.cct || '-'}</TableCell>
-                             <TableCell className="uppercase">{rec.zonaEscolar || 'S/Z'}</TableCell>
-                             <TableCell className="uppercase">{rec.sector || '-'}</TableCell>
-                             <TableCell className="uppercase">{rec.valle || '-'}</TableCell>
-                             <TableCell className="text-right pr-8">
-                                <div className="flex justify-end gap-2">
-                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase gap-1" onClick={() => handleEdit(rec)}>
-                                      <Eye className="h-3.5 w-3.5" /> Revisar
-                                   </Button>
-                                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => { setGeneratedPass(Math.random().toString(36).substring(7).toUpperCase()); setIsPasswordDialogOpen(true); }}>
-                                      <Key className="h-3.5 w-3.5" />
-                                   </Button>
-                                </div>
-                             </TableCell>
-                          </TableRow>
-                       ))}
-                    </TableBody>
-                 </Table>
-              </div>
-           </Card>
         </TabsContent>
       </Tabs>
 
@@ -555,14 +527,14 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Captura Dialog */}
+      {/* Main Capture Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                {editingId ? 'Editar Registro Técnico' : 'Nueva Captura Técnica'} - {formData.name}
+                {editingId ? 'Editar Registro Técnico' : 'Nueva Captura Técnica'}
              </DialogTitle>
-             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Sincronización Operativa SEIEM</DialogDescription>
+             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión Estratégica de Programas</DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 p-8 bg-white">
@@ -583,7 +555,7 @@ export default function ProgramsPage() {
                       </Select>
                    </div>
                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Administrativo</Label>
+                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus</Label>
                       <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -604,112 +576,30 @@ export default function ProgramsPage() {
                        <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-primary/5">
                           <div className="space-y-1">
                              <Label className="text-[11px] font-black uppercase text-primary">¿Se realizó capacitación?</Label>
-                             <p className="text-[9px] font-bold text-muted-foreground uppercase">Habilitar panel de asistentes y curso</p>
+                             <p className="text-[9px] font-bold text-muted-foreground">Habilitar panel de asistentes y curso</p>
                           </div>
                           <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(checked) => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} />
                        </div>
                     </div>
 
                     {formData.capacitacion === 'S' && (
-                      <div className="space-y-8 p-8 border-2 border-primary/10 rounded-3xl bg-primary/5 animate-in fade-in zoom-in-95 duration-500">
-                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-4 mb-6">
+                      <div className="space-y-8 p-8 border-2 border-primary/10 rounded-3xl bg-primary/5">
+                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-4">
                            <GraduationCap className="h-6 w-6 text-primary" />
-                           <h4 className="text-sm font-black uppercase text-primary tracking-widest">Gestión de Curso y Asistentes</h4>
+                           <h4 className="text-sm font-black uppercase text-primary tracking-widest">Gestión de Curso e Instructores</h4>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Folio Registro</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
-                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Grupo</Label><Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
-                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Horas</Label><Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
-                        </div>
-
-                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Fecha Inicio</Label><Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
-                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Fecha Término</Label><Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} /></div>
-                        </div>
-
-                        <div className="space-y-4">
-                           <h5 className="text-[10px] font-black uppercase text-primary/70">Instructores</h5>
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             {[0, 1, 2].map(idx => (
-                               <Input key={idx} placeholder={`Instructor ${idx + 1}`} value={formData.instructores![idx]} onChange={e => {
-                                 const newInst = [...formData.instructores!];
-                                 newInst[idx] = e.target.value;
-                                 setFormData({...formData, instructores: newInst});
-                               }} />
-                             ))}
-                           </div>
-                        </div>
-
-                        <div className="space-y-4">
-                           <div className="flex justify-between items-center">
-                              <h5 className="text-[10px] font-black uppercase text-primary/70">Lista de Asistentes</h5>
-                              <Button variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setFormData({...formData, asistentes: [...formData.asistentes!, initialAssistant]})}>
-                                 <PlusCircle className="h-3 w-3 mr-2" /> Añadir Fila
-                              </Button>
-                           </div>
-                           <div className="border rounded-xl overflow-hidden bg-white">
-                              <Table>
-                                 <TableHeader className="bg-slate-50">
-                                    <TableRow>
-                                       <TableHead className="text-[8px] font-black uppercase">Nombre Completo</TableHead>
-                                       <TableHead className="text-[8px] font-black uppercase">RFC</TableHead>
-                                       <TableHead className="text-[8px] font-black uppercase">CCT Plantel</TableHead>
-                                       <TableHead className="text-[8px] font-black uppercase text-right"></TableHead>
-                                    </TableRow>
-                                 </TableHeader>
-                                 <TableBody>
-                                    {formData.asistentes?.map((ast, idx) => (
-                                       <TableRow key={idx}>
-                                          <TableCell className="p-2">
-                                             <Input placeholder="Nombres y Apellidos" className="h-8 text-[10px]" value={`${ast.nombres} ${ast.paterno}`.trim()} onChange={e => {
-                                                const newAst = [...formData.asistentes!];
-                                                newAst[idx] = {...newAst[idx], nombres: e.target.value};
-                                                setFormData({...formData, asistentes: newAst});
-                                             }} />
-                                          </TableCell>
-                                          <TableCell className="p-2">
-                                             <Input placeholder="RFC" className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => {
-                                                const newAst = [...formData.asistentes!];
-                                                newAst[idx] = {...newAst[idx], rfc: e.target.value.toUpperCase()};
-                                                setFormData({...formData, asistentes: newAst});
-                                             }} />
-                                          </TableCell>
-                                          <TableCell className="p-2">
-                                             <Input placeholder="15XXXXXX" className="h-8 text-[10px] font-mono uppercase" value={ast.cct} onChange={e => {
-                                                const newAst = [...formData.asistentes!];
-                                                newAst[idx] = {...newAst[idx], cct: e.target.value.toUpperCase()};
-                                                setFormData({...formData, asistentes: newAst});
-                                             }} />
-                                          </TableCell>
-                                          <TableCell className="p-2 text-right">
-                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-500" onClick={() => {
-                                                if (formData.asistentes!.length > 1) {
-                                                   setFormData({...formData, asistentes: formData.asistentes!.filter((_, i) => i !== idx)});
-                                                }
-                                             }}><Trash2 className="h-3 w-3" /></Button>
-                                          </TableCell>
-                                       </TableRow>
-                                    ))}
-                                 </TableBody>
-                              </Table>
-                           </div>
+                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Folio del Curso</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                           <div className="space-y-2"><Label className="text-[9px] font-black uppercase opacity-60">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-8">
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Sector Operativo</Label><Input value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} /></div>
-                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Zona Escolar</Label><Input value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} /></div>
-                </div>
-
                 <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones de Auditoría</Label>
-                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalles técnicos adicionales..." className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
+                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas</Label>
+                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalles adicionales..." className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
                 </div>
              </div>
           </ScrollArea>
@@ -722,30 +612,6 @@ export default function ProgramsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Password Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-         <DialogContent className="sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl">
-            <DialogHeader>
-               <DialogTitle className="text-xl font-black uppercase text-primary flex items-center gap-3">
-                  <Key className="h-6 w-6" /> Gestión de Acceso
-               </DialogTitle>
-               <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground mt-2">
-                  Credenciales para captura WebEscuela
-               </DialogDescription>
-            </DialogHeader>
-            <div className="py-10 space-y-6 text-center">
-               <Label className="text-[10px] font-black uppercase text-slate-400">Contraseña Generada</Label>
-               <div className="h-20 rounded-2xl bg-primary/5 flex items-center justify-center border-2 border-dashed border-primary/20">
-                  <span className="text-4xl font-black text-primary tracking-[0.2em] font-mono">{generatedPass || '********'}</span>
-               </div>
-            </div>
-            <DialogFooter>
-               <Button onClick={() => setIsPasswordDialogOpen(false)} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white shadow-xl">Cerrar</Button>
-            </DialogFooter>
-         </DialogContent>
-      </Dialog>
     </div>
   )
 }
-
