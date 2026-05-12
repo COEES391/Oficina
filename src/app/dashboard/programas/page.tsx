@@ -23,8 +23,7 @@ import {
   ResponsiveContainer, 
   Cell,
   PieChart,
-  Pie,
-  Legend
+  Pie
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
@@ -32,25 +31,18 @@ import {
   PlusCircle, 
   Pencil, 
   Zap, 
-  Table as TableIcon, 
   UserPlus, 
-  Mail, 
-  Search, 
   ShieldCheck, 
   CheckCircle2, 
-  Ban, 
-  MessageSquare, 
   Lock, 
   Eye, 
   Building2, 
   Monitor, 
   Trash2,
-  Plus,
-  RefreshCw,
   Key,
-  LayoutDashboard
+  LayoutDashboard,
+  Layout
 } from "lucide-react"
-import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
 
@@ -61,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_official_v5";
+const DB_VERSION = "1709_records_official_v6";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -78,7 +70,6 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
-  const [selectedCctForAction, setSelectedCctForAction] = useState<string | null>(null)
   const [generatedPass, setGeneratedPass] = useState('')
 
   const [modalidadSubFilter, setModalidadSubFilter] = useState('all')
@@ -92,8 +83,7 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'planeacion', date: '', cct: '', schoolName: '', zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
-    numeroEquipos: 0, descripcionEquipo: '', fechaEntrada: '', fechaSalida: '', responsables: ['', '', ''], numeroOficio: '', setes: 'N', observaciones: '', reportPdf: '', evidencePhotos: [],
-    capacitacion: 'N', totalParticipantes: 0, asistentes: [initialAssistant], cursoFolio: '', cursoGrupo: '', cursoNombre: '', duracionHoras: 0, fechaInicio: '', fechaTermino: '', instructores: ['', '', ''], cctSede: ''
+    numeroEquipos: 0, descripcionEquipo: '', responsables: ['', '', ''], setes: 'N', observaciones: '', capacitacion: 'N', asistentes: [initialAssistant]
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -107,7 +97,7 @@ export default function ProgramsPage() {
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     const storedVersion = localStorage.getItem('programs_db_version')
     
-    if (storedVersion !== DB_VERSION || stored.length < 50) {
+    if (storedVersion !== DB_VERSION || stored.length < 100) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
       localStorage.setItem('programs_db_version', DB_VERSION)
@@ -122,9 +112,9 @@ export default function ProgramsPage() {
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
       setIsLoginDialogOpen(false)
-      toast({ title: "Acceso Editorial Concedido", description: "Bienvenido al panel de auditoría." })
+      toast({ title: "Acceso Editorial Concedido" })
     } else {
-      toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales incorrectas." })
+      toast({ variant: "destructive", title: "Acceso Denegado" })
     }
   }
 
@@ -170,6 +160,19 @@ export default function ProgramsPage() {
     };
   }, [filteredCuentasRecords]);
 
+  const handleEdit = (rec: ProgramStatus) => {
+    setFormData(rec);
+    setEditingId(rec.id);
+    setIsDialogOpen(true);
+  }
+
+  const handleDelete = (id: string) => {
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    localStorage.setItem('programs_full', JSON.stringify(updated));
+    toast({ title: "Registro eliminado" });
+  }
+
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
       toast({ variant: "destructive", title: "ID y CCT obligatorios" });
@@ -180,6 +183,7 @@ export default function ProgramsPage() {
     localStorage.setItem('programs_full', JSON.stringify(updated))
     setIsDialogOpen(false)
     setEditingId(null)
+    setFormData(initialFormState)
     toast({ title: "Registro sincronizado" })
   }
 
@@ -222,7 +226,7 @@ export default function ProgramsPage() {
              <h3 className="text-xl font-black uppercase text-primary flex items-center gap-3">
                <Monitor className="h-6 w-6" /> Equipamiento de Bibliotecas Digitales
              </h3>
-             <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
+             <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
                 <PlusCircle className="h-4 w-4" /> Iniciar Captura Técnica
              </Button>
           </div>
@@ -255,7 +259,7 @@ export default function ProgramsPage() {
                             </Badge>
                          </TableCell>
                          <TableCell className="text-right pr-8">
-                            <Button variant="ghost" size="icon" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)}>
                                <Pencil className="h-4 w-4" />
                             </Button>
                          </TableCell>
@@ -285,15 +289,6 @@ export default function ProgramsPage() {
                          <Button variant={modalidadSubFilter === 'all' ? 'default' : 'outline'} className="h-10 text-[10px] font-black" onClick={() => setModalidadSubFilter('all')}>TODAS</Button>
                          {dynamicOptions.mods.map(m => (
                             <Button key={m} variant={modalidadSubFilter === m ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase" onClick={() => setModalidadSubFilter(m)}>{m}</Button>
-                         ))}
-                      </div>
-                   </Card>
-                   <Card className="executive-card p-6 bg-slate-50 border-2 border-white shadow-inner">
-                      <Label className="text-[10px] font-black uppercase text-primary mb-4 block tracking-widest">VALLE</Label>
-                      <div className="grid grid-cols-1 gap-2">
-                         <Button variant={valleSubFilter === 'all' ? 'default' : 'outline'} className="h-10 text-[10px] font-black" onClick={() => setValleSubFilter('all')}>TODOS</Button>
-                         {dynamicOptions.valles.map(v => (
-                            <Button key={v} variant={valleSubFilter === v ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase" onClick={() => setValleSubFilter(v)}>{v}</Button>
                          ))}
                       </div>
                    </Card>
@@ -336,7 +331,6 @@ export default function ProgramsPage() {
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9 }} />
-                               <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px' }} />
                                <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={45}>
                                   {cuentasStats.statusData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
@@ -349,7 +343,7 @@ export default function ProgramsPage() {
 
              <div className="flex justify-between items-center px-4">
                 <h4 className="text-lg font-black uppercase text-primary tracking-tighter">Listado Detallado de Registros</h4>
-                <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-emerald-600 hover:bg-emerald-700">
+                <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-emerald-600 hover:bg-emerald-700">
                    <UserPlus className="h-4 w-4" /> Agregar Nueva Cuenta
                 </Button>
              </div>
@@ -363,10 +357,11 @@ export default function ProgramsPage() {
                             <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ESTATUS</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIÓN</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {filteredCuentasRecords.slice(0, 50).map((rec, i) => (
+                         {filteredCuentasRecords.slice(0, 100).map((rec, i) => (
                             <TableRow key={i} className="text-[10px] font-bold hover:bg-slate-50 transition-colors">
                                <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                <TableCell>
@@ -381,6 +376,16 @@ export default function ProgramsPage() {
                                      {rec.status === 'concluido' ? 'APROBADO' : 'PLANEACIÓN'}
                                   </Badge>
                                </TableCell>
+                               <TableCell className="text-right pr-8">
+                                  <div className="flex justify-end gap-2">
+                                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" onClick={() => handleEdit(rec)}>
+                                        <Pencil className="h-4 w-4" />
+                                     </Button>
+                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500" onClick={() => handleDelete(rec.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                     </Button>
+                                  </div>
+                               </TableCell>
                             </TableRow>
                          ))}
                       </TableBody>
@@ -394,7 +399,7 @@ export default function ProgramsPage() {
           <div className="grid md:grid-cols-2 gap-10">
              <Card className="executive-card p-10 border-l-8 border-l-primary group">
                 <div className="space-y-6">
-                   <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-inner">
+                   <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
                       <Building2 className="h-8 w-8" />
                    </div>
                    <div className="space-y-2">
@@ -403,35 +408,7 @@ export default function ProgramsPage() {
                    </div>
                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
                       "Conoce mi Escuela" es la vertiente oficial de SEIEM encargada de proyectar la identidad de cada plantel ante la comunidad. 
-                      Gestione la información técnica, fotos de evidencia y servicios educativos para la publicación automática del sitio web.
                    </p>
-                </div>
-             </Card>
-
-             <Card className="executive-card p-10 bg-slate-900 text-white border-none shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
-                <div className="relative z-10 space-y-8">
-                   <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/20">
-                         <Zap className="h-6 w-6 text-accent" />
-                      </div>
-                      <h4 className="text-sm font-black uppercase tracking-[0.3em]">Lineamientos de Publicación</h4>
-                   </div>
-                   <div className="space-y-6">
-                      {[
-                        { step: "01", title: "CAPTURA DE DATOS", desc: "El CCT ingresa para alimentar el portal institucional." },
-                        { step: "02", title: "REVISIÓN EDITORIAL", desc: "Validación de calidad por el equipo de Planeación." },
-                        { step: "03", title: "PUBLICACIÓN WEB", desc: "Generación automática del dominio público SEIEM." }
-                      ].map((item, i) => (
-                        <div key={i} className="flex gap-6 items-start">
-                           <span className="text-2xl font-black text-primary">{item.step}</span>
-                           <div>
-                              <h5 className="text-[11px] font-black uppercase tracking-wider mb-1">{item.title}</h5>
-                              <p className="text-[10px] text-slate-400 font-bold leading-normal uppercase">{item.desc}</p>
-                           </div>
-                        </div>
-                      ))}
-                   </div>
                 </div>
              </Card>
           </div>
@@ -469,13 +446,10 @@ export default function ProgramsPage() {
                              <TableCell className="text-center">{rec.zonaEscolar || '-'}</TableCell>
                              <TableCell className="text-right pr-8">
                                 <div className="flex justify-end gap-2">
-                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase border-blue-200 text-blue-600 gap-1">
+                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase gap-1" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
                                       <Eye className="h-3.5 w-3.5" /> Revisar
                                    </Button>
-                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase border-emerald-200 text-emerald-600 gap-1">
-                                      <CheckCircle2 className="h-3.5 w-3.5" /> Publicar
-                                   </Button>
-                                   <Button variant="outline" size="icon" className="h-8 w-8 border-amber-200 text-amber-600">
+                                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => { setGeneratedPass(Math.random().toString(36).substring(7).toUpperCase()); setIsPasswordDialogOpen(true); }}>
                                       <Key className="h-3.5 w-3.5" />
                                    </Button>
                                 </div>
@@ -495,7 +469,6 @@ export default function ProgramsPage() {
           <DialogHeader className="bg-primary p-8 text-white text-center">
              <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial</DialogTitle>
              <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Requiere credenciales SEIEM</DialogDescription>
-             <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mt-4"><ShieldCheck className="h-10 w-10" /></div>
           </DialogHeader>
           <div className="p-8 space-y-6 bg-white">
              <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6" />
@@ -510,7 +483,7 @@ export default function ProgramsPage() {
         <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden">
           <DialogHeader className="p-8 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                Captura Técnica - {formData.name}
+                {editingId ? 'Editar Registro Técnico' : 'Nueva Captura Técnica'} - {formData.name}
              </DialogTitle>
              <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">
                 Sincronización de registros institucionales SEIEM
@@ -539,34 +512,17 @@ export default function ProgramsPage() {
                       <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="planeacion" className="text-[10px] font-black">PENDIENTE / PLANEACIÓN</SelectItem>
-                           <SelectItem value="activo" className="text-[10px] font-black">EN PROCESO / ACTIVO</SelectItem>
-                           <SelectItem value="concluido" className="text-[10px] font-black">APROBADO / CONCLUIDO</SelectItem>
+                           <SelectItem value="planeacion" className="text-[10px] font-black">PENDIENTE</SelectItem>
+                           <SelectItem value="concluido" className="text-[10px] font-black">APROBADO</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
                 </div>
 
-                {formData.name === 'Biblioteca Digital' && (
-                   <div className="space-y-8">
-                      <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border-2 border-white">
-                         <div>
-                            <h5 className="text-xs font-black uppercase text-slate-700">Capacitación Institucional</h5>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase">¿Se realizó curso de capacitación al personal?</p>
-                         </div>
-                         <Switch checked={formData.capacitacion === 'S'} onCheckedChange={checked => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} />
-                      </div>
-
-                      {formData.capacitacion === 'S' && (
-                         <div className="space-y-8 pt-6 border-t animate-in slide-in-from-top-4 duration-500">
-                            <div className="grid grid-cols-2 gap-8">
-                               <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Folio Curso</Label><Input value={formData.cursoFolio} onChange={e => setFormData({...formData, cursoFolio: e.target.value})} /></div>
-                               <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
-                            </div>
-                         </div>
-                      )}
-                   </div>
-                )}
+                <div className="grid grid-cols-2 gap-8">
+                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Sector</Label><Input value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} /></div>
+                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Zona</Label><Input value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} /></div>
+                </div>
 
                 <div className="space-y-3">
                    <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Operativas</Label>
@@ -578,7 +534,7 @@ export default function ProgramsPage() {
           <DialogFooter className="p-8 border-t bg-slate-50 flex justify-end gap-4">
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-white">Cancelar</Button>
              <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all">
-                Guardar Registro
+                Guardar Cambios
              </Button>
           </DialogFooter>
         </DialogContent>
@@ -595,12 +551,10 @@ export default function ProgramsPage() {
                   Credenciales de acceso para captura WebEscuela
                </DialogDescription>
             </DialogHeader>
-            <div className="py-10 space-y-6">
-               <div className="space-y-2 text-center">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">Contraseña Generada</Label>
-                  <div className="h-20 rounded-2xl bg-primary/5 flex items-center justify-center border-2 border-dashed border-primary/20">
-                     <span className="text-4xl font-black text-primary tracking-[0.2em] font-mono">{generatedPass || '********'}</span>
-                  </div>
+            <div className="py-10 space-y-6 text-center">
+               <Label className="text-[10px] font-black uppercase text-slate-400">Contraseña Generada</Label>
+               <div className="h-20 rounded-2xl bg-primary/5 flex items-center justify-center border-2 border-dashed border-primary/20">
+                  <span className="text-4xl font-black text-primary tracking-[0.2em] font-mono">{generatedPass || '********'}</span>
                </div>
             </div>
             <DialogFooter>
