@@ -53,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_full_sync_v20_final";
+const DB_VERSION = "827_full_sync_v25_final_actions";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -69,9 +69,7 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  const [modFilter, setModFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
-  
   const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
 
   const initialAssistant: ProgramAssistant = {
@@ -92,11 +90,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_final')
+    const storedVersion = localStorage.getItem('programs_db_version_final_v25')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_final', DB_VERSION)
+      localStorage.setItem('programs_db_version_final_v25', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -452,7 +450,7 @@ export default function ProgramsPage() {
                        <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
                        <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Incorporación</span>
                     </div>
-                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
+                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => { localStorage.setItem('userRfc', 'CEDITORIAL'); setIsEditorialUser(true); }}>
                        <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
                        <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Escuelas incorporadas</span>
                     </div>
@@ -501,7 +499,7 @@ export default function ProgramsPage() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                          <button 
-                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(localStorage.getItem('userRfc')); }}
+                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }}
                             className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
                          >
                             Cerrar
@@ -510,70 +508,74 @@ export default function ProgramsPage() {
                       </div>
                    </div>
                    
-                   <ScrollArea className="border border-black w-full h-[600px]">
-                      <Table className="border-collapse text-[10px] min-w-[2800px]">
-                         <TableHeader className="bg-slate-50">
-                            <TableRow className="border-b border-black">
-                               <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
-                               <TableHead 
-                                 className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none font-black"
-                                 onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
-                               >
-                                 <div className="flex items-center gap-2 uppercase">
-                                    Centro de Trabajo
-                                    {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30" />}
-                                 </div>
-                               </TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Agrupado</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Vertiente</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase text-center">Sector</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase text-center">Zona</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Alta</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Modificación</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Revisión</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Publicación</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Suspensión</TableHead>
-                               <TableHead className="border-r border-black p-2 min-w-[500px] font-black uppercase">Observaciones</TableHead>
-                               <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
-                               <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-20 border-l border-black shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</TableHead>
-                            </TableRow>
-                         </TableHeader>
-                         <TableBody>
-                            {editorialRecords.map((rec, idx) => (
-                               <TableRow key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
-                                  <TableCell className="border-r border-black p-2 text-center font-bold">{idx + 1}</TableCell>
-                                  <TableCell className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</TableCell>
-                                  <TableCell className="border-r border-black p-2 font-mono text-slate-500 uppercase">{rec.agrupado || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-center font-bold">{rec.sector || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-center font-bold">{rec.zonaEscolar || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaAlta || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaModif || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums">{rec.fechaRevision || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums">{rec.date || '-'}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-rose-600 font-black tabular-nums">{rec.fechaSuspension || ''}</TableCell>
-                                  <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
-                                     <div className="max-h-[150px] overflow-y-auto scrollbar-hide italic">
-                                        {rec.observaciones || ''}
-                                     </div>
-                                  </TableCell>
-                                  <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                  <TableCell className="p-2 bg-white/95 backdrop-blur-sm sticky right-0 z-20 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[150px]">
-                                     <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
-                                        <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
-                                        <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
-                                        <button onClick={() => toast({title: "Suspender", description: `Suspendiendo portal de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Suspender</button>
-                                        <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
-                                        <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
-                                        <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
-                                     </div>
-                                  </TableCell>
+                   <div className="border border-black w-full h-[650px] relative overflow-hidden">
+                      <ScrollArea className="h-full w-full">
+                         <Table className="border-collapse text-[10px] min-w-[3200px]">
+                            <TableHeader className="bg-slate-100">
+                               <TableRow className="border-b border-black">
+                                  <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
+                                  <TableHead 
+                                    className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none font-black"
+                                    onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
+                                  >
+                                    <div className="flex items-center gap-2 uppercase">
+                                       Centro de Trabajo
+                                       {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                                    </div>
+                                  </TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase">Agrupado</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Vertiente</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Sector</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Zona</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Alta</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Modificación</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Revisión</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Publicación</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Suspensión</TableHead>
+                                  <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
+                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.1)] min-w-[180px]">
+                                     ACCIONES A REALIZAR
+                                  </TableHead>
                                </TableRow>
-                            ))}
-                         </TableBody>
-                      </Table>
-                      <ScrollBar orientation="horizontal" />
-                   </ScrollArea>
+                            </TableHeader>
+                            <TableBody>
+                               {editorialRecords.map((rec, idx) => (
+                                  <TableRow key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
+                                     <TableCell className="border-r border-black p-2 text-center font-bold">{idx + 1}</TableCell>
+                                     <TableCell className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</TableCell>
+                                     <TableCell className="border-r border-black p-2 font-mono text-slate-500 uppercase">{rec.agrupado || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-center font-bold">{rec.sector || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-center font-bold">{rec.zonaEscolar || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaAlta || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaModif || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums text-center">{rec.fechaRevision || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums text-center">{rec.date || '-'}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-rose-600 font-black tabular-nums text-center">{rec.fechaSuspension || ''}</TableCell>
+                                     <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
+                                        <div className="max-h-[150px] overflow-y-auto scrollbar-hide italic">
+                                           {rec.observaciones || ''}
+                                        </div>
+                                     </TableCell>
+                                     <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
+                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[180px]">
+                                        <div className="flex flex-col gap-1 font-black text-blue-700 underline underline-offset-2 text-left text-[10px] uppercase">
+                                           <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
+                                           <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
+                                           <button onClick={() => toast({title: "Suspender", description: `Suspendiendo portal de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Suspender</button>
+                                           <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
+                                           <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
+                                           <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
+                                        </div>
+                                     </TableCell>
+                                  </TableRow>
+                               ))}
+                            </TableBody>
+                         </Table>
+                         <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
+                   </div>
                 </div>
              </div>
            )}
