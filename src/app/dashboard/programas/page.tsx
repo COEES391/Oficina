@@ -66,7 +66,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v35_dynamic_tabs";
+const DB_VERSION = "827_full_sync_v40_actions_in_date";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -104,11 +104,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v35')
+    const storedVersion = localStorage.getItem('programs_db_version_v40')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v35', DB_VERSION)
+      localStorage.setItem('programs_db_version_v40', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -587,12 +587,9 @@ export default function ProgramsPage() {
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Modificación</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Revisión</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Publicación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Suspensión</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap bg-rose-50 text-rose-800">Fecha de Suspensión / ACCIONES</TableHead>
                                   <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
-                                  <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.15)] min-w-[220px]">
-                                     ACCIONES A REALIZAR
-                                  </TableHead>
+                                  <TableHead className="p-2 font-black uppercase">eContacto</TableHead>
                                </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -608,14 +605,7 @@ export default function ProgramsPage() {
                                      <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaModif || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums text-center">{rec.fechaRevision || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums text-center">{rec.date || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-rose-600 font-black tabular-nums text-center">{rec.fechaSuspension || ''}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
-                                        <div className="max-h-[150px] overflow-y-auto scrollbar-hide italic">
-                                           {rec.observaciones || ''}
-                                        </div>
-                                     </TableCell>
-                                     <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                     <TableCell className="p-2 bg-white/95 backdrop-blur-md sticky right-0 z-20 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.05)] min-w-[220px]">
+                                     <TableCell className="border-r border-black p-2 bg-rose-50/30 min-w-[180px]">
                                         <div className="flex flex-col gap-1 font-black text-blue-700 underline underline-offset-2 text-left text-[10px] uppercase">
                                            <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
                                            <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
@@ -623,13 +613,21 @@ export default function ProgramsPage() {
                                            <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
                                            <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
                                            <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
+                                           {rec.fechaSuspension && <span className="text-rose-600 mt-1 pt-1 border-t border-rose-200 block no-underline">{rec.fechaSuspension}</span>}
                                         </div>
                                      </TableCell>
+                                     <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
+                                        <div className="max-h-[150px] overflow-y-auto italic">
+                                           {rec.observaciones || ''}
+                                        </div>
+                                     </TableCell>
+                                     <TableCell className="p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
                                   </TableRow>
                                ))}
                             </TableBody>
                          </Table>
                          <ScrollBar orientation="horizontal" />
+                         <ScrollBar orientation="vertical" />
                       </ScrollArea>
                    </div>
                 </div>
