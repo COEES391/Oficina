@@ -38,7 +38,8 @@ import {
   Building2,
   Globe,
   Search,
-  X
+  X,
+  ExternalLink
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
@@ -53,7 +54,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_official_v3";
+const DB_VERSION = "1709_records_official_v4";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -459,14 +460,6 @@ export default function ProgramsPage() {
                    </div>
                 </div>
 
-                <div className="bg-[#f0ece1] py-2 px-6 flex justify-between items-center border-y border-slate-300">
-                   <span className="text-xs font-bold text-slate-700">Construya la Página de su Escuela</span>
-                   <div className="flex gap-4 text-[10px] font-bold text-slate-600">
-                      <span className="underline cursor-pointer">Ejemplo</span>
-                      <span className="underline cursor-pointer">Enviar comentarios</span>
-                   </div>
-                </div>
-
                 <div className="px-10 py-6">
                    <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
                    <p className="text-[11px] text-slate-600 mt-1 max-w-5xl leading-relaxed">
@@ -487,16 +480,16 @@ export default function ProgramsPage() {
                          <thead className="bg-slate-100">
                             <tr className="border-b border-black">
                                <th className="border-r border-black p-2 w-8">No.</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Centro de Trabajo</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Centro de Trabajo</th>
                                <th className="border-r border-black p-2">Agrupado</th>
                                <th className="border-r border-black p-2">Vertiente</th>
                                <th className="border-r border-black p-2">Sector</th>
                                <th className="border-r border-black p-2">Zona</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Alta</u></th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Modificación</u></th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Revisión</u></th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Publicación</u></th>
-                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Suspensión</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Alta</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Modificación</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Revisión</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Publicación</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Suspensión</th>
                                <th className="border-r border-black p-2 min-w-[200px]">Observaciones</th>
                                <th className="border-r border-black p-2">eContacto</th>
                                <th className="p-2 font-bold bg-slate-200 text-center sticky right-0 z-10 border-l border-black">Acciones a Realizar</th>
