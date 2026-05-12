@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -34,7 +35,6 @@ import {
   Table as TableIcon, 
   UserPlus, 
   Mail, 
-  BarChart3, 
   Search, 
   ShieldCheck, 
   CheckCircle2, 
@@ -45,7 +45,9 @@ import {
   Building2, 
   Monitor, 
   Trash2,
-  Plus
+  Plus,
+  RefreshCw,
+  Key
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -59,7 +61,7 @@ const PROGRAM_RUBROS = [
   'Mesa de Ayuda Técnica'
 ];
 
-const DB_VERSION = "1709_records_official_v2";
+const DB_VERSION = "1709_records_official_v3";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -68,12 +70,20 @@ export default function ProgramsPage() {
   const [isEditorialUser, setIsEditorialUser] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
+  
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false)
   const [loginForm, setLoginForm] = useState({ user: '', pass: '' })
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [selectedCctForAction, setSelectedCctForAction] = useState<string | null>(null)
+  const [generatedPass, setGeneratedPass] = useState('')
+
+  const [isObservationsDialogOpen, setIsObservationsDialogOpen] = useState(false)
+  const [observationsText, setObservationsText] = useState('')
+
   // Filters for CI Dashboard
   const [modalidadSubFilter, setModalidadSubFilter] = useState('all')
   const [sectorSubFilter, setSectorSubFilter] = useState('all')
@@ -245,6 +255,23 @@ export default function ProgramsPage() {
     }
   }
 
+  const generatePassword = (cct: string) => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let pass = "";
+    for (let i = 0; i < 8; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    setGeneratedPass(pass);
+    setSelectedCctForAction(cct);
+    setIsPasswordDialogOpen(true);
+  }
+
+  const handleEditorialTabClick = (rubro: string) => {
+    if (rubro === 'editorial' && !isEditorialUser) {
+      setIsLoginDialogOpen(true);
+    } else {
+      setActiveTab(rubro);
+    }
+  }
+
   if (!mounted) return null
 
   return (
@@ -259,21 +286,18 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+      <Tabs value={activeTab} onValueChange={handleEditorialTabClick} className="space-y-8">
         <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1.5 rounded-3xl shadow-inner border border-primary/5">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger key={rubro} value={rubro} className="flex-1 min-w-[200px] h-14 text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-xl">
               {rubro.includes('(') ? rubro.split('(')[0] : rubro}
             </TabsTrigger>
           ))}
-          {isEditorialUser && (
-            <TabsTrigger value="editorial" className="flex-1 min-w-[200px] h-14 text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl bg-primary/5 data-[state=active]:bg-primary data-[state=active]:text-white">
-              Sección Editorial WebEscuela
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="editorial" className="flex-1 min-w-[200px] h-14 text-[10px] font-black uppercase tracking-[0.1em] rounded-2xl bg-primary/5 data-[state=active]:bg-primary data-[state=active]:text-white">
+            Sección Editorial WebEscuela
+          </TabsTrigger>
         </TabsList>
 
-        {/* Biblioteca Digital Content */}
         <TabsContent value="Biblioteca Digital" className="space-y-6">
           <div className="flex justify-between items-center">
              <h3 className="text-xl font-black uppercase text-primary flex items-center gap-3">
@@ -324,15 +348,13 @@ export default function ProgramsPage() {
           </Card>
         </TabsContent>
 
-        {/* Cuentas Institucionales Content */}
         <TabsContent value="Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)" className="space-y-10">
-          {/* CI Dashboard logic here (restored from previous functional version) */}
           <div className="space-y-10">
              <div className="flex items-center gap-6">
                 <div className="h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl"><Zap className="h-8 w-8 text-white" /></div>
                 <div>
                    <h2 className="text-3xl font-black text-primary uppercase tracking-tighter leading-none">Herramienta de Monitoreo CI</h2>
-                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] mt-1">Control Analítico Institucional ({records.length} Registros)</p>
+                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.4em] mt-1">Control Analítico Institucional ({filteredCuentasRecords.length} Registros Filtrados)</p>
                 </div>
              </div>
              
@@ -347,20 +369,12 @@ export default function ProgramsPage() {
                          ))}
                       </div>
                    </Card>
-                   <Card className="executive-card p-6 bg-slate-50/50 border-2 border-white">
-                      <Label className="text-[10px] font-black uppercase text-primary mb-4 block tracking-widest">VALLE</Label>
-                      <div className="flex flex-col gap-2">
-                         <Button variant={valleSubFilter === 'all' ? 'default' : 'outline'} className="h-10 text-[10px] font-black" onClick={() => setValleSubFilter('all')}>AMBOS</Button>
-                         <Button variant={valleSubFilter === 'MÉXICO' ? 'default' : 'outline'} className="h-10 text-[10px] font-black" onClick={() => setValleSubFilter('MÉXICO')}>MÉXICO</Button>
-                         <Button variant={valleSubFilter === 'TOLUCA' ? 'default' : 'outline'} className="h-10 text-[10px] font-black" onClick={() => setValleSubFilter('TOLUCA')}>TOLUCA</Button>
-                      </div>
-                   </Card>
                 </div>
 
                 <div className="col-span-4 flex flex-col gap-8">
                    <Card className="w-full executive-card p-10 flex flex-col items-center justify-center bg-white shadow-2xl relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full" />
-                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 relative z-10">Total de Cuentas</span>
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 relative z-10">Total Cuentas Filtradas</span>
                       <div className="text-7xl font-black text-slate-800 tracking-tighter relative z-10">{cuentasStats.total}</div>
                    </Card>
                    
@@ -424,7 +438,7 @@ export default function ProgramsPage() {
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {filteredCuentasRecords.slice(0, 100).map((rec, i) => (
+                         {filteredCuentasRecords.slice(0, 50).map((rec, i) => (
                             <TableRow key={i} className="text-[10px] font-bold hover:bg-slate-50 transition-colors">
                                <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                <TableCell>
@@ -441,9 +455,6 @@ export default function ProgramsPage() {
                                </TableCell>
                             </TableRow>
                          ))}
-                         {filteredCuentasRecords.length > 100 && (
-                            <TableRow><TableCell colSpan={4} className="text-center py-6 text-[10px] font-black text-muted-foreground uppercase italic bg-slate-50">Se muestran los primeros 100 de {filteredCuentasRecords.length} registros...</TableCell></TableRow>
-                         )}
                       </TableBody>
                    </Table>
                 </div>
@@ -451,8 +462,7 @@ export default function ProgramsPage() {
           </div>
         </TabsContent>
 
-        {/* Conoce mi Escuela Content */}
-        <TabsContent value="Conoce mi Escuela" className="space-y-10 animate-in slide-in-from-bottom-5 duration-700">
+        <TabsContent value="Conoce mi Escuela" className="space-y-10">
           <div className="grid md:grid-cols-2 gap-10">
              <Card className="executive-card p-10 border-l-8 border-l-primary group">
                 <div className="space-y-6">
@@ -468,17 +478,6 @@ export default function ProgramsPage() {
                       Permite a los directores gestionar la información técnica, fotos de evidencia, misión, visión y servicios educativos 
                       para la publicación automática del sitio web institucional de su plantel.
                    </p>
-                   <div className="pt-6">
-                      <Button 
-                         onClick={() => {
-                            if (!isEditorialUser) setIsLoginDialogOpen(true);
-                            else setActiveTab('editorial');
-                         }}
-                         className="h-14 px-10 rounded-2xl font-black uppercase text-xs tracking-widest gap-3 shadow-2xl transition-all hover:scale-105 active:scale-95 bg-primary text-white"
-                      >
-                         <ShieldCheck className="h-5 w-5" /> SECCIÓN EDITORIAL DE WEBESCUELA
-                      </Button>
-                   </div>
                 </div>
              </Card>
 
@@ -493,12 +492,12 @@ export default function ProgramsPage() {
                    </div>
                    <div className="space-y-6">
                       {[
-                        { step: "01", title: "CAPTURA DE DATOS", desc: "El CCT ingresa con su usuario y contraseña para alimentar el portal." },
-                        { step: "02", title: "REVISIÓN EDITORIAL", desc: "El equipo de Planeación valida la veracidad y calidad de la información." },
-                        { step: "03", title: "PUBLICACIÓN WEB", desc: "Se genera automáticamente el dominio público del plantel bajo SEIEM." }
+                        { step: "01", title: "CAPTURA DE DATOS", desc: "El CCT ingresa con su usuario para alimentar el portal." },
+                        { step: "02", title: "REVISIÓN EDITORIAL", desc: "El equipo de Planeación valida la calidad de la información." },
+                        { step: "03", title: "PUBLICACIÓN WEB", desc: "Se genera automáticamente el dominio público bajo SEIEM." }
                       ].map((item, i) => (
-                        <div key={i} className="flex gap-6 items-start group">
-                           <span className="text-2xl font-black text-primary group-hover:text-accent transition-colors">{item.step}</span>
+                        <div key={i} className="flex gap-6 items-start">
+                           <span className="text-2xl font-black text-primary">{item.step}</span>
                            <div>
                               <h5 className="text-[11px] font-black uppercase tracking-wider mb-1">{item.title}</h5>
                               <p className="text-[10px] text-slate-400 font-bold leading-normal uppercase">{item.desc}</p>
@@ -511,8 +510,7 @@ export default function ProgramsPage() {
           </div>
         </TabsContent>
 
-        {/* Editorial Tab Content */}
-        <TabsContent value="editorial" className="space-y-8 animate-in zoom-in-95 duration-700">
+        <TabsContent value="editorial" className="space-y-8">
            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-4">
                  <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><Lock className="h-6 w-6 text-white" /></div>
@@ -524,78 +522,43 @@ export default function ProgramsPage() {
            </div>
 
            <Card className="executive-card shadow-2xl border-t-8 border-t-primary">
-              <CardHeader className="bg-slate-50/50 p-8 border-b">
-                 <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-black uppercase text-slate-700 flex items-center gap-3">
-                       <TableIcon className="h-5 w-5 text-primary" /> Matriz de Revisión Editorial (14 Columnas de Control)
-                    </CardTitle>
-                    <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-full">Sincronizado</Badge>
-                 </div>
-              </CardHeader>
               <div className="overflow-x-auto">
                  <Table>
                     <TableHeader className="bg-slate-100">
                        <TableRow>
                           <TableHead className="font-black text-[9px] uppercase pl-8">No.</TableHead>
                           <TableHead className="font-black text-[9px] uppercase">CCT</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">Agrupado</TableHead>
                           <TableHead className="font-black text-[9px] uppercase">Vertiente</TableHead>
                           <TableHead className="font-black text-[9px] uppercase">Sector</TableHead>
                           <TableHead className="font-black text-[9px] uppercase">Zona</TableHead>
                           <TableHead className="font-black text-[9px] uppercase">F. Alta</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">F. Mod.</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">F. Rev.</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">F. Pub.</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">F. Susp.</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">Observaciones</TableHead>
-                          <TableHead className="font-black text-[9px] uppercase">eContacto</TableHead>
                           <TableHead className="font-black text-[9px] uppercase text-right pr-8">Acciones</TableHead>
                        </TableRow>
                     </TableHeader>
                     <TableBody>
-                       {records.filter(r => r.name?.includes('Conoce') || r.id?.startsWith('WEB-')).slice(0, 50).map((rec, i) => (
-                          <TableRow key={rec.id} className="text-[10px] font-bold group hover:bg-slate-50/80 transition-all">
+                       {records.filter(r => r.name?.includes('Conoce') || r.id?.startsWith('WEB-')).map((rec, i) => (
+                          <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50">
                              <TableCell className="pl-8 text-slate-400">{i + 1}</TableCell>
                              <TableCell className="text-primary font-black uppercase">{rec.cct || '-'}</TableCell>
-                             <TableCell className="uppercase">{rec.valle || '-'}</TableCell>
                              <TableCell className="uppercase">{rec.modalidad || '-'}</TableCell>
                              <TableCell className="text-center">{rec.sector || '-'}</TableCell>
                              <TableCell className="text-center">{rec.zonaEscolar || '-'}</TableCell>
                              <TableCell className="text-slate-500">{rec.date || '-'}</TableCell>
-                             <TableCell className="text-slate-500">{rec.fechaSalida || '-'}</TableCell>
-                             <TableCell className="text-blue-600">{(rec.status === 'concluido' || rec.status === 'activo') ? format(new Date(), 'yyyy-MM-dd') : '-'}</TableCell>
-                             <TableCell className="text-emerald-600">{rec.status === 'concluido' ? format(new Date(), 'yyyy-MM-dd') : '-'}</TableCell>
-                             <TableCell className="text-rose-600">{rec.status === 'inactivo' ? format(new Date(), 'yyyy-MM-dd') : '-'}</TableCell>
-                             <TableCell className="max-w-[150px] truncate text-muted-foreground">{rec.observaciones || 'S/O'}</TableCell>
-                             <TableCell>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10">
-                                   <Mail className="h-3.5 w-3.5" />
-                                </Button>
-                             </TableCell>
                              <TableCell className="text-right pr-8">
-                                <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                   <Button variant="outline" size="sm" className="h-7 px-2 text-[8px] font-black uppercase border-blue-200 text-blue-600 hover:bg-blue-50 gap-1">
-                                      <Eye className="h-3 w-3" /> Revisar
+                                <div className="flex justify-end gap-2">
+                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase border-blue-200 text-blue-600 gap-1">
+                                      <Eye className="h-3.5 w-3.5" /> Revisar
                                    </Button>
-                                   <Button variant="outline" size="sm" className="h-7 px-2 text-[8px] font-black uppercase border-emerald-200 text-emerald-600 hover:bg-emerald-50 gap-1">
-                                      <CheckCircle2 className="h-3 w-3" /> Publicar
+                                   <Button variant="outline" size="sm" className="h-8 text-[8px] font-black uppercase border-emerald-200 text-emerald-600 gap-1">
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> Publicar
                                    </Button>
-                                   <Button variant="outline" size="sm" className="h-7 px-2 text-[8px] font-black uppercase border-rose-200 text-rose-600 hover:bg-rose-50 gap-1">
-                                      <Ban className="h-3 w-3" /> Suspender
-                                   </Button>
-                                   <Button variant="outline" size="icon" className="h-7 w-7 border-slate-200">
-                                      <MessageSquare className="h-3 w-3" />
-                                   </Button>
-                                   <Button variant="outline" size="icon" className="h-7 w-7 border-amber-200 text-amber-600">
-                                      <Lock className="h-3 w-3" />
+                                   <Button variant="outline" size="icon" className="h-8 w-8 border-amber-200 text-amber-600" onClick={() => generatePassword(rec.cct || 'N/A')}>
+                                      <Key className="h-3.5 w-3.5" />
                                    </Button>
                                 </div>
                              </TableCell>
                           </TableRow>
                        ))}
-                       {records.filter(r => r.name?.includes('Conoce')).length === 0 && (
-                          <TableRow><TableCell colSpan={14} className="text-center py-20 font-black text-slate-300 uppercase tracking-widest bg-slate-50/20">Sin solicitudes de revisión pendientes</TableCell></TableRow>
-                       )}
                     </TableBody>
                  </Table>
               </div>
@@ -603,82 +566,40 @@ export default function ProgramsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Login Dialog for Editorial */}
+      {/* Login Dialog */}
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary p-8 text-white text-center space-y-4">
-             <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto border border-white/20">
-                <ShieldCheck className="h-10 w-10 text-white" />
-             </div>
-             <div>
-                <h3 className="text-xl font-black uppercase tracking-tighter">Acceso Editorial</h3>
-                <p className="text-[10px] font-black uppercase opacity-70 tracking-widest">Identidad Segura WebEscuela</p>
-             </div>
+          <DialogHeader className="hidden"><DialogTitle>Acceso Editorial</DialogTitle></DialogHeader>
+          <div className="bg-primary p-8 text-white text-center">
+             <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4"><ShieldCheck className="h-10 w-10" /></div>
+             <h3 className="text-xl font-black uppercase tracking-tighter">Acceso Editorial</h3>
           </div>
           <div className="p-8 space-y-6 bg-white">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Usuario Administrador</Label>
-                   <Input 
-                      placeholder="CEDITORIAL" 
-                      className="h-14 rounded-2xl bg-slate-50 border-none font-black text-primary px-6"
-                      value={loginForm.user}
-                      onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})}
-                   />
-                </div>
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Contraseña SEIEM</Label>
-                   <Input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      className="h-14 rounded-2xl bg-slate-50 border-none font-black text-primary px-6"
-                      value={loginForm.pass}
-                      onChange={e => setLoginForm({...loginForm, pass: e.target.value})}
-                   />
-                </div>
-             </div>
-             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl bg-primary text-white">
-                Validar e Ingresar
-             </Button>
+             <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6" />
+             <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6" />
+             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white">Ingresar</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Capture Dialog (General for Biblioteca and others) */}
+      {/* Capture Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] border-none shadow-2xl overflow-hidden">
-          <DialogHeader className="p-8 border-b bg-slate-50 relative">
-             <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
-                   {formData.name?.includes('Biblioteca') ? <Monitor className="h-6 w-6" /> : <TableIcon className="h-6 w-6" />}
-                </div>
-                <div>
-                   <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                      Captura Técnica - {formData.name?.split('(')[0]}
-                   </DialogTitle>
-                   <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">
-                      Sincronización de registros institucionales SEIEM
-                   </DialogDescription>
-                </div>
-             </div>
+        <DialogContent className="sm:max-w-[1200px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden">
+          <DialogHeader className="p-8 border-b bg-slate-50">
+             <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
+                Captura Técnica - {formData.name}
+             </DialogTitle>
+             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest">
+                Sincronización de registros institucionales SEIEM
+             </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 p-8 bg-white">
              <div className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase text-primary ml-2">Folio / Identificador</Label>
-                      <Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} readOnly={!!editingId} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
-                   </div>
-                   <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
-                      <Input 
-                        placeholder="15XXXXXX" 
-                        value={formData.cct} 
-                        onChange={e => handleCCTLookup(e.target.value)} 
-                        maxLength={10} 
-                        className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6 focus:border-primary transition-all uppercase" 
-                      />
+                      <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => handleCCTLookup(e.target.value)} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6 uppercase" />
                    </div>
                    <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Administrativo</Label>
@@ -693,80 +614,33 @@ export default function ProgramsPage() {
                    </div>
                 </div>
 
-                {formData.schoolName && (
-                  <div className="p-6 bg-primary/5 rounded-3xl border-2 border-white shadow-sm flex items-center justify-between gap-6 animate-in slide-in-from-top-4 duration-500">
-                     <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm border border-primary/5">
-                           <Building2 className="h-7 w-7" />
-                        </div>
-                        <div>
-                           <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Plantel Validado</p>
-                           <h4 className="text-lg font-black text-slate-800 leading-none">{formData.schoolName}</h4>
-                           <div className="flex gap-4 mt-1">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Sector: {formData.sector}</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Zona: {formData.zonaEscolar}</span>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Valle: {formData.valle}</span>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-                )}
-
-                {/* Specific Fields for Biblioteca Digital */}
-                {formData.name?.includes('Biblioteca') && (
-                   <div className="space-y-8 animate-in fade-in duration-700">
-                      <h4 className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-2">
-                        <Monitor className="h-4 w-4" /> Datos Técnicos del Equipamiento
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                         <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Número de Equipos</Label>
-                            <Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                         </div>
-                         <div className="md:col-span-3 space-y-3">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Descripción del Equipo</Label>
-                            <Input value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} placeholder="EJ: EQUIPO HP PRODESK 400 G6..." className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                         </div>
-                      </div>
-
+                {formData.name === 'Biblioteca Digital' && (
+                   <div className="space-y-8">
                       <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border-2 border-white">
-                         <div className="flex items-center gap-4">
-                            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-colors", formData.capacitacion === 'S' ? 'bg-primary text-white' : 'bg-slate-200 text-slate-400')}>
-                               <CheckCircle2 className="h-6 w-6" />
-                            </div>
-                            <div>
-                               <h5 className="text-xs font-black uppercase text-slate-700">Capacitación Institucional</h5>
-                               <p className="text-[9px] font-bold text-muted-foreground uppercase">¿Se realizó curso de capacitación al personal?</p>
-                            </div>
+                         <div>
+                            <h5 className="text-xs font-black uppercase text-slate-700">Capacitación Institucional</h5>
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase">¿Se realizó curso de capacitación al personal?</p>
                          </div>
-                         <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
-                            <Switch 
-                               checked={formData.capacitacion === 'S'} 
-                               onCheckedChange={checked => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} 
-                            />
-                         </div>
+                         <Switch checked={formData.capacitacion === 'S'} onCheckedChange={checked => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} />
                       </div>
 
                       {formData.capacitacion === 'S' && (
-                         <div className="space-y-10 animate-in slide-in-from-top-4 duration-500">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                         <div className="space-y-10 pt-6 border-t animate-in slide-in-from-top-4 duration-500">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                <div className="space-y-3">
-                                  <Label className="text-[10px] font-black uppercase text-primary ml-2">Folio de Curso</Label>
-                                  <Input value={formData.cursoFolio} onChange={e => setFormData({...formData, cursoFolio: e.target.value})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                               </div>
-                               <div className="md:col-span-2 space-y-3">
                                   <Label className="text-[10px] font-black uppercase text-primary ml-2">Nombre del Curso</Label>
                                   <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
+                               </div>
+                               <div className="space-y-3">
+                                  <Label className="text-[10px] font-black uppercase text-primary ml-2">Folio de Registro</Label>
+                                  <Input value={formData.cursoFolio} onChange={e => setFormData({...formData, cursoFolio: e.target.value})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
                                </div>
                             </div>
                             
                             <div className="space-y-6">
                                <div className="flex justify-between items-center">
-                                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                                     <UserPlus className="h-4 w-4" /> Personal Capacitado en Cuadrícula
-                                  </h5>
-                                  <Button variant="outline" size="sm" onClick={addAssistantRow} className="h-10 px-6 rounded-xl border-primary text-primary font-black uppercase text-[9px] hover:bg-primary/5">
+                                  <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Personal Capacitado</h5>
+                                  <Button variant="outline" size="sm" onClick={addAssistantRow} className="h-10 px-6 rounded-xl border-primary text-primary font-black uppercase text-[9px]">
                                      <Plus className="h-4 w-4 mr-2" /> Añadir Fila
                                   </Button>
                                </div>
@@ -777,10 +651,9 @@ export default function ProgramsPage() {
                                         <TableHeader className="bg-slate-50">
                                            <TableRow>
                                               <TableHead className="w-10 text-[9px] font-black uppercase">#</TableHead>
-                                              <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                                              <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Nombre(s) y Apellidos</TableHead>
                                               <TableHead className="min-w-[150px] text-[9px] font-black uppercase">RFC</TableHead>
                                               <TableHead className="min-w-[120px] text-[9px] font-black uppercase">Función</TableHead>
-                                              <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT Origen</TableHead>
                                               <TableHead className="text-right pr-6 w-10"></TableHead>
                                            </TableRow>
                                         </TableHeader>
@@ -789,10 +662,9 @@ export default function ProgramsPage() {
                                               <TableRow key={idx} className="hover:bg-slate-50/50">
                                                  <TableCell className="text-[10px] font-black text-slate-300 pl-6">{idx + 1}</TableCell>
                                                  <TableCell className="p-4">
-                                                    <div className="space-y-2">
-                                                       <Input placeholder="Paterno" className="h-9 rounded-lg text-[10px]" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value)} />
-                                                       <Input placeholder="Materno" className="h-9 rounded-lg text-[10px]" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value)} />
-                                                       <Input placeholder="Nombre(s)" className="h-9 rounded-lg text-[10px] font-black" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} />
+                                                    <div className="flex gap-2">
+                                                       <Input placeholder="Nombres" className="h-9 rounded-lg text-[10px] font-black" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} />
+                                                       <Input placeholder="Apellidos" className="h-9 rounded-lg text-[10px]" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value)} />
                                                     </div>
                                                  </TableCell>
                                                  <TableCell className="p-4">
@@ -807,10 +679,6 @@ export default function ProgramsPage() {
                                                           <SelectItem value="ADMINISTRATIVO" className="text-[10px]">ADMINISTRATIVO</SelectItem>
                                                        </SelectContent>
                                                     </Select>
-                                                 </TableCell>
-                                                 <TableCell className="p-4">
-                                                    <Input placeholder="CCT" className="h-10 rounded-lg text-[10px] font-mono font-black" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                                                    {ast.nombreCT && <p className="text-[8px] font-bold text-primary mt-1 truncate max-w-[120px] uppercase">{ast.nombreCT}</p>}
                                                  </TableCell>
                                                  <TableCell className="text-right pr-6">
                                                     <Button variant="ghost" size="icon" className="text-rose-500" onClick={() => setFormData(prev => ({ ...prev, asistentes: prev.asistentes?.filter((_, i) => i !== idx) }))}>
@@ -832,12 +700,7 @@ export default function ProgramsPage() {
 
                 <div className="space-y-3">
                    <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Operativas</Label>
-                   <Textarea 
-                      value={formData.observaciones} 
-                      onChange={e => setFormData({...formData, observaciones: e.target.value})} 
-                      placeholder="Detalles adicionales del registro, condiciones del aula, etc..." 
-                      className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6 font-medium text-slate-600 focus:border-primary transition-all"
-                   />
+                   <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalles adicionales del registro..." className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6 font-medium text-slate-600 focus:border-primary transition-all" />
                 </div>
              </div>
           </ScrollArea>
@@ -845,10 +708,36 @@ export default function ProgramsPage() {
           <DialogFooter className="p-8 border-t bg-slate-50 flex justify-end gap-4">
              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-white">Cancelar</Button>
              <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl transition-all hover:scale-105 active:scale-95">
-                Sincronizar Datos
+                Guardar Registro
              </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* Password Action Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+         <DialogContent className="sm:max-w-[450px] rounded-3xl p-8 border-none shadow-2xl">
+            <DialogHeader>
+               <DialogTitle className="text-xl font-black uppercase text-primary flex items-center gap-3">
+                  <Key className="h-6 w-6" /> Gestión de Acceso CCT
+               </DialogTitle>
+               <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground mt-2">
+                  Credenciales de acceso para captura WebEscuela
+               </DialogDescription>
+            </DialogHeader>
+            <div className="py-10 space-y-6">
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-slate-400">Contraseña Generada para {selectedCctForAction}</Label>
+                  <div className="h-20 rounded-2xl bg-primary/5 flex items-center justify-center border-2 border-dashed border-primary/20">
+                     <span className="text-4xl font-black text-primary tracking-[0.2em] font-mono">{generatedPass}</span>
+                  </div>
+               </div>
+               <p className="text-[10px] font-bold text-slate-500 uppercase text-center italic">Comparta esta clave con el Director del plantel para iniciar su captura oficial.</p>
+            </div>
+            <DialogFooter>
+               <Button onClick={() => setIsPasswordDialogOpen(false)} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white shadow-xl">Entendido y Finalizar</Button>
+            </DialogFooter>
+         </DialogContent>
       </Dialog>
     </div>
   )

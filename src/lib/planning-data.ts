@@ -1,3 +1,4 @@
+
 export type SupportTicket = {
   id: string;
   cct: string;
@@ -147,9 +148,7 @@ export const supportData: SupportTicket[] = [
   },
 ];
 
-// Helper to generate the 1709 records compactly
-const generateMasterRecords = (): ProgramStatus[] => {
-  const data = [
+const MASTER_RAW_DATA = [
     ["1", "PES GOB", "MÉXICO", "1", "PLANTEL", "4", "PES0007Q@desysa.gob.mx", "APROBADO"],
     ["1", "PES GOB", "MÉXICO", "2", "PLANTEL", "5", "PES0010D@desysa.gob.mx", "APROBADO"],
     ["1", "PES GOB", "MÉXICO", "3", "PLANTEL", "1", "PES0012B@desysa.gob.mx", "APROBADO"],
@@ -380,19 +379,16 @@ const generateMasterRecords = (): ProgramStatus[] => {
     ["6", "PST", "MÉXICO", "228", "PLANTEL", "16", "PST0052V@desysa.gob.mx", "DESAPROBADO"],
     ["6", "PST", "MÉXICO", "229", "PLANTEL", "14", "PST0600J@desysa.gob.mx", "DESAPROBADO"],
     ["8", "PST", "MÉXICO", "230", "PLANTEL", "23", "PST0601I@desysa.gob.mx", "DESAPROBADO"],
-    ["8", "PST", "MÉXICO", "231", "PLANTEL", "23", "PST0602H@desysa.gob.mx", "DESAPROBADO"],
-    ["", "COEES GOB", "TOLUCA", "232", "ADMIN", "", "admin.coees@desysa.gob.mx", "DESAPROBADO"],
-    ["", "COEES EDU", "MÉXICO", "233", "ADMIN", "", "media@coees.edu.mx", "DESAPROBADO"],
-    ["", "COEES EDU", "TOLUCA", "234", "ADMIN", "", "agustin.sanchez@coees.edu.mx", "ACTIVO"],
-    ["", "COEES GOB", "TOLUCA", "235", "ADMIN", "", "jose.antonio.arzate@desysa.gob.mx", "APROBADO"],
-    ["", "COEES GOB", "TOLUCA", "236", "ADMIN", "", "admin365@desysa.gob.mx", "DESAPROBADO"],
-    ["", "DESySA GOB", "TOLUCA", "237", "ADMIN", "", "asesor.desysa@desysa.gob.mx", "ACTIVO"]
-  ];
+    ["8", "PST", "MÉXICO", "231", "PLANTEL", "23", "PST0602H@desysa.gob.mx", "DESAPROBADO"]
+];
 
-  return data.map((r, i) => ({
+export const programsData: ProgramStatus[] = [
+  { id: 'PROG-BD-INIT', name: 'Biblioteca Digital', status: 'planeacion', date: '2025-05-22', cct: '15DES0001R', schoolName: 'SECUNDARIA FED. 1', valle: 'TOLUCA', modalidad: 'DES', sector: '08', zonaEscolar: 'S/Z', numeroEquipos: 15, capacitacion: 'N', progress: 0 },
+  { id: 'WEB-INIT', name: 'Conoce mi Escuela', status: 'activo', date: '2025-05-22', cct: '15DES0065B', schoolName: 'SECUNDARIA GRAL 15DES0065B', valle: 'MEXICO', modalidad: 'DES', sector: '01', zonaEscolar: 'S/Z', progress: 50 },
+  ...MASTER_RAW_DATA.map((r, i) => ({
     id: `PROG-CI-${i + 1}`,
     name: 'Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)',
-    status: (r[7] === 'APROBADO' || r[7] === 'ACTIVO') ? 'concluido' : 'planeacion',
+    status: r[7] === 'APROBADO' ? 'concluido' : 'planeacion',
     date: '2025-05-22',
     cct: r[6].split('@')[0].trim().toUpperCase(),
     valle: r[2].toUpperCase(),
@@ -416,14 +412,9 @@ const generateMasterRecords = (): ProgramStatus[] => {
       region: r[2].toUpperCase(),
       valle: r[2].toUpperCase(),
       departamento: r[4].toUpperCase()
-    }] as ProgramAssistant[]
-  } as ProgramStatus));
-};
-
-export const programsData: ProgramStatus[] = [
-  { id: 'PROG-BD-INIT', name: 'Biblioteca Digital', progress: 0, status: 'planeacion', date: '2025-05-22', cct: '15DES0001R', schoolName: 'SECUNDARIA FED. 1', valle: 'TOLUCA', modalidad: 'DES', sector: '08', zonaEscolar: 'S/Z', numeroEquipos: 15, capacitacion: 'N' },
-  { id: 'PROG-CE-INIT', name: 'Conoce mi Escuela', progress: 0, status: 'planeacion', date: '2025-05-22', cct: '15DES0065B', schoolName: 'SECUNDARIA GRAL 15DES0065B', valle: 'MEXICO', modalidad: 'DES', sector: '01', zonaEscolar: 'S/Z' },
-  ...generateMasterRecords()
+    }] as ProgramAssistant[],
+    progress: r[7] === 'APROBADO' ? 100 : 0
+  } as ProgramStatus))
 ];
 
 export const trainingRecords: TrainingRecord[] = [];
