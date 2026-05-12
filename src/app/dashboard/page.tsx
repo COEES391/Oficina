@@ -20,8 +20,7 @@ import {
   Building2,
   Settings2,
   Target,
-  BarChart3,
-  PieChart as PieChartIcon,
+  BarChart,
   Zap,
   Calendar,
   Layers,
@@ -33,7 +32,7 @@ import {
   School
 } from 'lucide-react'
 import { 
-  BarChart, 
+  BarChart as RechartsBarChart, 
   Bar, 
   XAxis, 
   YAxis, 
@@ -529,10 +528,10 @@ export default function DashboardPage() {
                </Card>
 
                <Card className="executive-card p-8">
-                <CardHeader className="p-0 mb-8"><CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><BarChart3 className="h-5 w-5" /> Meta Regional (Actual vs Plan Anual)</CardTitle></CardHeader>
+                <CardHeader className="p-0 mb-8"><CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3"><BarChart className="h-5 w-5" /> Meta Regional (Actual vs Plan Anual)</CardTitle></CardHeader>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.trainingByValle}>
+                    <RechartsBarChart data={stats.trainingByValle}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                       <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
@@ -546,7 +545,7 @@ export default function DashboardPage() {
                       <Bar dataKey="value" name="Avance Real" radius={[10, 10, 0, 0]} barSize={40}>
                         {stats.trainingByValle.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                       </Bar>
-                    </BarChart>
+                    </RechartsBarChart>
                   </ResponsiveContainer>
                 </div>
               </Card>
@@ -584,7 +583,7 @@ export default function DashboardPage() {
                   </CardHeader>
                   <div className="h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={programStats} layout="vertical" margin={{ left: 20 }}>
+                      <RechartsBarChart data={programStats} layout="vertical" margin={{ left: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" />
                         <XAxis type="number" hide />
                         <YAxis 
@@ -604,7 +603,7 @@ export default function DashboardPage() {
                             <Cell key={`cell-${index}`} fill={entry.progress > 70 ? '#10b981' : entry.progress > 30 ? '#f59e0b' : '#621132'} />
                           ))}
                         </Bar>
-                      </BarChart>
+                      </RechartsBarChart>
                     </ResponsiveContainer>
                   </div>
                 </Card>
@@ -612,7 +611,7 @@ export default function DashboardPage() {
                 <Card className="executive-card p-8">
                   <CardHeader className="p-0 mb-8">
                     <CardTitle className="text-sm font-black uppercase flex items-center gap-3 text-primary">
-                      <PieChartIcon className="h-5 w-5" /> Auditoría de Cuentas por Dominio
+                      <Mail className="h-5 w-5" /> Auditoría de Cuentas por Dominio
                     </CardTitle>
                   </CardHeader>
                   {accountsByDomain.length > 0 ? (
