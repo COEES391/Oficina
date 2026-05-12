@@ -23,34 +23,25 @@ import {
   ResponsiveContainer, 
   Cell,
   PieChart,
-  Pie,
-  Legend
+  Pie
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
-import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   Pencil, 
-  Lock, 
   Monitor, 
   Trash2,
   Activity,
   MapPin,
-  Mail,
+  Globe,
   Zap,
   Building2,
-  Globe,
-  Search,
   X,
-  ExternalLink,
-  Flag,
-  ArrowRight,
   ChevronUp,
   ChevronDown,
   ArrowUpDown
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
@@ -62,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_records_editorial_final_v5";
+const DB_VERSION = "827_full_sync_v10";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -81,7 +72,6 @@ export default function ProgramsPage() {
   const [modFilter, setModFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
   
-  // Sort State para Editorial
   const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
 
   const initialAssistant: ProgramAssistant = {
@@ -102,15 +92,14 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     const storedVersion = localStorage.getItem('programs_db_version')
-    
-    if (storedVersion !== DB_VERSION || stored.length === 0) {
+    if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
       localStorage.setItem('programs_db_version', DB_VERSION)
     } else {
-      setRecords(stored)
+      const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
+      setRecords(stored.length > 0 ? stored : programsData)
     }
   }, [])
 
@@ -144,10 +133,10 @@ export default function ProgramsPage() {
     toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
   }
 
-  // Filtros y Lógica de Pestañas
   const bdRecords = useMemo(() => records.filter(r => r.name === 'Biblioteca Digital'), [records]);
   const ciRecords = useMemo(() => records.filter(r => r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')), [records]);
   const geoRecords = useMemo(() => records.filter(r => r.name === 'Geoposición' || r.id.startsWith('PROG-GEO')), [records]);
+  
   const editorialRecords = useMemo(() => {
     let filtered = records.filter(r => r.id.startsWith('ED-') || r.id.startsWith('WEB-') || r.name === 'Conoce mi Escuela');
     if (sortConfig.direction !== null) {
@@ -518,14 +507,14 @@ export default function ProgramsPage() {
                             onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(localStorage.getItem('userRfc')); }}
                             className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
                          >
-                            Cerrar Sesión
+                            Cerrar
                          </button>
-                         <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">REGISTROS: {editorialRecords.length}</Badge>
+                         <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary uppercase">Registros en Servidor: {editorialRecords.length}</Badge>
                       </div>
                    </div>
                    
-                   <div className="border border-black overflow-x-auto relative">
-                      <Table className="border-collapse text-[10px] min-w-[2500px]">
+                   <ScrollArea className="border border-black w-full h-[600px]">
+                      <Table className="border-collapse text-[10px] min-w-[2800px]">
                          <TableHeader className="bg-slate-50">
                             <TableRow className="border-b border-black">
                                <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
@@ -533,7 +522,7 @@ export default function ProgramsPage() {
                                  className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none font-black"
                                  onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
                                >
-                                 <div className="flex items-center gap-2 underline uppercase">
+                                 <div className="flex items-center gap-2 uppercase">
                                     Centro de Trabajo
                                     {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                                  </div>
@@ -587,14 +576,14 @@ export default function ProgramsPage() {
                          </TableBody>
                       </Table>
                       <ScrollBar orientation="horizontal" />
-                   </div>
+                   </ScrollArea>
                 </div>
              </div>
            )}
         </TabsContent>
       </Tabs>
 
-      {/* Login Dialog para Editorial */}
+      {/* Diálogos de Accesibilidad */}
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
@@ -619,7 +608,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Formulario Técnico Principal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 border-b bg-slate-50">
@@ -658,18 +646,16 @@ export default function ProgramsPage() {
                    </div>
                 </div>
 
-                {formData.name === 'Biblioteca Digital' && (
-                  <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
-                     <div className="flex-1">
-                        <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
-                     </div>
-                     <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
-                        <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
-                     </div>
-                  </div>
-                )}
+                <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                   <div className="flex-1">
+                      <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
+                      <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                   </div>
+                </div>
 
                 {formData.capacitacion === 'S' && (
                   <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
@@ -684,20 +670,6 @@ export default function ProgramsPage() {
                         <div className="space-y-3">
                            <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
                            <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Duración (Horas)</Label>
-                           <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50" />
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha de Inicio</Label>
-                           <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50" />
-                        </div>
-                        <div className="space-y-3">
-                           <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede del Curso</Label>
-                           <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono uppercase" maxLength={10} />
                         </div>
                      </div>
                   </div>

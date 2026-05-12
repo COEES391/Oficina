@@ -138,10 +138,10 @@ const getEditorialData = (): ProgramStatus[] => {
     { id: 'ED-8', cct: '15DES0010Z', agrupado: 'DESMEXICO05033', vertiente: 'DES', sector: '05', zonaEscolar: '033', fechaAlta: '2007/06/18', fechaModif: '2022/10/27', fechaRevision: '2023/01/19', date: '2023/01/19', status: 'concluido', email: 'des0010z@desysa.gob.mx', observaciones: '06-08-09: Actualizar los alumnos destacados. 11-06-12: Sin cambios todavía. Actualizar logros, infraestructura y alumnos destacados, con base en el documento escuela muestra que se envía. 20-08-13: Sin respuesta todavía, se les invita nuevamente por medio del correo institucional a que actualicen el programa; se envían los archivos de apoyo, observaciones y vista previa. Se reasigna también la contraseña de acceso para que entren con SEIEM. 01-04-14 Actualización IFAI CCM cambiar foto. 03-10-14: Se enviaron por correo los documentos de apoyo actualizados y se regeneró otra vez la contraseña. 08-10-14: Se hizo revisión general del programa y cumplen con todo. AAA. Paquete IV. 11-01-16 Se publicó del paquete oficial RCO. 20/03/2019: Se les envía correo para que actualicen el programa, debido a que sigue igual desde hace varios ciclos escolares. Se resetea la cuenta y se se adjunta el Manual de apoyo y lo que tienen actualmente. AAA.', name: 'Conoce mi Escuela', progress: 100 }
   ];
 
-  // Generar el resto hasta 827
+  // Generar hasta 827 para cubrir el universo completo
   for (let i = 9; i <= 827; i++) {
     const isMexico = i % 2 === 0;
-    const vert = i > 400 ? 'DST' : i > 600 ? 'DTV' : 'DES';
+    const vert = i > 400 ? (i > 600 ? 'DTV' : 'DST') : 'DES';
     const sector = String(Math.floor(i / 100) + 1).padStart(2, '0');
     const zona = String(i % 100).padStart(3, '0');
     const cct = `15${vert}${zona}${String.fromCharCode(65 + (i % 26))}`;
@@ -157,9 +157,9 @@ const getEditorialData = (): ProgramStatus[] => {
       fechaModif: '2022/10/20',
       fechaRevision: '2025/09/01',
       date: '2023/04/19',
-      status: i % 2 === 0 ? 'concluido' : 'planeacion',
+      status: i % 3 === 0 ? 'planeacion' : 'concluido',
       email: `${cct.toLowerCase()}@desysa.gob.mx`,
-      observaciones: 'Auditado por COEES para ciclo vigente conforme a lineamientos de Incorporación...',
+      observaciones: 'Auditado por COEES para ciclo vigente conforme a lineamientos de Incorporación. Datos sincronizados con el servidor WebEscuela.',
       name: 'Conoce mi Escuela',
       progress: 100
     });
@@ -168,13 +168,13 @@ const getEditorialData = (): ProgramStatus[] => {
 };
 
 export const programsData: ProgramStatus[] = [
-  // Cuentas Institucionales (Muestra representativa de los 1,709)
-  { id: 'PROG-CI-1', name: 'Cuentas Institucionales', cct: '15DES0065B', schoolName: 'SECUNDARIA GRAL AMECAMECA', valle: 'MÉXICO', modalidad: 'DES GOB', sector: '01', status: 'concluido', date: '2026-01-10', progress: 100, asistentes: [{ nombres: 'Juan', paterno: 'Pérez', materno: 'Sánchez', email: 'des0065b@desysa.gob.mx', rfc: 'ABCD123456', genero: 'MASCULINO', funcion: 'DIRECTOR', cct: '15DES0065B', nombreCT: 'AMECAMECA', ze: '01', sector: '01', modalidad: 'DES', municipio: 'AMECAMECA', region: 'I', valle: 'MÉXICO', departamento: 'DIRECCIÓN' }] },
-  { id: 'PROG-CI-2', name: 'Cuentas Institucionales', cct: '15DST0001J', schoolName: 'SECUNDARIA TECNICA 1', valle: 'TOLUCA', modalidad: 'DST GOB', sector: '02', status: 'planeacion', date: '2026-01-11', progress: 50, asistentes: [{ nombres: 'María', paterno: 'López', materno: 'Díaz', email: 'dst0001j@desysa.edu.mx', rfc: 'LMDA123456', genero: 'FEMENINO', funcion: 'DOCENTE', cct: '15DST0001J', nombreCT: 'TOLUCA 1', ze: '02', sector: '02', modalidad: 'DST', municipio: 'TOLUCA', region: 'I', valle: 'TOLUCA', departamento: 'AULA' }] },
-  
-  // Biblioteca Digital (Captura Técnica)
+  // Biblioteca Digital
   { id: 'PROG-BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', sector: '01', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', cursoNombre: 'Uso de Biblioteca Digital v2', cursoGrupo: 'GRUPO A', duracionHoras: 20, fechaInicio: '2025-05-01', fechaTermino: '2025-05-15', cctSede: '15DES0001R' },
   
+  // Cuentas Institucionales
+  { id: 'PROG-CI-1', name: 'Cuentas Institucionales', cct: '15DES0065B', schoolName: 'SECUNDARIA GRAL AMECAMECA', valle: 'MÉXICO', modalidad: 'DES GOB', sector: '01', status: 'concluido', date: '2026-01-10', progress: 100, asistentes: [{ nombres: 'Juan', paterno: 'Pérez', materno: 'Sánchez', email: 'des0065b@desysa.gob.mx', rfc: 'ABCD123456', genero: 'MASCULINO', funcion: 'DIRECTOR', cct: '15DES0065B', nombreCT: 'AMECAMECA', ze: '01', sector: '01', modalidad: 'DES', municipio: 'AMECAMECA', region: 'I', valle: 'MÉXICO', departamento: 'DIRECCIÓN' }] },
+  { id: 'PROG-CI-2', name: 'Cuentas Institucionales', cct: '15DST0001J', schoolName: 'SECUNDARIA TECNICA 1', valle: 'TOLUCA', modalidad: 'DST GOB', sector: '02', status: 'planeacion', date: '2026-01-11', progress: 50, asistentes: [{ nombres: 'María', paterno: 'López', materno: 'Díaz', email: 'dst0001j@desysa.edu.mx', rfc: 'LMDA123456', genero: 'FEMENINO', funcion: 'DOCENTE', cct: '15DST0001J', nombreCT: 'TOLUCA 1', ze: '02', sector: '02', modalidad: 'DST', municipio: 'TOLUCA', region: 'I', valle: 'TOLUCA', departamento: 'AULA' }] },
+
   // Geoposición
   { id: 'PROG-GEO-1', name: 'Geoposición', cct: '15EES0001Z', schoolName: 'SEIEM OFICINAS', valle: 'TOLUCA', modalidad: 'ADM', status: 'concluido', date: '2026-01-10', progress: 100, observaciones: 'Ubicación verificada por satélite. Lat: 19.2900, Lon: -99.6500' },
   
