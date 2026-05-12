@@ -34,15 +34,12 @@ import {
   Activity,
   MapPin,
   Globe,
-  Zap,
-  Building2,
-  X,
   ChevronUp,
   ChevronDown,
   ArrowUpDown,
-  Lock,
-  User,
-  ExternalLink
+  Building2,
+  Calendar,
+  Clock
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
@@ -56,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_full_sync_v28_final_actions_fixed";
+const DB_VERSION = "827_full_sync_v30_final_fix";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -93,11 +90,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v28')
+    const storedVersion = localStorage.getItem('programs_db_version_v30')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v28', DB_VERSION)
+      localStorage.setItem('programs_db_version_v30', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -358,9 +355,9 @@ export default function ProgramsPage() {
            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
                 { title: 'Geocodificados', value: geoRecords.length.toLocaleString(), icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
-                { title: 'Cobertura', value: '82%', icon: <Zap className="h-6 w-6" />, color: 'bg-emerald-500' },
+                { title: 'Cobertura', value: '82%', icon: <Activity className="h-6 w-6" />, color: 'bg-emerald-500' },
                 { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-6 w-6" />, color: 'bg-blue-500' },
-                { title: 'Alertas', value: '0', icon: <X className="h-6 w-6" />, color: 'bg-rose-500' },
+                { title: 'Alertas', value: '0', icon: <Activity className="h-6 w-6" />, color: 'bg-rose-500' },
               ].map((item, i) => (
                 <Card key={i} className="executive-card p-8">
                   <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-4`}>
@@ -394,7 +391,7 @@ export default function ProgramsPage() {
                              <TableCell className="pl-8">
                                 <div className="flex flex-col">
                                    <span className="text-primary font-black uppercase">{rec.cct}</span>
-                                   <span className="text-slate-400 text-[9px] uppercase">{rec.schoolName}</span>
+                                   <span className="text-slate-400 text-[9px] uppercase">{rec.schoolName || '-'}</span>
                                 </div>
                              </TableCell>
                              <TableCell className="uppercase">{rec.valle}</TableCell>
@@ -453,7 +450,7 @@ export default function ProgramsPage() {
                        <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
                        <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Incorporación</span>
                     </div>
-                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => { localStorage.setItem('userRfc', 'CEDITORIAL'); setIsEditorialUser(true); }}>
+                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => { setIsLoginDialogOpen(true); }}>
                        <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
                        <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Escuelas incorporadas</span>
                     </div>
@@ -530,15 +527,15 @@ export default function ProgramsPage() {
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center">Vertiente</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center">Sector</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center">Zona</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Alta</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Modificación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Revisión</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Publicación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Fecha de Suspensión</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Alta</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Modificación</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Revisión</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Publicación</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Suspensión</TableHead>
                                   <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
                                   <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-30 border-l border-black shadow-[-8px_0_15px_rgba(0,0,0,0.1)] min-w-[180px]">
-                                     ACCIONES A REALIZAR
+                                     Acciones a Realizar
                                   </TableHead>
                                </TableRow>
                             </TableHeader>
@@ -724,6 +721,51 @@ export default function ProgramsPage() {
                         <div className="space-y-3">
                            <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
                            <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Horas</Label>
+                           <div className="relative">
+                             <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50 pl-10" />
+                             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                           </div>
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Inicio</Label>
+                           <div className="relative">
+                             <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50 pl-10" />
+                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                           </div>
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Término</Label>
+                           <div className="relative">
+                             <Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} className="bg-slate-50 pl-10" />
+                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                           </div>
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede</Label>
+                           <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono" placeholder="15DESXXXXX" maxLength={10} />
+                        </div>
+                     </div>
+                     <div className="space-y-4 pt-4 border-t">
+                        <Label className="text-[10px] font-black uppercase text-slate-500">Instructores Ponentes</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           {[0, 1, 2].map(idx => (
+                              <Input 
+                                 key={idx} 
+                                 placeholder={`Nombre Instructor ${idx + 1}`} 
+                                 value={formData.instructores?.[idx] || ''} 
+                                 onChange={e => {
+                                    const newInst = [...(formData.instructores || ['', '', ''])];
+                                    newInst[idx] = e.target.value;
+                                    setFormData({...formData, instructores: newInst});
+                                 }}
+                                 className="bg-slate-50 text-[11px]" 
+                              />
+                           ))}
                         </div>
                      </div>
                   </div>
