@@ -64,7 +64,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_v16_editorial_full";
+const DB_VERSION = "1709_official_v22_editorial_final";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -82,10 +82,9 @@ export default function ProgramsPage() {
 
   // Dashboard filters
   const [modFilter, setModFilter] = useState('all')
-  const [secFilter, setSecFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
 
-  const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
+  const heroImage = "https://picsum.photos/seed/editorial/1200/400"
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: 'DOCENTE', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -136,14 +135,12 @@ export default function ProgramsPage() {
 
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
-      const mMatch = modFilter === 'all' || r.modalidad === modFilter;
-      const sMatch = secFilter === 'all' || r.sector === secFilter;
+      const mMatch = modFilter === 'all' || r.modalidad?.includes(modFilter);
       const vMatch = valFilter === 'all' || r.valle === valFilter;
-      return mMatch && sMatch && vMatch;
+      return mMatch && vMatch;
     });
 
     const approved = filtered.filter(r => r.status === 'concluido').length;
-    const pending = filtered.length - approved;
     const usagePercent = filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0;
 
     return {
@@ -152,19 +149,17 @@ export default function ProgramsPage() {
       usagePercent,
       pieData: [
         { name: 'USO ACTIVO', value: approved, fill: '#10b981' },
-        { name: 'PLANEACIÓN', value: pending, fill: '#f43f5e' }
+        { name: 'PLANEACIÓN', value: filtered.length - approved, fill: '#f43f5e' }
       ],
       barData: [
-        { name: 'TERMINADO', value: approved, fill: '#621132' },
-        { name: 'EN PROCESO', value: Math.floor(pending * 0.3), fill: '#f59e0b' },
-        { name: 'NO INICIADO', value: Math.ceil(pending * 0.7), fill: '#cbd5e1' }
+        { name: 'APROBADO', value: approved, fill: '#621132' },
+        { name: 'PLANEACIÓN', value: filtered.length - approved, fill: '#cbd5e1' }
       ],
       options: {
-        mods: Array.from(new Set(ciRecords.map(r => r.modalidad))).sort(),
-        sectors: Array.from(new Set(ciRecords.map(r => r.sector))).filter(Boolean).sort((a,b) => parseInt(a!) - parseInt(b!))
+        mods: Array.from(new Set(ciRecords.map(r => r.modalidad?.split(' ')[0] || ''))).filter(Boolean).sort()
       }
     };
-  }, [ciRecords, modFilter, secFilter, valFilter]);
+  }, [ciRecords, modFilter, valFilter]);
 
   const handleEdit = (rec: ProgramStatus) => {
     setFormData({
@@ -292,7 +287,7 @@ export default function ProgramsPage() {
                       <div className="flex flex-wrap gap-1.5">
                          <Button variant={modFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setModFilter('all')}>TODAS</Button>
                          {ciDashboardData.options.mods.map(m => (
-                            <Button key={m} variant={modFilter === m ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setModFilter(m || 'all')}>{m}</Button>
+                            <Button key={m} variant={modFilter === m ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black uppercase" onClick={() => setModFilter(m)}>{m}</Button>
                          ))}
                       </div>
                    </Card>
@@ -445,39 +440,6 @@ export default function ProgramsPage() {
                  </div>
               </div>
            </Card>
-
-           <Card className="executive-card">
-              <CardHeader className="p-8 border-b border-slate-50">
-                 <CardTitle className="text-sm font-black uppercase text-primary">Auditoría de Coordenadas (Filtros Activos)</CardTitle>
-              </CardHeader>
-              <Table>
-                 <TableHeader className="bg-slate-50">
-                    <TableRow>
-                       <TableHead className="font-black text-[10px] uppercase pl-8">CCT / CORREO</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase">MODALIDAD / VALLE</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase">LATITUD</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase">LONGITUD</TableHead>
-                       <TableHead className="text-right pr-8 font-black text-[10px] uppercase">ESTATUS</TableHead>
-                    </TableRow>
-                 </TableHeader>
-                 <TableBody>
-                    {ciDashboardData.filtered.slice(0, 15).map(rec => (
-                       <TableRow key={rec.id} className="text-[10px] font-bold border-slate-50">
-                          <TableCell className="pl-8">
-                             <div className="flex flex-col">
-                                <span className="text-primary font-black">{rec.cct}</span>
-                                <span className="text-[8px] text-muted-foreground">{rec.asistentes?.[0]?.email}</span>
-                             </div>
-                          </TableCell>
-                          <TableCell className="uppercase">{rec.modalidad} / {rec.valle}</TableCell>
-                          <TableCell className="font-mono">19.{Math.floor(Math.random() * 900000 + 100000)}</TableCell>
-                          <TableCell className="font-mono">-99.{Math.floor(Math.random() * 900000 + 100000)}</TableCell>
-                          <TableCell className="text-right pr-8"><Badge className="bg-emerald-500 text-white text-[8px] font-black uppercase">VERIFICADO</Badge></TableCell>
-                       </TableRow>
-                    ))}
-                 </TableBody>
-              </Table>
-           </Card>
         </TabsContent>
 
         <TabsContent value="Conoce mi Escuela" className="animate-in fade-in duration-500">
@@ -548,95 +510,97 @@ export default function ProgramsPage() {
               </div>
            </div>
            ) : (
-             <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                <div className="bg-white border-b-4 border-primary p-6 mb-6">
-                   <div className="flex justify-center mb-4">
-                       <Image src={logoData.imageUrl} alt="DESYSA" width={300} height={100} className="object-contain" />
+             <div className="space-y-10 animate-in zoom-in-95 duration-500">
+                <div className="bg-white border-b-4 border-primary p-12 text-center space-y-8">
+                   <div className="flex justify-center">
+                       <div className="relative w-full max-w-2xl h-[250px] rounded-3xl overflow-hidden shadow-2xl">
+                          <Image src={heroImage} alt="Estudiantes" fill className="object-cover" />
+                       </div>
                    </div>
-                   <div className="text-center">
-                       <h2 className="text-lg font-black uppercase text-primary">Bienvenidos a la Sección Editorial de WebEscuela</h2>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela</p>
+                   <div className="space-y-2">
+                       <h2 className="text-3xl font-black uppercase text-primary tracking-tighter">Bienvenidos a la Sección Editorial de WebEscuela</h2>
+                       <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela</p>
                    </div>
                 </div>
 
-                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                   <Button variant="outline" size="sm" onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }} className="gap-2 font-bold uppercase text-[10px] h-8">
-                      <Lock className="h-3.5 w-3.5" /> Cerrar Sesión Editorial
+                <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl">
+                   <Button variant="outline" size="sm" onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }} className="gap-3 font-black uppercase text-[10px] h-12 px-6 rounded-2xl bg-slate-50 border-none hover:bg-rose-50 hover:text-rose-600 transition-all">
+                      <Lock className="h-4 w-4" /> Cerrar Sesión Editorial
                    </Button>
-                   <div className="flex items-center gap-4">
+                   <div className="flex items-center gap-6">
                       <div className="relative">
-                         <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                         <Input placeholder="Buscar CCT..." className="h-8 pl-10 text-[10px] w-64 bg-white" />
+                         <Search className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                         <Input placeholder="Buscar por CCT o Nombre..." className="h-12 pl-12 text-[11px] font-black w-80 bg-slate-50 border-none rounded-2xl shadow-inner" />
                       </div>
                    </div>
                 </div>
 
-                <Card className="rounded-none border-x-0 border-t-0 shadow-none overflow-hidden">
-                   <ScrollArea className="w-full whitespace-nowrap">
-                      <Table className="border border-slate-200">
-                         <TableHeader className="bg-slate-100">
-                            <TableRow className="h-10">
-                               <TableHead className="text-[9px] font-black border-r px-2 text-center w-10">No.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[120px]">Centro de Trabajo</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[140px]">Agrupador</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Vertiente</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Sector</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-2 text-center">Zona</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Alta</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Modif.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Revisión</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Publ.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-3 text-center">F. Susp.</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[300px]">Observaciones</TableHead>
-                               <TableHead className="text-[9px] font-black border-r px-4 min-w-[200px]">e-contacto</TableHead>
-                               <TableHead className="text-[10px] font-black px-6 text-center sticky right-0 bg-slate-100 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.05)]">
+                <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white/90 backdrop-blur-xl">
+                   <ScrollArea className="w-full">
+                      <Table className="border-collapse">
+                         <TableHeader className="bg-slate-100/80">
+                            <TableRow className="h-16">
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center w-12 uppercase">No.</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[140px] uppercase">Centro de Trabajo</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[160px] uppercase">Agrupador</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Vertiente</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Sector</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Zona</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">F. Alta</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">F. Modif.</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">F. Revisión</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">F. Publ.</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">F. Susp.</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[320px] uppercase">Observaciones</TableHead>
+                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[220px] uppercase">e-contacto</TableHead>
+                               <TableHead className="text-[10px] font-black px-10 text-center sticky right-0 bg-slate-100/90 z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.05)] uppercase">
                                   Acciones Técnicas Editorial
                                </TableHead>
                             </TableRow>
                          </TableHeader>
                          <TableBody>
-                            {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.modalidad?.includes('GOB')).slice(0, 50).map((rec, idx) => (
-                               <TableRow key={rec.id} className="text-[10px] h-12 border-b hover:bg-slate-50 transition-colors">
-                                  <TableCell className="border-r text-center font-bold text-slate-400">{idx + 1}</TableCell>
-                                  <TableCell className="border-r font-black text-primary px-4 uppercase">{rec.cct || '15DES0001R'}</TableCell>
-                                  <TableCell className="border-r font-bold text-slate-600 px-4">DESMEX00{rec.sector || '01'}{rec.zonaEscolar || 'SZ'}</TableCell>
-                                  <TableCell className="border-r text-center font-bold">{rec.modalidad?.substring(0, 3) || 'DES'}</TableCell>
-                                  <TableCell className="border-r text-center">{rec.sector || '01'}</TableCell>
-                                  <TableCell className="border-r text-center">{rec.zonaEscolar || 'S/Z'}</TableCell>
-                                  <TableCell className="border-r text-center text-slate-400">2010/01/22</TableCell>
-                                  <TableCell className="border-r text-center text-slate-400">2022/11/05</TableCell>
-                                  <TableCell className="border-r text-center text-primary font-bold">2023/05/12</TableCell>
-                                  <TableCell className="border-r text-center text-emerald-600 font-bold">2023/05/26</TableCell>
+                            {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.id.startsWith('PROG-CI')).slice(0, 50).map((rec, idx) => (
+                               <TableRow key={rec.id} className="text-[11px] h-20 border-b hover:bg-slate-50 transition-colors">
+                                  <TableCell className="border-r text-center font-black text-slate-400">{idx + 1}</TableCell>
+                                  <TableCell className="border-r font-black text-primary px-6 uppercase">{rec.cct || '15DES0001R'}</TableCell>
+                                  <TableCell className="border-r font-bold text-slate-600 px-6 uppercase">{rec.valle ? `${rec.valle.substring(0,3)}MEX${rec.sector || '01'}${rec.zonaEscolar || 'SZ'}` : 'DESMEX0001'}</TableCell>
+                                  <TableCell className="border-r text-center font-black uppercase text-slate-700">{rec.modalidad?.split(' ')[0] || 'DES'}</TableCell>
+                                  <TableCell className="border-r text-center font-bold text-slate-500">{rec.sector || '01'}</TableCell>
+                                  <TableCell className="border-r text-center font-bold text-slate-500">{rec.zonaEscolar || 'S/Z'}</TableCell>
+                                  <TableCell className="border-r text-center text-slate-400 font-medium">2010/01/22</TableCell>
+                                  <TableCell className="border-r text-center text-slate-400 font-medium">2022/11/05</TableCell>
+                                  <TableCell className="border-r text-center text-primary font-black">2023/05/12</TableCell>
+                                  <TableCell className="border-r text-center text-emerald-600 font-black">2023/05/26</TableCell>
                                   <TableCell className="border-r text-center text-rose-500">-</TableCell>
-                                  <TableCell className="border-r px-4">
-                                     <div className="truncate text-slate-500 italic max-w-[280px]">Se requiere actualización de alumnos destacados bimestre...</div>
+                                  <TableCell className="border-r px-6">
+                                     <div className="text-slate-500 italic max-w-[300px] leading-relaxed line-clamp-2">Se requiere actualización de alumnos destacados bimestre...</div>
                                   </TableCell>
-                                  <TableCell className="border-r px-4 font-mono text-blue-600 lowercase">{rec.cct?.toLowerCase() || 'escuela'}@desysa.gob.mx</TableCell>
-                                  <TableCell className="px-4 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
-                                     <div className="flex items-center gap-3 justify-center py-2">
-                                        <button onClick={() => handleAction('Revisión Portal', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all"><Globe className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-blue-700">Revisar</span>
+                                  <TableCell className="border-r px-6 font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || `${rec.cct?.toLowerCase()}@desysa.gob.mx`}</TableCell>
+                                  <TableCell className="px-6 sticky right-0 bg-white shadow-[-10px_0_20px_rgba(0,0,0,0.02)] z-10">
+                                     <div className="flex items-center gap-4 justify-center py-4">
+                                        <button onClick={() => handleAction('Revisar Portal', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm"><Globe className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-blue-700 opacity-70 group-hover:opacity-100">Revisar</span>
                                         </button>
-                                        <button onClick={() => handleAction('Publicación', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all"><CheckCircle2 className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-emerald-700">Publicar</span>
+                                        <button onClick={() => handleAction('Publicación', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm"><CheckCircle2 className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-emerald-700 opacity-70 group-hover:opacity-100">Publicar</span>
                                         </button>
-                                        <button onClick={() => handleAction('Suspensión', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all"><AlertCircle className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-rose-700">Suspender</span>
+                                        <button onClick={() => handleAction('Suspensión', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm"><AlertCircle className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-rose-700 opacity-70 group-hover:opacity-100">Suspender</span>
                                         </button>
-                                        <button onClick={() => handleAction('Nota Auditoría', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all"><FileText className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-amber-700">Observac.</span>
+                                        <button onClick={() => handleAction('Nota Auditoría', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-amber-700 opacity-70 group-hover:opacity-100">Observac.</span>
                                         </button>
-                                        <button onClick={() => handleAction('E-Contacto', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all"><Mail className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-indigo-700">eContacto</span>
+                                        <button onClick={() => handleAction('E-Contacto', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm"><Mail className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-indigo-700 opacity-70 group-hover:opacity-100">eContacto</span>
                                         </button>
-                                        <button onClick={() => handleAction('Generación Clave', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-800 group-hover:text-white transition-all"><Key className="h-3.5 w-3.5" /></div>
-                                           <span className="text-[7px] font-black uppercase text-slate-700">Contraseña</span>
+                                        <button onClick={() => handleAction('Generación Clave', rec.cct!)} className="flex flex-col items-center gap-1.5 group">
+                                           <div className="h-9 w-9 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm"><Key className="h-4 w-4" /></div>
+                                           <span className="text-[8px] font-black uppercase text-slate-700 opacity-70 group-hover:opacity-100">Contraseña</span>
                                         </button>
                                      </div>
                                   </TableCell>
@@ -670,7 +634,7 @@ export default function ProgramsPage() {
                    <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
                 </div>
              </div>
-             <Button onClick={handleEditorialLogin} className="w-full h-14 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform">
+             <Button onClick={handleEditorialLogin} className="w-full h-16 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform tracking-widest text-[11px]">
                 Ingresar al Panel Editorial
              </Button>
           </div>
