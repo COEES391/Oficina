@@ -39,7 +39,9 @@ import {
   Globe,
   Search,
   X,
-  ExternalLink
+  ExternalLink,
+  Flag,
+  ArrowRight
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
@@ -54,7 +56,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_records_official_v4";
+const DB_VERSION = "827_records_editorial_final_v1";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -117,7 +119,7 @@ export default function ProgramsPage() {
   }
 
   const ciRecords = useMemo(() => {
-    return records.filter(r => r.name?.includes('Cuentas') || r.id.startsWith('PROG-CI'));
+    return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
   }, [records]);
 
   const ciDashboardData = useMemo(() => {
@@ -165,6 +167,14 @@ export default function ProgramsPage() {
     setFormData(initialFormState)
     toast({ title: "Registro guardado" })
   }
+
+  const editorialRecords = useMemo(() => {
+    return records.filter(r => r.id.startsWith('ED-') || r.id.startsWith('WEB-')).sort((a,b) => {
+      const numA = parseInt(a.id.split('-')[1]) || 0;
+      const numB = parseInt(b.id.split('-')[1]) || 0;
+      return numA - numB;
+    });
+  }, [records]);
 
   if (!mounted) return null
 
@@ -479,7 +489,7 @@ export default function ProgramsPage() {
                       <table className="w-full border-collapse text-[10px] text-left">
                          <thead className="bg-slate-100">
                             <tr className="border-b border-black">
-                               <th className="border-r border-black p-2 w-8">No.</th>
+                               <th className="border-r border-black p-2 w-8 text-center">No.</th>
                                <th className="border-r border-black p-2 whitespace-nowrap">Centro de Trabajo</th>
                                <th className="border-r border-black p-2">Agrupado</th>
                                <th className="border-r border-black p-2">Vertiente</th>
@@ -490,32 +500,30 @@ export default function ProgramsPage() {
                                <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Revisión</th>
                                <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Publicación</th>
                                <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Suspensión</th>
-                               <th className="border-r border-black p-2 min-w-[200px]">Observaciones</th>
+                               <th className="border-r border-black p-2 min-w-[300px]">Observaciones</th>
                                <th className="border-r border-black p-2">eContacto</th>
                                <th className="p-2 font-bold bg-slate-200 text-center sticky right-0 z-10 border-l border-black">Acciones a Realizar</th>
                             </tr>
                          </thead>
                          <tbody className="bg-white">
-                            {records.filter(r => r.id.startsWith('PROG-CI') || r.modalidad?.includes('PES') || r.modalidad?.includes('PST')).slice(0, 50).map((rec, idx) => {
-                               const agrupador = `${rec.modalidad?.split(' ')[0] || 'DES'}${rec.valle?.toUpperCase().replace('Í', 'I') || 'MEXICO'}${rec.sector?.padStart(2, '0') || '00'}${rec.zonaEscolar?.padStart(3, '0') || '000'}`.replace(/\s/g, '');
-                               return (
-                               <tr key={rec.id} className="border-b border-black hover:bg-slate-50">
+                            {editorialRecords.map((rec, idx) => (
+                               <tr key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
                                   <td className="border-r border-black p-2 text-center">{idx + 1}</td>
-                                  <td className="border-r border-black p-2 font-bold">{rec.cct || '15DES0001R'}</td>
-                                  <td className="border-r border-black p-2 font-mono">{agrupador}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.modalidad?.split(' ')[0] || 'DES'}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.sector || '00'}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.zonaEscolar || '000'}</td>
-                                  <td className="border-r border-black p-2 text-slate-500">2022/10/19</td>
-                                  <td className="border-r border-black p-2 text-slate-500">2022/10/20</td>
-                                  <td className="border-r border-black p-2 font-black">2025/09/01</td>
-                                  <td className="border-r border-black p-2 text-emerald-700">2023/04/19</td>
-                                  <td className="border-r border-black p-2">-</td>
-                                  <td className="border-r border-black p-2 italic leading-tight text-slate-500">
-                                     Auditado por COEES para ciclo vigente conforme a lineamientos de incorporación...
+                                  <td className="border-r border-black p-2 font-bold">{rec.cct}</td>
+                                  <td className="border-r border-black p-2 font-mono">{rec.agrupado || '-'}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.vertiente || '-'}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.sector || '-'}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.zonaEscolar || '-'}</td>
+                                  <td className="border-r border-black p-2 text-slate-500 whitespace-nowrap">{rec.fechaAlta || '-'}</td>
+                                  <td className="border-r border-black p-2 text-slate-500 whitespace-nowrap">{rec.fechaModif || '-'}</td>
+                                  <td className="border-r border-black p-2 font-black whitespace-nowrap">{rec.fechaRevision || '-'}</td>
+                                  <td className="border-r border-black p-2 text-emerald-700 whitespace-nowrap">{rec.date || '-'}</td>
+                                  <td className="border-r border-black p-2 whitespace-nowrap">{rec.fechaSuspension || ''}</td>
+                                  <td className="border-r border-black p-2 italic leading-tight text-slate-600 text-justify">
+                                     {rec.observaciones || ''}
                                   </td>
-                                  <td className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.asistentes?.[0]?.email || 'contacto@desysa.edu.mx'}</td>
-                                  <td className="p-2 bg-white sticky right-0 z-10 shadow-[-5px_0_15px_rgba(0,0,0,0.05)] border-l border-black">
+                                  <td className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</td>
+                                  <td className="p-2 bg-white sticky right-0 z-10 shadow-[-5px_0_15px_rgba(0,0,0,0.05)] border-l border-black min-w-[120px]">
                                      <div className="flex flex-col gap-0.5 font-bold text-blue-700 underline underline-offset-2">
                                         <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900">Revisar</button>
                                         <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900">Publicar</button>
@@ -526,7 +534,7 @@ export default function ProgramsPage() {
                                      </div>
                                   </td>
                                </tr>
-                            )})}
+                            ))}
                          </tbody>
                       </table>
                    </div>
