@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
 import { 
   BarChart, 
   Bar, 
@@ -25,6 +26,7 @@ import {
   Pie
 } from 'recharts'
 import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
+import { schoolsDirectory } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   Pencil, 
@@ -41,7 +43,10 @@ import {
   X,
   ExternalLink,
   Flag,
-  ArrowRight
+  ArrowRight,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils'
@@ -56,7 +61,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_records_editorial_final_v1";
+const DB_VERSION = "827_records_editorial_final_v3";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -74,6 +79,9 @@ export default function ProgramsPage() {
 
   const [modFilter, setModFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
+  
+  // Sort State
+  const [sortConfig, setSortConfig] = useState<{ key: 'cct', direction: 'asc' | 'desc' | null }>({ key: 'cct', direction: 'asc' });
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: 'DOCENTE', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -106,7 +114,7 @@ export default function ProgramsPage() {
   }, [])
 
   const handleEditorialLogin = () => {
-    if (loginForm.user.toUpperCase() === 'CEDITORIAL' && loginForm.pass === 'COEES') {
+    if (loginForm.user.toUpperCase() === 'CEDITORIAL' && loginForm.pass.toUpperCase() === 'COEES') {
       setIsEditorialUser(true)
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
@@ -118,6 +126,46 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleAction = (action: string, cct: string) => {
+    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
+  }
+
+  const handleSave = () => {
+    if (!formData.id || !formData.cct) {
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT obligatorios." });
+      return;
+    }
+    const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
+    setRecords(updated)
+    localStorage.setItem('programs_full', JSON.stringify(updated))
+    setIsDialogOpen(false)
+    setEditingId(null)
+    setFormData(initialFormState)
+    toast({ title: "Registro guardado" })
+  }
+
+  const editorialRecords = useMemo(() => {
+    let filtered = records.filter(r => r.id.startsWith('ED-') || r.id.startsWith('WEB-') || r.name === 'Conoce mi Escuela');
+    
+    if (sortConfig.direction !== null) {
+      filtered.sort((a, b) => {
+        const valA = (a.cct || '').toUpperCase();
+        const valB = (b.cct || '').toUpperCase();
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return filtered;
+  }, [records, sortConfig]);
+
+  const toggleSort = () => {
+    setSortConfig(prev => ({
+      key: 'cct',
+      direction: prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
   const ciRecords = useMemo(() => {
     return records.filter(r => r.id.startsWith('PROG-CI') || (r.name?.includes('Cuentas')));
   }, [records]);
@@ -125,7 +173,7 @@ export default function ProgramsPage() {
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
       const mMatch = modFilter === 'all' || (r.modalidad || '').includes(modFilter);
-      const vMatch = valFilter === 'all' || r.valle === valFilter;
+      const vMatch = valFilter === 'all' || (r.valle || '').toUpperCase() === valFilter.toUpperCase();
       return mMatch && vMatch;
     });
 
@@ -149,32 +197,6 @@ export default function ProgramsPage() {
       }
     };
   }, [ciRecords, modFilter, valFilter]);
-
-  const handleAction = (action: string, cct: string) => {
-    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
-  }
-
-  const handleSave = () => {
-    if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT obligatorios." });
-      return;
-    }
-    const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
-    setRecords(updated)
-    localStorage.setItem('programs_full', JSON.stringify(updated))
-    setIsDialogOpen(false)
-    setEditingId(null)
-    setFormData(initialFormState)
-    toast({ title: "Registro guardado" })
-  }
-
-  const editorialRecords = useMemo(() => {
-    return records.filter(r => r.id.startsWith('ED-') || r.id.startsWith('WEB-')).sort((a,b) => {
-      const numA = parseInt(a.id.split('-')[1]) || 0;
-      const numB = parseInt(b.id.split('-')[1]) || 0;
-      return numA - numB;
-    });
-  }, [records]);
 
   if (!mounted) return null
 
@@ -458,8 +480,7 @@ export default function ProgramsPage() {
               </div>
            </div>
            ) : (
-             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen font-serif">
-                {/* Header Institucional Legacy */}
+             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen font-serif p-10">
                 <div className="text-center py-6 border-b-2 border-slate-100">
                    <h1 className="text-xl font-bold text-[#4a773c] uppercase leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
                    <p className="text-sm text-slate-600 font-semibold">Servicios Educativos Integrados al Estado de México</p>
@@ -470,67 +491,78 @@ export default function ProgramsPage() {
                    </div>
                 </div>
 
-                <div className="px-10 py-6">
+                <div className="py-6">
                    <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
                    <p className="text-[11px] text-slate-600 mt-1 max-w-5xl leading-relaxed">
                       En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
                    </p>
                    
-                   <div className="mt-8">
+                   <div className="mt-8 flex justify-between items-center">
                       <button 
                         onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); }}
-                        className="bg-slate-200 border border-slate-400 px-4 py-1 text-[11px] font-bold rounded shadow-sm hover:bg-slate-300"
+                        className="bg-slate-100 border border-slate-300 px-6 py-1.5 text-[11px] font-bold rounded shadow-sm hover:bg-slate-200"
                       >
                          Cerrar
                       </button>
+                      <div className="text-[10px] font-bold text-slate-400">Total de registros: {editorialRecords.length}</div>
                    </div>
 
-                   <div className="mt-4 border border-black overflow-x-auto">
-                      <table className="w-full border-collapse text-[10px] text-left">
-                         <thead className="bg-slate-100">
+                   <div className="mt-4 border border-black overflow-x-auto relative">
+                      <table className="w-full border-collapse text-[10px] text-left min-w-[2000px]">
+                         <thead className="bg-slate-50">
                             <tr className="border-b border-black">
-                               <th className="border-r border-black p-2 w-8 text-center">No.</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Centro de Trabajo</th>
+                               <th className="border-r border-black p-2 w-10 text-center">No.</th>
+                               <th 
+                                 className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none"
+                                 onClick={toggleSort}
+                               >
+                                 <div className="flex items-center gap-2 underline">
+                                    Centro de Trabajo
+                                    {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30 group-hover:opacity-100" />}
+                                 </div>
+                               </th>
                                <th className="border-r border-black p-2">Agrupado</th>
                                <th className="border-r border-black p-2">Vertiente</th>
                                <th className="border-r border-black p-2">Sector</th>
                                <th className="border-r border-black p-2">Zona</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Alta</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Modificación</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Revisión</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Publicación</th>
-                               <th className="border-r border-black p-2 whitespace-nowrap">Fecha de Suspensión</th>
-                               <th className="border-r border-black p-2 min-w-[300px]">Observaciones</th>
+                               <th className="border-r border-black p-2">Fecha de Alta</th>
+                               <th className="border-r border-black p-2">Fecha de Modificación</th>
+                               <th className="border-r border-black p-2">Fecha de Revisión</th>
+                               <th className="border-r border-black p-2">Fecha de Publicación</th>
+                               <th className="border-r border-black p-2">Fecha de Suspensión</th>
+                               <th className="border-r border-black p-2 min-w-[400px]">Observaciones</th>
                                <th className="border-r border-black p-2">eContacto</th>
-                               <th className="p-2 font-bold bg-slate-200 text-center sticky right-0 z-10 border-l border-black">Acciones a Realizar</th>
+                               <th className="p-2 font-bold bg-slate-100 text-center sticky right-0 z-10 border-l border-black shadow-[-5px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</th>
                             </tr>
                          </thead>
                          <tbody className="bg-white">
                             {editorialRecords.map((rec, idx) => (
                                <tr key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
-                                  <td className="border-r border-black p-2 text-center">{idx + 1}</td>
-                                  <td className="border-r border-black p-2 font-bold">{rec.cct}</td>
-                                  <td className="border-r border-black p-2 font-mono">{rec.agrupado || '-'}</td>
-                                  <td className="border-r border-black p-2 text-center">{rec.vertiente || '-'}</td>
+                                  <td className="border-r border-black p-2 text-center font-bold">{idx + 1}</td>
+                                  <td className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</td>
+                                  <td className="border-r border-black p-2 font-mono text-slate-500">{rec.agrupado || '-'}</td>
+                                  <td className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</td>
                                   <td className="border-r border-black p-2 text-center">{rec.sector || '-'}</td>
                                   <td className="border-r border-black p-2 text-center">{rec.zonaEscolar || '-'}</td>
-                                  <td className="border-r border-black p-2 text-slate-500 whitespace-nowrap">{rec.fechaAlta || '-'}</td>
-                                  <td className="border-r border-black p-2 text-slate-500 whitespace-nowrap">{rec.fechaModif || '-'}</td>
-                                  <td className="border-r border-black p-2 font-black whitespace-nowrap">{rec.fechaRevision || '-'}</td>
-                                  <td className="border-r border-black p-2 text-emerald-700 whitespace-nowrap">{rec.date || '-'}</td>
-                                  <td className="border-r border-black p-2 whitespace-nowrap">{rec.fechaSuspension || ''}</td>
-                                  <td className="border-r border-black p-2 italic leading-tight text-slate-600 text-justify">
-                                     {rec.observaciones || ''}
+                                  <td className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaAlta || '-'}</td>
+                                  <td className="border-r border-black p-2 text-slate-400 tabular-nums">{rec.fechaModif || '-'}</td>
+                                  <td className="border-r border-black p-2 font-black text-slate-700 tabular-nums">{rec.fechaRevision || '-'}</td>
+                                  <td className="border-r border-black p-2 text-emerald-700 font-bold tabular-nums">{rec.date || '-'}</td>
+                                  <td className="border-r border-black p-2 text-rose-600 font-bold tabular-nums">{rec.fechaSuspension || ''}</td>
+                                  <td className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4">
+                                     <div className="max-h-[120px] overflow-y-auto scrollbar-hide italic">
+                                        {rec.observaciones || ''}
+                                     </div>
                                   </td>
                                   <td className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</td>
-                                  <td className="p-2 bg-white sticky right-0 z-10 shadow-[-5px_0_15px_rgba(0,0,0,0.05)] border-l border-black min-w-[120px]">
-                                     <div className="flex flex-col gap-0.5 font-bold text-blue-700 underline underline-offset-2">
-                                        <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900">Revisar</button>
-                                        <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900">Publicar</button>
-                                        <button onClick={() => handleAction('Suspender', rec.cct!)} className="text-left hover:text-blue-900">Suspender</button>
-                                        <button onClick={() => handleAction('Observaciones', rec.cct!)} className="text-left hover:text-blue-900">Observaciones</button>
-                                        <button onClick={() => handleAction('eContacto', rec.cct!)} className="text-left hover:text-blue-900">eContacto</button>
-                                        <button onClick={() => handleAction('Contraseña', rec.cct!)} className="text-left hover:text-blue-900">Contraseña</button>
+                                  <td className="p-2 bg-white sticky right-0 z-10 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[140px]">
+                                     <div className="flex flex-col gap-0.5 font-bold text-blue-700 underline underline-offset-2 text-left">
+                                        <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Revisar</button>
+                                        <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Publicar</button>
+                                        <button onClick={() => handleAction('Suspender', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Suspender</button>
+                                        <button onClick={() => handleAction('Observaciones', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
+                                        <button onClick={() => handleAction('eContacto', rec.cct!)} className="text-left hover:text-blue-900 w-fit">eContacto</button>
+                                        <button onClick={() => handleAction('Contraseña', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
                                      </div>
                                   </td>
                                </tr>
@@ -601,6 +633,30 @@ export default function ProgramsPage() {
                       </Select>
                    </div>
                 </div>
+
+                <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                   <div className="flex-1">
+                      <Label className="text-sm font-black uppercase text-primary">Capacitación Institucional</Label>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
+                   </div>
+                   <Switch checked={formData.capacitacion === 'S'} onCheckedChange={(val) => setFormData({...formData, capacitacion: val ? 'S' : 'N'})} />
+                </div>
+
+                {formData.capacitacion === 'S' && (
+                  <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
+                     <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2">Gestión de Curso y Asistentes</h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Nombre del Curso</Label><Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} /></div>
+                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Grupo</Label><Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} /></div>
+                     </div>
+                     <div className="grid grid-cols-3 gap-6">
+                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Horas</Label><Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">Fecha Inicio</Label><Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} /></div>
+                        <div className="space-y-3"><Label className="text-[10px] font-black uppercase">CCT Sede</Label><Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} /></div>
+                     </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                    <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones</Label>
                    <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
