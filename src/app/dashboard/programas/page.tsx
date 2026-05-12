@@ -28,26 +28,16 @@ import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/p
 import { 
   PlusCircle, 
   Pencil, 
-  ShieldCheck, 
   Lock, 
-  Eye, 
   Monitor, 
   Trash2,
-  Key,
-  LayoutDashboard,
-  GraduationCap,
   Activity,
-  FileText,
   MapPin,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  Search,
   Mail,
   Zap,
   Building2,
   Globe,
-  Settings,
+  Search,
   X
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -63,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "1709_official_v24_editorial_fixed";
+const DB_VERSION = "1709_records_official_v3";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -81,8 +71,6 @@ export default function ProgramsPage() {
 
   const [modFilter, setModFilter] = useState('all')
   const [valFilter, setValFilter] = useState('all')
-
-  const heroImage = "https://picsum.photos/seed/editorial/1200/400"
 
   const initialAssistant: ProgramAssistant = {
     paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: 'DOCENTE', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', departamento: ''
@@ -123,7 +111,7 @@ export default function ProgramsPage() {
       setActiveTab('Conoce mi Escuela')
       toast({ title: "Acceso Editorial Concedido", description: "Bienvenido al Panel de Control de WebEscuela." })
     } else {
-      toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales inválidas para la sección editorial." })
+      toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales inválidas." })
     }
   }
 
@@ -133,7 +121,7 @@ export default function ProgramsPage() {
 
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
-      const mMatch = modFilter === 'all' || r.modalidad?.includes(modFilter);
+      const mMatch = modFilter === 'all' || (r.modalidad || '').includes(modFilter);
       const vMatch = valFilter === 'all' || r.valle === valFilter;
       return mMatch && vMatch;
     });
@@ -159,19 +147,13 @@ export default function ProgramsPage() {
     };
   }, [ciRecords, modFilter, valFilter]);
 
-  const handleEdit = (rec: ProgramStatus) => {
-    setFormData({
-      ...rec,
-      instructores: rec.instructores || ['', '', ''],
-      asistentes: rec.asistentes || [initialAssistant]
-    });
-    setEditingId(rec.id);
-    setIsDialogOpen(true);
+  const handleAction = (action: string, cct: string) => {
+    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
   }
 
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT son obligatorios." });
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT obligatorios." });
       return;
     }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
@@ -180,18 +162,7 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    toast({ title: "Registro Actualizado" })
-  }
-
-  const handleDelete = (id: string) => {
-    const updated = records.filter(r => r.id !== id);
-    setRecords(updated);
-    localStorage.setItem('programs_full', JSON.stringify(updated));
-    toast({ title: "Registro Eliminado" });
-  }
-
-  const handleAction = (action: string, cct: string) => {
-    toast({ title: `${action} iniciado para ${cct}`, description: "Sincronizando con el servidor central de WebEscuela..." });
+    toast({ title: "Registro guardado" })
   }
 
   if (!mounted) return null
@@ -202,7 +173,7 @@ export default function ProgramsPage() {
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos de Planeación</h2>
           <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            <Activity className="h-3 w-3 text-accent" /> Control de Programas Estratégicos
+            <Activity className="h-3 w-3 text-accent" /> Programas Estratégicos COEES
           </p>
         </div>
       </div>
@@ -256,8 +227,8 @@ export default function ProgramsPage() {
                          </TableCell>
                          <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-2">
-                               <button onClick={() => handleEdit(rec)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
-                               <button onClick={() => handleDelete(rec.id)} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
+                               <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
+                               <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
                             </div>
                          </TableCell>
                       </TableRow>
@@ -271,7 +242,7 @@ export default function ProgramsPage() {
         <TabsContent value="Cuentas Institucionales" className="space-y-8">
            <div className="space-y-6">
              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><LayoutDashboard className="h-6 w-6 text-white" /></div>
+                <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><Globe className="h-6 w-6 text-white" /></div>
                 <div>
                    <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo</h2>
                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Análisis Integral de Cuentas SEIEM</p>
@@ -280,7 +251,7 @@ export default function ProgramsPage() {
              
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-3 space-y-4">
-                   <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
+                   <Card className="p-5 bg-white border rounded-2xl shadow-sm">
                       <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
                       <div className="flex flex-wrap gap-1.5">
                          <Button variant={modFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-8 text-[9px] font-black" onClick={() => setModFilter('all')}>TODAS</Button>
@@ -289,7 +260,7 @@ export default function ProgramsPage() {
                          ))}
                       </div>
                    </Card>
-                   <Card className="p-5 bg-slate-50 border-2 border-white shadow-inner rounded-2xl">
+                   <Card className="p-5 bg-white border rounded-2xl shadow-sm">
                       <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
                       <div className="flex gap-1.5">
                          <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('all')}>AMBOS</Button>
@@ -300,30 +271,30 @@ export default function ProgramsPage() {
                 </div>
 
                 <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-xl relative overflow-hidden rounded-[2.5rem] border-none">
-                      <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Total Cuentas Filtradas</span>
+                   <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-sm rounded-2xl border">
+                      <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
                       <div className="text-7xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
                    </Card>
 
-                   <Card className="p-6 flex flex-col items-center bg-white shadow-xl rounded-[2.5rem] border-none">
-                      <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% CORREO ACTIVO (USO)</Label>
-                      <div className="relative h-[200px] w-full">
+                   <Card className="p-6 flex flex-col items-center bg-white shadow-sm rounded-2xl border">
+                      <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% USO ACTIVO</Label>
+                      <div className="relative h-[180px] w-full">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
+                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
                                   {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                </Pie>
                             </PieChart>
                          </ResponsiveContainer>
                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-4xl font-black text-primary leading-none">{ciDashboardData.usagePercent}%</span>
+                            <span className="text-3xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
                          </div>
                       </div>
                    </Card>
 
-                   <Card className="p-6 bg-white shadow-xl rounded-[2.5rem] border-none">
+                   <Card className="p-6 bg-white shadow-sm rounded-2xl border">
                       <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO</Label>
-                      <div className="h-[220px]">
+                      <div className="h-[200px]">
                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -353,15 +324,14 @@ export default function ProgramsPage() {
                          <TableRow>
                             <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase">ZONA / SECTOR</TableHead>
+                            <TableHead className="font-black text-[9px] uppercase">AREA</TableHead>
                             <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
-                            <TableHead className="font-black text-[9px] uppercase text-right pr-8">ESTATUS</TableHead>
                             <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {ciDashboardData.filtered.slice(0, 100).map((rec, i) => (
-                            <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 transition-colors border-slate-100">
+                         {ciDashboardData.filtered.slice(0, 100).map((rec) => (
+                            <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
                                <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                <TableCell>
                                   <div className="flex flex-col">
@@ -369,22 +339,12 @@ export default function ProgramsPage() {
                                      <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
                                   </div>
                                </TableCell>
-                               <TableCell>
-                                  <div className="flex flex-col">
-                                     <span className="uppercase text-[9px]">ZONA: {rec.zonaEscolar || 'S/Z'}</span>
-                                     <span className="text-[8px] text-muted-foreground uppercase">SECTOR: {rec.sector || '-'}</span>
-                                  </div>
-                               </TableCell>
-                               <TableCell className="font-mono text-blue-600">{rec.asistentes?.[0]?.email || '-'}</TableCell>
-                               <TableCell className="text-right pr-8">
-                                  <Badge className={cn("text-[8px] font-black uppercase px-3", rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')}>
-                                     {rec.status === 'concluido' ? 'APROBADO' : 'PLANEACIÓN'}
-                                  </Badge>
-                               </TableCell>
+                               <TableCell className="uppercase text-[9px]">{rec.asistentes?.[0]?.departamento || 'PLANTEL'}</TableCell>
+                               <TableCell className="font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || '-'}</TableCell>
                                <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-2">
-                                     <button onClick={() => handleEdit(rec)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
-                                     <button onClick={() => handleDelete(rec.id)} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
+                                     <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
+                                     <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                </TableCell>
                             </TableRow>
@@ -399,10 +359,10 @@ export default function ProgramsPage() {
         <TabsContent value="Geoposición" className="space-y-8">
            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
-                { title: 'Planteles Geocodificados', value: '1,245', icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
-                { title: 'Cobertura Territorial', value: '82%', icon: <Zap className="h-6 w-6" />, color: 'bg-emerald-500' },
+                { title: 'Geocodificados', value: '1,245', icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
+                { title: 'Cobertura', value: '82%', icon: <Zap className="h-6 w-6" />, color: 'bg-emerald-500' },
                 { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-6 w-6" />, color: 'bg-blue-500' },
-                { title: 'Alertas de Ubicación', value: '12', icon: <AlertCircle className="h-6 w-6" />, color: 'bg-rose-500' },
+                { title: 'Alertas', value: '12', icon: <X className="h-6 w-6" />, color: 'bg-rose-500' },
               ].map((item, i) => (
                 <Card key={i} className="executive-card p-8">
                   <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-4`}>
@@ -413,9 +373,9 @@ export default function ProgramsPage() {
                 </Card>
               ))}
            </div>
-           <Card className="executive-card p-10 text-center">
+           <Card className="executive-card p-10 text-center border-dashed border-2">
               <MapPin className="h-20 w-20 text-primary mx-auto animate-bounce mb-4" />
-              <p className="font-black text-sm uppercase text-slate-500">Auditoría Geográfica de Centros de Trabajo SEIEM</p>
+              <p className="font-black text-sm uppercase text-slate-500 tracking-widest">Módulo de Auditoría Geográfica Territorial</p>
            </Card>
         </TabsContent>
 
@@ -487,109 +447,97 @@ export default function ProgramsPage() {
               </div>
            </div>
            ) : (
-             <div className="space-y-10 animate-in zoom-in-95 duration-500">
-                <div className="bg-white border-b-4 border-primary p-12 text-center space-y-8">
-                   <div className="flex justify-center">
-                       <div className="relative w-full max-w-2xl h-[250px] rounded-3xl overflow-hidden shadow-2xl">
-                          <Image src={heroImage} alt="Estudiantes" fill className="object-cover" />
+             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen font-serif">
+                {/* Header Institucional Legacy */}
+                <div className="text-center py-6 border-b-2 border-slate-100">
+                   <h1 className="text-xl font-bold text-[#4a773c] uppercase leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
+                   <p className="text-sm text-slate-600 font-semibold">Servicios Educativos Integrados al Estado de México</p>
+                   <div className="mt-4 flex justify-center">
+                       <div className="relative w-full max-w-3xl h-[120px] rounded-lg overflow-hidden border shadow-inner">
+                          <Image src="https://picsum.photos/seed/webescuela/1000/200" alt="Banner Escuela" fill className="object-cover opacity-80" />
                        </div>
                    </div>
-                   <div className="space-y-2">
-                       <h2 className="text-3xl font-black uppercase text-primary tracking-tighter">Bienvenidos a la Sección Editorial de WebEscuela</h2>
-                       <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Gestión Integral de Portales de Educación Secundaria</p>
+                </div>
+
+                <div className="bg-[#f0ece1] py-2 px-6 flex justify-between items-center border-y border-slate-300">
+                   <span className="text-xs font-bold text-slate-700">Construya la Página de su Escuela</span>
+                   <div className="flex gap-4 text-[10px] font-bold text-slate-600">
+                      <span className="underline cursor-pointer">Ejemplo</span>
+                      <span className="underline cursor-pointer">Enviar comentarios</span>
                    </div>
                 </div>
 
-                <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl">
-                   <Button variant="outline" size="sm" onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); }} className="gap-3 font-black uppercase text-[10px] h-12 px-6 rounded-2xl bg-slate-50 border-none hover:bg-rose-50 hover:text-rose-600 transition-all">
-                      <Lock className="h-4 w-4" /> Cerrar Sesión Editorial
-                   </Button>
-                   <div className="flex items-center gap-6">
-                      <div className="relative">
-                         <Search className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                         <Input placeholder="Buscar por CCT o Nombre..." className="h-12 pl-12 text-[11px] font-black w-80 bg-slate-50 border-none rounded-2xl shadow-inner" />
-                      </div>
+                <div className="px-10 py-6">
+                   <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
+                   <p className="text-[11px] text-slate-600 mt-1 max-w-5xl leading-relaxed">
+                      En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                   </p>
+                   
+                   <div className="mt-8">
+                      <button 
+                        onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); }}
+                        className="bg-slate-200 border border-slate-400 px-4 py-1 text-[11px] font-bold rounded shadow-sm hover:bg-slate-300"
+                      >
+                         Cerrar
+                      </button>
                    </div>
-                </div>
 
-                <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white/90 backdrop-blur-xl">
-                   <ScrollArea className="w-full h-auto">
-                      <Table className="border-collapse">
-                         <TableHeader className="bg-slate-100/80">
-                            <TableRow className="h-16">
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center w-12 uppercase">No.</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[140px] uppercase">Centro de Trabajo</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[180px] uppercase">Agrupador</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Vertiente</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Sector</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase">Zona</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Alta</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Modificación</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Revisión</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Publicación</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-4 text-center uppercase whitespace-nowrap">Fecha de Suspensión</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[200px] uppercase">Observaciones</TableHead>
-                               <TableHead className="text-[10px] font-black border-r px-6 min-w-[220px] uppercase">eContacto</TableHead>
-                               <TableHead className="text-[10px] font-black px-10 text-center sticky right-0 bg-slate-200/95 z-40 shadow-[-10px_0_30px_rgba(0,0,0,0.1)] uppercase">
-                                  Acciones a Realizar
-                               </TableHead>
-                            </TableRow>
-                         </TableHeader>
-                         <TableBody>
-                            {records.filter(r => r.name === 'Conoce mi Escuela' || r.id.startsWith('WEB-') || r.id.startsWith('PROG-CI')).slice(0, 50).map((rec, idx) => {
-                               const agrupador = `${rec.modalidad?.split(' ')[0] || 'DES'}${rec.valle || 'MEXICO'}${rec.sector || '00'}${rec.zonaEscolar || '000'}`.toUpperCase().replace(/\s/g, '');
+                   <div className="mt-4 border border-black overflow-x-auto">
+                      <table className="w-full border-collapse text-[10px] text-left">
+                         <thead className="bg-slate-100">
+                            <tr className="border-b border-black">
+                               <th className="border-r border-black p-2 w-8">No.</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Centro de Trabajo</u></th>
+                               <th className="border-r border-black p-2">Agrupado</th>
+                               <th className="border-r border-black p-2">Vertiente</th>
+                               <th className="border-r border-black p-2">Sector</th>
+                               <th className="border-r border-black p-2">Zona</th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Alta</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Modificación</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Revisión</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Publicación</u></th>
+                               <th className="border-r border-black p-2 whitespace-nowrap"><u>Fecha de Suspensión</u></th>
+                               <th className="border-r border-black p-2 min-w-[200px]">Observaciones</th>
+                               <th className="border-r border-black p-2">eContacto</th>
+                               <th className="p-2 font-bold bg-slate-200 text-center sticky right-0 z-10 border-l border-black">Acciones a Realizar</th>
+                            </tr>
+                         </thead>
+                         <tbody className="bg-white">
+                            {records.filter(r => r.id.startsWith('PROG-CI') || r.modalidad?.includes('PES') || r.modalidad?.includes('PST')).slice(0, 50).map((rec, idx) => {
+                               const agrupador = `${rec.modalidad?.split(' ')[0] || 'DES'}${rec.valle?.toUpperCase().replace('Í', 'I') || 'MEXICO'}${rec.sector?.padStart(2, '0') || '00'}${rec.zonaEscolar?.padStart(3, '0') || '000'}`.replace(/\s/g, '');
                                return (
-                               <TableRow key={rec.id} className="text-[11px] h-20 border-b hover:bg-slate-50 transition-colors">
-                                  <TableCell className="border-r text-center font-black text-slate-400">{idx + 1}</TableCell>
-                                  <TableCell className="border-r font-black text-primary px-6 uppercase">{rec.cct || '15DES0001R'}</TableCell>
-                                  <TableCell className="border-r font-bold text-slate-600 px-6 uppercase whitespace-nowrap">{agrupador}</TableCell>
-                                  <TableCell className="border-r text-center font-black uppercase text-slate-700">{rec.modalidad?.split(' ')[0] || 'DES'}</TableCell>
-                                  <TableCell className="border-r text-center font-bold text-slate-500">{rec.sector || '00'}</TableCell>
-                                  <TableCell className="border-r text-center font-bold text-slate-500">{rec.zonaEscolar || '000'}</TableCell>
-                                  <TableCell className="border-r text-center text-slate-400 font-medium">2022/10/19</TableCell>
-                                  <TableCell className="border-r text-center text-slate-400 font-medium">2022/10/20</TableCell>
-                                  <TableCell className="border-r text-center text-primary font-black">2025/09/01</TableCell>
-                                  <TableCell className="border-r text-center text-emerald-600 font-black">2023/04/19</TableCell>
-                                  <TableCell className="border-r text-center text-rose-500">-</TableCell>
-                                  <TableCell className="border-r px-6">
-                                     <div className="text-slate-500 italic max-w-[200px] leading-relaxed line-clamp-2">Auditado por COEES para ciclo vigente...</div>
-                                  </TableCell>
-                                  <TableCell className="border-r px-6 font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || `${rec.cct?.toLowerCase()}@desysa.gob.mx`}</TableCell>
-                                  <TableCell className="px-6 sticky right-0 bg-white/95 backdrop-blur-md shadow-[-15px_0_40px_rgba(0,0,0,0.15)] z-20 border-l">
-                                     <div className="flex items-center gap-3 justify-center py-4 whitespace-nowrap min-w-[500px]">
-                                        <button onClick={() => handleAction('Revisar', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm"><Globe className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-blue-800">Revisar</span>
-                                        </button>
-                                        <button onClick={() => handleAction('Publicar', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm"><CheckCircle2 className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-emerald-800">Publicar</span>
-                                        </button>
-                                        <button onClick={() => handleAction('Suspender', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm"><AlertCircle className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-rose-800">Suspender</span>
-                                        </button>
-                                        <button onClick={() => handleAction('Observaciones', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-amber-800">Observac.</span>
-                                        </button>
-                                        <button onClick={() => handleAction('eContacto', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm"><Mail className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-indigo-800">eContacto</span>
-                                        </button>
-                                        <button onClick={() => handleAction('Contraseña', rec.cct!)} className="flex flex-col items-center gap-1 group">
-                                           <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all shadow-sm"><Key className="h-4 w-4" /></div>
-                                           <span className="text-[7px] font-black uppercase text-slate-800">Contraseña</span>
-                                        </button>
+                               <tr key={rec.id} className="border-b border-black hover:bg-slate-50">
+                                  <td className="border-r border-black p-2 text-center">{idx + 1}</td>
+                                  <td className="border-r border-black p-2 font-bold">{rec.cct || '15DES0001R'}</td>
+                                  <td className="border-r border-black p-2 font-mono">{agrupador}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.modalidad?.split(' ')[0] || 'DES'}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.sector || '00'}</td>
+                                  <td className="border-r border-black p-2 text-center">{rec.zonaEscolar || '000'}</td>
+                                  <td className="border-r border-black p-2 text-slate-500">2022/10/19</td>
+                                  <td className="border-r border-black p-2 text-slate-500">2022/10/20</td>
+                                  <td className="border-r border-black p-2 font-black">2025/09/01</td>
+                                  <td className="border-r border-black p-2 text-emerald-700">2023/04/19</td>
+                                  <td className="border-r border-black p-2">-</td>
+                                  <td className="border-r border-black p-2 italic leading-tight text-slate-500">
+                                     Auditado por COEES para ciclo vigente conforme a lineamientos de incorporación...
+                                  </td>
+                                  <td className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.asistentes?.[0]?.email || 'contacto@desysa.edu.mx'}</td>
+                                  <td className="p-2 bg-white sticky right-0 z-10 shadow-[-5px_0_15px_rgba(0,0,0,0.05)] border-l border-black">
+                                     <div className="flex flex-col gap-0.5 font-bold text-blue-700 underline underline-offset-2">
+                                        <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900">Revisar</button>
+                                        <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900">Publicar</button>
+                                        <button onClick={() => handleAction('Suspender', rec.cct!)} className="text-left hover:text-blue-900">Suspender</button>
+                                        <button onClick={() => handleAction('Observaciones', rec.cct!)} className="text-left hover:text-blue-900">Observaciones</button>
+                                        <button onClick={() => handleAction('eContacto', rec.cct!)} className="text-left hover:text-blue-900">eContacto</button>
+                                        <button onClick={() => handleAction('Contraseña', rec.cct!)} className="text-left hover:text-blue-900">Contraseña</button>
                                      </div>
-                                  </TableCell>
-                               </TableRow>
+                                  </td>
+                               </tr>
                             )})}
-                         </TableBody>
-                      </Table>
-                      <ScrollBar orientation="horizontal" />
-                   </ScrollArea>
-                </Card>
+                         </tbody>
+                      </table>
+                   </div>
+                </div>
              </div>
            )}
         </TabsContent>
