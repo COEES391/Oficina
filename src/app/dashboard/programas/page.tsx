@@ -53,7 +53,7 @@ const PROGRAM_RUBROS = [
   'Conoce mi Escuela'
 ];
 
-const DB_VERSION = "827_full_sync_v10";
+const DB_VERSION = "827_full_sync_v20_final";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -92,11 +92,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version')
+    const storedVersion = localStorage.getItem('programs_db_version_final')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version', DB_VERSION)
+      localStorage.setItem('programs_db_version_final', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -109,9 +109,9 @@ export default function ProgramsPage() {
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
       setIsLoginDialogOpen(false)
-      toast({ title: "Acceso Editorial Concedido", description: "Bienvenido al Panel de Control de WebEscuela." })
+      toast({ title: "Acceso Concedido", description: "Bienvenido a la Sección Editorial." })
     } else {
-      toast({ variant: "destructive", title: "Acceso Denegado", description: "Credenciales inválidas." })
+      toast({ variant: "destructive", title: "Error", description: "Credenciales inválidas." })
     }
   }
 
@@ -129,12 +129,8 @@ export default function ProgramsPage() {
     toast({ title: "Registro guardado" })
   }
 
-  const handleAction = (action: string, cct: string) => {
-    toast({ title: `${action} iniciado`, description: `Sincronizando ${cct} con el servidor WebEscuela...` });
-  }
-
   const bdRecords = useMemo(() => records.filter(r => r.name === 'Biblioteca Digital'), [records]);
-  const ciRecords = useMemo(() => records.filter(r => r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')), [records]);
+  const ciRecords = useMemo(() => records.filter(r => r.name === 'Cuentas Institucionales' || r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')), [records]);
   const geoRecords = useMemo(() => records.filter(r => r.name === 'Geoposición' || r.id.startsWith('PROG-GEO')), [records]);
   
   const editorialRecords = useMemo(() => {
@@ -153,9 +149,8 @@ export default function ProgramsPage() {
 
   const ciDashboardData = useMemo(() => {
     const filtered = ciRecords.filter(r => {
-      const mMatch = modFilter === 'all' || (r.modalidad || '').includes(modFilter);
       const vMatch = valFilter === 'all' || (r.valle || '').toUpperCase() === valFilter.toUpperCase();
-      return mMatch && vMatch;
+      return vMatch;
     });
     const approved = filtered.filter(r => r.status === 'concluido').length;
     return {
@@ -163,15 +158,15 @@ export default function ProgramsPage() {
       total: filtered.length,
       usagePercent: filtered.length > 0 ? Math.round((approved / filtered.length) * 100) : 0,
       pieData: [
-        { name: 'USO ACTIVO', value: approved, fill: '#10b981' },
+        { name: 'ACTIVO', value: approved, fill: '#10b981' },
         { name: 'PLANEACIÓN', value: Math.max(0, filtered.length - approved), fill: '#f43f5e' }
       ],
       barData: [
         { name: 'APROBADO', value: approved, fill: '#621132' },
-        { name: 'PLANEACIÓN', value: Math.max(0, filtered.length - approved), fill: '#cbd5e1' }
+        { name: 'PENDIENTE', value: Math.max(0, filtered.length - approved), fill: '#cbd5e1' }
       ]
     };
-  }, [ciRecords, modFilter, valFilter]);
+  }, [ciRecords, valFilter]);
 
   if (!mounted) return null
 
@@ -190,7 +185,9 @@ export default function ProgramsPage() {
         <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1 rounded-2xl shadow-inner border border-primary/5">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger key={rubro} value={rubro} className="flex-1 min-w-[150px] h-12 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-              {rubro === 'Geoposición' ? <MapPin className="h-3.5 w-3.5 mr-2" /> : null}
+              {rubro === 'Geoposición' && <MapPin className="h-3.5 w-3.5 mr-2" />}
+              {rubro === 'Biblioteca Digital' && <Monitor className="h-3.5 w-3.5 mr-2" />}
+              {rubro === 'Cuentas Institucionales' && <Globe className="h-3.5 w-3.5 mr-2" />}
               {rubro}
             </TabsTrigger>
           ))}
@@ -260,13 +257,13 @@ export default function ProgramsPage() {
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-3 space-y-4">
+                <div className="md:col-span-3">
                    <Card className="p-5 bg-white border rounded-2xl shadow-sm">
                       <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
-                      <div className="flex gap-1.5">
-                         <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('all')}>AMBOS</Button>
-                         <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('MÉXICO')}>MÉXICO</Button>
-                         <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="flex-1 h-8 text-[9px] font-black" onClick={() => setValFilter('TOLUCA')}>TOLUCA</Button>
+                      <div className="flex flex-col gap-2">
+                         <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('all')}>AMBOS VALLES</Button>
+                         <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('MÉXICO')}>VALLE DE MÉXICO</Button>
+                         <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="h-10 text-[9px] font-black" onClick={() => setValFilter('TOLUCA')}>VALLE DE TOLUCA</Button>
                       </div>
                    </Card>
                 </div>
@@ -274,33 +271,33 @@ export default function ProgramsPage() {
                 <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
                    <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-sm rounded-2xl border">
                       <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
-                      <div className="text-7xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
+                      <div className="text-6xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
                    </Card>
 
                    <Card className="p-6 flex flex-col items-center bg-white shadow-sm rounded-2xl border">
                       <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% USO ACTIVO</Label>
-                      <div className="relative h-[180px] w-full">
+                      <div className="relative h-[160px] w-full">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
+                               <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={5} dataKey="value">
                                   {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                                </Pie>
                             </PieChart>
                          </ResponsiveContainer>
                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-3xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
+                            <span className="text-2xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
                          </div>
                       </div>
                    </Card>
 
                    <Card className="p-6 bg-white shadow-sm rounded-2xl border">
                       <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO</Label>
-                      <div className="h-[200px]">
+                      <div className="h-[180px]">
                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ciDashboardData.barData}>
                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                               <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                               <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
+                               <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                               <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
                                   {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                                </Bar>
                             </BarChart>
@@ -538,7 +535,7 @@ export default function ProgramsPage() {
                                <TableHead className="border-r border-black p-2 font-black uppercase">Fecha de Suspensión</TableHead>
                                <TableHead className="border-r border-black p-2 min-w-[500px] font-black uppercase">Observaciones</TableHead>
                                <TableHead className="border-r border-black p-2 font-black uppercase">eContacto</TableHead>
-                               <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-10 border-l border-black shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</TableHead>
+                               <TableHead className="p-2 font-black uppercase bg-slate-100 text-center sticky right-0 z-20 border-l border-black shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">Acciones a Realizar</TableHead>
                             </TableRow>
                          </TableHeader>
                          <TableBody>
@@ -561,14 +558,14 @@ export default function ProgramsPage() {
                                      </div>
                                   </TableCell>
                                   <TableCell className="border-r border-black p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                  <TableCell className="p-2 bg-white/95 backdrop-blur-sm sticky right-0 z-10 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[150px]">
+                                  <TableCell className="p-2 bg-white/95 backdrop-blur-sm sticky right-0 z-20 border-l border-black shadow-[-10px_0_20px_rgba(0,0,0,0.03)] min-w-[150px]">
                                      <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
-                                        <button onClick={() => handleAction('Revisar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Revisar</button>
-                                        <button onClick={() => handleAction('Publicar', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Publicar</button>
-                                        <button onClick={() => handleAction('Suspender', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Suspender</button>
-                                        <button onClick={() => handleAction('Observaciones', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
-                                        <button onClick={() => handleAction('eContacto', rec.cct!)} className="text-left hover:text-blue-900 w-fit">eContacto</button>
-                                        <button onClick={() => handleAction('Contraseña', rec.cct!)} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
+                                        <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
+                                        <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
+                                        <button onClick={() => toast({title: "Suspender", description: `Suspendiendo portal de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Suspender</button>
+                                        <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
+                                        <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
+                                        <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
                                      </div>
                                   </TableCell>
                                </TableRow>
@@ -583,7 +580,6 @@ export default function ProgramsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Diálogos de Accesibilidad */}
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
@@ -638,9 +634,9 @@ export default function ProgramsPage() {
                       <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                         <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN / PENDIENTE</SelectItem>
-                           <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO / EN PROCESO</SelectItem>
-                           <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO / APROBADO</SelectItem>
+                           <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN</SelectItem>
+                           <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO</SelectItem>
+                           <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
