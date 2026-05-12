@@ -68,7 +68,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v44_account_form";
+const DB_VERSION = "827_full_sync_v45_no_assistants_tab_for_ci";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -111,11 +111,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v44')
+    const storedVersion = localStorage.getItem('programs_db_version_v45')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v44', DB_VERSION)
+      localStorage.setItem('programs_db_version_v45', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -216,7 +216,7 @@ export default function ProgramsPage() {
       const dMatch = domFilter === 'all' || email.toLowerCase().includes(domFilter.toLowerCase());
       return vMatch && mMatch && dMatch;
     });
-    const approved = filtered.filter(r => r.status === 'concluido' || r.status === 'activo').length;
+    const approved = filtered.filter(r => r.status === 'activo' || r.status === 'concluido').length;
     return {
       filtered,
       total: filtered.length,
@@ -593,7 +593,7 @@ export default function ProgramsPage() {
                    
                    <div className="border border-black w-full h-[650px] relative overflow-hidden">
                       <ScrollArea className="h-full w-full">
-                         <Table className="border-collapse text-[10px] min-w-[3500px]">
+                         <Table className="border-collapse text-[10px] min-w-[2800px]">
                             <TableHeader className="bg-slate-100 sticky top-0 z-20">
                                <TableRow className="border-b border-black">
                                   <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
@@ -632,15 +632,15 @@ export default function ProgramsPage() {
                                      <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaModif || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums text-center">{rec.fechaRevision || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums text-center">{rec.date || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 bg-rose-50/30 min-w-[180px]">
-                                        <div className="flex flex-col gap-1 font-black text-blue-700 underline underline-offset-2 text-left text-[10px] uppercase">
+                                     <TableCell className="border-r border-black p-2 bg-rose-50/30 min-w-[140px]">
+                                        <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
+                                           {rec.fechaSuspension && <span className="text-rose-600 mb-1 no-underline">{rec.fechaSuspension}</span>}
                                            <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
                                            <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
                                            <button onClick={() => toast({title: "Suspender", description: `Suspendiendo portal de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Suspender</button>
                                            <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
                                            <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
                                            <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
-                                           {rec.fechaSuspension && <span className="text-rose-600 mt-1 pt-1 border-t border-rose-200 block no-underline">{rec.fechaSuspension}</span>}
                                         </div>
                                      </TableCell>
                                      <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
@@ -698,14 +698,19 @@ export default function ProgramsPage() {
           <Tabs value={activeDialogTab} onValueChange={setActiveDialogTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="px-8 border-b bg-white">
               <TabsList className="bg-transparent h-12 p-0 gap-8">
-                <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">1. Datos del {formData.name === 'Cuentas Institucionales' ? 'Titular y Cuenta' : 'Programa / Curso'}</TabsTrigger>
-                <TabsTrigger 
-                  value="asistentes" 
-                  disabled={formData.capacitacion !== 'S' || formData.name === 'Cuentas Institucionales'}
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider disabled:opacity-30 disabled:grayscale"
-                >
-                  2. Lista de Asistentes (Captura Directa)
+                <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">
+                  1. Datos del {formData.name === 'Cuentas Institucionales' ? 'Titular y Cuenta' : 'Programa / Curso'}
                 </TabsTrigger>
+                {/* Hide assistants tab entirely for Accounts module as requested */}
+                {formData.name !== 'Cuentas Institucionales' && (
+                  <TabsTrigger 
+                    value="asistentes" 
+                    disabled={formData.capacitacion !== 'S'}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider disabled:opacity-30 disabled:grayscale"
+                  >
+                    2. Lista de Asistentes (Captura Directa)
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -927,81 +932,84 @@ export default function ProgramsPage() {
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="asistentes" className="h-full m-0 flex flex-col">
-                <div className="p-8 pb-4 flex justify-between items-center bg-white border-b">
-                  <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 flex-1 mr-4">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
-                    <p className="text-[11px] font-bold text-slate-700 uppercase leading-relaxed">
-                      Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos automáticamente.
-                    </p>
+              {/* Hide assistants tab entirely for Accounts module as requested */}
+              {formData.name !== 'Cuentas Institucionales' && (
+                <TabsContent value="asistentes" className="h-full m-0 flex flex-col">
+                  <div className="p-8 pb-4 flex justify-between items-center bg-white border-b">
+                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 flex-1 mr-4">
+                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                      <p className="text-[11px] font-bold text-slate-700 uppercase leading-relaxed">
+                        Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos automáticamente.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleAddAssistantRow} className="gap-2 font-black uppercase h-14 px-8 rounded-2xl border-primary text-primary hover:bg-primary/5 shadow-sm">
+                      <Plus className="h-5 w-5" /> Añadir Asistente
+                    </Button>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleAddAssistantRow} className="gap-2 font-black uppercase h-14 px-8 rounded-2xl border-primary text-primary hover:bg-primary/5 shadow-sm">
-                    <Plus className="h-5 w-5" /> Añadir Asistente
-                  </Button>
-                </div>
 
-                <div className="flex-1 overflow-hidden border-t">
-                  <ScrollArea className="h-full">
-                    <Table className="border-collapse">
-                      <TableHeader className="bg-slate-100 sticky top-0 z-20 shadow-sm">
-                        <TableRow>
-                          <TableHead className="w-12 text-[10px] font-black uppercase text-center py-4 border-r border-slate-200">#</TableHead>
-                          <TableHead className="min-w-[220px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Apellidos y Nombre(s)</TableHead>
-                          <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">RFC</TableHead>
-                          <TableHead className="min-w-[180px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Función</TableHead>
-                          <TableHead className="min-w-[140px] text-[10px] font-black uppercase py-4 border-r border-slate-200">CCT Plantel</TableHead>
-                          <TableHead className="min-w-[250px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Nombre C.T. / Zona</TableHead>
-                          <TableHead className="w-16 sticky right-0 bg-slate-100 py-4"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(formData.asistentes || []).map((ast, idx) => (
-                          <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
-                            <TableCell className="text-center font-black text-xs text-muted-foreground border-r border-slate-100">{idx + 1}</TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <div className="flex flex-col gap-2">
-                                <Input placeholder="Ap. Paterno" className="h-9 text-[10px] font-bold" value={ast.paterno} onChange={e => updateAssistantField(idx, 'paterno', e.target.value)} />
-                                <Input placeholder="Ap. Materno" className="h-9 text-[10px] font-bold" value={ast.materno} onChange={e => updateAssistantField(idx, 'materno', e.target.value)} />
-                                <Input placeholder="Nombre(s)" className="h-9 text-[10px] font-black text-primary" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <Input placeholder="RFC" className="h-10 text-[10px] font-mono font-black uppercase" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
-                            </TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
-                                <SelectTrigger className="h-10 text-[10px] font-bold">
-                                  <SelectValue placeholder="Función..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {FUNCIONES.map(f => (
-                                    <SelectItem key={f} value={f} className="text-[10px] font-bold">{f}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <Input placeholder="15DESXXXXX" className="h-10 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                            </TableCell>
-                            <TableCell className="p-3 border-r border-slate-100">
-                              <div className="flex flex-col gap-2">
-                                <Input value={ast.nombreCT} readOnly className="h-9 text-[9px] bg-slate-50 font-black uppercase" placeholder="Nombre C.T." />
-                                <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center" placeholder="ZE" />
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-3 sticky right-0 bg-white shadow-[-10px_0_15px_rgba(0,0,0,0.03)] text-center">
-                              <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistantRow(idx)} disabled={(formData.asistentes?.length || 0) <= 1}>
-                                <Trash2 className="h-5 w-5" />
-                              </Button>
-                            </TableCell>
+                  <div className="flex-1 overflow-hidden border-t">
+                    <ScrollArea className="h-full">
+                      <Table className="border-collapse">
+                        <TableHeader className="bg-slate-100 sticky top-0 z-20 shadow-sm">
+                          <TableRow>
+                            <TableHead className="w-12 text-[10px] font-black uppercase text-center py-4 border-r border-slate-200">#</TableHead>
+                            <TableHead className="min-w-[220px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Apellidos y Nombre(s)</TableHead>
+                            <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">RFC</TableHead>
+                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Función</TableHead>
+                            <TableHead className="min-w-[140px] text-[10px] font-black uppercase py-4 border-r border-slate-200">CCT Plantel</TableHead>
+                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Nombre C.T. / Zona</TableHead>
+                            <TableHead className="w-16 sticky right-0 bg-slate-100 py-4"></TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                </div>
-              </TabsContent>
+                        </TableHeader>
+                        <TableBody>
+                          {(formData.asistentes || []).map((ast, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
+                              <TableCell className="text-center font-black text-xs text-muted-foreground border-r border-slate-100">{idx + 1}</TableCell>
+                              <TableCell className="p-3 border-r border-slate-100">
+                                <div className="flex flex-col gap-2">
+                                  <Input placeholder="Ap. Paterno" className="h-9 text-[10px] font-bold" value={ast.paterno} onChange={e => updateAssistantField(idx, 'paterno', e.target.value)} />
+                                  <Input placeholder="Ap. Materno" className="h-9 text-[10px] font-bold" value={ast.materno} onChange={e => updateAssistantField(idx, 'materno', e.target.value)} />
+                                  <Input placeholder="Nombre(s)" className="h-9 text-[10px] font-black text-primary" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 border-r border-slate-100">
+                                <Input placeholder="RFC" className="h-10 text-[10px] font-mono font-black uppercase" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
+                              </TableCell>
+                              <TableCell className="p-3 border-r border-slate-100">
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
+                                  <SelectTrigger className="h-10 text-[10px] font-bold">
+                                    <SelectValue placeholder="Función..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {FUNCIONES.map(f => (
+                                      <SelectItem key={f} value={f} className="text-[10px] font-bold">{f}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-3 border-r border-slate-100">
+                                <Input placeholder="15DESXXXXX" className="h-10 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                              </TableCell>
+                              <TableCell className="p-3 border-r border-slate-100">
+                                <div className="flex flex-col gap-2">
+                                  <Input value={ast.nombreCT} readOnly className="h-9 text-[9px] bg-slate-50 font-black uppercase" placeholder="Nombre C.T." />
+                                  <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center" placeholder="ZE" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-3 sticky right-0 bg-white shadow-[-10px_0_15px_rgba(0,0,0,0.03)] text-center">
+                                <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistantRow(idx)} disabled={(formData.asistentes?.length || 0) <= 1}>
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                </TabsContent>
+              )}
             </div>
           </Tabs>
 
