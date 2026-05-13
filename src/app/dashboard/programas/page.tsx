@@ -70,8 +70,8 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
-    if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Datos Incompletos", description: "Folio y CCT obligatorios." });
+    if (!formData.cct) {
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "El CCT es obligatorio." });
       return;
     }
     const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
@@ -192,7 +192,7 @@ export default function ProgramsPage() {
                           <TableCell className="text-[9px]">{rec.fechaRevision}</TableCell>
                           <TableCell className="text-[9px]">{rec.date}</TableCell>
                           <TableCell>
-                             <Badge variant="outline" className={cn("text-[9px] font-black uppercase", rec.status === 'concluido' ? 'border-emerald-500 text-emerald-600' : 'border-amber-500 text-amber-600')}>
+                             <Badge variant="outline" className={cn("text-[9px] font-black uppercase", rec.status === 'activo' || rec.status === 'concluido' ? 'border-emerald-500 text-emerald-600' : 'border-amber-500 text-amber-600')}>
                                 {rec.status}
                              </Badge>
                           </TableCell>
@@ -282,22 +282,20 @@ export default function ProgramsPage() {
             <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ingrese los datos para la auditoría institucional COEES.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-6">
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">CCT</Label><Input placeholder="15DESXXXXX" className="font-mono uppercase border-primary/10" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Folio</Label><Input className="font-bold border-primary/10" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                
                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
                    <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
                      <SelectTrigger className="border-primary/10 font-bold"><SelectValue /></SelectTrigger>
                      <SelectContent>
                        <SelectItem value="activo">ACTIVO</SelectItem>
                        <SelectItem value="inactivo">INACTIVO</SelectItem>
-                       <SelectItem value="concluido">CONCLUIDO</SelectItem>
-                       <SelectItem value="planeacion">PLANEACIÓN</SelectItem>
                      </SelectContent>
                    </Select>
                 </div>
 
-                <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" /></div>
+                <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" /></div>
 
                 {activeTab === 'Geoposición' ? (
                   <>
@@ -309,15 +307,15 @@ export default function ProgramsPage() {
                     <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="border-primary/20 font-mono" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                   </>
                 ) : activeTab === 'Cuentas Institucionales' ? (
-                  <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                  <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
                 ) : null}
 
-                <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+                <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
              </div>
           </div>
           <DialogFooter className="gap-3">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 text-[10px] font-black uppercase px-8">Cancelar</Button>
-            <Button onClick={handleSave} className="btn-institutional px-12 text-[10px] h-12">Guardar Registro Maestro</Button>
+            <Button onClick={handleSave} className="btn-institutional px-12 text-[10px] h-12">Guardar Registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
