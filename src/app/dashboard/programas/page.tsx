@@ -56,7 +56,7 @@ export default function ProgramsPage() {
     const editorialCount = stored.filter((r: any) => r.name === 'Conoce mi Escuela').length;
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
-    // Si la base de datos está vacía o incompleta (menos de 800 cuentas o menos de 800 editoriales), restauramos
+    // Si la base de datos está vacía o incompleta, restauramos la base oficial
     if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 200) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
@@ -114,7 +114,6 @@ export default function ProgramsPage() {
        filtered = filtered.sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
 
-    // Para Geoposición, aseguramos que los datos geográficos estén vinculados
     if (activeTab === 'Geoposición') {
       return filtered.map(rec => {
         const school = schoolsDirectory.find(s => s.cct.toUpperCase() === rec.cct?.toUpperCase());
@@ -242,23 +241,10 @@ export default function ProgramsPage() {
                           </TableCell>
                           <TableCell className="text-[9px] font-mono text-muted-foreground lowercase">{rec.email}</TableCell>
                           <TableCell>
-                            <div className="flex items-start gap-2 py-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-7 w-7 text-primary hover:bg-primary/5 shrink-0"
-                                  onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}>
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
-                                <div className="flex flex-col gap-1">
-                                     <button className="text-[8px] font-black text-blue-600 hover:underline uppercase text-left">REVISAR</button>
-                                     <button className="text-[8px] font-black text-emerald-600 hover:underline uppercase text-left">PUBLICAR</button>
-                                     <button className="text-[8px] font-black text-rose-600 hover:underline uppercase text-left">SUSPENDER</button>
-                                     <button className="text-[8px] font-black text-amber-600 hover:underline uppercase text-left">OBSERVAR</button>
-                                     <button className="text-[8px] font-black text-slate-600 hover:underline uppercase text-left">ECONTACTO</button>
-                                     <button className="text-[8px] font-black text-primary hover:underline uppercase text-left">CONTRASEÑA</button>
-                                </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-[9px] text-left italic max-w-[150px] truncate">{rec.observaciones}</TableCell>
@@ -382,6 +368,25 @@ export default function ProgramsPage() {
                   </>
                 ) : activeTab === 'Cuentas Institucionales' ? (
                   <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                ) : activeTab === 'Biblioteca Digital' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-primary">Número de Equipos</Label>
+                      <Input type="number" className="border-primary/10 font-bold" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-primary">Estatus de Capacitación</Label>
+                      <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
+                        <SelectTrigger className="border-primary/10 font-bold">
+                          <SelectValue placeholder="Seleccionar estatus..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="S">CAPACITADO (SÍ)</SelectItem>
+                          <SelectItem value="N">PENDIENTE (NO)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 ) : null}
 
                 <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
