@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "desysa-logo",
-      "description": "Logo oficial de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA).",
-      "imageUrl": "https://picsum.photos/seed/desysa/500/500",
-      "imageHint": "education logo"
+      "description": "Logo representativo de Tecnología y Educación para el departamento de COEES.",
+      "imageUrl": "https://picsum.photos/seed/tech-edu/500/500",
+      "imageHint": "tech education"
     },
     {
       "id": "education-bg",
