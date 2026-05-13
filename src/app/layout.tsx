@@ -1,16 +1,19 @@
-
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Montserrat } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 
-const inter = Inter({ subsets: ['latin'] })
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['100', '300', '400', '500', '700', '900']
+})
 
 export const metadata: Metadata = {
-  title: 'SIP - Sistema Integral de Planeación',
-  description: 'Portal de Gestión de Educación Secundaria - Edoméx',
+  title: 'COEES - Sistema Integral de Gestión Técnica',
+  description: 'Portal de Computación Electrónica en la Educación Secundaria - Edoméx',
 }
 
 export default function RootLayout({
@@ -22,21 +25,21 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <body className={`${inter.className} relative min-h-screen overflow-x-hidden`}>
+      <body className={`${montserrat.variable} font-sans relative min-h-screen overflow-x-hidden`}>
         {/* Background Image Layer */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none opacity-[0.04] scale-110">
+        <div className="fixed inset-0 z-[-1] pointer-events-none opacity-[0.03] scale-110">
           <Image 
             src={bgImage.imageUrl} 
             alt="Education Background" 
             fill 
-            className="object-cover grayscale brightness-50"
+            className="object-cover grayscale"
             priority
             data-ai-hint="secondary school"
           />
         </div>
         
         {/* Subtle Gradient Overlay */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none bg-gradient-to-br from-white via-transparent to-slate-100" />
+        <div className="fixed inset-0 z-[-1] pointer-events-none bg-gradient-to-br from-white via-slate-50/50 to-slate-100" />
         
         <div className="relative z-10 min-h-screen">
           {children}
