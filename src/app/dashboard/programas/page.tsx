@@ -53,20 +53,24 @@ export default function ProgramsPage() {
     setRecords(stored.length > 0 ? stored : programsData)
   }, [])
 
-  const handleSelectSchool = (cct: string) => {
-    const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cct.toUpperCase())
-    if (school) {
-      setFormData(prev => ({
-        ...prev,
-        cct: school.cct,
-        schoolName: school.nombre,
-        zonaEscolar: school.zonaEscolar,
-        sector: school.sector,
-        modalidad: school.modalidad,
-        municipio: school.municipio,
-        valle: school.valle
-      }))
-    }
+  const handleCctChange = (val: string) => {
+    const cleanVal = val.toUpperCase();
+    setFormData(prev => {
+      const next = { ...prev, cct: cleanVal };
+      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
+      if (school) {
+        return {
+          ...next,
+          schoolName: school.nombre,
+          zonaEscolar: school.zonaEscolar,
+          sector: school.sector,
+          modalidad: school.modalidad,
+          municipio: school.municipio,
+          valle: school.valle
+        };
+      }
+      return next;
+    });
   }
 
   const handleSave = () => {
@@ -74,7 +78,14 @@ export default function ProgramsPage() {
       toast({ variant: "destructive", title: "Datos Incompletos", description: "El CCT es obligatorio." });
       return;
     }
-    const updated = editingId ? records.map(r => r.id === editingId ? formData : r) : [formData, ...records];
+    
+    // Generar ID interno si es nuevo
+    const finalData = {
+      ...formData,
+      id: editingId || `PROG-${formData.name.substring(0,2)}-${Date.now()}`
+    };
+
+    const updated = editingId ? records.map(r => r.id === editingId ? finalData : r) : [finalData, ...records];
     setRecords(updated)
     localStorage.setItem('programs_full', JSON.stringify(updated))
     setIsDialogOpen(false)
@@ -127,7 +138,7 @@ export default function ProgramsPage() {
                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Registros de Auditoría Técnica</p>
                </div>
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab, id: `PROG-${activeTab.substring(0,2)}-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-8 text-[11px]">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-8 text-[11px]">
                 <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
              </Button>
           </Card>
@@ -167,7 +178,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   ) : (
                     <TableRow>
-                      <TableHead className="text-[10px] font-black uppercase">ID / CCT</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Valle</TableHead>
@@ -237,7 +248,7 @@ export default function ProgramsPage() {
                         </>
                       ) : (
                         <>
-                          <TableCell className="font-black text-[10px] text-primary">{rec.cct || rec.id}</TableCell>
+                          <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-sm font-bold text-slate-700">{rec.schoolName}</TableCell>
                           <TableCell><Badge className="bg-slate-900 text-white text-[10px] px-3">{rec.modalidad}</Badge></TableCell>
                           <TableCell className="text-[10px] font-black uppercase tracking-widest">{rec.valle}</TableCell>
@@ -283,11 +294,22 @@ export default function ProgramsPage() {
           </DialogHeader>
           <div className="grid gap-6 py-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">CCT</Label><Input placeholder="15DESXXXXX" className="font-mono uppercase border-primary/10" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">CCT</Label>
+                  <Input 
+                    placeholder="15DESXXXXX" 
+                    className="font-mono uppercase border-primary/10" 
+                    value={formData.cct} 
+                    onChange={e => handleCctChange(e.target.value)} 
+                  />
+                </div>
                 
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
                    <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
-                     <SelectTrigger className="border-primary/10 font-bold"><SelectValue /></SelectTrigger>
+                     <SelectTrigger className="border-primary/10 font-bold">
+                       <SelectValue placeholder="Seleccionar estatus..." />
+                     </SelectTrigger>
                      <SelectContent>
                        <SelectItem value="activo">ACTIVO</SelectItem>
                        <SelectItem value="inactivo">INACTIVO</SelectItem>
@@ -295,7 +317,10 @@ export default function ProgramsPage() {
                    </Select>
                 </div>
 
-                <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" /></div>
+                <div className="col-span-1 md:col-span-2 space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label>
+                  <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" />
+                </div>
 
                 {activeTab === 'Geoposición' ? (
                   <>
