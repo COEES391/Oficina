@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -9,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
@@ -18,12 +16,8 @@ import { cn } from "@/lib/utils"
 import { 
   PlusCircle, 
   Pencil, 
-  Monitor, 
   Trash2,
   Activity,
-  Plus,
-  MonitorCheck,
-  Building2,
   Target
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -108,7 +102,7 @@ export default function ProgramsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="w-full h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm overflow-x-auto">
+        <TabsList className="w-full h-11 bg-white border border-slate-100 p-1 rounded-xl shadow-sm">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger 
               key={rubro} 
@@ -121,7 +115,7 @@ export default function ProgramsPage() {
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-6 animate-in fade-in duration-500">
-          <Card className="executive-card p-6 flex items-center justify-between border-2 border-white">
+          <Card className="executive-card p-6 flex items-center justify-between">
              <div className="flex items-center gap-4">
                <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
                  <Target className="h-5 w-5" />
@@ -131,8 +125,8 @@ export default function ProgramsPage() {
                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Registros de Auditoría Técnica</p>
                </div>
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab, id: `PROG-${activeTab.substring(0,2)}-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-6 h-10 text-[9px]">
-                <PlusCircle className="h-3.5 w-3.5 mr-2" /> Nuevo Registro
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab, id: `PROG-${activeTab.substring(0,2)}-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-6 text-[9px]">
+                <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
              </Button>
           </Card>
 
@@ -153,7 +147,7 @@ export default function ProgramsPage() {
                       <TableHead className="text-[9px] font-black uppercase">Fecha</TableHead>
                       <TableHead className="text-[9px] font-black uppercase">Status</TableHead>
                       <TableHead className="text-[9px] font-black uppercase">Email</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase">Suspensión / Acciones</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase">Acciones</TableHead>
                       <TableHead className="text-[9px] font-black uppercase">Observaciones</TableHead>
                     </TableRow>
                   ) : (
@@ -188,17 +182,13 @@ export default function ProgramsPage() {
                              </Badge>
                           </TableCell>
                           <TableCell className="text-[8px] font-mono text-muted-foreground lowercase">{rec.email}</TableCell>
-                          <TableCell className="bg-slate-50/30">
-                            <div className="flex flex-col gap-0.5 items-center">
-                               <span className="text-[8px] text-rose-500 font-bold mb-1">{rec.fechaSuspension || '-'}</span>
-                               <div className="flex flex-col gap-0.5">
-                                 <button className="text-[7px] font-black text-blue-600 hover:underline uppercase">REVISAR</button>
-                                 <button className="text-[7px] font-black text-emerald-600 hover:underline uppercase">PUBLICAR</button>
-                                 <button className="text-[7px] font-black text-rose-600 hover:underline uppercase">SUSPENDER</button>
-                                 <button className="text-[7px] font-black text-amber-600 hover:underline uppercase">OBSERVAR</button>
-                                 <button className="text-[7px] font-black text-slate-600 hover:underline uppercase">ECONTACTO</button>
-                                 <button className="text-[7px] font-black text-indigo-600 hover:underline uppercase">CONTRASEÑA</button>
-                               </div>
+                          <TableCell>
+                            <div className="flex flex-col gap-0.5">
+                                 <button className="text-[7px] font-black text-blue-600 hover:underline uppercase text-left">REVISAR</button>
+                                 <button className="text-[7px] font-black text-emerald-600 hover:underline uppercase text-left">PUBLICAR</button>
+                                 <button className="text-[7px] font-black text-rose-600 hover:underline uppercase text-left">SUSPENDER</button>
+                                 <button className="text-[7px] font-black text-amber-600 hover:underline uppercase text-left">OBSERVAR</button>
+                                 <button className="text-[7px] font-black text-slate-600 hover:underline uppercase text-left">ECONTACTO</button>
                             </div>
                           </TableCell>
                           <TableCell className="text-[8px] text-left italic max-w-[150px] truncate">{rec.observaciones}</TableCell>
@@ -245,37 +235,25 @@ export default function ProgramsPage() {
             <DialogDescription className="font-bold text-[10px]">Ingrese los datos para la auditoría institucional COEES.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-             {activeTab === 'Cuentas Institucionales' ? (
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">CCT Plantel</Label><Input placeholder="15DESXXXXX" className="uppercase h-10" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Titular de la Cuenta</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="h-10" /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Correo Institucional</Label><Input placeholder="@desysa.gob.mx" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="h-10" /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Estatus Operativo</Label>
-                      <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
-                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="activo">ACTIVO</SelectItem><SelectItem value="inactivo">INACTIVO</SelectItem></SelectContent>
-                      </Select>
-                   </div>
-                   <div className="col-span-2 space-y-1"><Label className="text-[10px] font-black uppercase">Observaciones</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-[10px] font-black uppercase">CCT</Label><Input placeholder="15DESXXXXX" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Folio</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} /></div>
+                <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Nombre / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} /></div>
+                {activeTab === 'Cuentas Institucionales' && (
+                  <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Email</Label><Input value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                )}
+                <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Estatus</Label>
+                   <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
+                     <SelectTrigger><SelectValue /></SelectTrigger>
+                     <SelectContent><SelectItem value="activo">ACTIVO</SelectItem><SelectItem value="inactivo">INACTIVO</SelectItem><SelectItem value="concluido">CONCLUIDO</SelectItem></SelectContent>
+                   </Select>
                 </div>
-             ) : (
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">CCT</Label><Input placeholder="15DESXXXXX" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Folio</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">N. Equipos</Label><Input type="number" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value)||0})} /></div>
-                   <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Capacitación</Label>
-                      <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="S">SÍ</SelectItem><SelectItem value="N">NO</SelectItem></SelectContent>
-                      </Select>
-                   </div>
-                   <div className="col-span-2 space-y-1"><Label className="text-[10px] font-black uppercase">Observaciones</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
-                </div>
-             )}
+                <div className="col-span-2 space-y-1"><Label className="text-[10px] font-black uppercase">Observaciones</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-10 text-[9px] font-black uppercase">Cancelar</Button>
-            <Button onClick={handleSave} className="btn-institutional px-10 h-10 text-[9px]">Guardar Registro</Button>
+            <Button onClick={handleSave} className="btn-institutional px-10 text-[9px]">Guardar Registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

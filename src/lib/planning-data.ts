@@ -1,4 +1,3 @@
-
 export type ProgramStatus = {
   id: string;
   name: string;
@@ -63,25 +62,6 @@ export const programsData: ProgramStatus[] = [
   ...getEditorialData()
 ];
 
-export const supportData: SupportTicket[] = [
-  { 
-    id: 'S-001', 
-    cct: '15DES0065B', 
-    schoolName: 'JUAN PÉREZ SÁNCHEZ', 
-    status: 'atendido', 
-    tipoIncidencia: 'mantenimiento preventivo', 
-    fechaEntrada: '2024-05-20',
-    valle: 'MEXICO',
-    municipio: 'AMECAMECA',
-    modalidad: 'DES',
-    oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Nezahualcóyotl',
-    responsables: ['ING. CARLOS LÓPEZ'],
-    serviciosMC: 0,
-    serviciosMP: 12,
-    numeroEquipos: 12
-  }
-];
-
 export type SupportTicket = {
   id: string;
   cct: string;
@@ -111,6 +91,25 @@ export type SupportTicket = {
   reportPdf?: string;
   evidencePhotos?: string[];
 };
+
+export const supportData: SupportTicket[] = [
+  { 
+    id: 'S-001', 
+    cct: '15DES0065B', 
+    schoolName: 'JUAN PÉREZ SÁNCHEZ', 
+    status: 'atendido', 
+    tipoIncidencia: 'mantenimiento preventivo', 
+    fechaEntrada: '2024-05-20',
+    valle: 'MEXICO',
+    municipio: 'AMECAMECA',
+    modalidad: 'DES',
+    oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Nezahualcóyotl',
+    responsables: ['ING. CARLOS LÓPEZ'],
+    serviciosMC: 0,
+    serviciosMP: 12,
+    numeroEquipos: 12
+  }
+];
 
 export type TrainingRecord = {
   id: string;
