@@ -88,12 +88,10 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
-    const accountsCount = stored.filter((r: any) => r.name === 'Cuentas Institucionales').length;
-    const editorialCount = stored.filter((r: any) => r.name === 'Conoce mi Escuela').length;
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
+    const accountsCount = stored.filter((r: any) => r.name === 'Cuentas Institucionales').length;
     
-    // Forzamos actualización si los datos no coinciden con los 337 de Geoposición o los 827 de Cuentas
-    if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 337) {
+    if (stored.length === 0 || geoCount < 337 || accountsCount < 800) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
     } else {
@@ -186,7 +184,7 @@ export default function ProgramsPage() {
     let filtered = records.filter(r => r.name === activeTab);
     
     if (activeTab === 'Conoce mi Escuela') {
-       filtered = filtered.sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
+       filtered = [...filtered].sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
 
     if (activeTab === 'Geoposición') {
@@ -267,6 +265,7 @@ export default function ProgramsPage() {
                 <TableHeader className="bg-slate-50/50">
                   {activeTab === 'Conoce mi Escuela' ? (
                     <TableRow>
+                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Agrupado</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Vert.</TableHead>
@@ -283,6 +282,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   ) : activeTab === 'Geoposición' ? (
                     <TableRow>
+                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Zona</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Sector</TableHead>
@@ -296,6 +296,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   ) : (
                     <TableRow>
+                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
@@ -307,10 +308,11 @@ export default function ProgramsPage() {
                   )}
                 </TableHeader>
                 <TableBody>
-                  {currentTabRecords.length > 0 ? currentTabRecords.map(rec => (
+                  {currentTabRecords.length > 0 ? currentTabRecords.map((rec, idx) => (
                     <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
                       {activeTab === 'Conoce mi Escuela' ? (
                         <>
+                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-[9px] font-bold text-slate-500">{rec.agrupado}</TableCell>
                           <TableCell className="text-[10px] font-black">{rec.vertiente}</TableCell>
@@ -327,7 +329,7 @@ export default function ProgramsPage() {
                           </TableCell>
                           <TableCell className="text-[9px] font-mono text-muted-foreground lowercase">{rec.email}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center gap-2">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEdit(rec)}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
@@ -337,6 +339,7 @@ export default function ProgramsPage() {
                         </>
                       ) : activeTab === 'Geoposición' ? (
                         <>
+                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-[10px] font-bold text-slate-600">{rec.zonaEscolar}</TableCell>
                           <TableCell className="text-[10px] font-bold text-slate-600">{rec.sector}</TableCell>
@@ -363,6 +366,7 @@ export default function ProgramsPage() {
                         </>
                       ) : (
                         <>
+                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-sm font-bold text-slate-700">{rec.schoolName}</TableCell>
                           <TableCell><Badge className="bg-slate-900 text-white text-[10px] px-3">{rec.modalidad}</Badge></TableCell>
@@ -395,7 +399,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center py-20 bg-slate-50/20">
+                      <TableCell colSpan={14} className="text-center py-20 bg-slate-50/20">
                          <p className="text-[10px] font-black uppercase text-muted-foreground opacity-50">Cargando base de datos técnica...</p>
                       </TableCell>
                     </TableRow>
