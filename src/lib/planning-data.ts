@@ -23,6 +23,8 @@ export type ProgramStatus = {
   fechaRevision?: string;
   fechaSuspension?: string;
   asistentes?: any[];
+  latitud?: string;
+  longitud?: string;
 };
 
 const getEditorialData = (): ProgramStatus[] => {
@@ -59,6 +61,7 @@ const getEditorialData = (): ProgramStatus[] => {
 export const programsData: ProgramStatus[] = [
   { id: 'BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S' },
   { id: 'CI-1', name: 'Cuentas Institucionales', cct: '15DES0065B', schoolName: 'JUAN PÉREZ SÁNCHEZ', email: 'des0065b@desysa.gob.mx', valle: 'MÉXICO', modalidad: 'DES', status: 'activo', date: '2026-01-10', progress: 100 },
+  { id: 'GEO-1', name: 'Geoposición', cct: '15DES0065B', schoolName: 'JUAN PÉREZ SÁNCHEZ', zonaEscolar: '01', sector: '01', municipio: 'AMECAMECA', valle: 'MÉXICO', latitud: '19.1234', longitud: '-98.7654', status: 'activo', date: '2026-01-15', progress: 100 },
   ...getEditorialData()
 ];
 

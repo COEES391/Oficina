@@ -18,7 +18,8 @@ import {
   Pencil, 
   Trash2,
   Activity,
-  Target
+  Target,
+  MapPin
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -40,7 +41,8 @@ export default function ProgramsPage() {
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString(), cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
-    numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: ''
+    numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
+    latitud: '', longitud: ''
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -118,7 +120,7 @@ export default function ProgramsPage() {
           <Card className="executive-card p-6 flex items-center justify-between">
              <div className="flex items-center gap-4">
                <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                 <Target className="h-6 w-6" />
+                 {activeTab === 'Geoposición' ? <MapPin className="h-6 w-6" /> : <Target className="h-6 w-6" />}
                </div>
                <div>
                  <h3 className="text-xl font-black uppercase text-slate-900 leading-none">{activeTab}</h3>
@@ -149,6 +151,19 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase">Email</TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">Acciones</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Observaciones</TableHead>
+                    </TableRow>
+                  ) : activeTab === 'Geoposición' ? (
+                    <TableRow>
+                      <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Zona</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Sector</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Nombre Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Valle</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Latitud</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Longitud</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Estatus</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
                   ) : (
                     <TableRow>
@@ -194,6 +209,32 @@ export default function ProgramsPage() {
                           </TableCell>
                           <TableCell className="text-[9px] text-left italic max-w-[150px] truncate">{rec.observaciones}</TableCell>
                         </>
+                      ) : activeTab === 'Geoposición' ? (
+                        <>
+                          <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
+                          <TableCell className="text-[10px] font-bold text-slate-600">{rec.zonaEscolar}</TableCell>
+                          <TableCell className="text-[10px] font-bold text-slate-600">{rec.sector}</TableCell>
+                          <TableCell className="text-[10px] font-black text-slate-700">{rec.schoolName}</TableCell>
+                          <TableCell className="text-[10px] uppercase font-bold text-slate-500">{rec.valle}</TableCell>
+                          <TableCell className="text-[10px] uppercase font-bold text-slate-500">{rec.municipio}</TableCell>
+                          <TableCell className="text-[10px] font-mono text-primary font-bold">{rec.latitud}</TableCell>
+                          <TableCell className="text-[10px] font-mono text-primary font-bold">{rec.longitud}</TableCell>
+                          <TableCell>
+                            <Badge className={cn("text-[9px] font-black uppercase px-2", rec.status === 'activo' ? 'bg-emerald-500' : 'bg-slate-200 text-slate-600')}>
+                              {rec.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-8">
+                             <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="h-8 w-8 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => {
+                                  const updated = records.filter(r => r.id !== rec.id);
+                                  setRecords(updated);
+                                  localStorage.setItem('programs_full', JSON.stringify(updated));
+                                }} className="h-8 w-8 text-rose-500"><Trash2 className="h-4 w-4" /></Button>
+                             </div>
+                          </TableCell>
+                        </>
                       ) : (
                         <>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct || rec.id}</TableCell>
@@ -235,20 +276,16 @@ export default function ProgramsPage() {
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] rounded-[2rem] border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[800px] rounded-[2rem] border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="uppercase font-black text-primary text-2xl">Gestión de {activeTab}</DialogTitle>
             <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ingrese los datos para la auditoría institucional COEES.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-6">
-             <div className="grid grid-cols-2 gap-6">
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">CCT</Label><Input placeholder="15DESXXXXX" className="font-mono uppercase border-primary/10" value={formData.cct} onChange={e => handleSelectSchool(e.target.value)} /></div>
                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Folio</Label><Input className="font-bold border-primary/10" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Nombre / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} /></div>
-                {activeTab === 'Cuentas Institucionales' && (
-                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
-                )}
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Estatus de Auditoría</Label>
+                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
                    <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
                      <SelectTrigger className="border-primary/10 font-bold"><SelectValue /></SelectTrigger>
                      <SelectContent>
@@ -259,7 +296,23 @@ export default function ProgramsPage() {
                      </SelectContent>
                    </Select>
                 </div>
-                <div className="col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[100px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+
+                <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" /></div>
+
+                {activeTab === 'Geoposición' ? (
+                  <>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Zona Escolar</Label><Input value={formData.zonaEscolar} readOnly className="bg-slate-50" /></div>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Sector</Label><Input value={formData.sector} readOnly className="bg-slate-50" /></div>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Valle</Label><Input value={formData.valle} readOnly className="bg-slate-50" /></div>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Municipio</Label><Input value={formData.municipio} readOnly className="bg-slate-50" /></div>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="border-primary/20 font-mono" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="border-primary/20 font-mono" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                  </>
+                ) : activeTab === 'Cuentas Institucionales' ? (
+                  <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                ) : null}
+
+                <div className="col-span-2 md:col-span-3 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
              </div>
           </div>
           <DialogFooter className="gap-3">
