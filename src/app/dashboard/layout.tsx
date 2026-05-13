@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarTrigger,
   SidebarInset,
   SidebarProvider,
@@ -28,6 +27,7 @@ import {
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 export default function DashboardLayout({
   children,
@@ -57,52 +57,48 @@ export default function DashboardLayout({
   }
 
   const menuItems = [
-    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-6 w-6" /> },
-    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-6 w-6" /> },
-    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-6 w-6" /> },
-    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-6 w-6" /> },
+    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
+    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
   ]
 
   if (!mounted) return null
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r-2 border-primary/5 bg-white/80 backdrop-blur-3xl">
-        <SidebarHeader className="border-b-2 border-primary/5 pt-10 pb-8 mb-6">
-          <div className="flex flex-col items-center gap-6 px-4">
-            <div className="relative h-24 w-24 bg-white rounded-[2.5rem] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-primary/5 transition-transform hover:scale-110 duration-500">
+      <Sidebar className="border-r border-primary/5 bg-white/90 backdrop-blur-xl">
+        <SidebarHeader className="pt-8 pb-6 border-b border-slate-50">
+          <div className="flex flex-col items-center gap-4 px-4">
+            <div className="relative h-20 w-20 bg-white rounded-3xl p-3 shadow-lg border border-primary/5">
               <Image 
                 src={logoData.imageUrl} 
-                alt="DESySA" 
+                alt="COEES" 
                 fill 
-                className="object-contain p-4"
+                className="object-contain p-2"
                 data-ai-hint="education logo"
               />
             </div>
-            <div className="flex flex-col items-center text-center">
-              <span className="text-2xl font-black text-primary uppercase tracking-tighter leading-none">COEES</span>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="h-1 w-4 bg-accent/30 rounded-full" />
-                <span className="text-[9px] text-muted-foreground uppercase font-black tracking-[0.2em] opacity-70">Edoméx 2026</span>
-                <span className="h-1 w-4 bg-accent/30 rounded-full" />
-              </div>
+            <div className="text-center">
+              <span className="text-xl font-black text-primary uppercase tracking-tight">COEES</span>
+              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-[0.2em] mt-1">Edoméx 2026</p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-6 overflow-y-auto">
+        <SidebarContent className="px-4 py-6">
           <SidebarMenu>
             {menuItems.map((item) => (
-              <SidebarMenuItem key={item.path} className="mb-4">
+              <SidebarMenuItem key={item.path} className="mb-2">
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-16 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all px-6 ${
+                  className={`h-12 rounded-xl font-black uppercase text-[10px] tracking-wider px-5 transition-all ${
                     pathname === item.path 
                       ? 'sidebar-item-active' 
-                      : 'text-slate-400 hover:bg-primary/5 hover:text-primary'
+                      : 'text-slate-500 hover:bg-primary/5 hover:text-primary'
                   }`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {item.icon}
                     <span>{item.name}</span>
                   </div>
@@ -111,68 +107,44 @@ export default function DashboardLayout({
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="border-t-2 border-primary/5 pt-8 px-6 pb-10">
-          <div className="flex flex-col gap-6">
-            <div className="p-6 bg-slate-50/80 rounded-[2rem] border border-primary/5 shadow-inner backdrop-blur-sm">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-xl">
-                  <User className="h-6 w-6" />
-                </div>
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-[11px] font-black truncate uppercase text-primary leading-none mb-2">{userRfc}</span>
-                  <Badge className="bg-accent/10 text-accent border-none text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full w-fit">
-                    Analista Senior
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
-                <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                <span className="text-[8px] text-emerald-700 uppercase font-black tracking-widest">Sincronizado</span>
-              </div>
-            </div>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  className="text-rose-600 font-black uppercase text-[10px] tracking-[0.25em] hover:bg-rose-50 border-2 border-rose-50 h-14 rounded-2xl flex items-center justify-center gap-3 bg-white shadow-sm"
-                >
-                  <LogOut className="h-4 w-4" /> Salir
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
-        </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-transparent overflow-hidden">
-        <header className="flex h-24 items-center justify-between border-b-2 border-primary/5 px-10 bg-white/70 backdrop-blur-3xl sticky top-0 z-40 shadow-sm">
-          <div className="flex items-center gap-8">
-            <SidebarTrigger className="lg:hidden text-primary h-12 w-12 hover:bg-primary/5 rounded-2xl border-2 border-slate-100">
-              <PanelLeft className="h-6 w-6" />
-            </SidebarTrigger>
+      <SidebarInset className="bg-transparent">
+        <header className="flex h-20 items-center justify-between border-b border-slate-100 px-10 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-6">
+            <SidebarTrigger className="lg:hidden text-primary" />
             <div className="flex flex-col">
-              <div className="flex items-center gap-4">
-                <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase px-4 py-1.5 rounded-xl shadow-lg shadow-primary/20">
-                  COEES
-                </Badge>
-                <h1 className="text-[12px] font-black text-slate-800 uppercase tracking-[0.4em] leading-none">
-                  Computación Electrónica
-                </h1>
-              </div>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.3em] mt-2 ml-1 opacity-60">Gestión Técnica en Educación Secundaria</p>
+              <h1 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.3em] leading-none">
+                Computación Electrónica
+              </h1>
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-1.5">Gestión Técnica en Educación Secundaria</p>
             </div>
           </div>
+
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md border-2 border-slate-50 px-6 py-3 rounded-[1.5rem] shadow-sm">
-               <Star className="h-4 w-4 text-accent fill-accent animate-pulse" />
-               <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Periodo Vigente 2026</span>
-             </div>
-             <div className="h-12 w-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl hover:rotate-12 transition-transform cursor-pointer">
-               <Zap className="h-5 w-5" />
-             </div>
+            <div className="hidden md:flex items-center gap-4 bg-slate-50/80 px-5 py-2.5 rounded-2xl border border-slate-100">
+              <div className="h-8 w-8 rounded-xl bg-primary text-white flex items-center justify-center shadow-md">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sesión Activa</span>
+              </div>
+            </div>
+
+            <div className="h-px w-4 bg-slate-200 rotate-90" />
+
+            <Button 
+              variant="ghost" 
+              onClick={handleLogout}
+              className="group h-10 px-4 rounded-xl text-rose-600 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 border border-rose-100 transition-all flex items-center gap-2"
+            >
+              <LogOut className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" /> 
+              Salir
+            </Button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
-          <div className="p-10 md:p-14 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <div className="p-8 md:p-12 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children}
           </div>
         </main>

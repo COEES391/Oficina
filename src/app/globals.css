@@ -34,7 +34,7 @@
     @apply border-border transition-all duration-300;
   }
   body {
-    @apply bg-[#f1f5f9] text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-[#f8fafc] text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-sans), sans-serif;
   }
 
@@ -50,7 +50,7 @@
   ::-webkit-scrollbar-thumb {
     background: #621132;
     border-radius: 20px;
-    border: 3px solid #f1f5f9;
+    border: 3px solid #f8fafc;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -65,15 +65,15 @@
 
 @layer components {
   .executive-card {
-    @apply rounded-[3rem] border-none shadow-[0_20px_60px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_rgba(98,17,50,0.1)] transition-all duration-700 bg-white/95 backdrop-blur-3xl overflow-hidden;
+    @apply rounded-[3rem] border-none shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_70px_rgba(98,17,50,0.08)] transition-all duration-700 bg-white/95 backdrop-blur-3xl overflow-hidden;
   }
 
   .btn-institutional {
-    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all hover:scale-[1.03] active:scale-95 h-14 rounded-2xl;
+    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/10 transition-all hover:scale-[1.02] active:scale-95 h-12 rounded-xl;
   }
 
   .sidebar-item-active {
-    @apply bg-primary text-white shadow-[0_15px_30px_-5px_rgba(98,17,50,0.4)] scale-105;
+    @apply bg-primary text-white shadow-[0_10px_25px_-5px_rgba(98,17,50,0.3)] scale-[1.02];
   }
   
   .table-institutional {
@@ -81,7 +81,7 @@
   }
   
   .table-institutional th {
-    @apply bg-slate-100/50 p-4 font-black uppercase text-slate-500 tracking-wider text-center border-b border-slate-200;
+    @apply bg-slate-100/80 p-4 font-black uppercase text-slate-600 tracking-wider text-center border-b-2 border-slate-200;
   }
   
   .table-institutional td {
