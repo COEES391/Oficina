@@ -49,7 +49,6 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import Image from 'next/image'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
@@ -67,7 +66,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v45_no_assistants_tab_for_ci";
+const DB_VERSION = "827_full_sync_v46_institutional_redesign";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -84,7 +83,6 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeDialogTab, setActiveDialogTab] = useState('datos')
 
-  // Cuentas Institucionales Filters
   const [valFilter, setValFilter] = useState('all')
   const [modFilter, setModFilter] = useState('all')
   const [domFilter, setDomFilter] = useState('all')
@@ -110,11 +108,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v45')
+    const storedVersion = localStorage.getItem('programs_db_version_v46')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v45', DB_VERSION)
+      localStorage.setItem('programs_db_version_v46', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)

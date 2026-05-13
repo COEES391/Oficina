@@ -27,12 +27,9 @@ export default function LoginPage() {
   const handleLogin = () => {
     const cleanRfc = rfc.trim().toUpperCase()
     
-    // Credenciales oficiales: 
-    // COEES / 123456 (Analista Senior)
-    // CEDITORIAL / SEIEM (Administrador Editorial)
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso concedido", description: "Bienvenido, Analista de COEES." })
+      toast({ title: "Acceso concedido", description: "Bienvenido al Sistema Integral de Planeación COEES." })
       router.push('/dashboard')
     } else if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
       localStorage.setItem('userRfc', cleanRfc)
