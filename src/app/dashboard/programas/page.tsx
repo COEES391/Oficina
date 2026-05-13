@@ -51,7 +51,6 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
-    // Si no hay datos guardados o si falta la información de geoposición (264 registros), forzamos la carga inicial
     const hasGeoData = stored.some((r: any) => r.name === 'Geoposición')
     if (stored.length === 0 || !hasGeoData) {
       setRecords(programsData)
@@ -109,7 +108,6 @@ export default function ProgramsPage() {
        filtered = records.filter(r => r.name === activeTab);
     }
 
-    // Para Geoposición, enriquecer con datos del directorio si faltan campos
     if (activeTab === 'Geoposición') {
       return filtered.map(rec => {
         const school = schoolsDirectory.find(s => s.cct.toUpperCase() === rec.cct?.toUpperCase());
@@ -237,13 +235,23 @@ export default function ProgramsPage() {
                           </TableCell>
                           <TableCell className="text-[9px] font-mono text-muted-foreground lowercase">{rec.email}</TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1 py-1">
-                                 <button className="text-[8px] font-black text-blue-600 hover:underline uppercase text-left">REVISAR</button>
-                                 <button className="text-[8px] font-black text-emerald-600 hover:underline uppercase text-left">PUBLICAR</button>
-                                 <button className="text-[8px] font-black text-rose-600 hover:underline uppercase text-left">SUSPENDER</button>
-                                 <button className="text-[8px] font-black text-amber-600 hover:underline uppercase text-left">OBSERVAR</button>
-                                 <button className="text-[8px] font-black text-slate-600 hover:underline uppercase text-left">ECONTACTO</button>
-                                 <button className="text-[8px] font-black text-primary hover:underline uppercase text-left">CONTRASEÑA</button>
+                            <div className="flex items-start gap-2 py-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-primary hover:bg-primary/5 shrink-0"
+                                  onClick={() => { setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true); }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <div className="flex flex-col gap-1">
+                                     <button className="text-[8px] font-black text-blue-600 hover:underline uppercase text-left">REVISAR</button>
+                                     <button className="text-[8px] font-black text-emerald-600 hover:underline uppercase text-left">PUBLICAR</button>
+                                     <button className="text-[8px] font-black text-rose-600 hover:underline uppercase text-left">SUSPENDER</button>
+                                     <button className="text-[8px] font-black text-amber-600 hover:underline uppercase text-left">OBSERVAR</button>
+                                     <button className="text-[8px] font-black text-slate-600 hover:underline uppercase text-left">ECONTACTO</button>
+                                     <button className="text-[8px] font-black text-primary hover:underline uppercase text-left">CONTRASEÑA</button>
+                                </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-[9px] text-left italic max-w-[150px] truncate">{rec.observaciones}</TableCell>
