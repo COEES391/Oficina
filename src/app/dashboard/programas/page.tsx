@@ -51,8 +51,11 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
+    const hasAccounts = stored.some((r: any) => r.name === 'Cuentas Institucionales')
     const hasGeoData = stored.some((r: any) => r.name === 'Geoposición')
-    if (stored.length === 0 || !hasGeoData) {
+    
+    // Si faltan datos base o cuentas masivas, restauramos desde programsData
+    if (stored.length === 0 || !hasAccounts || !hasGeoData) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
     } else {
@@ -73,7 +76,8 @@ export default function ProgramsPage() {
           sector: school.sector,
           modalidad: school.modalidad,
           municipio: school.municipio,
-          valle: school.valle
+          valle: school.valle,
+          email: `${school.cct.toLowerCase()}@desysa.gob.mx`
         };
       }
       return next;
