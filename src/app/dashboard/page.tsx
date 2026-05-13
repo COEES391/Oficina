@@ -1,4 +1,3 @@
-
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -52,7 +51,8 @@ const PROGRAM_RUBROS = [
   'Biblioteca Digital',
   'Cuentas Institucionales',
   'Geoposición',
-  'Conoce mi Escuela'
+  'Conoce mi Escuela',
+  'ATRES'
 ];
 
 type DashboardGoals = {
@@ -257,7 +257,7 @@ export default function DashboardPage() {
         fullName: name,
         value: uniqueCcts,
         percentage: Math.min(100, Math.round((uniqueCcts / TOTAL_UNIVERSE) * 100)),
-        fill: name === 'Conoce mi Escuela' ? '#621132' : '#B38E5D'
+        fill: name === 'Conoce mi Escuela' || name === 'ATRES' ? '#621132' : '#B38E5D'
       };
     });
   }, [programs]);
@@ -564,7 +564,7 @@ export default function DashboardPage() {
 
       {activeReport === 'programas' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {programCoverage.map((prog) => (
               <Card key={prog.fullName} className="executive-card p-6 border-l-4 group hover:scale-[1.02] transition-all" style={{ borderLeftColor: prog.fill }}>
                 <div className="flex justify-between items-start">
