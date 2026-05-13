@@ -66,7 +66,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "827_full_sync_v46_institutional_redesign";
+const DB_VERSION = "coees_institutional_redesign_v47";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -108,11 +108,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v46')
+    const storedVersion = localStorage.getItem('programs_db_version_v47')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v46', DB_VERSION)
+      localStorage.setItem('programs_db_version_v47', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -188,7 +188,7 @@ export default function ProgramsPage() {
   }
 
   const bdRecords = useMemo(() => records.filter(r => r.name === 'Biblioteca Digital'), [records]);
-  const ciRecords = useMemo(() => records.filter(r => r.name === 'Cuentas Institucionales' || r.id.startsWith('PROG-CI') || r.name?.includes('Cuentas')), [records]);
+  const ciRecords = useMemo(() => records.filter(r => r.name === 'Cuentas Institucionales' || r.id.startsWith('PROG-CI') || (r.name && r.name.includes('Cuentas'))), [records]);
   const geoRecords = useMemo(() => records.filter(r => r.name === 'Geoposición' || r.id.startsWith('PROG-GEO')), [records]);
   
   const editorialRecords = useMemo(() => {
@@ -422,7 +422,7 @@ export default function ProgramsPage() {
                                </TableRow>
                             </TableHeader>
                             <TableBody>
-                               {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec) => (
+                               {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec, idx) => (
                                   <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
                                      <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
                                      <TableCell>

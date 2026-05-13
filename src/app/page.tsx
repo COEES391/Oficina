@@ -29,7 +29,7 @@ export default function LoginPage() {
     
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso concedido", description: "Bienvenido al Sistema Integral de Planeación COEES." })
+      toast({ title: "Acceso concedido", description: "Bienvenido al Sistema Integral COEES." })
       router.push('/dashboard')
     } else if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
       localStorage.setItem('userRfc', cleanRfc)
@@ -57,7 +57,7 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-white rounded-[2.5rem] border-2 border-primary/5 flex items-center justify-center p-4 shadow-xl relative z-10">
               <Image 
                 src={logoData.imageUrl} 
-                alt="Logo DESySA" 
+                alt="Logo COEES" 
                 fill
                 className="object-contain p-5"
                 data-ai-hint="education logo"
