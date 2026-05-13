@@ -92,7 +92,8 @@ export default function ProgramsPage() {
     const editorialCount = stored.filter((r: any) => r.name === 'Conoce mi Escuela').length;
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
-    if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 200) {
+    // Forzamos actualización si los datos no coinciden con los 337 de Geoposición o los 827 de Cuentas
+    if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 337) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
     } else {
