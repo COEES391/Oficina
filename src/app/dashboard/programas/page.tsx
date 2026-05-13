@@ -49,6 +49,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
@@ -66,7 +67,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "coees_institutional_redesign_v48";
+const DB_VERSION = "coees_institutional_final_v52";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -108,11 +109,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v48')
+    const storedVersion = localStorage.getItem('programs_db_version_v52')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v48', DB_VERSION)
+      localStorage.setItem('programs_db_version_v52', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
