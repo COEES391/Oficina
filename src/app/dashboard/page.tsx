@@ -114,6 +114,16 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, dateStart, dateEnd]);
 
+  // Filtrado de datos para Capacitación
+  const filteredTrainings = useMemo(() => {
+    return trainings.filter(tr => {
+      const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
+      const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
+      const matchDateEnd = !dateEnd || tr.fechaTermino <= dateEnd;
+      return matchValle && matchDateStart && matchDateEnd;
+    });
+  }, [trainings, valleFilter, dateStart, dateEnd]);
+
   // Estadísticas de Soporte
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
@@ -123,11 +133,9 @@ export default function DashboardPage() {
     const totalEquipos = filteredTickets.reduce((acc, t) => acc + (t.numeroEquipos || 0), 0);
     const beneficiados = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0);
     
-    // Desglose de mantenimientos Preventivos y Correctivos
     const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
     const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
 
-    // Tipos de servicio
     const typesData = [
       { name: 'RED EDUSAT', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length, fill: '#621132' },
       { name: 'RED LOCAL', value: filteredTickets.filter(t => t.tipoIncidencia === 'red local').length, fill: '#B38E5D' },
