@@ -1,3 +1,4 @@
+
 export type ProgramStatus = {
   id: string;
   name: string;
@@ -62,6 +63,84 @@ export const programsData: ProgramStatus[] = [
   ...getEditorialData()
 ];
 
-export const supportData = [
-  { id: 'S001', cct: '15EES0001Z', schoolName: 'Secundaria Fed. 1', status: 'atendido', tipoIncidencia: 'mantenimiento preventivo', fechaEntrada: '2024-05-20' }
+export const supportData: SupportTicket[] = [
+  { 
+    id: 'S-001', 
+    cct: '15DES0065B', 
+    schoolName: 'JUAN PÉREZ SÁNCHEZ', 
+    status: 'atendido', 
+    tipoIncidencia: 'mantenimiento preventivo', 
+    fechaEntrada: '2024-05-20',
+    valle: 'MEXICO',
+    municipio: 'AMECAMECA',
+    modalidad: 'DES',
+    oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Nezahualcóyotl',
+    responsables: ['ING. CARLOS LÓPEZ'],
+    serviciosMC: 0,
+    serviciosMP: 12,
+    numeroEquipos: 12
+  }
 ];
+
+export type SupportTicket = {
+  id: string;
+  cct: string;
+  schoolName: string;
+  zonaEscolar?: string;
+  sector?: string;
+  modalidad?: string;
+  municipio?: string;
+  region?: string;
+  valle?: string;
+  responsables: string[];
+  oficinaRegionalAtencion: string;
+  numeroOficio?: string;
+  alumnosBeneficiados?: number;
+  docentesBeneficiados?: number;
+  numeroEquipos: number;
+  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo';
+  materialUtilizado?: string;
+  setes?: 'S' | 'N';
+  observaciones?: string;
+  descripcionEquipo?: string;
+  fechaEntrada: string;
+  fechaSalida?: string;
+  serviciosMC: number;
+  serviciosMP: number;
+  status: 'atendido' | 'en proceso' | 'pendiente';
+  reportPdf?: string;
+  evidencePhotos?: string[];
+};
+
+export type TrainingRecord = {
+  id: string;
+  cursoGrupo: string;
+  cursoNombre: string;
+  duracionHoras: number;
+  fechaInicio: string;
+  fechaTermino: string;
+  instructores: string[];
+  numeroOficio: string;
+  materialUtilizado: string;
+  cctSede: string;
+  setes: 'S' | 'N';
+  observaciones: string;
+  asistentePaterno: string;
+  asistenteMaterno: string;
+  asistenteNombres: string;
+  asistenteRFC: string;
+  asistenteGenero: 'MASCULINO' | 'FEMENINO' | '';
+  asistenteFuncion: string;
+  asistenteEmail: string;
+  asistenteCCT: string;
+  asistenteNombreCT: string;
+  asistenteZE: string;
+  asistenteSector: string;
+  asistenteModalidad: string;
+  asistenteMunicipio: string;
+  asistenteRegion: string;
+  asistenteValle: string;
+  evidencePhotos?: string[];
+};
+
+export const trainingRecords: TrainingRecord[] = [];

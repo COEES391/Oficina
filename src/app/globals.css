@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25,38 +26,26 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 336 70% 23%;
-    --radius: 1.5rem;
+    --radius: 1rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-border transition-all duration-300;
+    @apply border-border;
   }
   body {
-    @apply bg-[#f4f7f9] text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-[#f8fafc] text-foreground antialiased;
     font-family: var(--font-sans), sans-serif;
   }
 }
 
 @layer components {
   .executive-card {
-    @apply rounded-[2rem] border-none shadow-[0_10px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_rgba(98,17,50,0.08)] transition-all duration-500 bg-white/95 backdrop-blur-xl overflow-hidden;
+    @apply rounded-3xl border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white overflow-hidden;
   }
 
   .btn-institutional {
-    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.15em] shadow-xl shadow-primary/15 transition-all hover:scale-[1.02] active:scale-95 h-12 rounded-xl;
-  }
-
-  .table-institutional {
-    @apply w-full border-collapse text-[10px] font-bold;
-  }
-  
-  .table-institutional th {
-    @apply bg-slate-50 p-4 font-black uppercase text-slate-700 tracking-wider text-center border-b-2 border-slate-100;
-  }
-  
-  .table-institutional td {
-    @apply p-4 border-b border-slate-50 text-center;
+    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest shadow-lg shadow-primary/15 transition-all h-10 rounded-xl;
   }
 }

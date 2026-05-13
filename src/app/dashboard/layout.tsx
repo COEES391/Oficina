@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -19,7 +20,8 @@ import {
   Briefcase, 
   LogOut, 
   User,
-  Monitor
+  Monitor,
+  Settings
 } from 'lucide-react'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
@@ -63,11 +65,11 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r border-slate-100 bg-white">
+      <Sidebar className="border-r border-slate-100 bg-white/90 backdrop-blur-md">
         <SidebarHeader className="pt-8 pb-4">
           <div className="flex flex-col items-center gap-4 px-4">
-            <div className="relative h-16 w-16 bg-slate-50 rounded-2xl p-3 shadow-inner border border-slate-100 overflow-hidden">
-               <Monitor className="w-full h-full text-primary opacity-80" />
+            <div className="relative h-16 w-16 bg-white rounded-2xl p-3 shadow-lg border border-slate-100 overflow-hidden flex items-center justify-center">
+               <Monitor className="w-8 h-8 text-primary opacity-80" />
             </div>
             <div className="text-center">
               <span className="text-lg font-black text-primary uppercase tracking-tighter">COEES</span>
@@ -76,15 +78,15 @@ export default function DashboardLayout({
           </div>
         </SidebarHeader>
         <SidebarContent className="px-4 py-4">
-          <SidebarMenu className="gap-1">
+          <SidebarMenu className="gap-2">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-10 rounded-xl font-black uppercase text-[9px] tracking-widest px-4 ${
+                  className={`h-10 rounded-xl font-black uppercase text-[9px] tracking-widest px-4 transition-all duration-300 ${
                     pathname === item.path 
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                      ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' 
                       : 'text-slate-500 hover:bg-slate-50 hover:text-primary'
                   }`}
                 >
@@ -102,10 +104,11 @@ export default function DashboardLayout({
         <header className="flex h-14 items-center justify-between border-b border-slate-100 px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="lg:hidden text-primary" />
+            <h1 className="text-xs font-black uppercase text-slate-400 tracking-widest">Sistema de Gestión Integral</h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-slate-50/50 px-3 py-1.5 rounded-xl border border-slate-100">
+            <div className="flex items-center gap-3 bg-slate-100/50 px-3 py-1.5 rounded-xl border border-slate-100">
               <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                 <User className="h-3 w-3" />
               </div>

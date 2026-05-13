@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { programsData, type ProgramStatus, type ProgramAssistant } from "@/lib/planning-data"
+import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import { 
@@ -107,7 +108,7 @@ export default function ProgramsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="w-full h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm">
+        <TabsList className="w-full h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm overflow-x-auto">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger 
               key={rubro} 
