@@ -26,15 +26,23 @@ import {
   CheckCircle2,
   Users,
   Plus,
-  School
+  School,
+  FileText,
+  Image as ImageIcon,
+  X,
+  ExternalLink,
+  Eye,
+  Info
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import Image from 'next/image'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
   'Cuentas Institucionales',
   'Geoposición',
-  'Conoce mi Escuela'
+  'Conoce mi Escuela',
+  'ATRES'
 ];
 
 const FUNCIONES = [
@@ -45,6 +53,14 @@ const FUNCIONES = [
   "SUPERVISOR",
   "ASESOR TECNICO PEDAGOGICO"
 ]
+
+const REGIONAL_OFFICES = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
+];
 
 type AssistantEntry = {
   paterno: string;
@@ -71,12 +87,22 @@ export default function ProgramsPage() {
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
-    latitud: '', longitud: ''
+    latitud: '', longitud: '',
+    tipoIncidencia: 'mantenimiento preventivo',
+    oficinaRegionalAtencion: '',
+    numeroOficio: '',
+    alumnosBeneficiados: 0,
+    docentesBeneficiados: 0,
+    serviciosMC: 0,
+    serviciosMP: 0,
+    reportPdf: '',
+    evidencePhotos: []
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -89,9 +115,8 @@ export default function ProgramsPage() {
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
-    const accountsCount = stored.filter((r: any) => r.name === 'Cuentas Institucionales').length;
     
-    if (stored.length === 0 || geoCount < 337 || accountsCount < 800) {
+    if (stored.length === 0 || geoCount < 337) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
     } else {
@@ -118,6 +143,36 @@ export default function ProgramsPage() {
           email: `${school.cct.toLowerCase()}@desysa.gob.mx`
         }));
       }
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
+    const files = e.target.files
+    if (!files) return
+
+    if (type === 'pdf') {
+      const file = files[0]
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData({ ...formData, reportPdf: reader.result as string })
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const newPhotos = Array.from(files)
+      if ((formData.evidencePhotos?.length || 0) + newPhotos.length > 5) {
+        toast({ variant: "destructive", title: "Límite", description: "Máximo 5 fotos." })
+        return
+      }
+      newPhotos.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setFormData(prev => ({
+            ...prev,
+            evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
+          }))
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
@@ -265,7 +320,7 @@ export default function ProgramsPage() {
                 <TableHeader className="bg-slate-50/50">
                   {activeTab === 'Conoce mi Escuela' ? (
                     <TableRow>
-                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
+                      <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Agrupado</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Vert.</TableHead>
@@ -276,13 +331,11 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase">Revisión</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Fecha</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Status</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Email</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-center">Acciones</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Observaciones</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-center">Acción</TableHead>
                     </TableRow>
                   ) : activeTab === 'Geoposición' ? (
                     <TableRow>
-                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
+                      <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Zona</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Sector</TableHead>
@@ -294,9 +347,21 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase">Estatus</TableHead>
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
+                  ) : activeTab === 'ATRES' ? (
+                    <TableRow>
+                      <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Servicio</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Oficio</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Benef.</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Estatus</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
+                    </TableRow>
                   ) : (
                     <TableRow>
-                      <TableHead className="w-10 text-[10px] font-black uppercase text-center">#</TableHead>
+                      <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Modalidad</TableHead>
@@ -310,9 +375,9 @@ export default function ProgramsPage() {
                 <TableBody>
                   {currentTabRecords.length > 0 ? currentTabRecords.map((rec, idx) => (
                     <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
+                      <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       {activeTab === 'Conoce mi Escuela' ? (
                         <>
-                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-[9px] font-bold text-slate-500">{rec.agrupado}</TableCell>
                           <TableCell className="text-[10px] font-black">{rec.vertiente}</TableCell>
@@ -327,19 +392,14 @@ export default function ProgramsPage() {
                                 {rec.status}
                              </Badge>
                           </TableCell>
-                          <TableCell className="text-[9px] font-mono text-muted-foreground lowercase">{rec.email}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEdit(rec)}>
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                            </div>
+                          <TableCell className="text-center">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEdit(rec)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                           </TableCell>
-                          <TableCell className="text-[9px] text-left italic max-w-[150px] truncate">{rec.observaciones}</TableCell>
                         </>
                       ) : activeTab === 'Geoposición' ? (
                         <>
-                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-[10px] font-bold text-slate-600">{rec.zonaEscolar}</TableCell>
                           <TableCell className="text-[10px] font-bold text-slate-600">{rec.sector}</TableCell>
@@ -364,9 +424,40 @@ export default function ProgramsPage() {
                              </div>
                           </TableCell>
                         </>
+                      ) : activeTab === 'ATRES' ? (
+                        <>
+                          <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
+                          <TableCell className="text-[10px] font-black text-slate-700">{rec.schoolName}</TableCell>
+                          <TableCell className="capitalize text-[10px] font-bold text-slate-500">{rec.tipoIncidencia}</TableCell>
+                          <TableCell className="text-[9px] font-mono">{rec.numeroOficio}</TableCell>
+                          <TableCell className="text-[10px] font-bold">{(rec.alumnosBeneficiados || 0) + (rec.docentesBeneficiados || 0)}</TableCell>
+                          <TableCell>
+                            <Badge className={cn("text-[9px] font-black uppercase px-2", rec.status === 'activo' ? 'bg-emerald-500' : 'bg-slate-200 text-slate-600')}>
+                              {rec.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-2">
+                              {rec.reportPdf && (
+                                <Button variant="outline" size="icon" className="h-7 w-7 border-blue-200 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: rec.reportPdf!, title: `Reporte ${rec.cct}` })}>
+                                  <FileText className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              )}
+                              {rec.evidencePhotos && rec.evidencePhotos.length > 0 && (
+                                <Button variant="outline" size="icon" className="h-7 w-7 border-pink-200 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: rec.evidencePhotos!, title: `Evidencia ${rec.cct}` })}>
+                                  <ImageIcon className="h-4 w-4 text-pink-600" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-8">
+                             <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8 hover:text-primary transition-colors"><Pencil className="h-4 w-4" /></Button>
+                             </div>
+                          </TableCell>
+                        </>
                       ) : (
                         <>
-                          <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                           <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                           <TableCell className="text-sm font-bold text-slate-700">{rec.schoolName}</TableCell>
                           <TableCell><Badge className="bg-slate-900 text-white text-[10px] px-3">{rec.modalidad}</Badge></TableCell>
@@ -537,6 +628,71 @@ export default function ProgramsPage() {
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="h-12 border-primary/20 font-mono bg-slate-50" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
                                 <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="h-12 border-primary/20 font-mono bg-slate-50" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                               </>
+                            ) : activeTab === 'ATRES' ? (
+                              <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Tipo de Servicio</Label>
+                                  <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
+                                    <SelectTrigger className="h-12 bg-slate-50 uppercase font-bold text-[10px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="red edusat" className="text-[10px] uppercase">Red Edusat</SelectItem>
+                                      <SelectItem value="red local" className="text-[10px] uppercase">Red Local</SelectItem>
+                                      <SelectItem value="instalación red local" className="text-[10px] uppercase">Instalación Red Local</SelectItem>
+                                      <SelectItem value="mantenimiento preventivo" className="text-[10px] uppercase">Mantenimiento Preventivo</SelectItem>
+                                      <SelectItem value="mantenimiento correctivo" className="text-[10px] uppercase">Mantenimiento Correctivo</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Oficina Regional</Label>
+                                  <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                                    <SelectTrigger className="h-12 bg-slate-50 text-[10px] font-bold"><SelectValue placeholder="Seleccionar oficina..." /></SelectTrigger>
+                                    <SelectContent>
+                                      {REGIONAL_OFFICES.map(off => (
+                                        <SelectItem key={off} value={off} className="text-[10px] uppercase">{off.replace("Oficina de ", "")}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Número de Oficio</Label>
+                                  <Input className="h-12 bg-slate-50 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="DESySA/PL/..." />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-10 bg-slate-50" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-10 bg-slate-50" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase">Servicios MC</Label><Input type="number" className="h-10 bg-slate-50" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase">Servicios MP</Label><Input type="number" className="h-10 bg-slate-50" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                                </div>
+
+                                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-100/50 rounded-2xl border border-slate-200">
+                                   <div className="space-y-2">
+                                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                        <FileText className="h-4 w-4 text-blue-600" /> Reporte Oficial (PDF)
+                                      </Label>
+                                      <Input type="file" accept=".pdf" className="bg-white h-10 text-[10px]" onChange={e => handleFileChange(e, 'pdf')} />
+                                      {formData.reportPdf && <p className="text-[9px] text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Archivo PDF configurado</p>}
+                                   </div>
+                                   <div className="space-y-2">
+                                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                                        <ImageIcon className="h-4 w-4 text-pink-600" /> Evidencias Foto (Máx 5)
+                                      </Label>
+                                      <Input type="file" multiple accept="image/*" className="bg-white h-10 text-[10px]" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
+                                      <div className="flex gap-2 flex-wrap mt-2">
+                                        {formData.evidencePhotos?.map((p, i) => (
+                                          <div key={i} className="relative h-10 w-10 border border-white rounded shadow-sm overflow-hidden">
+                                            <Image src={p} alt="ev" fill className="object-cover" />
+                                            <button className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
+                                              <X className="h-2 w-2" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                   </div>
+                                </div>
+                              </div>
                             ) : activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' ? (
                               <>
                                 <div className="space-y-2">
@@ -676,6 +832,40 @@ export default function ProgramsPage() {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-[1.2rem] h-14 text-[10px] font-black uppercase px-10 border-slate-200">Cancelar</Button>
             <Button onClick={handleSave} className="btn-institutional px-16 text-[10px] h-14 rounded-[1.2rem]">Guardar Registro</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
+            <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
+              {evidenceToView?.type === 'pdf' ? <FileText className="h-5 w-5 text-blue-600" /> : <ImageIcon className="h-5 w-5 text-pink-600" />}
+              {evidenceToView?.title}
+              <ExternalLink className="h-3 w-3 text-muted-foreground ml-2" />
+            </DialogTitle>
+            <DialogDescription className="font-bold text-xs">Visor de evidencias oficiales Módulos Técnicos COEES.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-slate-100 relative">
+             {evidenceToView?.type === 'pdf' ? (
+                <iframe src={evidenceToView.data as string} className="w-full h-full border-none" />
+             ) : (
+                <ScrollArea className="h-full w-full p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {(evidenceToView?.data as string[])?.map((img, idx) => (
+                      <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border-4 border-white shadow-xl group">
+                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <Eye className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+             )}
+          </div>
+          <div className="p-4 border-t bg-white flex justify-end">
+            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs">Cerrar Visor</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
