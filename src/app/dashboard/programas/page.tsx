@@ -51,11 +51,13 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
-    const hasAccounts = stored.some((r: any) => r.name === 'Cuentas Institucionales')
-    const hasGeoData = stored.some((r: any) => r.name === 'Geoposición')
+    // Verificamos el volumen de datos para cada sección
+    const accountsCount = stored.filter((r: any) => r.name === 'Cuentas Institucionales').length;
+    const editorialCount = stored.filter((r: any) => r.name === 'Conoce mi Escuela').length;
+    const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
-    // Si faltan datos base o cuentas masivas, restauramos desde programsData
-    if (stored.length === 0 || !hasAccounts || !hasGeoData) {
+    // Si la base de datos está vacía o incompleta (menos de 800 cuentas o menos de 800 editoriales), restauramos
+    if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 200) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
     } else {
@@ -65,12 +67,14 @@ export default function ProgramsPage() {
 
   const handleCctChange = (val: string) => {
     const cleanVal = val.toUpperCase();
-    setFormData(prev => {
-      const next = { ...prev, cct: cleanVal };
+    setFormData(prev => ({ ...prev, cct: cleanVal }));
+    
+    // Buscamos la escuela solo si el CCT tiene 10 caracteres
+    if (cleanVal.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
       if (school) {
-        return {
-          ...next,
+        setFormData(prev => ({
+          ...prev,
           schoolName: school.nombre,
           zonaEscolar: school.zonaEscolar,
           sector: school.sector,
@@ -78,10 +82,9 @@ export default function ProgramsPage() {
           municipio: school.municipio,
           valle: school.valle,
           email: `${school.cct.toLowerCase()}@desysa.gob.mx`
-        };
+        }));
       }
-      return next;
-    });
+    }
   }
 
   const handleSave = () => {
@@ -92,7 +95,7 @@ export default function ProgramsPage() {
     
     const finalData = {
       ...formData,
-      id: editingId || `PROG-${formData.name.substring(0,2)}-${Date.now()}`
+      id: editingId || `PROG-${formData.name.substring(0,2).toUpperCase()}-${Date.now()}`
     };
 
     const updated = editingId ? records.map(r => r.id === editingId ? finalData : r) : [finalData, ...records];
@@ -101,17 +104,17 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    toast({ title: "Registro guardado" })
+    toast({ title: "Registro guardado con éxito" })
   }
 
   const currentTabRecords = useMemo(() => {
-    let filtered = [];
+    let filtered = records.filter(r => r.name === activeTab);
+    
     if (activeTab === 'Conoce mi Escuela') {
-       filtered = records.filter(r => r.name === 'Conoce mi Escuela').sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
-    } else {
-       filtered = records.filter(r => r.name === activeTab);
+       filtered = filtered.sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
 
+    // Para Geoposición, aseguramos que los datos geográficos estén vinculados
     if (activeTab === 'Geoposición') {
       return filtered.map(rec => {
         const school = schoolsDirectory.find(s => s.cct.toUpperCase() === rec.cct?.toUpperCase());
@@ -137,8 +140,8 @@ export default function ProgramsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos Técnicos COEES</h2>
-          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
+          <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
             <Activity className="h-4 w-4 text-accent" /> Control de Programas y Auditoría 2026
           </p>
         </div>
@@ -173,7 +176,7 @@ export default function ProgramsPage() {
              </Button>
           </Card>
 
-          <Card className="executive-card p-0">
+          <Card className="executive-card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50/50">
@@ -282,7 +285,7 @@ export default function ProgramsPage() {
                                   const updated = records.filter(r => r.id !== rec.id);
                                   setRecords(updated);
                                   localStorage.setItem('programs_full', JSON.stringify(updated));
-                                }} className="h-8 w-8 text-rose-500"><Trash2 className="h-4 w-4" /></Button>
+                                }} className="h-8 w-8 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
                              </div>
                           </TableCell>
                         </>
