@@ -21,7 +21,9 @@ import {
   Search,
   ArrowUpRight,
   ClipboardList,
-  MapPin
+  MapPin,
+  Settings2,
+  Tool
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -166,6 +168,11 @@ export default function DashboardPage() {
       { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
     ];
 
+    const maintenanceComparison = [
+      { name: 'Preventivo', value: serviciosMP, fill: '#059669' },
+      { name: 'Correctivo', value: serviciosMC, fill: '#dc2626' },
+    ];
+
     return {
       statusData: [
         { name: 'ATENDIDOS', value: atendidos, fill: '#621132' },
@@ -173,6 +180,7 @@ export default function DashboardPage() {
         { name: 'PENDIENTES', value: pendientes, fill: '#f43f5e' },
       ],
       typesData,
+      maintenanceComparison,
       totalEquipos,
       beneficiados,
       serviciosMP,
@@ -328,31 +336,85 @@ export default function DashboardPage() {
       {activeReport === 'soporte' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="executive-card md:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Distribución Operativa de Servicios
-                  </CardTitle>
-                </div>
-                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">ANÁLISIS DE ESTATUS</Badge>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
-                    <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
-                      {supportStats.statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <div className="md:col-span-2 space-y-6">
+              <Card className="executive-card">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" /> Distribución Operativa por Estatus
+                    </CardTitle>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">ANÁLISIS DE ESTATUS</Badge>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
+                      <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
+                        {supportStats.statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <Card className="executive-card">
+                    <CardHeader>
+                      <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                        <Activity className="h-4 w-4" /> Análisis por Tipo de Servicio
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[250px]">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30 }}>
+                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                             <XAxis type="number" hide />
+                             <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} width={80} />
+                             <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                             <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                                {supportStats.typesData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                             </Bar>
+                          </RechartsBarChart>
+                       </ResponsiveContainer>
+                    </CardContent>
+                 </Card>
+
+                 <Card className="executive-card">
+                    <CardHeader>
+                      <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                        <Settings2 className="h-4 w-4" /> Mantenimientos: Preventivo vs Correctivo
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[250px]">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                             <Pie
+                                data={supportStats.maintenanceComparison}
+                                innerRadius={50}
+                                outerRadius={70}
+                                paddingAngle={5}
+                                dataKey="value"
+                             >
+                                {supportStats.maintenanceComparison.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                             </Pie>
+                             <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                             <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }} />
+                          </PieChart>
+                       </ResponsiveContainer>
+                    </CardContent>
+                 </Card>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-6">
               <Card className="executive-card p-6 bg-primary text-white relative overflow-hidden group">
@@ -376,7 +438,7 @@ export default function DashboardPage() {
                      <CheckCircle2 className="h-6 w-6" />
                    </div>
                  </div>
-                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Equipos en óptimo estado</p>
+                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Servicios de conservación</p>
               </Card>
 
               <Card className="executive-card p-6 border-l-4 border-rose-500">
@@ -390,6 +452,19 @@ export default function DashboardPage() {
                    </div>
                  </div>
                  <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Atención de fallas críticas</p>
+              </Card>
+              
+              <Card className="executive-card p-6 border-l-4 border-slate-400">
+                 <div className="flex justify-between items-start">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios Directos</p>
+                     <h3 className="text-4xl font-black mt-2 text-slate-700">{supportStats.beneficiados}</h3>
+                   </div>
+                   <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm">
+                     <Users className="h-6 w-6" />
+                   </div>
+                 </div>
+                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Alumnos y Docentes</p>
               </Card>
             </div>
           </div>
