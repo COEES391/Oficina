@@ -64,15 +64,15 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <Sidebar className="border-r border-primary/10 bg-white/95 backdrop-blur-xl">
-        <SidebarHeader className="pt-8 pb-6">
-          <div className="flex flex-col items-center gap-4 px-4">
-            <div className="relative h-28 w-28 bg-white rounded-[2.5rem] p-1 shadow-2xl border-4 border-primary/5 group overflow-hidden">
+        <SidebarHeader className="pt-10 pb-8">
+          <div className="flex flex-col items-center gap-6 px-4">
+            <div className="relative h-32 w-32 bg-white rounded-[2.5rem] p-1 shadow-2xl border-4 border-primary/5 group overflow-hidden">
               <Image 
                 src={logoData.imageUrl} 
                 alt="COEES Tech" 
                 fill 
                 className="object-cover transition-transform duration-700 group-hover:scale-110"
-                data-ai-hint="tech education"
+                data-ai-hint="tech computer"
               />
               <div className="absolute inset-0 bg-primary/10 mix-blend-multiply opacity-20" />
             </div>
@@ -82,14 +82,14 @@ export default function DashboardLayout({
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-4 py-2">
-          <SidebarMenu className="gap-3">
+        <SidebarContent className="px-6 py-4">
+          <SidebarMenu className="gap-5">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-12 rounded-2xl font-black uppercase text-[9px] tracking-widest px-5 transition-all duration-500 ${
+                  className={`h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
                     pathname === item.path 
                       ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' 
                       : 'text-slate-500 hover:bg-primary/5 hover:text-primary'
