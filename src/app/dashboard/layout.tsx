@@ -89,7 +89,7 @@ export default function DashboardLayout({
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-6">
+        <SidebarContent className="px-6 overflow-y-auto">
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path} className="mb-4">
@@ -143,7 +143,7 @@ export default function DashboardLayout({
           </div>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="bg-transparent">
+      <SidebarInset className="bg-transparent overflow-hidden">
         <header className="flex h-24 items-center justify-between border-b-2 border-primary/5 px-10 bg-white/70 backdrop-blur-3xl sticky top-0 z-40 shadow-sm">
           <div className="flex items-center gap-8">
             <SidebarTrigger className="lg:hidden text-primary h-12 w-12 hover:bg-primary/5 rounded-2xl border-2 border-slate-100">
@@ -171,8 +171,8 @@ export default function DashboardLayout({
              </div>
           </div>
         </header>
-        <main className="flex-1 p-10 md:p-14 overflow-y-auto">
-          <div className="max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-6 duration-1000">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-10 md:p-14 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-6 duration-1000">
             {children}
           </div>
         </main>

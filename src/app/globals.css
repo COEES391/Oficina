@@ -37,6 +37,32 @@
     @apply bg-[#f1f5f9] text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-sans), sans-serif;
   }
+
+  /* Custom Scrollbar Styles - Edomex 2026 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #621132; /* Edomex Guinda */
+    border-radius: 20px;
+    border: 3px solid #f1f5f9;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4a0c26; /* Darker Guinda on hover */
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #621132 transparent;
+  }
 }
 
 @layer components {
