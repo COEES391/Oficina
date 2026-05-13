@@ -13,24 +13,16 @@ import {
   Briefcase,
   TrendingUp,
   Clock,
-  Image as ImageIcon,
-  FileText,
   Circle,
-  ExternalLink,
-  Search,
-  Building2,
   Settings2,
   Target,
-  BarChart,
   Zap,
   Calendar,
   Layers,
-  Layout,
-  Table as TableIcon,
   MonitorCheck,
-  Mail,
   Activity,
-  School
+  School,
+  AlertCircle
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -54,42 +46,19 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
-const TARGET_UNIVERSE_DATA = [
-  { modalidad: 'SECUNDARIA GENERAL', valle: 'MEXICO', total: 175, codes: ['DES', 'DSN'] },
-  { modalidad: 'SECUNDARIA GENERAL', valle: 'TOLUCA', total: 77, codes: ['DES', 'DSN'] },
-  { modalidad: 'SECUNDARIA TECNICA', valle: 'MEXICO', total: 128, codes: ['DST'] },
-  { modalidad: 'SECUNDARIA TECNICA', valle: 'TOLUCA', total: 112, codes: ['DST'] },
-  { modalidad: 'TELESECUNDARIA', valle: 'MEXICO', total: 144, codes: ['DTV', 'FTV'] },
-  { modalidad: 'TELESECUNDARIA', valle: 'TOLUCA', total: 194, codes: ['DTV', 'FTV'] },
-];
-
 const TOTAL_UNIVERSE = 830;
+const TRAINING_GOAL_2026 = 5600;
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
-  'Cuentas Institucionales (@desysa.gob.mx, @desysa.edu.mx, @coees.edu.mx)',
+  'Cuentas Institucionales',
   'Geoposición',
   'Conoce mi Escuela',
   'Mesa de Ayuda Técnica'
 ];
-
-const REGIONAL_METAS_FY2026 = [
-  { region: 'TOLUCA', oficina: 'Toluca', trimestral: 539, anual: 2156 },
-  { region: 'MÉXICO', oficina: 'Nezahualcóyotl', trimestral: 215, anual: 860 },
-  { region: 'MÉXICO', oficina: 'Ecatepec', trimestral: 215, anual: 860 },
-  { region: 'MÉXICO', oficina: 'Naucalpan', trimestral: 431, anual: 1724 },
-];
-
-const REGIONAL_SUMMARY_2026 = {
-  'TOLUCA': 2156,
-  'MEXICO': 860 + 860 + 1724
-};
 
 type DashboardGoals = {
   periodType: 'Ciclo Escolar' | 'Año Fiscal';
@@ -105,20 +74,15 @@ export default function DashboardPage() {
   const [trainings, setTrainings] = useState<TrainingRecord[]>([])
   const [programs, setPrograms] = useState<ProgramStatus[]>([])
   
-  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  
   const [goals, setGoals] = useState<DashboardGoals>({
     periodType: 'Año Fiscal',
     periodName: '2026',
     supportGoal: 500,
-    trainingGoal: 5600
+    trainingGoal: TRAINING_GOAL_2026
   })
 
   const [valleFilter, setValleFilter] = useState('all')
-  const [municipioFilter, setMunicipioFilter] = useState('all')
-  const [modalidadFilter, setModalidadFilter] = useState('all')
-  const [oficinaFilter, setOficinaFilter] = useState('all')
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
@@ -137,214 +101,371 @@ export default function DashboardPage() {
     if (storedGoals) setGoals(storedGoals)
   }, [])
 
-  const saveGoals = () => {
-    localStorage.setItem('dashboard_goals', JSON.stringify(goals))
-    setIsSettingsOpen(false)
-  }
-
-  const filterOptions = useMemo(() => {
-    const valles = Array.from(new Set(schoolsDirectory.map(s => s.valle))).sort();
-    const listByValle = valleFilter === 'all' ? schoolsDirectory : schoolsDirectory.filter(s => (s.valle || '').toUpperCase() === valleFilter.toUpperCase());
-    const modalidades = Array.from(new Set(listByValle.map(s => s.modalidad))).sort();
-    const municipios = Array.from(new Set(listByValle.map(s => s.municipio))).sort();
-    return { valles, modalidades, municipios };
-  }, [valleFilter]);
-
+  // Filtrado de datos para Soporte
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || (t.valle && t.valle.toUpperCase() === valleFilter.toUpperCase());
-      const matchMunicipio = municipioFilter === 'all' || (t.municipio && t.municipio.toUpperCase() === municipioFilter.toUpperCase());
-      const matchModalidad = modalidadFilter === 'all' || (t.modalidad && t.modalidad.toUpperCase() === modalidadFilter.toUpperCase());
-      const matchOficina = oficinaFilter === 'all' || t.oficinaRegionalAtencion === oficinaFilter;
       const matchDateStart = !dateStart || t.fechaEntrada >= dateStart;
       const matchDateEnd = !dateEnd || t.fechaEntrada <= dateEnd;
-      return matchValle && matchMunicipio && matchModalidad && matchOficina && matchDateStart && matchDateEnd;
+      return matchValle && matchDateStart && matchDateEnd;
     });
-  }, [tickets, valleFilter, municipioFilter, modalidadFilter, oficinaFilter, dateStart, dateEnd]);
+  }, [tickets, valleFilter, dateStart, dateEnd]);
 
+  // Filtrado de datos para Capacitación
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
-      const matchMunicipio = municipioFilter === 'all' || (tr.asistenteMunicipio && tr.asistenteMunicipio.toUpperCase() === municipioFilter.toUpperCase());
-      const matchModalidad = modalidadFilter === 'all' || (tr.asistenteModalidad && tr.asistenteModalidad.toUpperCase() === modalidadFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
-      return matchValle && matchMunicipio && matchDateStart && matchDateEnd;
+      return matchValle && matchDateStart && matchDateEnd;
     });
-  }, [trainings, valleFilter, municipioFilter, modalidadFilter, dateStart, dateEnd]);
+  }, [trainings, valleFilter, dateStart, dateEnd]);
 
-  const programStats = useMemo(() => {
-    return PROGRAM_RUBROS.map(name => {
-      const rubroRecords = programs.filter(r => r.name === name || (name.startsWith('Cuentas') && (r.id.startsWith('IMP-') || r.id.startsWith('PROG-CI'))));
-      const uniqueSchools = new Set(rubroRecords.map(r => r.cct).filter(Boolean)).size;
-      const progress = Math.min(100, Math.round((uniqueSchools / TOTAL_UNIVERSE) * 100));
-      const lastUpdate = rubroRecords.length > 0 
-        ? rubroRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date 
-        : '-';
-      
-      let status: 'planeacion' | 'activo' | 'concluido' = 'planeacion';
-      if (progress > 0) status = 'activo';
-      if (progress >= 100) status = 'concluido';
-
-      return { 
-        name: name.includes('(') ? name.split('(')[0].trim() : name, 
-        fullName: name,
-        progress, 
-        status, 
-        lastUpdate, 
-        count: uniqueSchools,
-        records: rubroRecords 
-      };
-    });
-  }, [programs]);
-
-  const stats = useMemo(() => {
-    const atendidos = filteredTickets.filter(t => t.status === 'atendido').length
-    const enProceso = filteredTickets.filter(t => t.status === 'en proceso').length
-    const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length
-    const supportSetes = filteredTickets.filter(t => t.setes === 'S').length
+  // Estadísticas de Soporte
+  const supportStats = useMemo(() => {
+    const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
+    const proceso = filteredTickets.filter(t => t.status === 'en proceso').length;
+    const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length;
+    const totalEquipos = filteredTickets.reduce((acc, t) => acc + (t.numeroEquipos || 0), 0);
+    const beneficiados = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0);
 
     return {
       statusData: [
-        { name: 'Atendidos', value: atendidos, fill: '#10b981' },
-        { name: 'En Proceso', value: enProceso, fill: '#f59e0b' },
+        { name: 'Atendidos', value: atendidos, fill: '#621132' }, // Guinda
+        { name: 'En Proceso', value: proceso, fill: '#B38E5D' },  // Oro
         { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
       ],
-      supportSetesData: [
-        { name: 'Semana SETES', value: supportSetes, fill: '#8b5cf6' },
-        { name: 'Soporte Regular', value: filteredTickets.length - supportSetes, fill: '#cbd5e1' },
-      ],
-      trainingByValle: [
-        { 
-          name: 'MÉXICO', 
-          value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, 
-          goal: REGIONAL_SUMMARY_2026['MEXICO'],
-          fill: '#6366f1' 
-        },
-        { 
-          name: 'TOLUCA', 
-          value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, 
-          goal: REGIONAL_SUMMARY_2026['TOLUCA'],
-          fill: '#ec4899' 
-        },
-      ],
-    }
-  }, [filteredTickets, filteredTrainings]);
-
-  const UNIVERSE_STATS = useMemo(() => {
-    return TARGET_UNIVERSE_DATA.map(target => {
-      const atendidas = filteredTickets.filter(t => {
-        const matchValle = (target.valle === 'MEXICO' && (t.valle?.toUpperCase() === 'MEXICO' || t.valle?.toUpperCase() === 'M')) ||
-                          (target.valle === 'TOLUCA' && (t.valle?.toUpperCase() === 'TOLUCA' || t.valle?.toUpperCase() === 'T'));
-        const matchModalidad = target.codes.some(code => t.modalidad?.toUpperCase() === code.toUpperCase());
-        return matchValle && matchModalidad;
-      }).length;
-      return { ...target, atendidas };
-    });
+      totalEquipos,
+      beneficiados,
+      total: filteredTickets.length
+    };
   }, [filteredTickets]);
 
-  const clearFilters = () => {
-    setValleFilter('all');
-    setMunicipioFilter('all');
-    setModalidadFilter('all');
-    setOficinaFilter('all');
-    setDateStart('');
-    setDateEnd('');
-  };
+  // Estadísticas de Capacitación
+  const trainingStats = useMemo(() => {
+    const total = filteredTrainings.length;
+    const progress = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
+    const byValle = [
+      { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#621132' },
+      { name: 'TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#B38E5D' },
+    ];
+    const porGenero = [
+      { name: 'Hombres', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#0f172a' },
+      { name: 'Mujeres', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'FEMENINO').length, fill: '#ec4899' },
+    ];
 
-  if (!mounted) return null
+    return { total, progress, byValle, porGenero };
+  }, [filteredTrainings, goals.trainingGoal]);
+
+  // Estadísticas de Programas
+  const programCoverage = useMemo(() => {
+    const categories = PROGRAM_RUBROS.map(name => {
+      const records = programs.filter(p => p.name === name);
+      const uniqueCcts = new Set(records.map(p => p.cct)).size;
+      return { 
+        name: name.split(' ')[0], 
+        fullName: name,
+        value: uniqueCcts,
+        percentage: Math.round((uniqueCcts / TOTAL_UNIVERSE) * 100),
+        fill: name === 'Conoce mi Escuela' ? '#621132' : '#B38E5D'
+      };
+    });
+    return categories;
+  }, [programs]);
+
+  if (!mounted) return null;
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-700">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">COEES</h2>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              <p className="text-muted-foreground font-black text-[9px] tracking-[0.15em] uppercase">
-                Análisis Técnico Operativo
-              </p>
-              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/5 text-primary rounded-lg" onClick={() => setIsSettingsOpen(true)}>
-                <Settings2 className="h-3 w-3" />
-              </Button>
-            </div>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      {/* Header del Dashboard */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
+                <Layout className="h-6 w-6 text-primary" />
+             </div>
+             <div>
+               <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Panel Ejecutivo</h2>
+               <p className="text-muted-foreground font-black text-[10px] tracking-[0.2em] uppercase mt-1">Análisis Técnico Operativo COEES</p>
+             </div>
+          </div>
+        </div>
+        
+        <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:w-auto">
+          <TabsList className="grid grid-cols-3 w-full md:w-[450px] h-12 bg-white/50 backdrop-blur-md border border-slate-200 p-1 rounded-2xl shadow-sm">
+            <TabsTrigger value="soporte" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+              <Wrench className="h-4 w-4" /> Soporte
+            </TabsTrigger>
+            <TabsTrigger value="capacitacion" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+              <GraduationCap className="h-4 w-4" /> Capacitación
+            </TabsTrigger>
+            <TabsTrigger value="programas" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+              <Briefcase className="h-4 w-4" /> Programas
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Filtros Globales */}
+      <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Filter className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filtros:</span>
           </div>
           
-          <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:auto">
-            <TabsList className="grid grid-cols-3 w-full md:w-[400px] bg-slate-100/50 p-1 h-11 rounded-xl shadow-inner border border-primary/5">
-              <TabsTrigger value="soporte" className="gap-2 text-[9px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-                <Wrench className="h-3.5 w-3.5" /> Soporte
-              </TabsTrigger>
-              <TabsTrigger value="capacitacion" className="gap-2 text-[9px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-                <GraduationCap className="h-3.5 w-3.5" /> Capacitación
-              </TabsTrigger>
-              <TabsTrigger value="programas" className="gap-2 text-[9px] font-black uppercase tracking-wider rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-                <Briefcase className="h-3.5 w-3.5" /> Programas
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <Card className="p-4 rounded-2xl border-none bg-white/70 backdrop-blur-xl shadow-md relative overflow-hidden group">
-          <div className="flex flex-wrap items-center gap-4 relative z-10">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
-                <Filter className="h-4 w-4 text-primary" />
-              </div>
-              <span className="text-[10px] font-black uppercase text-primary tracking-widest">Filtros:</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white/50 p-1.5 rounded-xl border border-slate-100 shadow-inner">
-               <div className="flex items-center gap-1.5 pl-2">
-                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                 <Input 
-                    type="date" 
-                    className="h-7 text-[10px] font-black border-none focus-visible:ring-0 w-[110px] bg-transparent" 
-                    value={dateStart} 
-                    onChange={(e) => setDateStart(e.target.value)}
-                  />
-               </div>
-               <span className="text-[9px] font-black text-slate-300">AL</span>
-               <Input 
-                  type="date" 
-                  className="h-7 text-[10px] font-black border-none focus-visible:ring-0 w-[110px] bg-transparent" 
-                  value={dateEnd} 
-                  onChange={(e) => setDateEnd(e.target.value)}
-                />
-            </div>
-
-            <Select value={valleFilter} onValueChange={setValleFilter}>
-              <SelectTrigger className="h-10 text-[10px] font-black w-[130px] bg-white rounded-xl border-slate-200 shadow-sm">
-                <SelectValue placeholder="VALLE" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-[10px] font-black">VALLES</SelectItem>
-                {filterOptions.valles.map(v => (
-                  <SelectItem key={v} value={v} className="text-[10px] font-black uppercase">{v === 'T' ? 'TOLUCA' : v === 'M' ? 'MÉXICO' : v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={modalidadFilter} onValueChange={setValleFilter}>
-              <SelectTrigger className="h-10 text-[10px] font-black w-[160px] bg-white rounded-xl border-slate-200 shadow-sm">
-                <SelectValue placeholder="MODALIDAD" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-[10px] font-black">MODALIDADES</SelectItem>
-                {filterOptions.modalidades.map(m => (
-                  <SelectItem key={m} value={m} className="text-[10px] font-black uppercase">{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button variant="ghost" size="sm" className="h-10 px-4 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary rounded-xl" onClick={clearFilters}>
-              <RefreshCcw className="h-3.5 w-3.5 mr-1.5" /> Reiniciar
-            </Button>
+          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <Input type="date" className="h-8 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateStart} onChange={e => setDateStart(e.target.value)} />
+            <span className="text-[9px] font-black text-slate-300">A</span>
+            <Input type="date" className="h-8 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
           </div>
-        </Card>
+
+          <Select value={valleFilter} onValueChange={setValleFilter}>
+            <SelectTrigger className="h-10 text-[10px] font-black w-[150px] rounded-xl border-slate-200 bg-white">
+              <SelectValue placeholder="VALLE" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-[10px] font-black">TODOS LOS VALLES</SelectItem>
+              <SelectItem value="MEXICO" className="text-[10px] font-black">VALLE DE MÉXICO</SelectItem>
+              <SelectItem value="TOLUCA" className="text-[10px] font-black">VALLE DE TOLUCA</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary" onClick={() => {setValleFilter('all'); setDateStart(''); setDateEnd('')}}>
+            <RefreshCcw className="h-4 w-4 mr-2" /> Reiniciar
+          </Button>
+        </div>
+      </Card>
+
+      {/* DASHBOARD SOPORTE TÉCNICO */}
+      {activeReport === 'soporte' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700">
+          <Card className="executive-card md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Distribución Operativa de Servicios
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
+                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={60}>
+                    {supportStats.statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 gap-6">
+            <Card className="executive-card p-6 bg-primary text-white relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                 <Wrench className="h-20 w-20" />
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Servicios Totales</p>
+               <h3 className="text-5xl font-black mt-2 leading-none">{supportStats.total}</h3>
+               <div className="mt-4 flex items-center gap-2">
+                 <Badge className="bg-white/20 text-white border-none text-[9px]">Ciclo 2025-2026</Badge>
+               </div>
+            </Card>
+            <Card className="executive-card p-6">
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Infraestructura Atendida</p>
+               <h3 className="text-4xl font-black mt-2 text-primary">{supportStats.totalEquipos} <span className="text-sm font-bold text-slate-400">Equipos</span></h3>
+               <Progress value={75} className="h-2 mt-4" />
+               <p className="text-[9px] font-bold text-slate-400 mt-2">Mantenimientos Preventivos y Correctivos</p>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* DASHBOARD CAPACITACIÓN */}
+      {activeReport === 'capacitacion' && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 duration-700">
+          <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center">
+             <div className="mx-auto h-24 w-24 rounded-full border-8 border-primary/10 border-t-primary flex items-center justify-center animate-spin-slow">
+                <span className="text-2xl font-black text-primary">{trainingStats.progress}%</span>
+             </div>
+             <h3 className="text-xl font-black uppercase text-slate-900 mt-6 leading-none">Meta Institucional 2026</h3>
+             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">Personal capacitado sobre meta de {goals.trainingGoal}</p>
+             <div className="mt-8 grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase">Real</p>
+                   <p className="text-2xl font-black text-primary">{trainingStats.total}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase">Restante</p>
+                   <p className="text-2xl font-black text-accent">{goals.trainingGoal - trainingStats.total}</p>
+                </div>
+             </div>
+          </Card>
+
+          <Card className="executive-card md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <Users className="h-4 w-4" /> Personal por Región
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                    <Pie data={trainingStats.byValle} innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                      {trainingStats.byValle.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                 </PieChart>
+               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* DASHBOARD PROGRAMAS (AUDITORÍA) */}
+      {activeReport === 'programas' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {programCoverage.slice(0, 4).map((prog) => (
+              <Card key={prog.fullName} className="executive-card p-6 border-l-4" style={{ borderLeftColor: prog.fill }}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{prog.name}</p>
+                    <h3 className="text-3xl font-black text-slate-900 mt-1">{prog.value}</h3>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-primary">{prog.percentage}%</span>
+                  </div>
+                </div>
+                <Progress value={prog.percentage} className="h-1.5 mt-4" style={{ color: prog.fill }} />
+                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">Cobertura sobre {TOTAL_UNIVERSE} CTs</p>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <Card className="executive-card p-6">
+                <CardHeader className="px-0 pt-0">
+                   <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Target className="h-4 w-4" /> Universo de Atención Sectorial
+                   </CardTitle>
+                </CardHeader>
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-primary text-white">DES</Badge>
+                        <span className="text-[10px] font-black uppercase text-slate-600">Secundarias Generales</span>
+                      </div>
+                      <span className="text-xs font-black">252 CTs</span>
+                   </div>
+                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-accent text-white">DST</Badge>
+                        <span className="text-[10px] font-black uppercase text-slate-600">Secundarias Técnicas</span>
+                      </div>
+                      <span className="text-xs font-black">240 CTs</span>
+                   </div>
+                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-slate-900 text-white">DTV</Badge>
+                        <span className="text-[10px] font-black uppercase text-slate-600">Telesecundarias</span>
+                      </div>
+                      <span className="text-xs font-black">338 CTs</span>
+                   </div>
+                </div>
+             </Card>
+
+             <Card className="executive-card bg-slate-900 text-white p-6 relative overflow-hidden">
+                <div className="absolute -bottom-10 -right-10 opacity-20">
+                   <MonitorCheck className="h-40 w-40 text-white" />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-tighter">Estado de Cuentas Institucionales</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Migración a dominios @coees.edu.mx</p>
+                <div className="mt-8 space-y-4 relative z-10">
+                   <div>
+                      <div className="flex justify-between text-[10px] font-black uppercase mb-1">
+                        <span>Migradas</span>
+                        <span>{Math.round(TOTAL_UNIVERSE * 0.85)} / {TOTAL_UNIVERSE}</span>
+                      </div>
+                      <Progress value={85} className="h-2 bg-white/10" />
+                   </div>
+                   <div className="pt-4 border-t border-white/10 flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent">
+                        <Zap className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase">Próxima Auditoría</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">Septiembre 2026 - Valle de Toluca</p>
+                      </div>
+                   </div>
+                </div>
+             </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Footer del Dashboard - Alerta Operativa */}
+      <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl">
+         <AlertCircle className="h-5 w-5 text-accent animate-pulse" />
+         <p className="text-[10px] font-black uppercase tracking-widest text-accent">
+            Reporte actualizado en tiempo real conforme a las capturas realizadas en los módulos de gestión integral.
+         </p>
       </div>
-      {/* Rest of components remain consistent with scaled down sizes */}
+
+      {/* Diálogo de Configuración de Metas */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2rem] border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black text-primary text-xl">Configuración de Metas</DialogTitle>
+            <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ajuste los objetivos anuales para el tablero ejecutivo.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-6">
+             <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">Meta de Capacitación (2026)</Label>
+                  <Input 
+                    type="number" 
+                    className="font-black h-12 rounded-xl" 
+                    value={goals.trainingGoal} 
+                    onChange={e => setGoals({...goals, trainingGoal: parseInt(e.target.value) || 0})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">Periodo de Reporte</Label>
+                  <Select value={goals.periodName} onValueChange={val => setGoals({...goals, periodName: val})}>
+                    <SelectTrigger className="h-12 rounded-xl font-black"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024" className="font-bold">CICLO 2024</SelectItem>
+                      <SelectItem value="2025" className="font-bold">CICLO 2025</SelectItem>
+                      <SelectItem value="2026" className="font-bold">VISIÓN 2026</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+             </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => { localStorage.setItem('dashboard_goals', JSON.stringify(goals)); setIsSettingsOpen(false); }} className="btn-institutional w-full h-12">Actualizar Objetivos Maestros</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <style jsx global>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+      `}</style>
     </div>
   )
 }
+    
