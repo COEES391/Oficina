@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
@@ -51,12 +52,10 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
-    // Verificamos el volumen de datos para cada sección
     const accountsCount = stored.filter((r: any) => r.name === 'Cuentas Institucionales').length;
     const editorialCount = stored.filter((r: any) => r.name === 'Conoce mi Escuela').length;
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
-    // Si la base de datos está vacía o incompleta, restauramos la base oficial
     if (stored.length === 0 || accountsCount < 800 || editorialCount < 800 || geoCount < 200) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
@@ -69,7 +68,6 @@ export default function ProgramsPage() {
     const cleanVal = val.toUpperCase();
     setFormData(prev => ({ ...prev, cct: cleanVal }));
     
-    // Buscamos la escuela solo si el CCT tiene 10 caracteres
     if (cleanVal.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
       if (school) {
@@ -322,77 +320,101 @@ export default function ProgramsPage() {
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2rem] border-none shadow-2xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[850px] rounded-[2rem] border-none shadow-2xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="uppercase font-black text-primary text-2xl">Gestión de {activeTab}</DialogTitle>
             <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ingrese los datos para la auditoría institucional COEES.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-primary">CCT</Label>
-                  <Input 
-                    placeholder="15DESXXXXX" 
-                    className="font-mono uppercase border-primary/10" 
-                    value={formData.cct} 
-                    onChange={e => handleCctChange(e.target.value)} 
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
-                   <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
-                     <SelectTrigger className="border-primary/10 font-bold">
-                       <SelectValue placeholder="Seleccionar estatus..." />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="activo">ACTIVO</SelectItem>
-                       <SelectItem value="inactivo">INACTIVO</SelectItem>
-                     </SelectContent>
-                   </Select>
-                </div>
+          
+          <ScrollArea className="flex-1 px-6">
+            <div className="grid gap-6 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-primary">CCT</Label>
+                    <Input 
+                      placeholder="15DESXXXXX" 
+                      className="font-mono uppercase border-primary/10" 
+                      value={formData.cct} 
+                      onChange={e => handleCctChange(e.target.value)} 
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
+                    <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
+                      <SelectTrigger className="border-primary/10 font-bold">
+                        <SelectValue placeholder="Seleccionar estatus..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="activo">ACTIVO</SelectItem>
+                        <SelectItem value="inactivo">INACTIVO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="col-span-1 md:col-span-2 space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label>
-                  <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" />
-                </div>
+                  <div className="col-span-1 md:col-span-2 space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label>
+                    <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" />
+                  </div>
 
-                {activeTab === 'Geoposición' ? (
-                  <>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Zona Escolar</Label><Input value={formData.zonaEscolar} readOnly className="bg-slate-50" /></div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Sector</Label><Input value={formData.sector} readOnly className="bg-slate-50" /></div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Valle</Label><Input value={formData.valle} readOnly className="bg-slate-50" /></div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Municipio</Label><Input value={formData.municipio} readOnly className="bg-slate-50" /></div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="border-primary/20 font-mono" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                    <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="border-primary/20 font-mono" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
-                  </>
-                ) : activeTab === 'Cuentas Institucionales' ? (
-                  <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
-                ) : activeTab === 'Biblioteca Digital' ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase text-primary">Número de Equipos</Label>
-                      <Input type="number" className="border-primary/10 font-bold" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                  {/* Campos geográficos compartidos y automáticos */}
+                  <div className="col-span-1 md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Zona Escolar</Label>
+                      <Input value={formData.zonaEscolar} readOnly className="bg-white text-[10px] h-8 font-bold" />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase text-primary">Estatus de Capacitación</Label>
-                      <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
-                        <SelectTrigger className="border-primary/10 font-bold">
-                          <SelectValue placeholder="Seleccionar estatus..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="S">CAPACITADO (SÍ)</SelectItem>
-                          <SelectItem value="N">PENDIENTE (NO)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Sector</Label>
+                      <Input value={formData.sector} readOnly className="bg-white text-[10px] h-8 font-bold" />
                     </div>
-                  </>
-                ) : null}
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Modalidad</Label>
+                      <Input value={formData.modalidad} readOnly className="bg-white text-[10px] h-8 font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Valle</Label>
+                      <Input value={formData.valle} readOnly className="bg-white text-[10px] h-8 font-bold" />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Municipio</Label>
+                      <Input value={formData.municipio} readOnly className="bg-white text-[10px] h-8 font-bold" />
+                    </div>
+                  </div>
 
-                <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
-             </div>
-          </div>
-          <DialogFooter className="gap-3">
+                  {activeTab === 'Geoposición' ? (
+                    <>
+                      <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="border-primary/20 font-mono" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                      <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="border-primary/20 font-mono" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                    </>
+                  ) : activeTab === 'Cuentas Institucionales' ? (
+                    <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+                  ) : activeTab === 'Biblioteca Digital' ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-primary">Número de Equipos</Label>
+                        <Input type="number" className="border-primary/10 font-bold" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-primary">Estatus de Capacitación</Label>
+                        <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
+                          <SelectTrigger className="border-primary/10 font-bold">
+                            <SelectValue placeholder="Seleccionar estatus..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="S">CAPACITADO (SÍ)</SelectItem>
+                            <SelectItem value="N">PENDIENTE (NO)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  ) : null}
+
+                  <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-6 gap-3 border-t">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 text-[10px] font-black uppercase px-8">Cancelar</Button>
             <Button onClick={handleSave} className="btn-institutional px-12 text-[10px] h-12">Guardar Registro</Button>
           </DialogFooter>
