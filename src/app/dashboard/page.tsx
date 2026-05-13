@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { 
+  LayoutDashboard,
   Network, 
   Wrench, 
   Users, 
@@ -131,8 +132,8 @@ export default function DashboardPage() {
 
     return {
       statusData: [
-        { name: 'Atendidos', value: atendidos, fill: '#621132' }, // Guinda
-        { name: 'En Proceso', value: proceso, fill: '#B38E5D' },  // Oro
+        { name: 'Atendidos', value: atendidos, fill: '#621132' },
+        { name: 'En Proceso', value: proceso, fill: '#B38E5D' },
         { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
       ],
       totalEquipos,
@@ -149,17 +150,12 @@ export default function DashboardPage() {
       { name: 'MEXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#621132' },
       { name: 'TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#B38E5D' },
     ];
-    const porGenero = [
-      { name: 'Hombres', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#0f172a' },
-      { name: 'Mujeres', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'FEMENINO').length, fill: '#ec4899' },
-    ];
-
-    return { total, progress, byValle, porGenero };
+    return { total, progress, byValle };
   }, [filteredTrainings, goals.trainingGoal]);
 
   // Estadísticas de Programas
   const programCoverage = useMemo(() => {
-    const categories = PROGRAM_RUBROS.map(name => {
+    return PROGRAM_RUBROS.map(name => {
       const records = programs.filter(p => p.name === name);
       const uniqueCcts = new Set(records.map(p => p.cct)).size;
       return { 
@@ -170,19 +166,17 @@ export default function DashboardPage() {
         fill: name === 'Conoce mi Escuela' ? '#621132' : '#B38E5D'
       };
     });
-    return categories;
   }, [programs]);
 
   if (!mounted) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
-      {/* Header del Dashboard */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
-                <Layout className="h-6 w-6 text-primary" />
+                <LayoutDashboard className="h-6 w-6 text-primary" />
              </div>
              <div>
                <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Panel Ejecutivo</h2>
@@ -206,7 +200,6 @@ export default function DashboardPage() {
         </Tabs>
       </div>
 
-      {/* Filtros Globales */}
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-3">
@@ -238,7 +231,6 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* DASHBOARD SOPORTE TÉCNICO */}
       {activeReport === 'soporte' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700">
           <Card className="executive-card md:col-span-2">
@@ -251,9 +243,9 @@ export default function DashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
-                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 700 }} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={60}>
                     {supportStats.statusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -285,11 +277,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* DASHBOARD CAPACITACIÓN */}
       {activeReport === 'capacitacion' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in slide-in-from-bottom-4 duration-700">
           <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center">
-             <div className="mx-auto h-24 w-24 rounded-full border-8 border-primary/10 border-t-primary flex items-center justify-center animate-spin-slow">
+             <div className="mx-auto h-24 w-24 rounded-full border-8 border-primary/10 border-t-primary flex items-center justify-center">
                 <span className="text-2xl font-black text-primary">{trainingStats.progress}%</span>
              </div>
              <h3 className="text-xl font-black uppercase text-slate-900 mt-6 leading-none">Meta Institucional 2026</h3>
@@ -320,7 +311,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 700 }} />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                  </PieChart>
                </ResponsiveContainer>
@@ -329,7 +320,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* DASHBOARD PROGRAMAS (AUDITORÍA) */}
       {activeReport === 'programas' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -344,7 +334,7 @@ export default function DashboardPage() {
                     <span className="text-[10px] font-black text-primary">{prog.percentage}%</span>
                   </div>
                 </div>
-                <Progress value={prog.percentage} className="h-1.5 mt-4" style={{ color: prog.fill }} />
+                <Progress value={prog.percentage} className="h-1.5 mt-4" />
                 <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase">Cobertura sobre {TOTAL_UNIVERSE} CTs</p>
               </Card>
             ))}
@@ -402,7 +392,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black uppercase">Próxima Auditoría</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">Septiembre 2026 - Valle de Toluca</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">Septiembre 2026</p>
                       </div>
                    </div>
                 </div>
@@ -411,61 +401,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Footer del Dashboard - Alerta Operativa */}
       <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl">
-         <AlertCircle className="h-5 w-5 text-accent animate-pulse" />
+         <AlertCircle className="h-5 w-5 text-accent" />
          <p className="text-[10px] font-black uppercase tracking-widest text-accent">
             Reporte actualizado en tiempo real conforme a las capturas realizadas en los módulos de gestión integral.
          </p>
       </div>
-
-      {/* Diálogo de Configuración de Metas */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[2rem] border-none shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="uppercase font-black text-primary text-xl">Configuración de Metas</DialogTitle>
-            <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ajuste los objetivos anuales para el tablero ejecutivo.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-6">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-primary">Meta de Capacitación (2026)</Label>
-                  <Input 
-                    type="number" 
-                    className="font-black h-12 rounded-xl" 
-                    value={goals.trainingGoal} 
-                    onChange={e => setGoals({...goals, trainingGoal: parseInt(e.target.value) || 0})} 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase text-primary">Periodo de Reporte</Label>
-                  <Select value={goals.periodName} onValueChange={val => setGoals({...goals, periodName: val})}>
-                    <SelectTrigger className="h-12 rounded-xl font-black"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2024" className="font-bold">CICLO 2024</SelectItem>
-                      <SelectItem value="2025" className="font-bold">CICLO 2025</SelectItem>
-                      <SelectItem value="2026" className="font-bold">VISIÓN 2026</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => { localStorage.setItem('dashboard_goals', JSON.stringify(goals)); setIsSettingsOpen(false); }} className="btn-institutional w-full h-12">Actualizar Objetivos Maestros</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
     </div>
   )
 }
-    
