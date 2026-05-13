@@ -63,32 +63,33 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r border-primary/5 bg-white/95 backdrop-blur-xl">
-        <SidebarHeader className="pt-10 pb-8">
+      <Sidebar className="border-r border-primary/10 bg-white/95 backdrop-blur-xl">
+        <SidebarHeader className="pt-8 pb-6">
           <div className="flex flex-col items-center gap-4 px-4">
-            <div className="relative h-24 w-24 bg-white rounded-[2rem] p-4 shadow-xl border border-primary/5">
+            <div className="relative h-28 w-28 bg-white rounded-[2.5rem] p-1 shadow-2xl border-4 border-primary/5 group overflow-hidden">
               <Image 
                 src={logoData.imageUrl} 
                 alt="COEES Tech" 
                 fill 
-                className="object-contain p-2 rounded-[1.5rem]"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
                 data-ai-hint="tech education"
               />
+              <div className="absolute inset-0 bg-primary/10 mix-blend-multiply opacity-20" />
             </div>
             <div className="text-center">
               <span className="text-2xl font-black text-primary uppercase tracking-tighter">COEES</span>
-              <p className="text-[9px] text-muted-foreground uppercase font-black tracking-[0.3em] mt-1.5 opacity-60">Edoméx 2026</p>
+              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-[0.3em] mt-1.5 opacity-60">Edoméx 2026</p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-6 py-4">
-          <SidebarMenu className="gap-2">
+        <SidebarContent className="px-4 py-2">
+          <SidebarMenu className="gap-3">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
+                  className={`h-12 rounded-2xl font-black uppercase text-[9px] tracking-widest px-5 transition-all duration-500 ${
                     pathname === item.path 
                       ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' 
                       : 'text-slate-500 hover:bg-primary/5 hover:text-primary'
@@ -105,40 +106,40 @@ export default function DashboardLayout({
         </SidebarContent>
       </Sidebar>
       <SidebarInset className="bg-transparent">
-        <header className="flex h-24 items-center justify-between border-b border-slate-100 px-12 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
-          <div className="flex items-center gap-8">
+        <header className="flex h-20 items-center justify-between border-b border-slate-100 px-10 bg-white/80 backdrop-blur-xl sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-6">
             <SidebarTrigger className="lg:hidden text-primary" />
             <div className="flex flex-col">
-              <h1 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em] leading-none">
+              <h1 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">
                 Computación Electrónica
               </h1>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2 opacity-50">Gestión Técnica en Educación Secundaria</p>
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-[0.15em] mt-1.5 opacity-50">Educación Secundaria • Edoméx</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-5 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
-              <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
-                <User className="h-5 w-5" />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 bg-slate-50/80 px-5 py-2.5 rounded-2xl border border-slate-100">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <User className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] font-black uppercase text-primary leading-none">{userRfc}</span>
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Sesión Activa</span>
+                <span className="text-[10px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">Usuario Activo</span>
               </div>
             </div>
 
             <Button 
               variant="ghost" 
               onClick={handleLogout}
-              className="group h-12 px-8 rounded-2xl text-rose-600 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 border border-rose-100 transition-all flex items-center gap-3"
+              className="group h-10 px-6 rounded-xl text-rose-600 font-black uppercase text-[9px] tracking-widest hover:bg-rose-50 border border-rose-100 transition-all flex items-center gap-2"
             >
-              <LogOut className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> 
+              <LogOut className="h-3.5 w-3.5" /> 
               Salir
             </Button>
           </div>
         </header>
         <main className="flex-1">
-          <div className="p-10 md:p-16 max-w-[1600px] mx-auto w-full animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <div className="p-8 md:p-12 max-w-[1600px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
             {children}
           </div>
         </main>

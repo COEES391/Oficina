@@ -3,8 +3,8 @@
   "placeholderImages": [
     {
       "id": "desysa-logo",
-      "description": "Logo representativo de Tecnología y Educación para el departamento de COEES.",
-      "imageUrl": "https://picsum.photos/seed/tech-edu/500/500",
+      "description": "Logotipo que representa la integración de tecnología y educación para COEES.",
+      "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=500&auto=format&fit=crop",
       "imageHint": "tech education"
     },
     {
