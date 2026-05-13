@@ -23,7 +23,9 @@ import {
   MonitorCheck,
   Activity,
   School,
-  AlertCircle
+  AlertCircle,
+  BarChart3,
+  Stethoscope
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -112,32 +114,39 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, dateStart, dateEnd]);
 
-  // Filtrado de datos para Capacitación
-  const filteredTrainings = useMemo(() => {
-    return trainings.filter(tr => {
-      const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
-      const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
-      const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
-      return matchValle && matchDateStart && matchDateEnd;
-    });
-  }, [trainings, valleFilter, dateStart, dateEnd]);
-
   // Estadísticas de Soporte
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
     const proceso = filteredTickets.filter(t => t.status === 'en proceso').length;
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length;
+    
     const totalEquipos = filteredTickets.reduce((acc, t) => acc + (t.numeroEquipos || 0), 0);
     const beneficiados = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0);
+    
+    // Desglose de mantenimientos Preventivos y Correctivos
+    const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
+    const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
+
+    // Tipos de servicio
+    const typesData = [
+      { name: 'RED EDUSAT', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length, fill: '#621132' },
+      { name: 'RED LOCAL', value: filteredTickets.filter(t => t.tipoIncidencia === 'red local').length, fill: '#B38E5D' },
+      { name: 'INST. RED', value: filteredTickets.filter(t => t.tipoIncidencia === 'instalación red local').length, fill: '#475569' },
+      { name: 'MANT. PREV.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length, fill: '#059669' },
+      { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
+    ];
 
     return {
       statusData: [
-        { name: 'Atendidos', value: atendidos, fill: '#621132' },
-        { name: 'En Proceso', value: proceso, fill: '#B38E5D' },
-        { name: 'Pendientes', value: pendientes, fill: '#f43f5e' },
+        { name: 'ATENDIDOS', value: atendidos, fill: '#621132' },
+        { name: 'EN PROCESO', value: proceso, fill: '#B38E5D' },
+        { name: 'PENDIENTES', value: pendientes, fill: '#f43f5e' },
       ],
+      typesData,
       totalEquipos,
       beneficiados,
+      serviciosMP,
+      serviciosMC,
       total: filteredTickets.length
     };
   }, [filteredTickets]);
@@ -232,46 +241,134 @@ export default function DashboardPage() {
       </Card>
 
       {activeReport === 'soporte' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700">
-          <Card className="executive-card md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                <Activity className="h-4 w-4" /> Distribución Operativa de Servicios
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
-                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 700 }} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={60}>
-                    {supportStats.statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 gap-6">
-            <Card className="executive-card p-6 bg-primary text-white relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                 <Wrench className="h-20 w-20" />
-               </div>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Servicios Totales</p>
-               <h3 className="text-5xl font-black mt-2 leading-none">{supportStats.total}</h3>
-               <div className="mt-4 flex items-center gap-2">
-                 <Badge className="bg-white/20 text-white border-none text-[9px]">Ciclo 2025-2026</Badge>
-               </div>
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="executive-card md:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                    <Activity className="h-4 w-4" /> Distribución Operativa de Servicios
+                  </CardTitle>
+                </div>
+                <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">STATUS ACTUAL</Badge>
+              </CardHeader>
+              <CardContent className="h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
+                      {supportStats.statusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </CardContent>
             </Card>
+
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="executive-card p-6 bg-primary text-white relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                   <Wrench className="h-20 w-20" />
+                 </div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Reportes Totales</p>
+                 <h3 className="text-5xl font-black mt-2 leading-none">{supportStats.total}</h3>
+                 <div className="mt-4 flex items-center gap-2">
+                   <Badge className="bg-white/20 text-white border-none text-[9px] font-black">Ciclo 2025-2026</Badge>
+                 </div>
+              </Card>
+
+              <Card className="executive-card p-6 border-l-4 border-emerald-500">
+                 <div className="flex justify-between items-start">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Preventivo</p>
+                     <h3 className="text-4xl font-black mt-2 text-emerald-600">{supportStats.serviciosMP}</h3>
+                   </div>
+                   <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+                     <CheckCircle2 className="h-6 w-6" />
+                   </div>
+                 </div>
+                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Servicios realizados en sitio</p>
+              </Card>
+
+              <Card className="executive-card p-6 border-l-4 border-rose-500">
+                 <div className="flex justify-between items-start">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Correctivo</p>
+                     <h3 className="text-4xl font-black mt-2 text-rose-600">{supportStats.serviciosMC}</h3>
+                   </div>
+                   <div className="h-10 w-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500">
+                     <AlertCircle className="h-6 w-6" />
+                   </div>
+                 </div>
+                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Atención de fallas críticas</p>
+              </Card>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="executive-card">
+              <CardHeader>
+                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" /> Análisis por Tipo de Incidencia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
+                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={25}>
+                      {supportStats.typesData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
             <Card className="executive-card p-6">
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Infraestructura Atendida</p>
-               <h3 className="text-4xl font-black mt-2 text-primary">{supportStats.totalEquipos} <span className="text-sm font-bold text-slate-400">Equipos</span></h3>
-               <Progress value={75} className="h-2 mt-4" />
-               <p className="text-[9px] font-bold text-slate-400 mt-2">Mantenimientos Preventivos y Correctivos</p>
+               <CardHeader className="px-0 pt-0">
+                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                     <MonitorCheck className="h-4 w-4" /> Infraestructura y Población
+                  </CardTitle>
+               </CardHeader>
+               <div className="space-y-6">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                     <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-black uppercase text-slate-500">Equipos Atendidos</span>
+                        <Badge className="bg-primary text-white font-black text-[9px]">{supportStats.totalEquipos}</Badge>
+                     </div>
+                     <Progress value={75} className="h-2" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
+                       <Users className="h-6 w-6 text-primary mb-2" />
+                       <span className="text-[9px] font-black text-slate-400 uppercase">Impacto Alumnos</span>
+                       <span className="text-2xl font-black text-primary">{supportStats.beneficiados.toLocaleString()}</span>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
+                       <GraduationCap className="h-6 w-6 text-accent mb-2" />
+                       <span className="text-[9px] font-black text-slate-400 uppercase">Impacto Docentes</span>
+                       <span className="text-2xl font-black text-accent">{(supportStats.total * 2.5).toFixed(0)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                    <Zap className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-primary">Capacidad de Respuesta</p>
+                      <p className="text-[9px] font-bold text-muted-foreground uppercase">Promedio: 48hrs por folio de mantenimiento</p>
+                    </div>
+                  </div>
+               </div>
             </Card>
           </div>
         </div>
@@ -311,7 +408,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 700 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
                  </PieChart>
                </ResponsiveContainer>
@@ -350,21 +447,21 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-primary text-white">DES</Badge>
+                        <Badge className="bg-primary text-white font-black">DES</Badge>
                         <span className="text-[10px] font-black uppercase text-slate-600">Secundarias Generales</span>
                       </div>
                       <span className="text-xs font-black">252 CTs</span>
                    </div>
                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-accent text-white">DST</Badge>
+                        <Badge className="bg-accent text-white font-black">DST</Badge>
                         <span className="text-[10px] font-black uppercase text-slate-600">Secundarias Técnicas</span>
                       </div>
                       <span className="text-xs font-black">240 CTs</span>
                    </div>
                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-slate-900 text-white">DTV</Badge>
+                        <Badge className="bg-slate-900 text-white font-black">DTV</Badge>
                         <span className="text-[10px] font-black uppercase text-slate-600">Telesecundarias</span>
                       </div>
                       <span className="text-xs font-black">338 CTs</span>
