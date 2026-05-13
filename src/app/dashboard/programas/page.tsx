@@ -20,7 +20,9 @@ import {
   Trash2,
   Activity,
   Target,
-  MapPin
+  MapPin,
+  Calendar,
+  Mail
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -40,7 +42,7 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const initialFormState: ProgramStatus = {
-    id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString(), cct: '', schoolName: '', 
+    id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     latitud: '', longitud: ''
@@ -79,6 +81,7 @@ export default function ProgramsPage() {
           modalidad: school.modalidad,
           municipio: school.municipio,
           valle: school.valle,
+          region: school.region,
           email: `${school.cct.toLowerCase()}@desysa.gob.mx`
         }));
       }
@@ -320,103 +323,160 @@ export default function ProgramsPage() {
       </Tabs>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[850px] rounded-[2rem] border-none shadow-2xl h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="uppercase font-black text-primary text-2xl">Gestión de {activeTab}</DialogTitle>
-            <DialogDescription className="font-bold text-[11px] uppercase tracking-widest">Ingrese los datos para la auditoría institucional COEES.</DialogDescription>
+        <DialogContent className="sm:max-w-[950px] rounded-[2rem] border-none shadow-2xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-8 pb-4">
+            <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-3">
+              <Target className="h-7 w-7 text-accent" /> Gestión de {activeTab}
+            </DialogTitle>
+            <DialogDescription className="font-bold text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Ingrese los datos para la auditoría institucional COEES • Ciclo 2025-2026
+            </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 px-6">
-            <div className="grid gap-6 py-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ScrollArea className="flex-1 px-8">
+            <div className="grid gap-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-primary">CCT</Label>
+                    <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                      CCT (Clave de Centro de Trabajo)
+                    </Label>
                     <Input 
-                      placeholder="15DESXXXXX" 
-                      className="font-mono uppercase border-primary/10" 
+                      placeholder="EJ: 15DESXXXXX" 
+                      className="h-14 font-mono uppercase border-primary/10 text-lg bg-slate-50 focus:bg-white transition-colors" 
                       value={formData.cct} 
                       onChange={e => handleCctChange(e.target.value)} 
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-primary">Estatus Auditoría</Label>
+                    <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Estatus Auditoría</Label>
                     <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
-                      <SelectTrigger className="border-primary/10 font-bold">
-                        <SelectValue placeholder="Seleccionar estatus..." />
+                      <SelectTrigger className="h-14 border-primary/10 font-black text-[11px] bg-slate-50 uppercase">
+                        <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="activo">ACTIVO</SelectItem>
-                        <SelectItem value="inactivo">INACTIVO</SelectItem>
+                        <SelectItem value="activo" className="text-[11px] font-black uppercase">ACTIVO</SelectItem>
+                        <SelectItem value="inactivo" className="text-[11px] font-black uppercase">INACTIVO</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="col-span-1 md:col-span-2 space-y-2">
-                    <Label className="text-[11px] font-black uppercase text-primary">Nombre del CCT / Titular</Label>
-                    <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="font-bold" />
+                    <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre del CCT / Titular Responsable</Label>
+                    <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="h-12 font-bold bg-slate-50" />
                   </div>
 
-                  {/* Campos geográficos compartidos y automáticos */}
-                  <div className="col-span-1 md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Zona Escolar</Label>
-                      <Input value={formData.zonaEscolar} readOnly className="bg-white text-[10px] h-8 font-bold" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Sector</Label>
-                      <Input value={formData.sector} readOnly className="bg-white text-[10px] h-8 font-bold" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Modalidad</Label>
-                      <Input value={formData.modalidad} readOnly className="bg-white text-[10px] h-8 font-bold" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Valle</Label>
-                      <Input value={formData.valle} readOnly className="bg-white text-[10px] h-8 font-bold" />
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <Label className="text-[10px] font-black uppercase text-muted-foreground">Municipio</Label>
-                      <Input value={formData.municipio} readOnly className="bg-white text-[10px] h-8 font-bold" />
+                  {/* Ficha Técnica Geográfica Automática */}
+                  <div className="col-span-1 md:col-span-2 space-y-4">
+                    <h4 className="text-[10px] font-black uppercase text-accent border-b border-accent/20 pb-2 tracking-[0.2em]">Ficha Técnica del Plantel</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Zona Escolar</Label>
+                        <Input value={formData.zonaEscolar} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Sector</Label>
+                        <Input value={formData.sector} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Modalidad</Label>
+                        <Input value={formData.modalidad} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Valle</Label>
+                        <Input value={formData.valle} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Región</Label>
+                        <Input value={formData.region} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-70">Municipio</Label>
+                        <Input value={formData.municipio} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                      </div>
                     </div>
                   </div>
 
-                  {activeTab === 'Geoposición' ? (
-                    <>
-                      <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="border-primary/20 font-mono" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                      <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="border-primary/20 font-mono" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
-                    </>
-                  ) : activeTab === 'Cuentas Institucionales' ? (
-                    <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email Institucional</Label><Input className="font-mono lowercase" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
-                  ) : activeTab === 'Biblioteca Digital' ? (
-                    <>
-                      <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-primary">Número de Equipos</Label>
-                        <Input type="number" className="border-primary/10 font-bold" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-primary">Estatus de Capacitación</Label>
-                        <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
-                          <SelectTrigger className="border-primary/10 font-bold">
-                            <SelectValue placeholder="Seleccionar estatus..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="S">CAPACITADO (SÍ)</SelectItem>
-                            <SelectItem value="N">PENDIENTE (NO)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  ) : null}
+                  {/* Campos por Rubro */}
+                  <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-100">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-accent" /> Fecha de Auditoría
+                      </Label>
+                      <Input 
+                        type="date" 
+                        className="h-12 bg-slate-50" 
+                        value={formData.date ? formData.date.split('T')[0] : ''} 
+                        onChange={e => setFormData({...formData, date: e.target.value})} 
+                      />
+                    </div>
 
-                  <div className="col-span-1 md:col-span-2 space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label><Textarea className="min-h-[80px] border-primary/10" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} /></div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-accent" /> Progreso de Implementación (%)
+                      </Label>
+                      <div className="flex items-center gap-4">
+                        <Input 
+                          type="number" 
+                          min="0" max="100" 
+                          className="h-12 w-24 font-black text-center bg-slate-50" 
+                          value={formData.progress} 
+                          onChange={e => setFormData({...formData, progress: parseInt(e.target.value) || 0})} 
+                        />
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-primary transition-all" style={{ width: `${formData.progress}%` }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {activeTab === 'Geoposición' ? (
+                      <>
+                        <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input placeholder="19.XXXX" className="h-12 border-primary/20 font-mono bg-slate-50" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input placeholder="-99.XXXX" className="h-12 border-primary/20 font-mono bg-slate-50" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                      </>
+                    ) : activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-accent" /> Email Institucional del Centro
+                          </Label>
+                          <Input className="h-12 font-mono lowercase bg-slate-50" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                        </div>
+                        {activeTab === 'Biblioteca Digital' && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-primary">No. Equipos</Label>
+                              <Input type="number" className="h-12 border-primary/10 font-black text-center bg-slate-50" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-primary">Capacitado</Label>
+                              <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
+                                <SelectTrigger className="h-12 border-primary/10 font-black text-[10px] bg-slate-50">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="S" className="text-[10px] font-black">SÍ</SelectItem>
+                                  <SelectItem value="N" className="text-[10px] font-black">NO</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div className="col-span-1 md:col-span-2 space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Observaciones Técnicas de la Auditoría</Label>
+                    <Textarea className="min-h-[120px] border-primary/10 bg-slate-50 rounded-2xl p-4" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
+                  </div>
               </div>
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-6 gap-3 border-t">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 text-[10px] font-black uppercase px-8">Cancelar</Button>
-            <Button onClick={handleSave} className="btn-institutional px-12 text-[10px] h-12">Guardar Registro</Button>
+          <DialogFooter className="p-8 gap-4 border-t bg-slate-50/50">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-[1.2rem] h-14 text-[10px] font-black uppercase px-10 border-slate-200">Cancelar</Button>
+            <Button onClick={handleSave} className="btn-institutional px-16 text-[10px] h-14 rounded-[1.2rem]">Guardar Registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
