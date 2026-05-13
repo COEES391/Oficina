@@ -21,7 +21,8 @@ import {
   BarChart3,
   Search,
   ArrowUpRight,
-  ClipboardList
+  ClipboardList,
+  MapPin
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -51,8 +52,7 @@ const PROGRAM_RUBROS = [
   'Biblioteca Digital',
   'Cuentas Institucionales',
   'Geoposición',
-  'Conoce mi Escuela',
-  'Mesa de Ayuda Técnica'
+  'Conoce mi Escuela'
 ];
 
 type DashboardGoals = {
@@ -105,15 +105,46 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, dateStart, dateEnd]);
 
+  // Consolidación de Capacitación (Base + Asistentes de Biblioteca Digital)
+  const consolidatedTrainings = useMemo(() => {
+    const base = trainings.map(t => ({ ...t, source: 'CAPACITACION' }));
+    const fromPrograms: any[] = [];
+    
+    programs.forEach(p => {
+      if (p.name === 'Biblioteca Digital' && p.asistentes && p.asistentes.length > 0) {
+        p.asistentes.forEach((ast: any) => {
+          fromPrograms.push({
+            id: `PROG-AST-${ast.rfc}-${p.id}`,
+            asistentePaterno: ast.paterno,
+            asistenteMaterno: ast.materno,
+            asistenteNombres: ast.nombres,
+            asistenteRFC: ast.rfc,
+            asistenteGenero: ast.genero,
+            asistenteFuncion: ast.funcion,
+            asistenteValle: ast.valle || p.valle,
+            asistenteMunicipio: ast.municipio || p.municipio,
+            asistenteSector: ast.sector || p.sector,
+            asistenteZE: ast.ze || p.zonaEscolar,
+            asistenteModalidad: ast.modalidad || p.modalidad,
+            fechaInicio: p.date,
+            source: 'BIBLIOTECA_DIGITAL'
+          });
+        });
+      }
+    });
+
+    return [...base, ...fromPrograms];
+  }, [trainings, programs]);
+
   // Filtrado de datos para Capacitación
   const filteredTrainings = useMemo(() => {
-    return trainings.filter(tr => {
+    return consolidatedTrainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
-      const matchDateEnd = !dateEnd || tr.fechaTermino <= dateEnd;
+      const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
       return matchValle && matchDateStart && matchDateEnd;
     });
-  }, [trainings, valleFilter, dateStart, dateEnd]);
+  }, [consolidatedTrainings, valleFilter, dateStart, dateEnd]);
 
   // Estadísticas de Soporte
   const supportStats = useMemo(() => {
@@ -150,18 +181,20 @@ export default function DashboardPage() {
     };
   }, [filteredTickets]);
 
-  // Estadísticas de Capacitación (Incluyendo Planeación Anual 2026)
+  // Estadísticas de Capacitación
   const trainingStats = useMemo(() => {
     const total = filteredTrainings.length;
     const progress = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
     
-    // Monthly stats based on the image provided
+    // Monthly stats
     const monthsNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const monthGoals = [387, 566, 447, 466, 418, 516, 450, 0, 950, 570, 467, 363];
     
     const byMonthPlanning = monthsNames.map((name, i) => {
-      const monthNum = String(i + 1).padStart(2, '0');
-      const actual = filteredTrainings.filter(tr => tr.fechaInicio.includes(`-0${i + 1}-`) || tr.fechaInicio.includes(`-${i + 1}-`)).length;
+      const actual = filteredTrainings.filter(tr => {
+        const d = new Date(tr.fechaInicio);
+        return d.getMonth() === i;
+      }).length;
       return { name, actual, goal: monthGoals[i] };
     });
 
@@ -171,7 +204,6 @@ export default function DashboardPage() {
       return { name, actual, goal: trimesterGoals[i] };
     });
 
-    // Regional stats based on image (Toluca, Neza, Ecatepec, Naucalpan)
     const regionsMapping = [
       { name: 'Toluca', goal: 2156, filter: 'TOLUCA' },
       { name: 'Nezahualcóyotl', goal: 860, filter: 'NEZAHUALCOYOTL' },
@@ -185,46 +217,33 @@ export default function DashboardPage() {
         tr.asistenteRegion?.toUpperCase() === reg.filter ||
         tr.asistenteValle?.toUpperCase() === reg.filter
       ).length;
-      return { name: reg.name, actual, goal: reg.goal, fill: reg.name === 'Toluca' ? '#621132' : '#B38E5D' };
+      return { name: reg.name, actual, goal: reg.goal };
     });
 
-    const byValle = [
-      { name: 'VALLE DE MÉXICO', value: filteredTrainings.filter(tr => tr.asistenteValle === 'MEXICO').length, fill: '#621132' },
-      { name: 'VALLE DE TOLUCA', value: filteredTrainings.filter(tr => tr.asistenteValle === 'TOLUCA').length, fill: '#B38E5D' },
-    ];
-
-    const byGender = [
-      { name: 'MASCULINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'MASCULINO').length, fill: '#621132' },
-      { name: 'FEMENINO', value: filteredTrainings.filter(tr => tr.asistenteGenero === 'FEMENINO').length, fill: '#B38E5D' },
-    ];
-
-    const getTopItems = (field: keyof TrainingRecord, limit = 5) => {
+    const getTopItems = (field: string, limit = 5) => {
       const counts: Record<string, number> = {};
-      filteredTrainings.forEach(tr => {
-        const val = (tr[field] as string) || 'SIN DATO';
+      filteredTrainings.forEach((tr: any) => {
+        const val = tr[field] || 'SIN DATO';
         counts[val] = (counts[val] || 0) + 1;
       });
       return Object.entries(counts)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, limit)
-        .map((item, idx) => ({
-          ...item,
-          fill: idx % 2 === 0 ? '#621132' : '#B38E5D'
-        }));
+        .map((item, idx) => ({ ...item, fill: idx % 2 === 0 ? '#621132' : '#B38E5D' }));
     };
 
     return { 
       total, 
       progress, 
-      byValle, 
-      byGender, 
-      bySector: getTopItems('asistenteSector'), 
-      byModality: getTopItems('asistenteModalidad'), 
-      byZE: getTopItems('asistenteZE'),
       byMonthPlanning,
       byTrimester,
-      byRegionalOffice
+      byRegionalOffice,
+      bySector: getTopItems('asistenteSector'),
+      byModality: getTopItems('asistenteModalidad'),
+      byZE: getTopItems('asistenteZE'),
+      byGender: getTopItems('asistenteGenero'),
+      byValle: getTopItems('asistenteValle')
     };
   }, [filteredTrainings, goals.trainingGoal]);
 
@@ -234,10 +253,10 @@ export default function DashboardPage() {
       const records = programs.filter(p => p.name === name);
       const uniqueCcts = new Set(records.map(p => p.cct)).size;
       return { 
-        name: name.split(' ')[0], 
+        name: name === 'Cuentas Institucionales' ? 'Cuentas' : name === 'Biblioteca Digital' ? 'Biblioteca' : name,
         fullName: name,
         value: uniqueCcts,
-        percentage: Math.round((uniqueCcts / TOTAL_UNIVERSE) * 100),
+        percentage: Math.min(100, Math.round((uniqueCcts / TOTAL_UNIVERSE) * 100)),
         fill: name === 'Conoce mi Escuela' ? '#621132' : '#B38E5D'
       };
     });
@@ -387,7 +406,7 @@ export default function DashboardPage() {
                </div>
                <div className="mt-8 space-y-1">
                  <h3 className="text-2xl font-black uppercase text-slate-900 leading-none">Meta Institucional 2026</h3>
-                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-2">Cumplimiento sobre meta de {goals.trainingGoal} servidores</p>
+                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-2">Cumplimiento consolidado sobre meta de {goals.trainingGoal} servidores</p>
                </div>
                <div className="mt-10 grid grid-cols-2 gap-6">
                   <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner group hover:bg-white hover:shadow-md transition-all">
@@ -478,7 +497,7 @@ export default function DashboardPage() {
                   <RechartsBarChart layout="vertical" data={trainingStats.bySector} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} width={80} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} width={80} />
                     <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
                     <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
                       {trainingStats.bySector.map((entry, index) => (
@@ -516,22 +535,26 @@ export default function DashboardPage() {
             <Card className="executive-card">
               <CardHeader>
                 <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <Search className="h-4 w-4" /> Top 5 Zonas Escolares (ZE)
+                  <Users className="h-4 w-4" /> Participación por Género
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart layout="vertical" data={trainingStats.byZE} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} width={80} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                    <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
-                      {trainingStats.byZE.map((entry, index) => (
+                  <PieChart>
+                    <Pie
+                      data={trainingStats.byGender}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {trainingStats.byGender.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
-                    </Bar>
-                  </RechartsBarChart>
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }} />
+                  </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -542,7 +565,7 @@ export default function DashboardPage() {
       {activeReport === 'programas' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {programCoverage.slice(0, 4).map((prog) => (
+            {programCoverage.map((prog) => (
               <Card key={prog.fullName} className="executive-card p-6 border-l-4 group hover:scale-[1.02] transition-all" style={{ borderLeftColor: prog.fill }}>
                 <div className="flex justify-between items-start">
                   <div>
@@ -554,10 +577,38 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <Progress value={prog.percentage} className="h-1.5 mt-4" />
-                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase tracking-tighter">Cobertura sobre {TOTAL_UNIVERSE} planteles federales</p>
+                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase tracking-tighter">
+                  {prog.fullName === 'Geoposición' ? 'Puntos de control' : `Cobertura sobre ${TOTAL_UNIVERSE} planteles`}
+                </p>
               </Card>
             ))}
           </div>
+
+          <Card className="executive-card">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" /> Comparativa de Cobertura Institucional
+                </CardTitle>
+                <CardDescription className="text-[9px] font-bold uppercase">Levantamiento Técnico Ciclo 2025-2026</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={programCoverage} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                  <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
+                    {programCoverage.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </div>
       )}
 
