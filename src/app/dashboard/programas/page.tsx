@@ -50,7 +50,15 @@ export default function ProgramsPage() {
   useEffect(() => {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
-    setRecords(stored.length > 0 ? stored : programsData)
+    
+    // Si no hay datos guardados o si falta la información de geoposición (264 registros), forzamos la carga inicial
+    const hasGeoData = stored.some((r: any) => r.name === 'Geoposición')
+    if (stored.length === 0 || !hasGeoData) {
+      setRecords(programsData)
+      localStorage.setItem('programs_full', JSON.stringify(programsData))
+    } else {
+      setRecords(stored)
+    }
   }, [])
 
   const handleCctChange = (val: string) => {
@@ -79,7 +87,6 @@ export default function ProgramsPage() {
       return;
     }
     
-    // Generar ID interno si es nuevo
     const finalData = {
       ...formData,
       id: editingId || `PROG-${formData.name.substring(0,2)}-${Date.now()}`
@@ -95,10 +102,31 @@ export default function ProgramsPage() {
   }
 
   const currentTabRecords = useMemo(() => {
+    let filtered = [];
     if (activeTab === 'Conoce mi Escuela') {
-       return records.filter(r => r.name === 'Conoce mi Escuela').sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
+       filtered = records.filter(r => r.name === 'Conoce mi Escuela').sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
+    } else {
+       filtered = records.filter(r => r.name === activeTab);
     }
-    return records.filter(r => r.name === activeTab);
+
+    // Para Geoposición, enriquecer con datos del directorio si faltan campos
+    if (activeTab === 'Geoposición') {
+      return filtered.map(rec => {
+        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === rec.cct?.toUpperCase());
+        if (school) {
+          return {
+            ...rec,
+            zonaEscolar: rec.zonaEscolar === 'S/Z' || !rec.zonaEscolar ? school.zonaEscolar : rec.zonaEscolar,
+            sector: rec.sector === 'S/S' || !rec.sector ? school.sector : rec.sector,
+            schoolName: rec.schoolName?.includes('PLANTEL') || !rec.schoolName ? school.nombre : rec.schoolName,
+            valle: rec.valle === 'ESTADO DE MEXICO' || !rec.valle ? school.valle : rec.valle,
+            municipio: rec.municipio === 'LOCALIDAD PENDIENTE' || !rec.municipio ? school.municipio : rec.municipio,
+          };
+        }
+        return rec;
+      });
+    }
+    return filtered;
   }, [records, activeTab]);
 
   if (!mounted) return null
@@ -189,7 +217,7 @@ export default function ProgramsPage() {
                   )}
                 </TableHeader>
                 <TableBody>
-                  {currentTabRecords.map(rec => (
+                  {currentTabRecords.length > 0 ? currentTabRecords.map(rec => (
                     <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
                       {activeTab === 'Conoce mi Escuela' ? (
                         <>
@@ -278,7 +306,13 @@ export default function ProgramsPage() {
                         </>
                       )}
                     </TableRow>
-                  ))}
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={13} className="text-center py-20 bg-slate-50/20">
+                         <p className="text-[10px] font-black uppercase text-muted-foreground opacity-50">Cargando base de datos técnica...</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
