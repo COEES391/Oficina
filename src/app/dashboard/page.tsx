@@ -404,21 +404,23 @@ export default function DashboardPage() {
       {activeReport === 'capacitacion' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center bg-white">
-               <div className="mx-auto h-32 w-32 rounded-full border-[10px] border-primary/10 border-t-primary flex items-center justify-center shadow-inner relative">
-                  <span className="text-3xl font-black text-primary">{trainingStats.progress}%</span>
-                  <Target className="absolute -top-2 -right-2 h-8 w-8 text-accent bg-white rounded-full p-1.5 shadow-md" />
+            <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center bg-white shadow-xl border-t-4 border-primary">
+               <div className="mx-auto h-40 w-40 rounded-full border-[12px] border-primary/10 border-t-primary flex items-center justify-center shadow-inner relative">
+                  <span className="text-4xl font-black text-primary">{trainingStats.progress}%</span>
+                  <Target className="absolute -top-1 -right-1 h-10 w-10 text-accent bg-white rounded-full p-2 shadow-lg border-2 border-accent/20" />
                </div>
-               <h3 className="text-2xl font-black uppercase text-slate-900 mt-6 leading-none">Meta Institucional 2026</h3>
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">Cumplimiento sobre meta de {goals.trainingGoal} servidores</p>
-               <div className="mt-8 grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                     <p className="text-[9px] font-black text-slate-400 uppercase">Real Capturado</p>
-                     <p className="text-2xl font-black text-primary">{trainingStats.total}</p>
+               <div className="mt-8 space-y-1">
+                 <h3 className="text-2xl font-black uppercase text-slate-900 leading-none">Meta Institucional 2026</h3>
+                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-2">Cumplimiento sobre meta de {goals.trainingGoal} servidores</p>
+               </div>
+               <div className="mt-10 grid grid-cols-2 gap-6">
+                  <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner group hover:bg-white hover:shadow-md transition-all">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Real Capturado</p>
+                     <p className="text-3xl font-black text-primary">{trainingStats.total}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                     <p className="text-[9px] font-black text-slate-400 uppercase">Restante Meta</p>
-                     <p className="text-2xl font-black text-accent">{Math.max(0, goals.trainingGoal - trainingStats.total)}</p>
+                  <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner group hover:bg-white hover:shadow-md transition-all">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Restante Meta</p>
+                     <p className="text-3xl font-black text-accent">{Math.max(0, goals.trainingGoal - trainingStats.total)}</p>
                   </div>
                </div>
             </Card>
@@ -429,32 +431,32 @@ export default function DashboardPage() {
                   <Users className="h-4 w-4" /> Distribución por Valle y Género
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4 h-[300px]">
+              <CardContent className="grid grid-cols-2 gap-4 h-[350px]">
                  <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-black uppercase text-slate-400 mb-2">Por Región</span>
+                    <span className="text-[9px] font-black uppercase text-slate-400 mb-4 tracking-widest">Por Región</span>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                          <Pie data={trainingStats.byValle} innerRadius={40} outerRadius={70} paddingAngle={5} dataKey="value">
+                          <Pie data={trainingStats.byValle} innerRadius={50} outerRadius={85} paddingAngle={5} dataKey="value">
                             {trainingStats.byValle.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
                           </Pie>
                           <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
+                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', paddingTop: '10px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                  </div>
                  <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-black uppercase text-slate-400 mb-2">Por Género</span>
+                    <span className="text-[9px] font-black uppercase text-slate-400 mb-4 tracking-widest">Por Género</span>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                          <Pie data={trainingStats.byGender} innerRadius={40} outerRadius={70} paddingAngle={5} dataKey="value">
+                          <Pie data={trainingStats.byGender} innerRadius={50} outerRadius={85} paddingAngle={5} dataKey="value">
                             {trainingStats.byGender.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
                           </Pie>
                           <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
+                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', paddingTop: '10px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                  </div>
@@ -469,7 +471,7 @@ export default function DashboardPage() {
                   <Activity className="h-4 w-4" /> Top 5 Sectores Atendidos
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[250px]">
+              <CardContent className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsBarChart layout="vertical" data={trainingStats.bySector} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
@@ -492,7 +494,7 @@ export default function DashboardPage() {
                   <MonitorCheck className="h-4 w-4" /> Distribución por Modalidad
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[250px]">
+              <CardContent className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsBarChart layout="vertical" data={trainingStats.byModality} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
@@ -515,7 +517,7 @@ export default function DashboardPage() {
                   <Search className="h-4 w-4" /> Top 5 Zonas Escolares (ZE)
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[250px]">
+              <CardContent className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsBarChart layout="vertical" data={trainingStats.byZE} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
