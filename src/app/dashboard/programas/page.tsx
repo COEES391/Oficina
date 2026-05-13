@@ -66,7 +66,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const DB_VERSION = "coees_institutional_redesign_v47";
+const DB_VERSION = "coees_institutional_redesign_v48";
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -108,11 +108,11 @@ export default function ProgramsPage() {
     setUserRfc(rfc)
     if (rfc === 'CEDITORIAL') setIsEditorialUser(true);
     
-    const storedVersion = localStorage.getItem('programs_db_version_v47')
+    const storedVersion = localStorage.getItem('programs_db_version_v48')
     if (storedVersion !== DB_VERSION) {
       setRecords(programsData)
       localStorage.setItem('programs_full', JSON.stringify(programsData))
-      localStorage.setItem('programs_db_version_v47', DB_VERSION)
+      localStorage.setItem('programs_db_version_v48', DB_VERSION)
     } else {
       const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
       setRecords(stored.length > 0 ? stored : programsData)
@@ -232,790 +232,889 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos Técnicos COEES</h2>
-          <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
-            <Activity className="h-3 w-3 text-accent" /> Programas Estratégicos COEES
-          </p>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-20">
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="space-y-3">
+            <h2 className="text-5xl font-black tracking-tighter text-primary uppercase leading-none">COEES</h2>
+            <div className="flex items-center gap-4">
+              <span className="h-1 w-12 bg-accent/30 rounded-full" />
+              <p className="text-muted-foreground font-black text-[12px] uppercase tracking-[0.4em] flex items-center gap-3">
+                <Activity className="h-4 w-4 text-accent" /> Módulos Técnicos Operativos
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-        <TabsList className="w-full h-auto flex flex-wrap bg-slate-100/50 p-1 rounded-2xl shadow-inner border border-primary/5">
-          {PROGRAM_RUBROS.map(rubro => (
-            <TabsTrigger key={rubro} value={rubro} className="flex-1 min-w-[150px] h-12 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-              {rubro === 'Geoposición' && <MapPin className="h-3.5 w-3.5 mr-2" />}
-              {rubro === 'Biblioteca Digital' && <Monitor className="h-3.5 w-3.5 mr-2" />}
-              {rubro === 'Cuentas Institucionales' && <Globe className="h-3.5 w-3.5 mr-2" />}
-              {rubro}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+          <TabsList className="w-full h-20 flex bg-white/50 backdrop-blur-xl p-2 rounded-[2rem] shadow-[0_20px_40px_rgba(0,0,0,0.03)] border-2 border-white">
+            {PROGRAM_RUBROS.map(rubro => (
+              <TabsTrigger 
+                key={rubro} 
+                value={rubro} 
+                className="flex-1 h-full text-[11px] font-black uppercase rounded-[1.5rem] tracking-[0.1em] data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-2xl data-[state=active]:shadow-primary/30 transition-all"
+              >
+                {rubro === 'Geoposición' && <MapPin className="h-4 w-4 mr-3" />}
+                {rubro === 'Biblioteca Digital' && <Monitor className="h-4 w-4 mr-3" />}
+                {rubro === 'Cuentas Institucionales' && <Globe className="h-4 w-4 mr-3" />}
+                {rubro}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        <TabsContent value="Biblioteca Digital" className="space-y-6">
-          <div className="flex justify-between items-center">
-             <h3 className="text-xl font-black uppercase text-primary flex items-center gap-3">
-               <Monitor className="h-6 w-6" /> Equipamiento y Capacitación
-             </h3>
-             <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-lg">
-                <PlusCircle className="h-4 w-4" /> Nueva Captura de Programa
-             </Button>
-          </div>
-          <Card className="executive-card">
-            <CardContent className="p-0">
-               <Table>
-                 <TableHeader className="bg-slate-50/50">
-                    <TableRow>
-                       <TableHead className="font-black text-[10px] uppercase pl-8 py-5">ID / CCT</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase">MODALIDAD / VALLE</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase text-center">EQUIPOS</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase text-center">CAPACITACIÓN</TableHead>
-                       <TableHead className="font-black text-[10px] uppercase text-right pr-8">ACCIONES</TableHead>
-                    </TableRow>
-                 </TableHeader>
-                 <TableBody>
-                    {bdRecords.length > 0 ? bdRecords.map(rec => (
-                      <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
-                         <TableCell className="pl-8 font-black text-slate-700">{rec.cct || rec.id}</TableCell>
-                         <TableCell>
-                            <div className="flex flex-col">
-                               <span className="text-[10px] font-bold uppercase">{rec.modalidad}</span>
-                               <span className="text-[9px] text-muted-foreground uppercase">{rec.valle}</span>
-                            </div>
-                         </TableCell>
-                         <TableCell className="text-center font-black">{rec.numeroEquipos || 0}</TableCell>
-                         <TableCell className="text-center">
-                            <Badge variant={rec.capacitacion === 'S' ? 'default' : 'outline'} className="text-[9px] font-black uppercase">
-                               {rec.capacitacion === 'S' ? 'REALIZADA' : 'PENDIENTE'}
-                            </Badge>
-                         </TableCell>
-                         <TableCell className="text-right pr-8">
-                            <div className="flex justify-end gap-2">
-                               <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
-                               <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
-                            </div>
-                         </TableCell>
-                      </TableRow>
-                    )) : (
-                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground font-black uppercase text-[10px]">Sin registros en Biblioteca Digital</TableCell></TableRow>
-                    )}
-                 </TableBody>
-               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="Cuentas Institucionales" className="space-y-8">
-           <div className="space-y-6">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                   <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg"><Globe className="h-6 w-6 text-white" /></div>
-                   <div>
-                      <h2 className="text-2xl font-black text-primary uppercase leading-none">Herramienta de Monitoreo</h2>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Análisis Integral de Cuentas SEIEM</p>
-                   </div>
-                </div>
-                <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="gap-2 font-black uppercase shadow-md bg-primary">
-                   <PlusCircle className="h-4 w-4" /> Agregar Nueva Cuenta
-                </Button>
-             </div>
-
-             <Tabs value={ciActiveInternalTab} onValueChange={setCiActiveInternalTab} className="w-full">
-                <TabsList className="bg-slate-100/50 p-1 rounded-xl mb-6">
-                   <TabsTrigger value="analitica" className="gap-2 text-[10px] font-black uppercase"><BarChart3 className="h-3.5 w-3.5" /> Analítica</TabsTrigger>
-                   <TabsTrigger value="registros" className="gap-2 text-[10px] font-black uppercase"><ListFilter className="h-3.5 w-3.5" /> Listado de Registros</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="analitica" className="space-y-6">
-                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                      <div className="md:col-span-3">
-                         <Card className="p-5 bg-white border rounded-2xl shadow-sm space-y-6">
-                            <div>
-                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">VALLE</Label>
-                               <div className="flex flex-col gap-1.5">
-                                  <Button variant={valFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('all')}>AMBOS VALLES</Button>
-                                  <Button variant={valFilter === 'MÉXICO' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('MÉXICO')}>VALLE DE MÉXICO</Button>
-                                  <Button variant={valFilter === 'TOLUCA' ? 'default' : 'outline'} size="sm" className="h-9 text-[9px] font-black justify-start" onClick={() => setValFilter('TOLUCA')}>VALLE DE TOLUCA</Button>
-                               </div>
-                            </div>
-                            
-                            <div>
-                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">MODALIDAD</Label>
-                               <Select value={modFilter} onValueChange={setModFilter}>
-                                  <SelectTrigger className="h-10 text-[10px] font-black"><SelectValue /></SelectTrigger>
-                                  <SelectContent>
-                                     <SelectItem value="all" className="text-[10px] font-black">TODAS</SelectItem>
-                                     <SelectItem value="DES" className="text-[10px] font-black">DES (GENERAL)</SelectItem>
-                                     <SelectItem value="DST" className="text-[10px] font-black">DST (TÉCNICA)</SelectItem>
-                                     <SelectItem value="DTV" className="text-[10px] font-black">DTV (TELESEC.)</SelectItem>
-                                  </SelectContent>
-                               </Select>
-                            </div>
-
-                            <div>
-                               <Label className="text-[9px] font-black uppercase text-primary mb-3 block">DOMINIO</Label>
-                               <Select value={domFilter} onValueChange={setDomFilter}>
-                                  <SelectTrigger className="h-10 text-[10px] font-black"><SelectValue /></SelectTrigger>
-                                  <SelectContent>
-                                     <SelectItem value="all" className="text-[10px] font-black">TODOS</SelectItem>
-                                     <SelectItem value="@desysa.gob.mx" className="text-[10px] font-black">@desysa.gob.mx</SelectItem>
-                                     <SelectItem value="@desysa.edu.mx" className="text-[10px] font-black">@desysa.edu.mx</SelectItem>
-                                     <SelectItem value="@coees.edu.mx" className="text-[10px] font-black">@coees.edu.mx</SelectItem>
-                                  </SelectContent>
-                               </Select>
-                            </div>
-                         </Card>
-                      </div>
-
-                      <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-6">
-                         <Card className="p-8 flex flex-col items-center justify-center bg-white shadow-sm rounded-2xl border">
-                            <span className="text-[10px] font-black text-slate-400 uppercase mb-2">Cuentas Filtradas</span>
-                            <div className="text-6xl font-black text-slate-800 tracking-tighter">{ciDashboardData.total}</div>
-                         </Card>
-
-                         <Card className="p-6 flex flex-col items-center bg-white shadow-sm rounded-2xl border">
-                            <Label className="text-[10px] font-black text-slate-400 mb-4 uppercase">% USO ACTIVO</Label>
-                            <div className="relative h-[160px] w-full">
-                               <ResponsiveContainer width="100%" height="100%">
-                                  <PieChart>
-                                     <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={5} dataKey="value">
-                                        {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                                     </Pie>
-                                  </PieChart>
-                               </ResponsiveContainer>
-                               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                  <span className="text-2xl font-black text-primary">{ciDashboardData.usagePercent}%</span>
-                               </div>
-                            </div>
-                         </Card>
-
-                         <Card className="p-6 bg-white shadow-sm rounded-2xl border">
-                            <Label className="text-[10px] font-black text-slate-400 mb-6 uppercase block">ESTATUS OPERATIVO</Label>
-                            <div className="h-[180px]">
-                               <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={ciDashboardData.barData}>
-                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                     <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                                     <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={35}>
-                                        {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                                     </Bar>
-                                  </BarChart>
-                               </ResponsiveContainer>
-                            </div>
-                         </Card>
-                      </div>
-                   </div>
-                </TabsContent>
-
-                <TabsContent value="registros" className="animate-in fade-in duration-300">
-                   <Card className="executive-card">
-                      <div className="overflow-x-auto">
-                         <Table>
-                            <TableHeader className="bg-slate-100/50">
-                               <TableRow>
-                                  <TableHead className="font-black text-[9px] uppercase pl-8 py-5"># / CCT</TableHead>
-                                  <TableHead className="font-black text-[9px] uppercase">MODALIDAD / VALLE</TableHead>
-                                  <TableHead className="font-black text-[9px] uppercase">CORREO INSTITUCIONAL</TableHead>
-                                  <TableHead className="font-black text-[9px] uppercase text-right pr-8">ACCIONES</TableHead>
-                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                               {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec, idx) => (
-                                  <TableRow key={rec.id} className="text-[10px] font-bold hover:bg-slate-50 border-slate-100">
-                                     <TableCell className="pl-8 py-4 text-primary font-black uppercase">{rec.cct || rec.id}</TableCell>
-                                     <TableCell>
-                                        <div className="flex flex-col">
-                                           <span className="uppercase text-[9px] font-black text-slate-700">{rec.modalidad}</span>
-                                           <span className="uppercase text-[8px] text-slate-400">{rec.valle}</span>
-                                        </div>
-                                     </TableCell>
-                                     <TableCell className="font-mono text-blue-600 lowercase">{rec.asistentes?.[0]?.email || '-'}</TableCell>
-                                     <TableCell className="text-right pr-8">
-                                        <div className="flex justify-end gap-2">
-                                           <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"><Pencil className="h-4 w-4" /></button>
-                                           <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="p-2 hover:bg-rose-50 rounded-lg text-rose-500"><Trash2 className="h-4 w-4" /></button>
-                                        </div>
-                                     </TableCell>
-                                  </TableRow>
-                               )) : (
-                                 <TableRow><TableCell colSpan={4} className="text-center py-10 font-black uppercase text-[10px]">No se encontraron cuentas con los filtros seleccionados</TableCell></TableRow>
-                               )}
-                            </TableBody>
-                         </Table>
-                      </div>
-                   </Card>
-                </TabsContent>
-             </Tabs>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="Geoposición" className="space-y-8">
-           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { title: 'Geocodificados', value: geoRecords.length.toLocaleString(), icon: <MapPin className="h-6 w-6" />, color: 'bg-orange-500' },
-                { title: 'Cobertura', value: '82%', icon: <Activity className="h-6 w-6" />, color: 'bg-emerald-500' },
-                { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-6 w-6" />, color: 'bg-blue-500' },
-                { title: 'Alertas', value: '0', icon: <Activity className="h-6 w-6" />, color: 'bg-rose-500' },
-              ].map((item, i) => (
-                <Card key={i} className="executive-card p-8">
-                  <div className={`h-12 w-12 ${item.color} text-white rounded-2xl flex items-center justify-center shadow-lg mb-4`}>
-                    {item.icon}
-                  </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.title}</span>
-                  <div className="text-4xl font-black text-slate-800 mt-2">{item.value}</div>
-                </Card>
-              ))}
-           </div>
-           
-           <Card className="executive-card overflow-hidden">
-              <CardHeader className="p-8 border-b bg-slate-50/50">
-                 <CardTitle className="text-sm font-black uppercase text-primary flex items-center gap-3">
-                   <MapPin className="h-5 w-5" /> Auditoría Territorial por Centro de Trabajo
-                 </CardTitle>
-              </CardHeader>
+          <TabsContent value="Biblioteca Digital" className="space-y-10 animate-in fade-in zoom-in-95 duration-700">
+            <div className="flex justify-between items-center bg-white/40 p-8 rounded-[2.5rem] border-2 border-white backdrop-blur-md shadow-sm">
+               <div className="space-y-1">
+                 <h3 className="text-2xl font-black uppercase text-primary flex items-center gap-4">
+                   <Monitor className="h-8 w-8" /> Equipamiento y Capacitación
+                 </h3>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] ml-12">Monitoreo de Infraestructura Tecnológica</p>
+               </div>
+               <Button onClick={() => { setFormData({...initialFormState, name: 'Biblioteca Digital', id: `PROG-BD-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-10">
+                  <PlusCircle className="h-5 w-5 mr-3" /> Iniciar Captura
+               </Button>
+            </div>
+            <Card className="executive-card">
               <CardContent className="p-0">
-                 <Table>
-                    <TableHeader className="bg-slate-100/50">
-                       <TableRow>
-                          <TableHead className="font-black text-[9px] pl-8">CCT / NOMBRE</TableHead>
-                          <TableHead className="font-black text-[9px]">VALLE</TableHead>
-                          <TableHead className="font-black text-[9px]">COORDENADAS (LAT/LON)</TableHead>
-                          <TableHead className="font-black text-[9px] text-right pr-8">ESTATUS GEO</TableHead>
-                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                       {geoRecords.map(rec => (
-                          <TableRow key={rec.id} className="text-[10px] font-bold border-slate-100">
-                             <TableCell className="pl-8">
-                                <div className="flex flex-col">
-                                   <span className="text-primary font-black uppercase">{rec.cct}</span>
-                                   <span className="text-slate-400 text-[9px] uppercase">{rec.schoolName || '-'}</span>
+                 <div className="overflow-x-auto">
+                   <table className="table-institutional">
+                     <thead>
+                        <tr>
+                           <th className="pl-10 text-left">ID / CCT</th>
+                           <th className="text-left">Modalidad y Valle</th>
+                           <th>Equipos</th>
+                           <th>Capacitación</th>
+                           <th className="pr-10 text-right">Gestión</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-50">
+                        {bdRecords.length > 0 ? bdRecords.map(rec => (
+                          <TableRow key={rec.id} className="hover:bg-slate-50/50 transition-all group">
+                             <TableCell className="pl-10 text-left">
+                               <div className="flex items-center gap-4">
+                                 <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                   <Building2 className="h-5 w-5" />
+                                 </div>
+                                 <span className="font-black text-slate-700 text-sm tracking-tight">{rec.cct || rec.id}</span>
+                               </div>
+                             </TableCell>
+                             <TableCell className="text-left">
+                                <div className="flex flex-col gap-1">
+                                   <Badge className="bg-slate-900 text-white border-none text-[8px] font-black w-fit uppercase">{rec.modalidad}</Badge>
+                                   <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">{rec.valle}</span>
                                 </div>
                              </TableCell>
-                             <TableCell className="uppercase">{rec.valle}</TableCell>
-                             <TableCell className="font-mono text-slate-600">{rec.observaciones?.split('Lat:')[1] || 'PENDIENTE'}</TableCell>
-                             <TableCell className="text-right pr-8">
-                                <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">VERIFICADO</Badge>
+                             <TableCell>
+                               <div className="flex items-center justify-center">
+                                 <div className="h-10 w-14 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-lg text-primary shadow-inner">
+                                   {rec.numeroEquipos || 0}
+                                 </div>
+                               </div>
+                             </TableCell>
+                             <TableCell>
+                                <Badge className={cn(
+                                  "text-[9px] font-black uppercase px-4 py-1.5 rounded-full border-none shadow-sm",
+                                  rec.capacitacion === 'S' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                                )}>
+                                   {rec.capacitacion === 'S' ? 'REALIZADA' : 'PENDIENTE'}
+                                </Badge>
+                             </TableCell>
+                             <TableCell className="pr-10">
+                                <div className="flex justify-end gap-3">
+                                   <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="h-10 w-10 flex items-center justify-center hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all border border-slate-100 bg-white shadow-sm"><Pencil className="h-4 w-4" /></button>
+                                   <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="h-10 w-10 flex items-center justify-center hover:bg-rose-500 hover:text-white rounded-xl text-rose-500 transition-all border border-rose-50 bg-white shadow-sm"><Trash2 className="h-4 w-4" /></button>
+                                </div>
                              </TableCell>
                           </TableRow>
-                       ))}
-                    </TableBody>
-                 </Table>
+                        )) : (
+                          <TableRow><TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-black uppercase text-[12px] opacity-30">Sin registros en Biblioteca Digital</TableCell></TableRow>
+                        )}
+                     </tbody>
+                   </table>
+                 </div>
               </CardContent>
-           </Card>
-        </TabsContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="Conoce mi Escuela" className="animate-in fade-in duration-500">
-           {!isEditorialUser ? (
-             <div className="bg-white shadow-2xl border border-slate-200 rounded-lg overflow-hidden max-w-5xl mx-auto font-sans">
-              <div className="bg-white p-8 border-b-8 border-primary relative">
-                 <div className="flex flex-col items-center text-center">
-                    <h1 className="text-2xl font-bold text-emerald-800 uppercase tracking-tight leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
-                    <p className="text-sm font-medium text-slate-500">Servicios Educativos Integrados al Estado de México</p>
-                 </div>
-              </div>
+          <TabsContent value="Cuentas Institucionales" className="space-y-10 animate-in fade-in zoom-in-95 duration-700">
+             <div className="space-y-10">
+               <div className="flex items-center justify-between bg-white/40 p-10 rounded-[2.5rem] border-2 border-white backdrop-blur-md shadow-sm">
+                  <div className="flex items-center gap-6">
+                     <div className="h-16 w-16 bg-primary rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30"><Globe className="h-8 w-8 text-white" /></div>
+                     <div>
+                        <h2 className="text-3xl font-black text-primary uppercase leading-none tracking-tighter">Monitoreo de Identidades</h2>
+                        <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] mt-3">Análisis Integral de Cuentas @COEES</p>
+                     </div>
+                  </div>
+                  <Button onClick={() => { setFormData({...initialFormState, name: 'Cuentas Institucionales', id: `PROG-CI-${Date.now()}`}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-12">
+                     <PlusCircle className="h-5 w-5 mr-3" /> Registrar Cuenta
+                  </Button>
+               </div>
 
-              <div className="p-12 space-y-10 relative">
-                 <div className="flex justify-end">
-                    <p className="text-[11px] font-bold text-rose-800 uppercase">
-                       {format(new Date(), "eeee d 'de' MMMM 'de' yyyy", { locale: es })}
-                    </p>
-                 </div>
+               <Tabs value={ciActiveInternalTab} onValueChange={setCiActiveInternalTab} className="w-full">
+                  <TabsList className="bg-white/50 backdrop-blur-lg p-1.5 rounded-2xl mb-10 border border-white shadow-inner inline-flex h-14">
+                     <TabsTrigger value="analitica" className="gap-3 text-[10px] font-black uppercase px-8 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white shadow-sm"><BarChart3 className="h-4 w-4" /> Analítica</TabsTrigger>
+                     <TabsTrigger value="registros" className="gap-3 text-[10px] font-black uppercase px-8 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white shadow-sm"><ListFilter className="h-4 w-4" /> Registros</TabsTrigger>
+                  </TabsList>
 
-                 <div className="flex items-center gap-4 mb-8">
-                    <div className="h-8 w-12 flex flex-col border border-slate-300">
-                       <div className="flex-1 bg-[#006847]" />
-                       <div className="flex-1 bg-white" />
-                       <div className="flex-1 bg-[#CE1126]" />
+                  <TabsContent value="analitica" className="space-y-10 animate-in fade-in duration-500">
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+                        <div className="md:col-span-3">
+                           <Card className="p-8 bg-white/90 backdrop-blur-3xl border-2 border-white rounded-[2.5rem] shadow-xl space-y-10">
+                              <div className="space-y-4">
+                                 <Label className="text-[10px] font-black uppercase text-primary mb-4 block tracking-widest flex items-center gap-2">
+                                   <MapPin className="h-3 w-3" /> Valle Territorial
+                                 </Label>
+                                 <div className="flex flex-col gap-3">
+                                    {['all', 'MÉXICO', 'TOLUCA'].map(v => (
+                                      <Button 
+                                        key={v}
+                                        variant={valFilter === v ? 'default' : 'outline'} 
+                                        size="sm" 
+                                        className={`h-12 text-[10px] font-black justify-start rounded-xl px-6 ${valFilter === v ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white border-slate-100'}`} 
+                                        onClick={() => setValFilter(v)}
+                                      >
+                                        {v === 'all' ? 'AMBOS VALLES' : `VALLE DE ${v}`}
+                                      </Button>
+                                    ))}
+                                 </div>
+                              </div>
+                              
+                              <div className="space-y-4 pt-6 border-t border-slate-50">
+                                 <Label className="text-[10px] font-black uppercase text-primary mb-4 block tracking-widest flex items-center gap-2">
+                                   <Briefcase className="h-3 w-3" /> Modalidad
+                                 </Label>
+                                 <Select value={modFilter} onValueChange={setModFilter}>
+                                    <SelectTrigger className="h-12 text-[10px] font-black rounded-xl border-slate-100 bg-white"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                                       <SelectItem value="all" className="text-[10px] font-black">TODAS</SelectItem>
+                                       <SelectItem value="DES" className="text-[10px] font-black">DES (GENERAL)</SelectItem>
+                                       <SelectItem value="DST" className="text-[10px] font-black">DST (TÉCNICA)</SelectItem>
+                                       <SelectItem value="DTV" className="text-[10px] font-black">DTV (TELESEC.)</SelectItem>
+                                    </SelectContent>
+                                 </Select>
+                              </div>
+
+                              <div className="space-y-4 pt-6 border-t border-slate-50">
+                                 <Label className="text-[10px] font-black uppercase text-primary mb-4 block tracking-widest flex items-center gap-2">
+                                   <Globe className="h-3 w-3" /> Dominio Institucional
+                                 </Label>
+                                 <Select value={domFilter} onValueChange={setDomFilter}>
+                                    <SelectTrigger className="h-12 text-[10px] font-black rounded-xl border-slate-100 bg-white"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                                       <SelectItem value="all" className="text-[10px] font-black">TODOS</SelectItem>
+                                       <SelectItem value="@desysa.gob.mx" className="text-[10px] font-black">@desysa.gob.mx</SelectItem>
+                                       <SelectItem value="@desysa.edu.mx" className="text-[10px] font-black">@desysa.edu.mx</SelectItem>
+                                       <SelectItem value="@coees.edu.mx" className="text-[10px] font-black">@coees.edu.mx</SelectItem>
+                                    </SelectContent>
+                                 </Select>
+                              </div>
+                           </Card>
+                        </div>
+
+                        <div className="md:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-10">
+                           <Card className="executive-card p-10 flex flex-col items-center justify-center group">
+                              <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                                <Users className="h-8 w-8" />
+                              </div>
+                              <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Identidades</span>
+                              <div className="text-7xl font-black text-slate-800 tracking-tighter tabular-nums">{ciDashboardData.total}</div>
+                           </Card>
+
+                           <Card className="executive-card p-8 flex flex-col items-center">
+                              <span className="text-[11px] font-black text-slate-400 mb-6 uppercase tracking-[0.2em]">Eficiencia de Uso</span>
+                              <div className="relative h-[180px] w-full">
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                       <Pie data={ciDashboardData.pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={8} dataKey="value">
+                                          {ciDashboardData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke="none" />)}
+                                       </Pie>
+                                    </PieChart>
+                                 </ResponsiveContainer>
+                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-3xl font-black text-primary tracking-tighter">{ciDashboardData.usagePercent}%</span>
+                                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">Activo</span>
+                                 </div>
+                              </div>
+                           </Card>
+
+                           <Card className="executive-card p-8 bg-slate-900 text-white border-none">
+                              <span className="text-[11px] font-black text-slate-400 mb-10 uppercase tracking-[0.2em] block">Disponibilidad Operativa</span>
+                              <div className="h-[200px]">
+                                 <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={ciDashboardData.barData}>
+                                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                       <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 900, fill: '#fff' }} axisLine={false} tickLine={false} />
+                                       <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={40}>
+                                          {ciDashboardData.barData.map((e, i) => <Cell key={i} fill={e.name === 'ACTIVO' ? '#10b981' : 'rgba(255,255,255,0.1)'} />)}
+                                       </Bar>
+                                    </BarChart>
+                                 </ResponsiveContainer>
+                              </div>
+                           </Card>
+                        </div>
+                     </div>
+                  </TabsContent>
+
+                  <TabsContent value="registros" className="animate-in fade-in duration-500">
+                     <Card className="executive-card">
+                        <div className="overflow-x-auto">
+                           <table className="table-institutional">
+                              <thead>
+                                 <tr>
+                                    <th className="pl-10 text-left">Referencia CCT</th>
+                                    <th className="text-left">Identidad Territorial</th>
+                                    <th>Correo Institucional</th>
+                                    <th className="pr-10 text-right">Gestión</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50">
+                                 {ciDashboardData.filtered.length > 0 ? ciDashboardData.filtered.map((rec, idx) => (
+                                    <TableRow key={rec.id} className="hover:bg-slate-50/50 transition-all group">
+                                       <TableCell className="pl-10 py-6 text-left">
+                                         <div className="flex items-center gap-4">
+                                           <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                                             <Building2 className="h-5 w-5" />
+                                           </div>
+                                           <span className="text-primary font-black text-sm tracking-tighter uppercase">{rec.cct || rec.id}</span>
+                                         </div>
+                                       </TableCell>
+                                       <TableCell className="text-left">
+                                          <div className="flex flex-col gap-1">
+                                             <Badge className="bg-slate-900 text-white border-none text-[8px] font-black w-fit uppercase">{rec.modalidad}</Badge>
+                                             <span className="uppercase text-[9px] font-black text-slate-400 tracking-[0.1em]">{rec.valle}</span>
+                                          </div>
+                                       </TableCell>
+                                       <TableCell>
+                                         <div className="flex items-center justify-center">
+                                           <Badge variant="outline" className="px-4 py-2 rounded-xl border-primary/10 text-primary font-mono lowercase text-xs bg-primary/5">
+                                             {rec.asistentes?.[0]?.email || '-'}
+                                           </Badge>
+                                         </div>
+                                       </TableCell>
+                                       <TableCell className="text-right pr-10">
+                                          <div className="flex justify-end gap-3">
+                                             <button onClick={() => {setFormData(rec); setEditingId(rec.id); setIsDialogOpen(true);}} className="h-10 w-10 flex items-center justify-center hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all border border-slate-100 bg-white"><Pencil className="h-4 w-4" /></button>
+                                             <button onClick={() => setRecords(records.filter(r => r.id !== rec.id))} className="h-10 w-10 flex items-center justify-center hover:bg-rose-500 hover:text-white rounded-xl text-rose-500 transition-all border border-rose-50 bg-white"><Trash2 className="h-4 w-4" /></button>
+                                          </div>
+                                       </TableCell>
+                                    </TableRow>
+                                 )) : (
+                                   <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase text-[12px] opacity-30">No se encontraron cuentas con los filtros seleccionados</TableCell></TableRow>
+                                 )}
+                              </tbody>
+                           </table>
+                        </div>
+                     </Card>
+                  </TabsContent>
+               </Tabs>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="Geoposición" className="space-y-10 animate-in fade-in zoom-in-95 duration-700">
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                {[
+                  { title: 'Geocodificados', value: geoRecords.length.toLocaleString(), icon: <MapPin className="h-7 w-7" />, color: 'bg-orange-500' },
+                  { title: 'Cobertura Global', value: '82%', icon: <Activity className="h-7 w-7" />, color: 'bg-emerald-500' },
+                  { title: 'Zonas Auditadas', value: '45', icon: <Building2 className="h-7 w-7" />, color: 'bg-blue-600' },
+                  { title: 'Alertas COEES', value: '0', icon: <Activity className="h-7 w-7" />, color: 'bg-rose-600' },
+                ].map((item, i) => (
+                  <Card key={i} className="executive-card p-10 group">
+                    <div className={`h-16 w-16 ${item.color} text-white rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-slate-200 mb-8 group-hover:scale-110 transition-transform duration-500`}>
+                      {item.icon}
                     </div>
-                    <h2 className="text-2xl font-bold text-rose-800 uppercase tracking-tighter">Conoce mi escuela</h2>
-                 </div>
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">{item.title}</span>
+                    <div className="text-5xl font-black text-slate-800 mt-4 tracking-tighter">{item.value}</div>
+                  </Card>
+                ))}
+             </div>
+             
+             <Card className="executive-card">
+                <CardHeader className="p-10 border-b bg-slate-50/50">
+                   <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-4">
+                     <MapPin className="h-6 w-6" /> Auditoría Territorial por Centro de Trabajo
+                   </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                   <div className="overflow-x-auto">
+                     <table className="table-institutional">
+                        <thead>
+                           <tr>
+                              <th className="pl-10 text-left">CCT / Identificador</th>
+                              <th className="text-left">Localización</th>
+                              <th>Coordenadas (Lat / Lon)</th>
+                              <th className="pr-10 text-right">Auditoría Geo</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                           {geoRecords.map(rec => (
+                              <TableRow key={rec.id} className="hover:bg-slate-50/50 transition-all">
+                                 <TableCell className="pl-10 text-left">
+                                    <div className="flex flex-col gap-1">
+                                       <span className="text-primary font-black uppercase text-sm tracking-tighter">{rec.cct}</span>
+                                       <span className="text-slate-400 text-[10px] font-bold uppercase truncate max-w-[250px]">{rec.schoolName || '-'}</span>
+                                    </div>
+                                 </TableCell>
+                                 <TableCell className="text-left uppercase font-black text-[10px] text-slate-600">{rec.valle}</TableCell>
+                                 <TableCell className="font-mono text-slate-500 text-xs bg-slate-50 py-2 rounded-xl border border-slate-100/50 mx-4 block mt-4">
+                                   {rec.observaciones?.split('Lat:')[1] || 'PENDIENTE DE CAPTURA'}
+                                 </TableCell>
+                                 <TableCell className="text-right pr-10">
+                                    <Badge className="bg-emerald-500 text-white border-none text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg shadow-emerald-100">VERIFICADO</Badge>
+                                 </TableCell>
+                              </TableRow>
+                           ))}
+                        </tbody>
+                     </table>
+                   </div>
+                </CardContent>
+             </Card>
+          </TabsContent>
 
-                 <div className="space-y-6 text-[15px] leading-relaxed text-slate-800 text-justify">
-                    <p>
-                       <span className="font-bold">Conoce mi Escuela</span>, es un programa creado y administrado por el <span className="font-bold">Departamento de Computación Electrónica en la Educación Secundaria (COEES)</span>, el cual inició en el 2006 y a la fecha se perfila como la única vía autorizada para que las escuelas cuenten con un espacio Web para compartir información de interés general para proyectar su trabajo hacia la comunidad, padres de familia y autoridades educativas.
-                    </p>
-                    <p>
-                       A través de Conoce mi Escuela, los directores escolares tienen la oportunidad de dar a conocer, los detalles e información que caracterizan y diferencian a su escuela: historia de la institución, infraestructura, actividades que emprenden a lo largo de cada ciclo escolar, logros y reconocimientos a los que se han hecho acreedores por el buen desempeño docente, así como su participación en concursos académicos, deportivos o culturales; a nivel zona o sector, o a nivel estado.
-                    </p>
-                    <p>
-                       Con este programa, se aspira a que todos los centros de trabajo sean reconocidos por la comunidad, dando a conocer información cuantitativa y cualitativa de nuestras escuelas, coadyuvando al aumento de la matrícula escolar.
-                    </p>
-                 </div>
-
-                 <div className="pt-10 space-y-5 max-w-md">
-                    <div className="group flex items-center gap-4 cursor-pointer" onClick={() => setIsLoginDialogOpen(true)}>
-                       <div className="h-2.5 w-2.5 rounded-full border-2 border-slate-400 group-hover:bg-primary group-hover:border-primary transition-colors" />
-                       <span className="text-[15px] font-bold text-slate-700 underline underline-offset-4 group-hover:text-primary transition-colors">Incorporación</span>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="bg-slate-50 border-t p-10 flex flex-col items-center text-center space-y-4">
-                 <div className="space-y-1 text-[11px] font-bold text-slate-600 uppercase leading-tight tracking-wide">
-                    <p>Gobierno del Estado de México</p>
-                    <p>Secretaría de Educación</p>
-                    <p>Servicios Educativos Integrados al Estado de México</p>
-                    <p>Dirección de Educación Secundaria y Servicios de Apoyo</p>
-                 </div>
-              </div>
-           </div>
-           ) : (
-             <div className="space-y-4 animate-in fade-in duration-500 bg-white min-h-screen p-10 border shadow-inner rounded-3xl">
-                <div className="text-center py-6 border-b-2 border-slate-100">
-                   <h1 className="text-xl font-bold text-[#4a773c] uppercase leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
-                   <p className="text-sm text-slate-600 font-semibold">Servicios Educativos Integrados al Estado de México</p>
+          <TabsContent value="Conoce mi Escuela" className="animate-in fade-in duration-1000">
+             {!isEditorialUser ? (
+               <div className="executive-card max-w-6xl mx-auto shadow-2xl border-2 border-white overflow-hidden bg-white">
+                <div className="bg-primary p-12 text-center text-white relative">
+                   <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/bg/1000/1000')] bg-cover mix-blend-overlay" />
+                   <div className="relative z-10 space-y-4">
+                      <h1 className="text-3xl font-black uppercase tracking-tight leading-tight max-w-4xl mx-auto">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
+                      <div className="flex items-center justify-center gap-4">
+                        <span className="h-1 w-12 bg-white/30 rounded-full" />
+                        <p className="text-sm font-black text-white/80 uppercase tracking-[0.3em]">Servicios Educativos Integrados al Estado de México</p>
+                        <span className="h-1 w-12 bg-white/30 rounded-full" />
+                      </div>
+                   </div>
                 </div>
 
-                <div className="py-6">
-                   <div className="flex justify-between items-start mb-6">
-                      <div className="space-y-2 max-w-3xl">
-                        <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial COEES de WebEscuela</h2>
-                        <p className="text-[11px] text-slate-600 leading-relaxed text-justify">
-                           En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
+                <div className="p-16 space-y-12 relative bg-white">
+                   <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-14 flex flex-col border-2 border-slate-100 shadow-sm rounded-lg overflow-hidden">
+                           <div className="flex-1 bg-[#006847]" />
+                           <div className="flex-1 bg-white" />
+                           <div className="flex-1 bg-[#CE1126]" />
+                        </div>
+                        <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Conoce mi escuela</h2>
+                      </div>
+                      <Badge className="bg-slate-50 text-slate-400 border-2 border-slate-100 font-black text-[11px] uppercase px-6 py-3 rounded-2xl">
+                         {format(new Date(), "eeee d 'de' MMMM 'de' yyyy", { locale: es })}
+                      </Badge>
+                   </div>
+
+                   <div className="space-y-10 text-[18px] leading-relaxed text-slate-700 text-justify font-medium max-w-5xl mx-auto">
+                      <p>
+                         <span className="font-black text-primary text-xl">Conoce mi Escuela</span>, es un programa estratégico creado y administrado por el <span className="font-black text-slate-900">Departamento de Computación Electrónica en la Educación Secundaria (COEES)</span>. Desde su inicio en 2006, se ha consolidado como la plataforma oficial de vinculación digital entre el plantel y la sociedad mexiquense.
+                      </p>
+                      <p>
+                         A través de este portal, la comunidad educativa tiene acceso a la identidad profunda de cada plantel: su historia, logros académicos, infraestructura tecnológica y los reconocimientos que avalan la excelencia docente en el Estado de México.
+                      </p>
+                   </div>
+
+                   <div className="pt-10 border-t-2 border-slate-50 flex justify-center">
+                      <button 
+                        onClick={() => setIsLoginDialogOpen(true)}
+                        className="group flex items-center gap-6 px-12 py-6 bg-slate-900 text-white rounded-[2.5rem] shadow-2xl hover:bg-primary transition-all duration-500 scale-105"
+                      >
+                         <span className="text-xl font-black uppercase tracking-[0.2em]">Acceso a Auditoría Técnica</span>
+                         <div className="h-10 w-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:rotate-45 transition-transform">
+                            <Plus className="h-6 w-6" />
+                         </div>
+                      </button>
+                   </div>
+                </div>
+
+                <div className="bg-slate-50/80 p-12 flex flex-col items-center text-center space-y-6 border-t-2 border-slate-100">
+                   <div className="flex gap-8 items-center opacity-30">
+                     <Building2 className="h-10 w-10" />
+                     <Globe className="h-10 w-10" />
+                     <Activity className="h-10 w-10" />
+                   </div>
+                   <div className="space-y-2 text-[10px] font-black text-slate-400 uppercase leading-relaxed tracking-widest">
+                      <p>Gobierno del Estado de México • Secretaría de Educación</p>
+                      <p>Departamento de Computación Electrónica (COEES)</p>
+                   </div>
+                </div>
+             </div>
+             ) : (
+               <div className="space-y-8 animate-in fade-in duration-700 bg-white/80 backdrop-blur-3xl min-h-screen p-12 border-4 border-white shadow-2xl rounded-[3rem]">
+                  <div className="text-center py-10 border-b-4 border-slate-50 relative">
+                     <div className="absolute left-0 top-1/2 -translate-y-1/2 h-16 w-16 bg-primary/5 rounded-2xl flex items-center justify-center">
+                       <Monitor className="h-8 w-8 text-primary" />
+                     </div>
+                     <h1 className="text-2xl font-black text-primary uppercase tracking-tight leading-tight">Dirección de Educación Secundaria y Servicios de Apoyo</h1>
+                     <p className="text-[12px] text-slate-400 font-black uppercase tracking-[0.4em] mt-3 opacity-60">SEIEM • Sección Editorial COEES</p>
+                  </div>
+
+                  <div className="py-8">
+                     <div className="flex flex-col md:flex-row justify-between items-start gap-10 mb-10">
+                        <div className="space-y-4 max-w-3xl">
+                          <h2 className="text-3xl font-black text-slate-800 tracking-tighter uppercase flex items-center gap-4">
+                            Auditoría de Portales WebEscuela
+                          </h2>
+                          <p className="text-[12px] text-slate-500 leading-relaxed font-bold uppercase tracking-wide">
+                             Ud. se encuentra en el entorno de validación técnica de COEES. Desde este panel podrá revisar, publicar o suspender los portales oficiales de acuerdo a los lineamientos de incorporación vigentes.
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-6 bg-white p-8 rounded-[2rem] border-2 border-slate-50 shadow-sm">
+                           <button 
+                              onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); setActiveDialogTab('datos'); }}
+                              className="bg-rose-600 text-white px-10 py-4 text-[11px] font-black uppercase rounded-[1.2rem] shadow-2xl shadow-rose-200 hover:scale-105 transition-all tracking-widest"
+                           >
+                              Cerrar Portal
+                           </button>
+                           <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Registros en Servidor: {editorialRecords.length}</Badge>
+                        </div>
+                     </div>
+                     
+                     <div className="executive-card p-0 shadow-2xl border-4 border-white h-[750px] relative">
+                        <ScrollArea className="h-full w-full">
+                           <table className="table-institutional min-w-[3200px] border-black">
+                              <thead className="sticky top-0 z-30 shadow-md">
+                                 <tr>
+                                    <th className="border-r border-black p-4 w-16 text-center bg-slate-100 text-black">No.</th>
+                                    <th 
+                                      className="border-r border-black p-4 cursor-pointer hover:bg-slate-200 transition-colors bg-slate-100 text-black text-left"
+                                      onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
+                                    >
+                                      <div className="flex items-center gap-3 uppercase">
+                                         Centro de Trabajo
+                                         {sortConfig.direction === 'asc' ? <ChevronUp className="h-4 w-4" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ArrowUpDown className="h-4 w-4 opacity-30" />}
+                                      </div>
+                                    </th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black text-left">Agrupado</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Vertiente</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Sector</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Zona</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Fecha de Alta</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Modificación</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Revisión</th>
+                                    <th className="border-r border-black p-4 bg-slate-100 text-black">Publicación</th>
+                                    <th className="border-r border-black p-4 bg-primary text-white sticky right-0 z-40 shadow-[-10px_0_30px_rgba(0,0,0,0.15)] min-w-[220px]">
+                                       Fecha de Suspensión / ACCIONES A REALIZAR
+                                    </th>
+                                    <th className="border-r border-black p-4 min-w-[800px] bg-slate-100 text-black text-left">Observaciones Históricas</th>
+                                    <th className="p-4 bg-slate-100 text-black text-left">eContacto</th>
+                                 </tr>
+                              </thead>
+                              <tbody className="divide-y divide-black">
+                                 {editorialRecords.map((rec, idx) => (
+                                    <tr key={rec.id} className="hover:bg-slate-50 transition-colors align-top border-b border-black">
+                                       <td className="border-r border-black p-4 text-center font-black text-sm">{idx + 1}</td>
+                                       <td className="border-r border-black p-4 font-black uppercase text-slate-900 text-sm tracking-tighter text-left">{rec.cct}</td>
+                                       <td className="border-r border-black p-4 font-mono text-slate-500 uppercase text-xs text-left">{rec.agrupado || '-'}</td>
+                                       <td className="border-r border-black p-4 text-center uppercase font-black text-[10px]">{rec.vertiente || '-'}</td>
+                                       <td className="border-r border-black p-4 text-center font-black text-sm">{rec.sector || '-'}</td>
+                                       <td className="border-r border-black p-4 text-center font-black text-sm">{rec.zonaEscolar || '-'}</td>
+                                       <td className="border-r border-black p-4 text-slate-400 tabular-nums text-center text-[11px]">{rec.fechaAlta || '-'}</td>
+                                       <td className="border-r border-black p-4 text-slate-400 tabular-nums text-center text-[11px]">{rec.fechaModif || '-'}</td>
+                                       <td className="border-r border-black p-4 font-black text-slate-700 tabular-nums text-center text-[11px]">{rec.fechaRevision || '-'}</td>
+                                       <td className="border-r border-black p-4 text-emerald-600 font-black tabular-nums text-center text-[11px]">{rec.date || '-'}</td>
+                                       <td className="border-r border-black p-4 bg-white sticky right-0 z-30 shadow-[-10px_0_30px_rgba(0,0,0,0.1)] backdrop-blur-md">
+                                          <div className="flex flex-col gap-2 font-black text-primary underline underline-offset-4 text-left text-[10px] uppercase">
+                                             {rec.fechaSuspension && <span className="text-rose-600 mb-2 no-underline font-black bg-rose-50 px-3 py-1 rounded-lg text-center">{rec.fechaSuspension}</span>}
+                                             <button onClick={() => toast({title: "Revisar", description: `Validando integridad de ${rec.cct}`})} className="text-left hover:text-primary/70 transition-colors">Revisar</button>
+                                             <button onClick={() => toast({title: "Publicar", description: `Migrando ${rec.cct} a producción...`})} className="text-left hover:text-primary/70 transition-colors">Publicar</button>
+                                             <button onClick={() => toast({title: "Suspender", description: `Desactivando servicio para ${rec.cct}`})} className="text-left hover:text-primary/70 transition-colors">Suspender</button>
+                                             <button onClick={() => toast({title: "Observaciones", description: "Cargando bitácora técnica..."})} className="text-left hover:text-primary/70 transition-colors">Observaciones</button>
+                                             <button onClick={() => toast({title: "eContacto", description: `Vínculo: ${rec.email}`})} className="text-left hover:text-primary/70 transition-colors">eContacto</button>
+                                             <button onClick={() => toast({title: "Contraseña", description: "Restableciendo accesos..."})} className="text-left hover:text-primary/70 transition-colors">Contraseña</button>
+                                          </div>
+                                       </td>
+                                       <td className="border-r border-black p-6 text-slate-600 leading-relaxed text-justify text-[11px] italic font-medium bg-slate-50/30">
+                                          <div className="max-h-[300px] overflow-y-auto pr-6">
+                                             {rec.observaciones || 'SIN OBSERVACIONES REGISTRADAS EN EL CICLO VIGENTE.'}
+                                          </div>
+                                       </td>
+                                       <td className="p-6 font-mono text-primary lowercase text-xs text-left font-bold">{rec.email || ''}</td>
+                                    </tr>
+                                 ))}
+                              </tbody>
+                           </table>
+                           <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                     </div>
+                  </div>
+               </div>
+             )}
+          </TabsContent>
+        </Tabs>
+
+        <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
+          <DialogContent className="sm:max-w-[450px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+            <DialogHeader className="bg-primary p-12 text-white text-center relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+               <DialogTitle className="text-2xl font-black uppercase tracking-tighter relative z-10">Validación COEES</DialogTitle>
+               <DialogDescription className="text-white/60 font-black text-[11px] uppercase tracking-[0.2em] mt-3 relative z-10">Auditoría de Incorporación Técnica</DialogDescription>
+            </DialogHeader>
+            <div className="p-10 space-y-8 bg-white">
+               <div className="space-y-6">
+                  <div className="space-y-3">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-4 tracking-widest">Identificador de Usuario</Label>
+                     <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-16 rounded-2xl bg-slate-50 border-none font-black px-8 shadow-inner" />
+                  </div>
+                  <div className="space-y-3">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-4 tracking-widest">Clave de Auditoría</Label>
+                     <Input type="password" placeholder="••••••••" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black px-8 shadow-inner" />
+                  </div>
+               </div>
+               <button onClick={handleEditorialLogin} className="w-full h-20 rounded-[1.5rem] font-black uppercase bg-primary text-white shadow-2xl hover:scale-105 transition-all tracking-[0.3em] text-[12px]">
+                  Acceder al Servidor
+               </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[1400px] h-[92vh] flex flex-col p-0 rounded-[3rem] overflow-hidden border-none shadow-[0_50px_100px_rgba(0,0,0,0.2)] bg-slate-50">
+            <DialogHeader className="p-10 pb-6 border-b bg-white relative">
+               <div className="absolute right-12 top-10 flex gap-4">
+                  <div className="h-16 w-16 bg-primary/5 rounded-[1.5rem] flex items-center justify-center text-primary shadow-inner">
+                     <Zap className="h-8 w-8" />
+                  </div>
+               </div>
+               <DialogTitle className="text-3xl font-black uppercase text-primary tracking-tighter leading-none">
+                  {formData.name === 'Cuentas Institucionales' ? 'Gestión de Identidad COEES' : (editingId ? 'Actualización Técnica' : 'Captura Estratégica')}
+               </DialogTitle>
+               <DialogDescription className="font-black text-[11px] uppercase text-muted-foreground tracking-[0.3em] mt-3">Sincronización de Datos en Tiempo Real</DialogDescription>
+            </DialogHeader>
+
+            <Tabs value={activeDialogTab} onValueChange={setActiveDialogTab} className="flex-1 flex flex-col overflow-hidden bg-white">
+              <div className="px-10 border-b bg-white">
+                <TabsList className="bg-transparent h-16 p-0 gap-10">
+                  <TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-6 text-[12px] font-black uppercase tracking-widest">
+                    1. Ficha Técnica Operativa
+                  </TabsTrigger>
+                  {formData.name !== 'Cuentas Institucionales' && (
+                    <TabsTrigger 
+                      value="asistentes" 
+                      disabled={formData.capacitacion !== 'S'}
+                      className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-6 text-[12px] font-black uppercase tracking-widest disabled:opacity-20"
+                    >
+                      2. Registro de Asistentes (SIP)
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
+
+              <div className="flex-1 overflow-hidden bg-slate-50/50">
+                <TabsContent value="datos" className="h-full m-0">
+                  <ScrollArea className="h-full p-10">
+                     <div className="max-w-6xl mx-auto space-y-12">
+                        {formData.name === 'Cuentas Institucionales' ? (
+                          <div className="space-y-12 animate-in fade-in duration-700">
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Centro de Trabajo (CCT)</Label>
+                                   <Input 
+                                      placeholder="15XXXXXX" 
+                                      value={formData.cct} 
+                                      onChange={e => {
+                                         const val = e.target.value.toUpperCase();
+                                         setFormData({...formData, cct: val});
+                                         if (val.length === 10) {
+                                            const s = schoolsDirectory.find(sh => sh.cct === val);
+                                            if (s) {
+                                               setFormData(prev => ({
+                                                  ...prev,
+                                                  cct: val,
+                                                  valle: s.valle,
+                                                  modalidad: s.modalidad,
+                                                  sector: s.sectorNum,
+                                                  zonaEscolar: s.zonaEscolar
+                                               }));
+                                            }
+                                         }
+                                      }} 
+                                      maxLength={10} 
+                                      className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8 shadow-sm focus:border-primary" 
+                                   />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Valle Territorial</Label>
+                                   <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
+                                      <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8"><SelectValue placeholder="VALLE" /></SelectTrigger>
+                                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                         <SelectItem value="MÉXICO" className="font-black uppercase">VALLE DE MÉXICO</SelectItem>
+                                         <SelectItem value="TOLUCA" className="font-black uppercase">VALLE DE TOLUCA</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Modalidad</Label>
+                                   <Select value={formData.modalidad} onValueChange={v => setFormData({...formData, modalidad: v})}>
+                                      <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8"><SelectValue placeholder="MODALIDAD" /></SelectTrigger>
+                                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                         <SelectItem value="DES" className="font-black uppercase">DES (GENERAL)</SelectItem>
+                                         <SelectItem value="DST" className="font-black uppercase">DST (TÉCNICA)</SelectItem>
+                                         <SelectItem value="DTV" className="font-black uppercase">DTV (TELESEC.)</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 p-10 bg-white rounded-[2.5rem] border-2 border-white shadow-xl">
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Correo Institucional @COEES</Label>
+                                   <Input 
+                                      value={formData.asistentes?.[0]?.email || ''} 
+                                      onChange={e => updateAssistantField(0, 'email', e.target.value.toLowerCase())} 
+                                      className="h-16 bg-slate-50 border-none font-mono lowercase text-primary text-lg px-8 shadow-inner" 
+                                      placeholder="ejemplo@desysa.gob.mx" 
+                                   />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Nombre Completo del Titular</Label>
+                                   <Input 
+                                      value={formData.asistentes?.[0]?.nombres || ''} 
+                                      onChange={e => updateAssistantField(0, 'nombres', e.target.value.toUpperCase())} 
+                                      className="h-16 bg-slate-50 border-none font-black text-slate-800 px-8 shadow-inner" 
+                                      placeholder="NOMBRE DEL RESPONSABLE" 
+                                   />
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Sector</Label>
+                                   <Input value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8" />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Zona Escolar</Label>
+                                   <Input value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8" />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Estatus de Auditoría</Label>
+                                   <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                                      <SelectTrigger className="h-16 rounded-2xl bg-slate-900 border-none font-black px-8 text-white shadow-2xl"><SelectValue /></SelectTrigger>
+                                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                         <SelectItem value="activo" className="text-[11px] font-black uppercase">ACTIVO</SelectItem>
+                                         <SelectItem value="inactivo" className="text-[11px] font-black uppercase">INACTIVO</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                             </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-12">
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">CCT de Plantel</Label>
+                                   <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8 shadow-sm" />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Valle</Label>
+                                   <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
+                                      <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-100 font-black px-8"><SelectValue placeholder="VALLE" /></SelectTrigger>
+                                      <SelectContent>
+                                         <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
+                                         <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Estatus Operativo</Label>
+                                   <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                                      <SelectTrigger className="h-16 rounded-2xl bg-slate-900 border-none font-black px-8 text-white shadow-2xl"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                         <SelectItem value="planeacion" className="text-[11px] font-black uppercase">PLANEACIÓN</SelectItem>
+                                         <SelectItem value="activo" className="text-[11px] font-black uppercase">ACTIVO</SelectItem>
+                                         <SelectItem value="concluido" className="text-[11px] font-black uppercase">CONCLUIDO</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                             </div>
+
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 p-10 bg-white rounded-[2.5rem] border-2 border-white shadow-xl">
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Número de Oficio SIP</Label>
+                                   <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-16 bg-slate-50 border-none font-black px-8 shadow-inner" placeholder="COEES/PL/000/2026" />
+                                </div>
+                                <div className="space-y-4">
+                                   <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest">Semanas SETES</Label>
+                                   <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as 'S' | 'N'})}>
+                                      <SelectTrigger className="h-16 bg-slate-50 border-none font-black px-8 shadow-inner"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                         <SelectItem value="S" className="font-black uppercase">SÍ (PROGRAMADO)</SelectItem>
+                                         <SelectItem value="N" className="font-black uppercase">NO (REGULAR)</SelectItem>
+                                      </SelectContent>
+                                   </Select>
+                                </div>
+                             </div>
+
+                             <div className="flex items-center space-x-6 p-8 bg-primary/5 rounded-[2rem] border-2 border-primary/10 shadow-inner">
+                                <div className="flex-1 space-y-2">
+                                   <Label className="text-lg font-black uppercase text-primary tracking-tight">Capacitación Institucional</Label>
+                                   <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">¿Este registro requiere validación de personal capacitado?</p>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                   <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest">{formData.capacitacion === 'S' ? 'ACTIVO' : 'INACTIVO'}</span>
+                                   <Switch 
+                                      className="data-[state=checked]:bg-primary"
+                                      checked={formData.capacitacion === 'S'} 
+                                      onCheckedChange={(val) => {
+                                         const newVal = val ? 'S' : 'N';
+                                         setFormData({...formData, capacitacion: newVal});
+                                         if (!val) setActiveDialogTab('datos');
+                                      }} 
+                                   />
+                                </div>
+                             </div>
+
+                             {formData.capacitacion === 'S' && (
+                                <div className="space-y-10 animate-in slide-in-from-top-10 duration-700 p-10 bg-white rounded-[3rem] border-4 border-slate-50 shadow-2xl">
+                                   <h4 className="text-xl font-black uppercase text-primary border-b-4 border-primary/10 pb-4 flex items-center gap-4">
+                                      <GraduationCap className="h-8 w-8" /> Gestión de Curso e Instructores Ponentes
+                                   </h4>
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">Nombre del Programa Formativo</Label>
+                                         <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="h-14 bg-slate-50 border-none px-8 font-black" />
+                                      </div>
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">Grupo de Atención</Label>
+                                         <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="h-14 bg-slate-50 border-none px-8 font-black" />
+                                      </div>
+                                   </div>
+                                   <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">Duración (Horas)</Label>
+                                         <div className="relative">
+                                         <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="h-14 bg-slate-50 border-none pl-12 font-black" />
+                                         <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                                         </div>
+                                      </div>
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">Fecha Inicio</Label>
+                                         <div className="relative">
+                                         <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="h-14 bg-slate-50 border-none pl-12 font-black" />
+                                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                                         </div>
+                                      </div>
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">Fecha Término</Label>
+                                         <div className="relative">
+                                         <Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} className="h-14 bg-slate-50 border-none pl-12 font-black" />
+                                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                                         </div>
+                                      </div>
+                                      <div className="space-y-4">
+                                         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-4">CCT Sede</Label>
+                                         <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="h-14 bg-slate-50 border-none px-8 font-mono font-black" placeholder="15DESXXXXX" maxLength={10} />
+                                      </div>
+                                   </div>
+                                </div>
+                             )}
+                          </div>
+                        )}
+
+                        <div className="space-y-4 pt-10 border-t-2 border-slate-100">
+                           <Label className="text-[11px] font-black uppercase text-primary ml-4 tracking-widest flex items-center gap-3">
+                             <ListFilter className="h-4 w-4" /> Bitácora Técnica de Observaciones
+                           </Label>
+                           <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[160px] rounded-[2rem] border-2 border-slate-100 p-8 text-sm font-medium focus:border-primary shadow-sm" placeholder="Escriba aquí los detalles técnicos del servicio..." />
+                        </div>
+                     </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {formData.name !== 'Cuentas Institucionales' && (
+                  <TabsContent value="asistentes" className="h-full m-0 flex flex-col bg-white">
+                    <div className="p-10 pb-6 flex justify-between items-center bg-slate-50 border-b">
+                      <div className="p-6 bg-white border-2 border-primary/10 rounded-[2rem] flex items-center gap-6 flex-1 mr-10 shadow-xl shadow-slate-100">
+                        <div className="h-12 w-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg">
+                          <CheckCircle2 className="h-6 w-6" />
+                        </div>
+                        <p className="text-[12px] font-black text-slate-700 uppercase tracking-widest leading-relaxed">
+                          Captura nominal de asistentes. El sistema autocompleta los datos geográficos mediante el CCT.
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                         <button 
-                            onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); setActiveDialogTab('datos'); }}
-                            className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
-                         >
-                            Cerrar Auditoría
-                         </button>
-                         <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary uppercase">Registros en Servidor: {editorialRecords.length}</Badge>
-                      </div>
-                   </div>
-                   
-                   <div className="border border-black w-full h-[650px] relative overflow-hidden">
-                      <ScrollArea className="h-full w-full">
-                         <Table className="border-collapse text-[10px] min-w-[2800px]">
-                            <TableHeader className="bg-slate-100 sticky top-0 z-20">
-                               <TableRow className="border-b border-black">
-                                  <TableHead className="border-r border-black p-2 w-10 text-center font-black">No.</TableHead>
-                                  <TableHead 
-                                    className="border-r border-black p-2 cursor-pointer hover:bg-slate-200 transition-colors group select-none font-black"
-                                    onClick={() => setSortConfig(p => ({ key: 'cct', direction: p.direction === 'asc' ? 'desc' : 'asc' }))}
-                                  >
-                                    <div className="flex items-center gap-2 uppercase">
-                                       Centro de Trabajo
-                                       {sortConfig.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : sortConfig.direction === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-30" />}
-                                    </div>
-                                  </TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase">Agrupado</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Vertiente</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Sector</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center">Zona</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Alta</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Modificación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Revisión</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Publicación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap bg-rose-50 text-rose-800 sticky right-0 z-30 shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">
-                                     Fecha de Suspensión / ACCIONES A REALIZAR
-                                  </TableHead>
-                                  <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
-                                  <TableHead className="p-2 font-black uppercase">eContacto</TableHead>
-                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                               {editorialRecords.map((rec, idx) => (
-                                  <TableRow key={rec.id} className="border-b border-black hover:bg-slate-50 align-top">
-                                     <TableCell className="border-r border-black p-2 text-center font-bold">{idx + 1}</TableCell>
-                                     <TableCell className="border-r border-black p-2 font-black uppercase text-slate-800">{rec.cct}</TableCell>
-                                     <TableCell className="border-r border-black p-2 font-mono text-slate-500 uppercase">{rec.agrupado || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-center uppercase">{rec.vertiente || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-center font-bold">{rec.sector || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-center font-bold">{rec.zonaEscolar || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaAlta || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaModif || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums text-center">{rec.fechaRevision || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums text-center">{rec.date || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 bg-rose-50/50 min-w-[180px] sticky right-0 z-30 shadow-[-10px_0_15px_rgba(0,0,0,0.05)] backdrop-blur-sm">
-                                        <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
-                                           {rec.fechaSuspension && <span className="text-rose-600 mb-1 no-underline">{rec.fechaSuspension}</span>}
-                                           <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
-                                           <button onClick={() => toast({title: "Publicar", description: `Publicando ${rec.cct} en el servidor...`})} className="text-left hover:text-blue-900 w-fit">Publicar</button>
-                                           <button onClick={() => toast({title: "Suspender", description: `Suspendiendo portal de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Suspender</button>
-                                           <button onClick={() => toast({title: "Observaciones", description: "Abriendo bitácora técnica..."})} className="text-left hover:text-blue-900 w-fit">Observaciones</button>
-                                           <button onClick={() => toast({title: "eContacto", description: `Email: ${rec.email}`})} className="text-left hover:text-blue-900 w-fit">eContacto</button>
-                                           <button onClick={() => toast({title: "Contraseña", description: "Generando nueva clave institucional..."})} className="text-left hover:text-blue-900 w-fit">Contraseña</button>
-                                        </div>
-                                     </TableCell>
-                                     <TableCell className="border-r border-black p-2 text-slate-600 leading-tight text-justify pr-4 text-[9px]">
-                                        <div className="max-h-[250px] overflow-y-auto italic">
-                                           {rec.observaciones || ''}
-                                        </div>
-                                     </TableCell>
-                                     <TableCell className="p-2 font-mono text-blue-800 lowercase">{rec.email || ''}</TableCell>
-                                  </TableRow>
-                               ))}
-                            </TableBody>
-                         </Table>
-                         <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
-                   </div>
-                </div>
-             </div>
-           )}
-        </TabsContent>
-      </Tabs>
-
-      <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="bg-primary p-8 text-white text-center">
-             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial COEES</DialogTitle>
-             <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Sección de Incorporación y Auditoría Técnica</DialogDescription>
-          </DialogHeader>
-          <div className="p-8 space-y-6 bg-white">
-             <div className="space-y-4">
-                <div className="space-y-2">
-                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Usuario Administrador</Label>
-                   <Input placeholder="USUARIO" value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
-                </div>
-                <div className="space-y-2">
-                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Clave Institucional</Label>
-                   <Input type="password" placeholder="CONTRASEÑA" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6 shadow-inner" />
-                </div>
-             </div>
-             <button onClick={handleEditorialLogin} className="w-full h-16 rounded-2xl font-black uppercase bg-primary text-white shadow-xl hover:scale-[1.02] transition-transform tracking-widest text-[11px]">
-                Validar Credenciales
-             </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1400px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-8 pb-4 border-b bg-slate-50">
-             <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                {formData.name === 'Cuentas Institucionales' ? 'Gestión de Cuenta Institucional COEES' : (editingId ? 'Actualización de Registro Técnico COEES' : 'Nueva Captura de Programa')}
-             </DialogTitle>
-             <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión de Información y Capacitación Institucional</DialogDescription>
-          </DialogHeader>
-
-          <Tabs value={activeDialogTab} onValueChange={setActiveDialogTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b bg-white">
-              <TabsList className="bg-transparent h-12 p-0 gap-8">
-                <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">
-                  1. Datos del {formData.name === 'Cuentas Institucionales' ? 'Titular y Cuenta' : 'Programa / Curso'}
-                </TabsTrigger>
-                {formData.name !== 'Cuentas Institucionales' && (
-                  <TabsTrigger 
-                    value="asistentes" 
-                    disabled={formData.capacitacion !== 'S'}
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider disabled:opacity-30 disabled:grayscale"
-                  >
-                    2. Lista de Asistentes (Captura Directa)
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </div>
-
-            <div className="flex-1 overflow-hidden">
-              <TabsContent value="datos" className="h-full m-0">
-                <ScrollArea className="h-full p-8">
-                   <div className="space-y-10">
-                      {formData.name === 'Cuentas Institucionales' ? (
-                        <div className="space-y-10 animate-in fade-in duration-500">
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
-                                 <Input 
-                                    placeholder="15XXXXXX" 
-                                    value={formData.cct} 
-                                    onChange={e => {
-                                       const val = e.target.value.toUpperCase();
-                                       setFormData({...formData, cct: val});
-                                       if (val.length === 10) {
-                                          const s = schoolsDirectory.find(sh => sh.cct === val);
-                                          if (s) {
-                                             setFormData(prev => ({
-                                                ...prev,
-                                                cct: val,
-                                                valle: s.valle,
-                                                modalidad: s.modalidad,
-                                                sector: s.sectorNum,
-                                                zonaEscolar: s.zonaEscolar
-                                             }));
-                                          }
-                                       }
-                                    }} 
-                                    maxLength={10} 
-                                    className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" 
-                                 />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
-                                 <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
-                                       <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Modalidad</Label>
-                                 <Select value={formData.modalidad} onValueChange={v => setFormData({...formData, modalidad: v})}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="MODALIDAD" /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="DES" className="font-black uppercase">DES (GENERAL)</SelectItem>
-                                       <SelectItem value="DST" className="font-black uppercase">DST (TÉCNICA)</SelectItem>
-                                       <SelectItem value="DTV" className="font-black uppercase">DTV (TELESEC.)</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Correo Institucional</Label>
-                                 <Input 
-                                    value={formData.asistentes?.[0]?.email || ''} 
-                                    onChange={e => updateAssistantField(0, 'email', e.target.value.toLowerCase())} 
-                                    className="h-12 bg-white font-mono lowercase" 
-                                    placeholder="ejemplo@desysa.gob.mx" 
-                                 />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Nombre de la Persona (Titular)</Label>
-                                 <Input 
-                                    value={formData.asistentes?.[0]?.nombres || ''} 
-                                    onChange={e => updateAssistantField(0, 'nombres', e.target.value.toUpperCase())} 
-                                    className="h-12 bg-white font-black" 
-                                    placeholder="NOMBRE COMPLETO" 
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Sector</Label>
-                                 <Input value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Zona</Label>
-                                 <Input value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Operativo</Label>
-                                 <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-900 border-none font-black px-6 text-white"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO</SelectItem>
-                                       <SelectItem value="inactivo" className="text-[10px] font-black uppercase">INACTIVO</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-10">
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">CCT / Clave de Plantel</Label>
-                                 <Input placeholder="15XXXXXX" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-14 rounded-2xl bg-white border-2 border-slate-100 font-black px-6" />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Valle de Atención</Label>
-                                 <Select value={formData.valle} onValueChange={v => setFormData({...formData, valle: v})}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue placeholder="VALLE" /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="MÉXICO" className="font-black uppercase">MÉXICO</SelectItem>
-                                       <SelectItem value="TOLUCA" className="font-black uppercase">TOLUCA</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Estatus Operativo</Label>
-                                 <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black px-6"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="planeacion" className="text-[10px] font-black uppercase">PLANEACIÓN</SelectItem>
-                                       <SelectItem value="activo" className="text-[10px] font-black uppercase">ACTIVO</SelectItem>
-                                       <SelectItem value="concluido" className="text-[10px] font-black uppercase">CONCLUIDO</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Oficio</Label>
-                                 <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="COEES/PL/000/2024" />
-                              </div>
-                              <div className="space-y-3">
-                                 <Label className="text-[10px] font-black uppercase text-primary ml-2">Semana SETES</Label>
-                                 <Select value={formData.setes} onValueChange={v => setFormData({...formData, setes: v as 'S' | 'N'})}>
-                                    <SelectTrigger className="h-12 bg-white font-black px-6"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="S" className="font-black uppercase">SÍ</SelectItem>
-                                       <SelectItem value="N" className="font-black uppercase">NO</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-
-                           <div className="flex items-center space-x-4 p-6 bg-slate-50 rounded-2xl border-2 border-slate-100">
-                              <div className="flex-1">
-                                 <Label className="text-sm font-black uppercase text-primary">Capacitación Técnica</Label>
-                                 <p className="text-[10px] text-muted-foreground font-bold uppercase">¿Se realizó curso de capacitación para este rubro?</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                 <span className="text-[10px] font-black text-slate-400 uppercase">{formData.capacitacion === 'S' ? 'SÍ' : 'NO'}</span>
-                                 <Switch 
-                                    checked={formData.capacitacion === 'S'} 
-                                    onCheckedChange={(val) => {
-                                       const newVal = val ? 'S' : 'N';
-                                       setFormData({...formData, capacitacion: newVal});
-                                       if (!val) setActiveDialogTab('datos');
-                                    }} 
-                                 />
-                              </div>
-                           </div>
-
-                           {formData.capacitacion === 'S' && (
-                              <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
-                                 <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3">
-                                    <Activity className="h-5 w-5" /> Gestión de Curso e Instructores COEES
-                                 </h4>
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">Nombre del Curso / Taller</Label>
-                                       <Input value={formData.cursoNombre} onChange={e => setFormData({...formData, cursoNombre: e.target.value})} className="bg-slate-50" />
-                                    </div>
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">Grupo de Asistencia</Label>
-                                       <Input value={formData.cursoGrupo} onChange={e => setFormData({...formData, cursoGrupo: e.target.value})} className="bg-slate-50" />
-                                    </div>
-                                 </div>
-                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">Horas</Label>
-                                       <div className="relative">
-                                       <Input type="number" value={formData.duracionHoras} onChange={e => setFormData({...formData, duracionHoras: parseInt(e.target.value) || 0})} className="bg-slate-50 pl-10" />
-                                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                       </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Inicio</Label>
-                                       <div className="relative">
-                                       <Input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="bg-slate-50 pl-10" />
-                                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                       </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">Fecha Término</Label>
-                                       <div className="relative">
-                                       <Input type="date" value={formData.fechaTermino} onChange={e => setFormData({...formData, fechaTermino: e.target.value})} className="bg-slate-50 pl-10" />
-                                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                       </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                       <Label className="text-[10px] font-black uppercase text-slate-500">CCT Sede</Label>
-                                       <Input value={formData.cctSede} onChange={e => setFormData({...formData, cctSede: e.target.value.toUpperCase()})} className="bg-slate-50 font-mono" placeholder="15DESXXXXX" maxLength={10} />
-                                    </div>
-                                 </div>
-                              </div>
-                           )}
-                        </div>
-                      )}
-
-                      <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora COEES</Label>
-                         <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
-                      </div>
-                   </div>
-                </ScrollArea>
-              </TabsContent>
-
-              {formData.name !== 'Cuentas Institucionales' && (
-                <TabsContent value="asistentes" className="h-full m-0 flex flex-col">
-                  <div className="p-8 pb-4 flex justify-between items-center bg-white border-b">
-                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 flex-1 mr-4">
-                      <CheckCircle2 className="h-6 w-6 text-primary" />
-                      <p className="text-[11px] font-bold text-slate-700 uppercase leading-relaxed">
-                        Capture la lista de asistentes. Al ingresar el CCT de 10 dígitos, se autocompletarán los datos geográficos automáticamente.
-                      </p>
+                      <Button onClick={handleAddAssistantRow} className="btn-institutional px-10">
+                        <Plus className="h-5 w-5 mr-3" /> Añadir Asistente
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleAddAssistantRow} className="gap-2 font-black uppercase h-14 px-8 rounded-2xl border-primary text-primary hover:bg-primary/5 shadow-sm">
-                      <Plus className="h-5 w-5" /> Añadir Asistente
-                    </Button>
-                  </div>
 
-                  <div className="flex-1 overflow-hidden border-t">
-                    <ScrollArea className="h-full">
-                      <Table className="border-collapse">
-                        <TableHeader className="bg-slate-100 sticky top-0 z-20 shadow-sm">
-                          <TableRow>
-                            <TableHead className="w-12 text-[10px] font-black uppercase text-center py-4 border-r border-slate-200">#</TableHead>
-                            <TableHead className="min-w-[220px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Apellidos y Nombre(s)</TableHead>
-                            <TableHead className="min-w-[150px] text-[10px] font-black uppercase py-4 border-r border-slate-200">RFC</TableHead>
-                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Función</TableHead>
-                            <TableHead className="min-w-[140px] text-[10px] font-black uppercase py-4 border-r border-slate-200">CCT Plantel</TableHead>
-                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase py-4 border-r border-slate-200">Nombre C.T. / Zona</TableHead>
-                            <TableHead className="w-16 sticky right-0 bg-slate-100 py-4"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(formData.asistentes || []).map((ast, idx) => (
-                            <TableRow key={idx} className="hover:bg-slate-50 transition-colors">
-                              <TableCell className="text-center font-black text-xs text-muted-foreground border-r border-slate-100">{idx + 1}</TableCell>
-                              <TableCell className="p-3 border-r border-slate-100">
-                                <div className="flex flex-col gap-2">
-                                  <Input placeholder="Ap. Paterno" className="h-9 text-[10px] font-bold" value={ast.paterno} onChange={e => updateAssistantField(idx, 'paterno', e.target.value)} />
-                                  <Input placeholder="Ap. Materno" className="h-9 text-[10px] font-bold" value={ast.materno} onChange={e => updateAssistantField(idx, 'materno', e.target.value)} />
-                                  <Input placeholder="Nombre(s)" className="h-9 text-[10px] font-black text-primary" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
-                                </div>
-                              </TableCell>
-                              <TableCell className="p-3 border-r border-slate-100">
-                                <Input placeholder="RFC" className="h-10 text-[10px] font-mono font-black uppercase" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
-                              </TableCell>
-                              <TableCell className="p-3 border-r border-slate-100">
-                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
-                                  <SelectTrigger className="h-10 text-[10px] font-bold">
-                                    <SelectValue placeholder="Función..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {FUNCIONES.map(f => (
-                                      <SelectItem key={f} value={f} className="text-[10px] font-bold">{f}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell className="p-3 border-r border-slate-100">
-                                <Input placeholder="15DESXXXXX" className="h-10 text-[10px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                              </TableCell>
-                              <TableCell className="p-3 border-r border-slate-100">
-                                <div className="flex flex-col gap-2">
-                                  <Input value={ast.nombreCT} readOnly className="h-9 text-[9px] bg-slate-50 font-black uppercase" placeholder="Nombre C.T." />
-                                  <Input value={ast.ze} readOnly className="h-9 text-[9px] bg-slate-50 text-center" placeholder="ZE" />
-                                </div>
-                              </TableCell>
-                              <TableCell className="p-3 sticky right-0 bg-white shadow-[-10px_0_15px_rgba(0,0,0,0.03)] text-center">
-                                <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistantRow(idx)} disabled={(formData.asistentes?.length || 0) <= 1}>
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                  </div>
-                </TabsContent>
-              )}
-            </div>
-          </Tabs>
+                    <div className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full">
+                        <table className="table-institutional min-w-[1200px]">
+                          <thead className="sticky top-0 z-20 bg-slate-900 text-white shadow-xl">
+                            <tr>
+                              <th className="w-16 py-6 border-r border-white/10">#</th>
+                              <th className="min-w-[250px] text-left px-8 py-6 border-r border-white/10">Personal Capacitado</th>
+                              <th className="min-w-[180px] py-6 border-r border-white/10">RFC</th>
+                              <th className="min-w-[220px] py-6 border-r border-white/10">Función Oficial</th>
+                              <th className="min-w-[160px] py-6 border-r border-white/10">CCT de Origen</th>
+                              <th className="min-w-[280px] text-left px-8 py-6">Datos de Plantel / Zona</th>
+                              <th className="w-20"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {(formData.asistentes || []).map((ast, idx) => (
+                              <TableRow key={idx} className="hover:bg-slate-50 transition-all bg-white">
+                                <TableCell className="text-center font-black text-xs text-muted-foreground border-r border-slate-50">{idx + 1}</TableCell>
+                                <TableCell className="p-4 border-r border-slate-50">
+                                  <div className="flex flex-col gap-2">
+                                    <Input placeholder="Apellidos" className="h-10 text-[11px] font-bold rounded-xl" value={`${ast.paterno} ${ast.materno}`} onChange={e => {
+                                      const parts = e.target.value.split(' ');
+                                      updateAssistantField(idx, 'paterno', parts[0] || '');
+                                      updateAssistantField(idx, 'materno', parts.slice(1).join(' ') || '');
+                                    }} />
+                                    <Input placeholder="Nombre(s)" className="h-10 text-[11px] font-black text-primary rounded-xl" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-4 border-r border-slate-50">
+                                  <Input placeholder="RFC" className="h-12 text-[11px] font-mono font-black uppercase text-center rounded-xl" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
+                                </TableCell>
+                                <TableCell className="p-4 border-r border-slate-50">
+                                  <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
+                                    <SelectTrigger className="h-12 text-[11px] font-black rounded-xl">
+                                      <SelectValue placeholder="Seleccionar..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                                      {FUNCIONES.map(f => (
+                                        <SelectItem key={f} value={f} className="text-[11px] font-black">{f}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="p-4 border-r border-slate-50">
+                                  <Input placeholder="15DESXXXXX" className="h-12 text-[11px] font-mono font-black uppercase text-center border-primary/20 rounded-xl" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                </TableCell>
+                                <TableCell className="p-4 px-8 text-left">
+                                  <div className="flex flex-col gap-2">
+                                    <Badge className="bg-slate-50 text-slate-400 border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-lg truncate max-w-[200px]">{ast.nombreCT || 'PLANEL PENDIENTE'}</Badge>
+                                    <Badge className="bg-accent/5 text-accent border-none font-black text-[9px] uppercase px-4 py-1.5 rounded-lg w-fit">Zona: {ast.ze || 'S/Z'}</Badge>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-4">
+                                  <Button variant="ghost" size="icon" className="h-12 w-12 text-rose-500 hover:bg-rose-50 rounded-2xl" onClick={() => handleRemoveAssistantRow(idx)} disabled={(formData.asistentes?.length || 0) <= 1}>
+                                    <Trash2 className="h-6 w-6" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </tbody>
+                        </table>
+                        <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
+                    </div>
+                  </TabsContent>
+                )}
+              </div>
+            </Tabs>
 
-          <DialogFooter className="p-8 border-t bg-slate-50">
-             <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setActiveDialogTab('datos'); }} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancelar</Button>
-             <Button onClick={handleSave} className="h-14 px-14 rounded-2xl font-black uppercase text-[10px] bg-primary text-white shadow-xl shadow-primary/20 tracking-[0.1em]">Finalizar Captura</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="p-10 bg-white border-t-2 border-slate-50 flex items-center justify-between">
+               <div className="flex items-center gap-4">
+                 <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
+                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Servidor Activo • Edoméx 2026</span>
+               </div>
+               <div className="flex gap-6">
+                 <Button variant="outline" onClick={() => { setIsDialogOpen(false); setFormData(initialFormState); setActiveDialogTab('datos'); }} className="h-16 px-12 rounded-2xl font-black uppercase text-[11px] tracking-widest border-2 border-slate-100 bg-white hover:bg-slate-50">Cancelar</Button>
+                 <Button onClick={handleSave} className="h-16 px-16 rounded-2xl font-black uppercase text-[11px] bg-primary text-white shadow-2xl shadow-primary/30 tracking-[0.2em] transition-all hover:scale-[1.03]">Finalizar Captura</Button>
+               </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }
