@@ -287,11 +287,11 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h2 className="text-4xl font-black tracking-tight text-primary uppercase leading-none">PLANEACIÓN</h2>
+            <h2 className="text-4xl font-black tracking-tight text-primary uppercase leading-none">COEES</h2>
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
               <p className="text-muted-foreground font-black text-[11px] tracking-[0.2em] uppercase">
-                Análisis Operativo
+                Análisis Técnico Operativo
               </p>
               <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/5 text-primary rounded-xl" onClick={() => setIsSettingsOpen(true)}>
                 <Settings2 className="h-4 w-4" />
@@ -648,7 +648,7 @@ export default function DashboardPage() {
                <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
                  <div>
                    <CardTitle className="text-lg font-black uppercase text-primary">Estado de Cobertura por Rubro</CardTitle>
-                   <CardDescription className="text-[9px] font-black uppercase tracking-widest mt-1">Sincronizado con Auditoría Oficial 2024-2025</CardDescription>
+                   <CardDescription className="text-[9px] font-black uppercase tracking-widest mt-1">Sincronizado con Auditoría Oficial COEES</CardDescription>
                  </div>
                  <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black uppercase px-6 py-2 rounded-xl">Consolidado SIP</Badge>
                </CardHeader>
@@ -669,7 +669,7 @@ export default function DashboardPage() {
                          <TableCell className="py-6 pl-10">
                             <div className="flex flex-col">
                                <span className="text-xs font-black text-slate-700">{row.name}</span>
-                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Rubro Estratégico Planeación</span>
+                               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Rubro Estratégico COEES</span>
                             </div>
                          </TableCell>
                          <TableCell className="text-center font-black text-xs text-primary">{row.count}</TableCell>
@@ -706,7 +706,7 @@ export default function DashboardPage() {
             <div className="absolute right-10 top-10 h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/5">
               <Settings2 className="h-8 w-8 text-primary" />
             </div>
-            <DialogTitle className="uppercase font-black text-primary text-2xl tracking-tight">Metas Institucionales</DialogTitle>
+            <DialogTitle className="uppercase font-black text-primary text-2xl tracking-tight">Metas Institucionales COEES</DialogTitle>
             <DialogDescription className="font-bold text-[10px] uppercase text-slate-400 tracking-widest mt-2">Plan Maestro de Objetivos Estratégicos SIP</DialogDescription>
           </DialogHeader>
           
@@ -728,7 +728,7 @@ export default function DashboardPage() {
               
               <div className="space-y-8 pt-8 border-t-2 border-slate-50">
                  <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-3 tracking-[0.2em]">
-                   <Target className="h-5 w-5" /> Objetivos de Productivity Anual
+                   <Target className="h-5 w-5" /> Objetivos de Productividad Anual
                  </Label>
                  <div className="grid grid-cols-2 gap-8">
                    <div className="space-y-3">
@@ -784,7 +784,7 @@ export default function DashboardPage() {
           
           <DialogFooter className="p-10 bg-slate-50 border-t flex justify-end gap-6">
             <Button variant="outline" size="sm" onClick={() => setIsSettingsOpen(false)} className="h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-white border-slate-200">Cancelar</Button>
-            <Button size="sm" onClick={saveGoals} className="h-14 px-12 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">Sincronizar Planeación</Button>
+            <Button size="sm" onClick={saveGoals} className="h-14 px-12 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">Sincronizar Gestión</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -801,7 +801,7 @@ export default function DashboardPage() {
               {evidenceToView?.type === 'pdf' ? <FileText className="h-8 w-8 text-blue-600" /> : <ImageIcon className="h-8 w-8 text-pink-600" />}
               {evidenceToView?.title}
             </DialogTitle>
-            <DialogDescription className="font-black text-[11px] uppercase text-slate-400 tracking-[0.3em] mt-2">Visor Ejecutivo de Auditoría Edoméx</DialogDescription>
+            <DialogDescription className="font-black text-[11px] uppercase text-slate-400 tracking-[0.3em] mt-2">Visor Ejecutivo de Auditoría COEES</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 p-10 relative">
              {evidenceToView?.type === 'pdf' ? (

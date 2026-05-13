@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -128,7 +127,7 @@ export default function ProgramsPage() {
       localStorage.setItem('userRfc', 'CEDITORIAL')
       setUserRfc('CEDITORIAL')
       setIsLoginDialogOpen(false)
-      toast({ title: "Acceso Concedido", description: "Bienvenido a la Sección Editorial." })
+      toast({ title: "Acceso Concedido", description: "Bienvenido a la Sección Editorial COEES." })
     } else {
       toast({ variant: "destructive", title: "Error", description: "Credenciales inválidas." })
     }
@@ -238,7 +237,7 @@ export default function ProgramsPage() {
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos de Planeación</h2>
+          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Módulos Técnicos COEES</h2>
           <p className="text-muted-foreground font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
             <Activity className="h-3 w-3 text-accent" /> Programas Estratégicos COEES
           </p>
@@ -575,7 +574,7 @@ export default function ProgramsPage() {
                 <div className="py-6">
                    <div className="flex justify-between items-start mb-6">
                       <div className="space-y-2 max-w-3xl">
-                        <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial de WebEscuela</h2>
+                        <h2 className="text-lg font-bold text-slate-800">Bienvenido a la Sección Editorial COEES de WebEscuela</h2>
                         <p className="text-[11px] text-slate-600 leading-relaxed text-justify">
                            En esta página se encuentra la lista de las escuelas que han colocado su información en WebEscuela, Ud. puede revisar la información de cada una de ellas, editarla y, posteriormente, publicarla en el Servidor o suspenderla.
                         </p>
@@ -585,7 +584,7 @@ export default function ProgramsPage() {
                             onClick={() => { setIsEditorialUser(false); localStorage.removeItem('userRfc'); setUserRfc(null); setActiveDialogTab('datos'); }}
                             className="bg-slate-100 border-2 border-slate-300 px-8 py-2 text-[11px] font-black uppercase rounded shadow-sm hover:bg-slate-200 transition-colors"
                          >
-                            Cerrar
+                            Cerrar Auditoría
                          </button>
                          <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary uppercase">Registros en Servidor: {editorialRecords.length}</Badge>
                       </div>
@@ -614,7 +613,9 @@ export default function ProgramsPage() {
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Modificación</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Revisión</TableHead>
                                   <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap">Fecha de Publicación</TableHead>
-                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap bg-rose-50 text-rose-800">Fecha de Suspensión / ACCIONES</TableHead>
+                                  <TableHead className="border-r border-black p-2 font-black uppercase text-center whitespace-nowrap bg-rose-50 text-rose-800 sticky right-0 z-30 shadow-[-10px_0_15px_rgba(0,0,0,0.05)]">
+                                     Fecha de Suspensión / ACCIONES A REALIZAR
+                                  </TableHead>
                                   <TableHead className="border-r border-black p-2 min-w-[600px] font-black uppercase">Observaciones</TableHead>
                                   <TableHead className="p-2 font-black uppercase">eContacto</TableHead>
                                </TableRow>
@@ -632,7 +633,7 @@ export default function ProgramsPage() {
                                      <TableCell className="border-r border-black p-2 text-slate-400 tabular-nums text-center">{rec.fechaModif || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 font-black text-slate-700 tabular-nums text-center">{rec.fechaRevision || '-'}</TableCell>
                                      <TableCell className="border-r border-black p-2 text-emerald-700 font-black tabular-nums text-center">{rec.date || '-'}</TableCell>
-                                     <TableCell className="border-r border-black p-2 bg-rose-50/30 min-w-[140px]">
+                                     <TableCell className="border-r border-black p-2 bg-rose-50/50 min-w-[180px] sticky right-0 z-30 shadow-[-10px_0_15px_rgba(0,0,0,0.05)] backdrop-blur-sm">
                                         <div className="flex flex-col gap-0.5 font-black text-blue-700 underline underline-offset-2 text-left text-[9px] uppercase">
                                            {rec.fechaSuspension && <span className="text-rose-600 mb-1 no-underline">{rec.fechaSuspension}</span>}
                                            <button onClick={() => toast({title: "Revisar", description: `Iniciando revisión de ${rec.cct}`})} className="text-left hover:text-blue-900 w-fit">Revisar</button>
@@ -665,7 +666,7 @@ export default function ProgramsPage() {
       <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="bg-primary p-8 text-white text-center">
-             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial WebEscuela</DialogTitle>
+             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Acceso Editorial COEES</DialogTitle>
              <DialogDescription className="text-white/70 font-bold text-[10px] uppercase">Sección de Incorporación y Auditoría Técnica</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6 bg-white">
@@ -690,7 +691,7 @@ export default function ProgramsPage() {
         <DialogContent className="sm:max-w-[1400px] h-[90vh] flex flex-col p-0 rounded-[2.5rem] overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 pb-4 border-b bg-slate-50">
              <DialogTitle className="text-2xl font-black uppercase text-primary tracking-tighter">
-                {formData.name === 'Cuentas Institucionales' ? 'Gestión de Cuenta Institucional SEIEM' : (editingId ? 'Actualización de Registro Técnico' : 'Nueva Captura de Programa')}
+                {formData.name === 'Cuentas Institucionales' ? 'Gestión de Cuenta Institucional COEES' : (editingId ? 'Actualización de Registro Técnico COEES' : 'Nueva Captura de Programa')}
              </DialogTitle>
              <DialogDescription className="font-bold text-[10px] uppercase text-muted-foreground tracking-widest mt-1">Gestión de Información y Capacitación Institucional</DialogDescription>
           </DialogHeader>
@@ -701,7 +702,6 @@ export default function ProgramsPage() {
                 <TabsTrigger value="datos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-4 text-[11px] font-black uppercase tracking-wider">
                   1. Datos del {formData.name === 'Cuentas Institucionales' ? 'Titular y Cuenta' : 'Programa / Curso'}
                 </TabsTrigger>
-                {/* Hide assistants tab entirely for Accounts module as requested */}
                 {formData.name !== 'Cuentas Institucionales' && (
                   <TabsTrigger 
                     value="asistentes" 
@@ -845,7 +845,7 @@ export default function ProgramsPage() {
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-slate-50 rounded-3xl border-2 border-slate-100">
                               <div className="space-y-3">
                                  <Label className="text-[10px] font-black uppercase text-primary ml-2">Número de Oficio</Label>
-                                 <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="DESySA/PL/000/2024" />
+                                 <Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} className="h-12 bg-white" placeholder="COEES/PL/000/2024" />
                               </div>
                               <div className="space-y-3">
                                  <Label className="text-[10px] font-black uppercase text-primary ml-2">Semana SETES</Label>
@@ -880,7 +880,7 @@ export default function ProgramsPage() {
                            {formData.capacitacion === 'S' && (
                               <div className="space-y-8 animate-in slide-in-from-top-4 duration-500 p-6 border-2 border-dashed border-primary/20 rounded-3xl">
                                  <h4 className="text-lg font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center gap-3">
-                                    <Activity className="h-5 w-5" /> Gestión de Curso e Instructores
+                                    <Activity className="h-5 w-5" /> Gestión de Curso e Instructores COEES
                                  </h4>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3">
@@ -925,14 +925,13 @@ export default function ProgramsPage() {
                       )}
 
                       <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora</Label>
+                         <Label className="text-[10px] font-black uppercase text-primary ml-2">Observaciones Técnicas / Bitácora COEES</Label>
                          <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 p-6" />
                       </div>
                    </div>
                 </ScrollArea>
               </TabsContent>
 
-              {/* Hide assistants tab entirely for Accounts module as requested */}
               {formData.name !== 'Cuentas Institucionales' && (
                 <TabsContent value="asistentes" className="h-full m-0 flex flex-col">
                   <div className="p-8 pb-4 flex justify-between items-center bg-white border-b">

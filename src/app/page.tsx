@@ -32,11 +32,11 @@ export default function LoginPage() {
     // CEDITORIAL / SEIEM (Administrador Editorial)
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso concedido", description: "Bienvenido, Analista de Planeación." })
+      toast({ title: "Acceso concedido", description: "Bienvenido, Analista de COEES." })
       router.push('/dashboard')
     } else if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso Administrativo", description: "Bienvenido, Administrador Editorial SEIEM." })
+      toast({ title: "Acceso Administrativo", description: "Bienvenido, Administrador Editorial COEES." })
       router.push('/dashboard')
     } else {
       toast({ variant: "destructive", title: "Credenciales incorrectas", description: "El usuario o la contraseña son inválidos." })
@@ -71,10 +71,10 @@ export default function LoginPage() {
             <CardTitle className="text-4xl font-black tracking-tighter text-primary uppercase leading-[0.9]">
               Portal <br /> Integral
             </CardTitle>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-col items-center justify-center gap-3">
               <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
-              <CardDescription className="text-muted-foreground font-black text-[10px] uppercase tracking-[0.4em]">
-                Planeación Edoméx
+              <CardDescription className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.1em] text-center leading-tight max-w-[280px]">
+                COMPUTACIÓN ELECTRÓNICA EN LA EDUCACIÓN SECUNDARIA (COEES)
               </CardDescription>
               <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
             </div>

@@ -78,7 +78,7 @@ export default function DashboardLayout({
               />
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-[14px] font-black leading-tight text-primary truncate uppercase tracking-tighter">Planeación</span>
+              <span className="text-[14px] font-black leading-tight text-primary truncate uppercase tracking-tighter">COEES</span>
               <span className="text-[9px] text-muted-foreground truncate uppercase font-black tracking-widest mt-1 opacity-70">Estado de México</span>
             </div>
           </div>
@@ -140,9 +140,9 @@ export default function DashboardLayout({
             <div className="flex flex-col">
               <h1 className="text-[11px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-3">
                 <span className="bg-primary text-white px-2.5 py-1 rounded-lg text-[9px] shadow-lg shadow-primary/20">EDOMÉX</span>
-                Sistema Integral de Planeación
+                Computación Electrónica (COEES)
               </h1>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Control de Gestión Administrativa y Técnica</p>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Gestión Técnica en Educación Secundaria</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
