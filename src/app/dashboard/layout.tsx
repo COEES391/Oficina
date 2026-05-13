@@ -19,7 +19,8 @@ import {
   Briefcase, 
   LogOut, 
   User,
-  Monitor
+  Monitor,
+  ShieldCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -49,10 +50,10 @@ export default function DashboardLayout({
   }
 
   const menuItems = [
-    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-4 w-4" /> },
-    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" /> },
-    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-4 w-4" /> },
+    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
+    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
   ]
 
   if (!mounted) return null
@@ -60,31 +61,32 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <Sidebar className="border-r border-slate-100 bg-white/95 backdrop-blur-md">
-        <SidebarHeader className="pt-8 pb-4">
-          <div className="flex flex-col items-center gap-4 px-4">
-            <div className="relative h-14 w-14 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10 shadow-sm overflow-hidden">
-               <Monitor className="w-7 h-7 text-primary opacity-80" />
+        <SidebarHeader className="pt-10 pb-6">
+          <div className="flex flex-col items-center gap-4 px-6">
+            <div className="relative h-20 w-20 bg-primary/5 rounded-[2rem] flex items-center justify-center border border-primary/10 shadow-sm overflow-hidden group">
+               <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors duration-500" />
+               <Monitor className="w-10 h-10 text-primary opacity-80 relative z-10" />
             </div>
             <div className="text-center">
-              <span className="text-base font-black text-primary uppercase tracking-tighter">COEES</span>
-              <p className="text-[7px] text-muted-foreground uppercase font-black tracking-[0.2em] mt-1">Edoméx 2026</p>
+              <span className="text-xl font-black text-primary uppercase tracking-tighter block leading-none">COEES</span>
+              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-[0.3em] mt-2 opacity-60">Edoméx 2026</p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-4 py-4">
-          <SidebarMenu className="gap-2">
+        <SidebarContent className="px-6 py-6">
+          <SidebarMenu className="gap-3">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-10 rounded-xl font-black uppercase text-[9px] tracking-widest px-4 transition-all duration-300 ${
+                  className={`h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
                     pathname === item.path 
-                      ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-105' 
+                      ? 'bg-primary text-white shadow-2xl shadow-primary/30 scale-105' 
                       : 'text-slate-500 hover:bg-slate-50 hover:text-primary'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     {item.icon}
                     <span>{item.name}</span>
                   </div>
@@ -95,35 +97,38 @@ export default function DashboardLayout({
         </SidebarContent>
       </Sidebar>
       <SidebarInset className="bg-transparent">
-        <header className="flex h-14 items-center justify-between border-b border-slate-100 px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+        <header className="flex h-20 items-center justify-between border-b border-slate-100 px-10 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+          <div className="flex items-center gap-6">
             <SidebarTrigger className="lg:hidden text-primary" />
-            <h1 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sistema de Gestión Integral COEES</h1>
+            <div className="flex items-center gap-3">
+               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+               <h1 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema de Gestión Integral COEES</h1>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-slate-100/50 px-3 py-1.5 rounded-xl border border-slate-100">
-              <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <User className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100 shadow-inner group transition-all hover:bg-white hover:shadow-md">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-sm">
+                <ShieldCheck className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-primary leading-none">{userRfc}</span>
-                <span className="text-[6px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Analista Senior</span>
+                <span className="text-[10px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">Analista Operativo Senior</span>
               </div>
             </div>
 
             <Button 
               variant="ghost" 
               onClick={handleLogout}
-              className="h-8 px-3 rounded-xl text-rose-600 font-black uppercase text-[8px] tracking-widest hover:bg-rose-50 flex items-center gap-2"
+              className="h-10 px-5 rounded-2xl text-rose-600 font-black uppercase text-[9px] tracking-widest hover:bg-rose-50 flex items-center gap-3 transition-all active:scale-95"
             >
-              <LogOut className="h-3.5 w-3.5" /> 
-              Salir
+              <LogOut className="h-4 w-4" /> 
+              Salir del Portal
             </Button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6 max-w-[1600px] mx-auto w-full">
+          <div className="p-10 max-w-[1800px] mx-auto w-full">
             {children}
           </div>
         </main>

@@ -25,7 +25,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 336 70% 23%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -41,10 +41,26 @@
 
 @layer components {
   .executive-card {
-    @apply rounded-[2rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] bg-white/80 backdrop-blur-md overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_rgba(98,17,50,0.1)];
+    @apply rounded-[2.5rem] border-none shadow-[0_20px_60px_rgba(0,0,0,0.04)] bg-white/90 backdrop-blur-xl overflow-hidden transition-all duration-700 hover:shadow-[0_40px_100px_rgba(98,17,50,0.08)];
   }
 
   .btn-institutional {
-    @apply bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest shadow-lg shadow-primary/15 transition-all rounded-xl h-10;
+    @apply bg-primary hover:bg-primary/95 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all duration-500 rounded-2xl h-12 hover:scale-[1.02] active:scale-95;
   }
+
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-2xl border border-white/40 shadow-xl;
+  }
+}
+
+/* Custom Scrollbar for Montserrat Clean Look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-50;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-primary/20 transition-colors;
 }
