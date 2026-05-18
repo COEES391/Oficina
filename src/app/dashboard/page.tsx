@@ -155,7 +155,9 @@ export default function DashboardPage() {
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length;
     
     const totalEquipos = filteredTickets.reduce((acc, t) => acc + (t.numeroEquipos || 0), 0);
-    const beneficiados = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0);
+    const alumnos = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0), 0);
+    const docentes = filteredTickets.reduce((acc, t) => acc + (t.docentesBeneficiados || 0), 0);
+    const beneficiados = alumnos + docentes;
     
     const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
     const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
@@ -168,11 +170,6 @@ export default function DashboardPage() {
       { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
     ];
 
-    const maintenanceComparison = [
-      { name: 'Preventivo', value: serviciosMP, fill: '#059669' },
-      { name: 'Correctivo', value: serviciosMC, fill: '#dc2626' },
-    ];
-
     return {
       statusData: [
         { name: 'ATENDIDOS', value: atendidos, fill: '#621132' },
@@ -180,8 +177,9 @@ export default function DashboardPage() {
         { name: 'PENDIENTES', value: pendientes, fill: '#f43f5e' },
       ],
       typesData,
-      maintenanceComparison,
       totalEquipos,
+      alumnos,
+      docentes,
       beneficiados,
       serviciosMP,
       serviciosMC,
@@ -428,16 +426,26 @@ export default function DashboardPage() {
               </Card>
               
               <Card className="executive-card p-6 border-l-4 border-slate-400">
-                 <div className="flex justify-between items-start">
+                 <div className="flex justify-between items-start mb-4">
                    <div>
                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios Directos</p>
-                     <h3 className="text-4xl font-black mt-2 text-slate-700">{supportStats.beneficiados}</h3>
+                     <h3 className="text-3xl font-black mt-1 text-slate-700">{supportStats.beneficiados}</h3>
                    </div>
                    <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm">
                      <Users className="h-6 w-6" />
                    </div>
                  </div>
-                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Alumnos y Docentes</p>
+                 
+                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Alumnos</p>
+                      <p className="text-xl font-black text-primary">{supportStats.alumnos}</p>
+                    </div>
+                    <div className="space-y-1 border-l pl-4 border-slate-100">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Docentes</p>
+                      <p className="text-xl font-black text-accent">{supportStats.docentes}</p>
+                    </div>
+                 </div>
               </Card>
             </div>
           </div>
