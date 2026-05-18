@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
-import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School } from "lucide-react"
+import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
+import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School, Search } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 
@@ -48,6 +48,7 @@ export default function TrainingPage() {
   const [records, setRecords] = useState<TrainingRecord[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [selectedSedeInfo, setSelectedSedeInfo] = useState<SchoolInfo | null>(null)
   
   const initialCourseData = {
     id: '',
@@ -89,6 +90,27 @@ export default function TrainingPage() {
       fechaTermino: today
     }))
   }, [])
+
+  // Auto-lookup for CCT Sede
+  const handleCctSedeChange = (value: string) => {
+    const cleanValue = value.toUpperCase()
+    setCourseData(prev => ({ ...prev, cctSede: cleanValue }))
+
+    if (cleanValue.length === 10) {
+      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+      if (match) {
+        setSelectedSedeInfo(match)
+        toast({
+          title: "Sede Identificada",
+          description: `Se ha configurado el plantel: ${match.nombre}`,
+        })
+      } else {
+        setSelectedSedeInfo(null)
+      }
+    } else {
+      setSelectedSedeInfo(null)
+    }
+  }
 
   const handleAddRow = () => {
     setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
@@ -164,6 +186,7 @@ export default function TrainingPage() {
       asistenteRegion: ast.region,
       asistenteValle: ast.valle,
       evidencePhotos: [],
+      observaciones: courseData.observaciones || '',
     }))
 
     let updated;
@@ -189,6 +212,7 @@ export default function TrainingPage() {
     })
     setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
     setEditingId(null)
+    setSelectedSedeInfo(null)
   }
 
   const handleEdit = (record: TrainingRecord) => {
@@ -205,10 +229,16 @@ export default function TrainingPage() {
       materialUtilizado: record.materialUtilizado,
       cctSede: record.cctSede,
       setes: record.setes,
-      observaciones: record.observaciones,
+      observaciones: record.observaciones || '',
       alumnosBeneficiados: record.alumnosBeneficiados || 0,
       docentesBeneficiados: record.docentesBeneficiados || 0,
     })
+
+    // Look for sede info on edit
+    if (record.cctSede) {
+      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === record.cctSede.toUpperCase())
+      if (match) setSelectedSedeInfo(match)
+    }
     
     const relatedAssistants = records.filter(r => r.id.startsWith(folio)).map(r => ({
       paterno: r.asistentePaterno,
@@ -280,55 +310,120 @@ export default function TrainingPage() {
               </div>
 
               <div className="flex-1 overflow-hidden">
-                <TabsContent value="curso" className="h-full m-0 p-6 space-y-8 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Folio Registro</Label><Input className="font-bold border-primary/20" value={courseData.id} onChange={e => setCourseData({...courseData, id: e.target.value.toUpperCase()})} /></div>
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Grupo</Label><Input value={courseData.cursoGrupo} onChange={e => setCourseData({...courseData, cursoGrupo: e.target.value})} /></div>
-                      <div className="md:col-span-2 space-y-2"><Label className="text-xs font-black uppercase text-primary">Nombre del Curso</Label><Input value={courseData.cursoNombre} onChange={e => setCourseData({...courseData, cursoNombre: e.target.value})} /></div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Horas</Label><Input type="number" value={courseData.duracionHoras} onChange={e => setCourseData({...courseData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Inicio</Label><Input type="date" value={courseData.fechaInicio} onChange={e => setCourseData({...courseData, fechaInicio: e.target.value})} /></div>
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Término</Label><Input type="date" value={courseData.fechaTermino} onChange={e => setCourseData({...courseData, fechaTermino: e.target.value})} /></div>
-                      <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">No. Oficio</Label><Input value={courseData.numeroOficio} onChange={e => setCourseData({...courseData, numeroOficio: e.target.value})} /></div>
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1">Instructores Ponentes</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[0, 1, 2].map(idx => (
-                          <div key={idx} className="space-y-2">
-                            <Label className="text-[10px] font-bold text-muted-foreground uppercase">Instructor {idx + 1}</Label>
-                            <Input value={courseData.instructores[idx]} onChange={e => {
-                              const newInst = [...courseData.instructores];
-                              newInst[idx] = e.target.value;
-                              setCourseData({...courseData, instructores: newInst});
-                            }} />
-                          </div>
-                        ))}
+                <TabsContent value="curso" className="h-full m-0 p-0">
+                  <ScrollArea className="h-full p-6">
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Folio Registro</Label><Input className="font-bold border-primary/20" value={courseData.id} onChange={e => setCourseData({...courseData, id: e.target.value.toUpperCase()})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Grupo</Label><Input value={courseData.cursoGrupo} onChange={e => setCourseData({...courseData, cursoGrupo: e.target.value})} /></div>
+                        <div className="md:col-span-2 space-y-2"><Label className="text-xs font-black uppercase text-primary">Nombre del Curso</Label><Input value={courseData.cursoNombre} onChange={e => setCourseData({...courseData, cursoNombre: e.target.value})} /></div>
                       </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase text-primary">Alumnos Ben.</Label>
-                        <Input type="number" className="font-bold border-primary/20" value={courseData.alumnosBeneficiados} onChange={e => setCourseData({...courseData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Horas</Label><Input type="number" value={courseData.duracionHoras} onChange={e => setCourseData({...courseData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Inicio</Label><Input type="date" value={courseData.fechaInicio} onChange={e => setCourseData({...courseData, fechaInicio: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Término</Label><Input type="date" value={courseData.fechaTermino} onChange={e => setCourseData({...courseData, fechaTermino: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">No. Oficio</Label><Input value={courseData.numeroOficio} onChange={e => setCourseData({...courseData, numeroOficio: e.target.value})} /></div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase text-primary">Docentes Ben.</Label>
-                        <Input type="number" className="font-bold border-primary/20" value={courseData.docentesBeneficiados} onChange={e => setCourseData({...courseData, docentesBeneficiados: parseInt(e.target.value) || 0})} />
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="md:col-span-2 space-y-2"><Label className="text-xs font-black uppercase text-primary">CCT Sede</Label><Input className="font-mono uppercase border-primary/20" value={courseData.cctSede} onChange={e => setCourseData({...courseData, cctSede: e.target.value.toUpperCase()})} /></div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-black uppercase text-primary">SETES</Label>
-                        <Select value={courseData.setes} onValueChange={(val:any) => setCourseData({...courseData, setes: val})}>
-                          <SelectTrigger className="border-primary/20"><SelectValue /></SelectTrigger>
-                          <SelectContent><SelectItem value="S">Sí</SelectItem><SelectItem value="N">No</SelectItem></SelectContent>
-                        </Select>
+                      <div className="space-y-4">
+                        <h3 className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1">Instructores Ponentes</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {[0, 1, 2].map(idx => (
+                            <div key={idx} className="space-y-2">
+                              <Label className="text-[10px] font-bold text-muted-foreground uppercase">Instructor {idx + 1}</Label>
+                              <Input value={courseData.instructores[idx]} onChange={e => {
+                                const newInst = [...courseData.instructores];
+                                newInst[idx] = e.target.value;
+                                setCourseData({...courseData, instructores: newInst});
+                              }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase text-primary">Alumnos Ben.</Label>
+                          <Input type="number" className="font-bold border-primary/20" value={courseData.alumnosBeneficiados} onChange={e => setCourseData({...courseData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase text-primary">Docentes Ben.</Label>
+                          <Input type="number" className="font-bold border-primary/20" value={courseData.docentesBeneficiados} onChange={e => setCourseData({...courseData, docentesBeneficiados: parseInt(e.target.value) || 0})} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-6 pt-4 border-t border-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="md:col-span-2 space-y-2">
+                            <Label className="text-xs font-black uppercase text-primary">CCT Sede (Lugar de Realización)</Label>
+                            <Input 
+                              placeholder="Teclear CCT (10 caracteres) para autocompletar..."
+                              className="font-mono uppercase border-primary/30 h-12 text-lg shadow-inner" 
+                              value={courseData.cctSede} 
+                              onChange={e => handleCctSedeChange(e.target.value)} 
+                              maxLength={10}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-black uppercase text-primary">SETES</Label>
+                            <Select value={courseData.setes} onValueChange={(val:any) => setCourseData({...courseData, setes: val})}>
+                              <SelectTrigger className="border-primary/20 h-12"><SelectValue /></SelectTrigger>
+                              <SelectContent><SelectItem value="S">Sí</SelectItem><SelectItem value="N">No</SelectItem></SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Visual summary of identified school */}
+                        {selectedSedeInfo && (
+                          <div className="bg-slate-50 p-6 rounded-[2rem] border border-primary/10 shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2">
+                             <div className="flex items-center gap-4 border-b border-primary/5 pb-4">
+                                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                                  <School className="h-8 w-8" />
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-1">Plantel Seleccionado</p>
+                                  <h4 className="text-lg font-black text-slate-800 uppercase leading-none">{selectedSedeInfo.nombre}</h4>
+                                  <p className="text-xs font-mono font-bold text-muted-foreground mt-1">{selectedSedeInfo.cct}</p>
+                                </div>
+                             </div>
+                             
+                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sector</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.sector}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Zona</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.zonaEscolar}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Región</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.region}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Municipio</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.municipio}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valle</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.valle}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Modalidad</p>
+                                  <p className="text-[11px] font-bold text-slate-700">{selectedSedeInfo.modalidad}</p>
+                                </div>
+                             </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 pt-4">
+                        <Label className="text-xs font-black uppercase text-primary">Observaciones Técnicas</Label>
+                        <Input value={courseData.observaciones} onChange={e => setCourseData({...courseData, observaciones: e.target.value})} className="bg-slate-50 border-primary/10" />
                       </div>
                     </div>
+                  </ScrollArea>
                 </TabsContent>
 
                 <TabsContent value="asistentes" className="h-full m-0 p-6 flex flex-col">
