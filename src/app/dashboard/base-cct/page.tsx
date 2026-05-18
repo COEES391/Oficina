@@ -22,7 +22,7 @@ export default function BaseCctPage() {
   const [mounted, setMounted] = useState(false)
 
   const initialFormState: SchoolInfo = {
-    region: '', valle: 'MEXICO', dsr: '', municipio: '', subsistema: 'FEDERALIZADO',
+    region: '', valle: 'MEXICO', dsr: '1', municipio: '', subsistema: 'FEDERALIZADO',
     control: 'OFICIAL', nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL',
     cct: '', turno: 'MATUTINO', nombre: '', hombres: 0, mujeres: 0, alumnos: 0,
     grupos: 0, maestros: 0, administrativos: 0, aulasExistentes: 0, aulasEnUso: 0,
@@ -59,7 +59,6 @@ export default function BaseCctPage() {
       return
     }
 
-    // Derivar modalidad del CCT
     const cctVal = formData.cct.toUpperCase()
     let mod = 'PES'
     if (cctVal.includes('DES')) mod = 'DES'
@@ -110,7 +109,6 @@ export default function BaseCctPage() {
 
             <ScrollArea className="flex-1 px-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6">
-                {/* Sección Identificación */}
                 <div className="md:col-span-3 border-b border-slate-100 pb-2">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
                     <LayoutGrid className="h-4 w-4" /> Identificación Institucional
@@ -139,15 +137,14 @@ export default function BaseCctPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
-                  <Input className="h-11 border-primary/10" value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} />
+                  <Label className="text-[10px] font-black uppercase text-primary">Servicio Educativo</Label>
+                  <Input className="h-11 border-primary/10" value={formData.servicioEducativo} onChange={e => setFormData({...formData, servicioEducativo: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
-                  <Input className="h-11 border-primary/10" value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} />
+                  <Label className="text-[10px] font-black uppercase text-primary">DSR</Label>
+                  <Input className="h-11 border-primary/10" value={formData.dsr} onChange={e => setFormData({...formData, dsr: e.target.value})} />
                 </div>
 
-                {/* Sección Geografía */}
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
                     <MapPin className="h-4 w-4" /> Ubicación y Jurisdicción
@@ -173,7 +170,6 @@ export default function BaseCctPage() {
                   <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
                 </div>
 
-                {/* Sección Estadística */}
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> Datos Estadísticos e Infraestructura
