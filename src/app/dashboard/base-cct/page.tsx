@@ -1,26 +1,88 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, BookOpen, GraduationCap } from "lucide-react"
+import { Database, Search, School, Users, BookOpen, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function BaseCctPage() {
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
+  const [schools, setSchools] = useState<SchoolInfo[]>([])
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  const initialFormState: SchoolInfo = {
+    region: '', valle: 'MEXICO', dsr: '', municipio: '', subsistema: 'FEDERALIZADO',
+    control: 'OFICIAL', nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL',
+    cct: '', turno: 'MATUTINO', nombre: '', hombres: 0, mujeres: 0, alumnos: 0,
+    grupos: 0, maestros: 0, administrativos: 0, aulasExistentes: 0, aulasEnUso: 0,
+    modalidad: 'DES', zonaEscolar: '', sector: ''
+  }
+
+  const [formData, setFormData] = useState<SchoolInfo>(initialFormState)
+
+  useEffect(() => {
+    setMounted(true)
+    const stored = JSON.parse(localStorage.getItem('schools_master_full') || '[]')
+    if (stored.length === 0) {
+      setSchools(schoolsDirectory)
+      localStorage.setItem('schools_master_full', JSON.stringify(schoolsDirectory))
+    } else {
+      setSchools(stored)
+    }
+  }, [])
 
   const filteredSchools = useMemo(() => {
-    if (!searchTerm) return schoolsDirectory;
+    if (!searchTerm) return schools;
     const term = searchTerm.toUpperCase();
-    return schoolsDirectory.filter(s => 
+    return schools.filter(s => 
       s.cct.toUpperCase().includes(term) || 
       s.nombre.toUpperCase().includes(term) ||
       s.municipio.toUpperCase().includes(term) ||
       s.region.toUpperCase().includes(term)
     );
-  }, [searchTerm]);
+  }, [searchTerm, schools]);
+
+  const handleSave = () => {
+    if (!formData.cct || !formData.nombre) {
+      toast({ variant: "destructive", title: "Campos obligatorios", description: "CCT y Nombre son necesarios." })
+      return
+    }
+
+    // Derivar modalidad del CCT
+    const cctVal = formData.cct.toUpperCase()
+    let mod = 'PES'
+    if (cctVal.includes('DES')) mod = 'DES'
+    else if (cctVal.includes('DST')) mod = 'DST'
+    else if (cctVal.includes('DTV')) mod = 'DTV'
+
+    const newSchool: SchoolInfo = {
+      ...formData,
+      cct: cctVal,
+      nombre: formData.nombre.toUpperCase(),
+      alumnos: (formData.hombres || 0) + (formData.mujeres || 0),
+      modalidad: mod
+    }
+
+    const updated = [newSchool, ...schools]
+    setSchools(updated)
+    localStorage.setItem('schools_master_full', JSON.stringify(updated))
+    setIsDialogOpen(false)
+    setFormData(initialFormState)
+    toast({ title: "Plantel Registrado", description: `Se ha añadido ${newSchool.cct} a la base maestra.` })
+  }
+
+  if (!mounted) return null
 
   return (
     <div className="space-y-6">
@@ -31,6 +93,127 @@ export default function BaseCctPage() {
             <Database className="h-4 w-4 text-accent" /> Catálogo Institucional Edoméx 2026 - Datos Estadísticos
           </p>
         </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
+              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+            <DialogHeader className="p-8 pb-4">
+              <DialogTitle className="uppercase font-black text-primary text-2xl">Alta de Centro de Trabajo</DialogTitle>
+              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                Ingrese los datos estadísticos y geográficos para el ciclo operativo 2026.
+              </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea className="flex-1 px-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6">
+                {/* Sección Identificación */}
+                <div className="md:col-span-3 border-b border-slate-100 pb-2">
+                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4" /> Identificación Institucional
+                  </h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Caracteres)</Label>
+                  <Input maxLength={10} className="font-mono uppercase h-11 border-primary/10" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Centro de Trabajo</Label>
+                  <Input className="font-bold h-11 border-primary/10" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value.toUpperCase()})} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                  <Select value={formData.turno} onValueChange={val => setFormData({...formData, turno: val})}>
+                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MATUTINO">MATUTINO</SelectItem>
+                      <SelectItem value="VESPERTINO">VESPERTINO</SelectItem>
+                      <SelectItem value="DISCONTINUO">DISCONTINUO</SelectItem>
+                      <SelectItem value="NOCTURNO">NOCTURNO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input className="h-11 border-primary/10" value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input className="h-11 border-primary/10" value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} />
+                </div>
+
+                {/* Sección Geografía */}
+                <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
+                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                    <MapPin className="h-4 w-4" /> Ubicación y Jurisdicción
+                  </h3>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
+                  <Input className="h-11 border-primary/10" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={formData.valle} onValueChange={val => setFormData({...formData, valle: val})}>
+                    <SelectTrigger className="h-11 border-primary/10 font-bold"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEXICO">MEXICO</SelectItem>
+                      <SelectItem value="TOLUCA">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
+                </div>
+
+                {/* Sección Estadística */}
+                <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
+                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                    <Building2 className="h-4 w-4" /> Datos Estadísticos e Infraestructura
+                  </h3>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Hombres</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.hombres} onChange={e => setFormData({...formData, hombres: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Mujeres</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.mujeres} onChange={e => setFormData({...formData, mujeres: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Grupos</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.grupos} onChange={e => setFormData({...formData, grupos: parseInt(e.target.value) || 0})} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Maestros</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.maestros} onChange={e => setFormData({...formData, maestros: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Aulas Existentes</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.aulasExistentes} onChange={e => setFormData({...formData, aulasExistentes: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Aulas en Uso</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.aulasEnUso} onChange={e => setFormData({...formData, aulasEnUso: parseInt(e.target.value) || 0})} />
+                </div>
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="p-8 border-t bg-slate-50/50">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
+              <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">Guardar Plantel</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
@@ -75,7 +258,7 @@ export default function BaseCctPage() {
             </TableHeader>
             <TableBody>
               {filteredSchools.length > 0 ? filteredSchools.map((s, idx) => (
-                <TableRow key={`${s.cct}-${s.turno}`} className="hover:bg-slate-50 transition-colors group">
+                <TableRow key={`${s.cct}-${s.turno}-${idx}`} className="hover:bg-slate-50 transition-colors group">
                   <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
@@ -109,7 +292,7 @@ export default function BaseCctPage() {
                   <TableCell className="text-center">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-slate-600">{s.zonaEscolar}</span>
-                      <span className="text-[9px] font-black text-primary">{s.sector.split(' ')[0]}</span>
+                      <span className="text-[9px] font-black text-primary">{s.sector}</span>
                     </div>
                   </TableCell>
                 </TableRow>
