@@ -19,14 +19,15 @@ import {
   Briefcase, 
   LogOut, 
   Monitor,
-  ShieldCheck
+  ShieldCheck,
+  Database
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.Node
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -53,6 +54,7 @@ export default function DashboardLayout({
     { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
     { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
+    { name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
   ]
 
   if (!mounted) return null
