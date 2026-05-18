@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, BookOpen, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ShieldCheck, ClipboardList } from "lucide-react"
+import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function BaseCctPage() {
@@ -33,11 +33,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v3 para forzar la recarga con la base de datos completa de 385 registros
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v3') || '[]')
+    // Usamos v5 para forzar la recarga con la base de datos completa proporcionada
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v5') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v3', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v5', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -76,7 +76,7 @@ export default function BaseCctPage() {
 
     const updated = [newSchool, ...schools]
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v3', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v5', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     toast({ title: "Plantel Registrado", description: `Se ha añadido ${newSchool.cct} a la base maestra.` })
