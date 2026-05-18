@@ -282,7 +282,7 @@ const getGeopositioningData = (): ProgramStatus[] => {
 };
 
 export const programsData: ProgramStatus[] = [
-  { id: 'BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S' },
+  { id: 'BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', alumnosBeneficiados: 450, docentesBeneficiados: 25 },
   ...getAccountsData(),
   ...getGeopositioningData(),
   ...getEditorialData()
@@ -366,6 +366,8 @@ export type TrainingRecord = {
   asistenteValle: string;
   evidencePhotos?: string[];
   observaciones: string;
+  alumnosBeneficiados?: number;
+  docentesBeneficiados?: number;
 };
 
 export const trainingRecords: TrainingRecord[] = [];

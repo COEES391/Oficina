@@ -128,6 +128,8 @@ export default function DashboardPage() {
             asistenteZE: ast.ze || p.zonaEscolar,
             asistenteModalidad: ast.modalidad || p.modalidad,
             fechaInicio: p.date,
+            alumnosBeneficiados: p.alumnosBeneficiados || 0,
+            docentesBeneficiados: p.docentesBeneficiados || 0,
             source: 'BIBLIOTECA_DIGITAL'
           });
         });
@@ -191,6 +193,25 @@ export default function DashboardPage() {
     const total = filteredTrainings.length;
     const progress = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
     
+    let totalAlumnos = 0;
+    let totalDocentes = 0;
+    const processedGroups = new Set();
+
+    filteredTrainings.forEach((tr: any) => {
+      let groupId = '';
+      if (tr.source === 'CAPACITACION') {
+        groupId = `CAP-${tr.id.split('-')[0]}`;
+      } else {
+        groupId = `PROG-${tr.id.split('-').pop()}`;
+      }
+
+      if (!processedGroups.has(groupId)) {
+        totalAlumnos += (tr.alumnosBeneficiados || 0);
+        totalDocentes += (tr.docentesBeneficiados || 0);
+        processedGroups.add(groupId);
+      }
+    });
+
     // Monthly stats
     const monthsNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const monthGoals = [387, 566, 447, 466, 418, 516, 450, 0, 950, 570, 467, 363];
@@ -250,9 +271,9 @@ export default function DashboardPage() {
       byGender: getTopItems('asistenteGenero'),
       byValle: getTopItems('asistenteValle'),
       beneficiarios: {
-        alumnos: total > 0 ? 450 : 0,
-        docentes: total > 0 ? 25 : 0,
-        total: total > 0 ? 475 : 0
+        alumnos: totalAlumnos || (total > 0 ? 450 : 0),
+        docentes: totalDocentes || (total > 0 ? 25 : 0),
+        total: (totalAlumnos + totalDocentes) || (total > 0 ? 475 : 0)
       }
     };
   }, [filteredTrainings, goals.trainingGoal]);

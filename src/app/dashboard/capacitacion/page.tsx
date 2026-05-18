@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -63,6 +62,8 @@ export default function TrainingPage() {
     cctSede: '',
     setes: 'N' as 'S' | 'N',
     observaciones: '',
+    alumnosBeneficiados: 0,
+    docentesBeneficiados: 0,
   }
 
   const [courseData, setCourseData] = useState(initialCourseData)
@@ -205,6 +206,8 @@ export default function TrainingPage() {
       cctSede: record.cctSede,
       setes: record.setes,
       observaciones: record.observaciones,
+      alumnosBeneficiados: record.alumnosBeneficiados || 0,
+      docentesBeneficiados: record.docentesBeneficiados || 0,
     })
     
     const relatedAssistants = records.filter(r => r.id.startsWith(folio)).map(r => ({
@@ -304,6 +307,18 @@ export default function TrainingPage() {
                         ))}
                       </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-black uppercase text-primary">Alumnos Ben.</Label>
+                        <Input type="number" className="font-bold border-primary/20" value={courseData.alumnosBeneficiados} onChange={e => setCourseData({...courseData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-black uppercase text-primary">Docentes Ben.</Label>
+                        <Input type="number" className="font-bold border-primary/20" value={courseData.docentesBeneficiados} onChange={e => setCourseData({...courseData, docentesBeneficiados: parseInt(e.target.value) || 0})} />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="md:col-span-2 space-y-2"><Label className="text-xs font-black uppercase text-primary">CCT Sede</Label><Input className="font-mono uppercase border-primary/20" value={courseData.cctSede} onChange={e => setCourseData({...courseData, cctSede: e.target.value.toUpperCase()})} /></div>
                       <div className="space-y-2">
