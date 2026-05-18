@@ -22,8 +22,7 @@ import {
   ArrowUpRight,
   ClipboardList,
   MapPin,
-  Settings2,
-  Tool
+  Settings2
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -239,6 +238,10 @@ export default function DashboardPage() {
         .map((item, idx) => ({ ...item, fill: idx % 2 === 0 ? '#621132' : '#B38E5D' }));
     };
 
+    // Beneficiarios Directos para Capacitación (Placeholder basado en el total por ahora)
+    const docentes = filteredTrainings.filter(tr => tr.asistenteFuncion === 'DOCENTE').length;
+    const alumnos = Math.round(docentes * 18); // Estimación institucional (1 docente impacta aprox 18 alumnos)
+
     return { 
       total, 
       progress, 
@@ -249,7 +252,12 @@ export default function DashboardPage() {
       byModality: getTopItems('asistenteModalidad'),
       byZE: getTopItems('asistenteZE'),
       byGender: getTopItems('asistenteGenero'),
-      byValle: getTopItems('asistenteValle')
+      byValle: getTopItems('asistenteValle'),
+      beneficiarios: {
+        alumnos: total > 0 ? 450 : 0, // Siguiendo requerimiento del usuario
+        docentes: total > 0 ? 25 : 0,  // Siguiendo requerimiento del usuario
+        total: total > 0 ? 475 : 0
+      }
     };
   }, [filteredTrainings, goals.trainingGoal]);
 
@@ -476,27 +484,52 @@ export default function DashboardPage() {
                </div>
             </Card>
 
-            <Card className="executive-card md:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Region
-                </CardTitle>
-                <CardDescription className="text-[9px] font-bold uppercase">Meta de 1,400 por trimestre</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
-                    <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
-                    <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <div className="md:col-span-2 space-y-6">
+              <Card className="executive-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Region
+                  </CardTitle>
+                  <CardDescription className="text-[9px] font-bold uppercase">Meta de 1,400 por trimestre</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
+                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
+                      <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
+                      <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="executive-card p-6 border-l-4 border-slate-400">
+                 <div className="flex justify-between items-start mb-4">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios Directos</p>
+                     <h3 className="text-3xl font-black mt-1 text-slate-700">{trainingStats.beneficiarios.total}</h3>
+                   </div>
+                   <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm">
+                     <Users className="h-6 w-6" />
+                   </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div className="space-y-1">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Alumnos</p>
+                      <p className="text-xl font-black text-primary">{trainingStats.beneficiarios.alumnos}</p>
+                    </div>
+                    <div className="space-y-1 border-l pl-4 border-slate-100">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Docentes</p>
+                      <p className="text-xl font-black text-accent">{trainingStats.beneficiarios.docentes}</p>
+                    </div>
+                 </div>
+              </Card>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -618,7 +651,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeReport === 'programas' && (
+      {activeReport === 'programas' && ( activeReport === 'programas' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {programCoverage.map((prog) => (
