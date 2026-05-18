@@ -82,7 +82,6 @@ export default function TrainingPage() {
       setRecords(stored)
     }
     
-    // Set initial dates after mounting
     const today = format(new Date(), 'yyyy-MM-dd')
     setCourseData(prev => ({
       ...prev,
@@ -91,7 +90,6 @@ export default function TrainingPage() {
     }))
   }, [])
 
-  // Auto-lookup for CCT Sede
   const handleCctSedeChange = (value: string) => {
     const cleanValue = value.toUpperCase()
     setCourseData(prev => ({ ...prev, cctSede: cleanValue }))
@@ -234,7 +232,6 @@ export default function TrainingPage() {
       docentesBeneficiados: record.docentesBeneficiados || 0,
     })
 
-    // Look for sede info on edit
     if (record.cctSede) {
       const match = schoolsDirectory.find(s => s.cct.toUpperCase() === record.cctSede.toUpperCase())
       if (match) setSelectedSedeInfo(match)
@@ -374,7 +371,6 @@ export default function TrainingPage() {
                           </div>
                         </div>
 
-                        {/* Visual summary of identified school */}
                         {selectedSedeInfo && (
                           <div className="bg-slate-50 p-6 rounded-[2rem] border border-primary/10 shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2">
                              <div className="flex items-center gap-4 border-b border-primary/5 pb-4">
