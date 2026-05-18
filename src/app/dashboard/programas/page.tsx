@@ -114,6 +114,7 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
+    // Check if geopositions are missing (forcing 337 minimum)
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
     if (stored.length === 0 || geoCount < 337) {
@@ -238,6 +239,7 @@ export default function ProgramsPage() {
   const currentTabRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
     
+    // Sort "Conoce mi Escuela" by CCT
     if (activeTab === 'Conoce mi Escuela') {
        filtered = [...filtered].sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
@@ -702,24 +704,36 @@ export default function ProgramsPage() {
                                   <Input className="h-12 font-mono lowercase bg-slate-50" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                                 </div>
                                 {activeTab === 'Biblioteca Digital' && (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label className="text-[10px] font-black uppercase text-primary">No. Equipos</Label>
-                                      <Input type="number" className="h-12 border-primary/10 font-black text-center bg-slate-50" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                                  <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-primary">No. Equipos</Label>
+                                        <Input type="number" className="h-12 border-primary/10 font-black text-center bg-slate-50" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase text-primary">Capacitado</Label>
+                                        <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
+                                          <SelectTrigger className="h-12 border-primary/10 font-black text-[10px] bg-slate-50">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="S" className="text-[10px] font-black">SÍ</SelectItem>
+                                            <SelectItem value="N" className="text-[10px] font-black">NO</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
                                     </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-[10px] font-black uppercase text-primary">Capacitado</Label>
-                                      <Select value={formData.capacitacion} onValueChange={(val:any) => setFormData({...formData, capacitacion: val})}>
-                                        <SelectTrigger className="h-12 border-primary/10 font-black text-[10px] bg-slate-50">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="S" className="text-[10px] font-black">SÍ</SelectItem>
-                                          <SelectItem value="N" className="text-[10px] font-black">NO</SelectItem>
-                                        </SelectContent>
-                                      </Select>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase text-primary">Alumnos Ben.</Label>
+                                        <Input type="number" className="h-12 bg-slate-50" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[10px] font-black uppercase text-primary">Docentes Ben.</Label>
+                                        <Input type="number" className="h-12 bg-slate-50" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} />
+                                      </div>
                                     </div>
-                                  </div>
+                                  </>
                                 )}
                               </>
                             ) : null}
