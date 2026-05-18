@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
-import { Database, Search, School, MapPin, Hash, Users, BookOpen, GraduationCap } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Database, Search, School, Users, BookOpen, GraduationCap } from "lucide-react"
 
 export default function BaseCctPage() {
   const [searchTerm, setSearchTerm] = useState('')
