@@ -363,48 +363,26 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                  <Card className="executive-card">
                     <CardHeader>
                       <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                         <Activity className="h-4 w-4" /> Análisis por Tipo de Servicio
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="h-[250px]">
+                    <CardContent className="h-[300px]">
                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30 }}>
+                          <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30, top: 10, bottom: 10 }}>
                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                              <XAxis type="number" hide />
-                             <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} width={80} />
+                             <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} width={120} />
                              <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                             <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                             <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={30}>
                                 {supportStats.typesData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.fill} />
                                 ))}
                              </Bar>
                           </RechartsBarChart>
-                       </ResponsiveContainer>
-                    </CardContent>
-                 </Card>
-
-                 <Card className="executive-card">
-                    <CardContent className="h-[250px] pt-6">
-                       <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                             <Pie
-                                data={supportStats.maintenanceComparison}
-                                innerRadius={50}
-                                outerRadius={70}
-                                paddingAngle={5}
-                                dataKey="value"
-                             >
-                                {supportStats.maintenanceComparison.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                             </Pie>
-                             <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                             <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }} />
-                          </PieChart>
                        </ResponsiveContainer>
                     </CardContent>
                  </Card>
