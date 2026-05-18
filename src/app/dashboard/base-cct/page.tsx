@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, BookOpen, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2 } from "lucide-react"
+import { Database, Search, School, Users, BookOpen, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ShieldCheck, ClipboardList } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function BaseCctPage() {
@@ -33,10 +33,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    const stored = JSON.parse(localStorage.getItem('schools_master_full') || '[]')
+    // Usamos v3 para forzar la recarga con la base de datos completa de 385 registros
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v3') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v3', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -75,7 +76,7 @@ export default function BaseCctPage() {
 
     const updated = [newSchool, ...schools]
     setSchools(updated)
-    localStorage.setItem('schools_master_full', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v3', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     toast({ title: "Plantel Registrado", description: `Se ha añadido ${newSchool.cct} a la base maestra.` })
@@ -145,6 +146,19 @@ export default function BaseCctPage() {
                   <Input className="h-11 border-primary/10" value={formData.dsr} onChange={e => setFormData({...formData, dsr: e.target.value})} />
                 </div>
 
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Subsistema</Label>
+                  <Input className="h-11 border-primary/10" value={formData.subsistema} onChange={e => setFormData({...formData, subsistema: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Control</Label>
+                  <Input className="h-11 border-primary/10" value={formData.control} onChange={e => setFormData({...formData, control: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nivel</Label>
+                  <Input className="h-11 border-primary/10" value={formData.nivel} onChange={e => setFormData({...formData, nivel: e.target.value.toUpperCase()})} />
+                </div>
+
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
                     <MapPin className="h-4 w-4" /> Ubicación y Jurisdicción
@@ -192,6 +206,10 @@ export default function BaseCctPage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Maestros</Label>
                   <Input type="number" className="h-11 border-primary/10" value={formData.maestros} onChange={e => setFormData({...formData, maestros: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Administrativos</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.administrativos} onChange={e => setFormData({...formData, administrativos: parseInt(e.target.value) || 0})} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Aulas Existentes</Label>
@@ -247,9 +265,9 @@ export default function BaseCctPage() {
                 <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre del Centro de Trabajo</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center"><Users className="h-3 w-3 inline mr-1" /> Alums</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center"><BookOpen className="h-3 w-3 inline mr-1" /> Gpos</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-center"><ClipboardList className="h-3 w-3 inline mr-1" /> Gpos</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center"><GraduationCap className="h-3 w-3 inline mr-1" /> Mtros</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center">ZE / Sect</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-center">DSR</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -286,10 +304,7 @@ export default function BaseCctPage() {
                   <TableCell className="text-center font-black text-slate-600 text-[11px]">{s.grupos}</TableCell>
                   <TableCell className="text-center font-black text-accent text-[11px]">{s.maestros}</TableCell>
                   <TableCell className="text-center">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-600">{s.zonaEscolar}</span>
-                      <span className="text-[9px] font-black text-primary">{s.sector}</span>
-                    </div>
+                    <Badge className="bg-slate-100 text-slate-600 text-[10px] font-black">{s.dsr}</Badge>
                   </TableCell>
                 </TableRow>
               )) : (
