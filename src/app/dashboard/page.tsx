@@ -479,7 +479,7 @@ export default function DashboardPage() {
             <Card className="executive-card md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Sede
+                  <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Region
                 </CardTitle>
                 <CardDescription className="text-[9px] font-bold uppercase">Meta de 1,400 por trimestre</CardDescription>
               </CardHeader>
