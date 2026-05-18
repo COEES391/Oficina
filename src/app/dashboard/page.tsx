@@ -388,12 +388,7 @@ export default function DashboardPage() {
                  </Card>
 
                  <Card className="executive-card">
-                    <CardHeader>
-                      <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                        <Settings2 className="h-4 w-4" /> Mantenimientos: Preventivo vs Correctivo
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[250px]">
+                    <CardContent className="h-[250px] pt-6">
                        <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                              <Pie
