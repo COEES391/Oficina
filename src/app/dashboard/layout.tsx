@@ -18,7 +18,6 @@ import {
   GraduationCap, 
   Briefcase, 
   LogOut, 
-  User,
   Monitor,
   ShieldCheck
 } from 'lucide-react'
@@ -60,30 +59,30 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r border-slate-100 bg-white/95 backdrop-blur-md">
-        <SidebarHeader className="pt-10 pb-6">
-          <div className="flex flex-col items-center gap-4 px-6">
-            <div className="relative h-20 w-20 bg-primary/5 rounded-[2rem] flex items-center justify-center border border-primary/10 shadow-sm overflow-hidden group">
-               <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors duration-500" />
-               <Monitor className="w-10 h-10 text-primary opacity-80 relative z-10" />
+      <Sidebar className="border-none bg-primary shadow-2xl overflow-hidden">
+        <SidebarHeader className="pt-12 pb-8">
+          <div className="flex flex-col items-center gap-5 px-6">
+            <div className="relative h-20 w-20 bg-white/10 rounded-[2rem] flex items-center justify-center border border-white/10 shadow-inner group overflow-hidden">
+               <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors duration-500" />
+               <Monitor className="w-10 h-10 text-white relative z-10" />
             </div>
             <div className="text-center">
-              <span className="text-xl font-black text-primary uppercase tracking-tighter block leading-none">COEES</span>
-              <p className="text-[8px] text-muted-foreground uppercase font-black tracking-[0.3em] mt-2 opacity-60">Edoméx 2026</p>
+              <span className="text-2xl font-black text-white uppercase tracking-tighter block leading-none">COEES</span>
+              <p className="text-[9px] text-white/60 uppercase font-black tracking-[0.3em] mt-3">Edoméx 2026</p>
             </div>
           </div>
         </SidebarHeader>
         <SidebarContent className="px-6 py-6">
-          <SidebarMenu className="gap-3">
+          <SidebarMenu className="gap-4">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
+                  className={`h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
                     pathname === item.path 
-                      ? 'bg-primary text-white shadow-2xl shadow-primary/30 scale-105' 
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-primary'
+                      ? 'bg-white text-primary shadow-2xl shadow-black/20 scale-105' 
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -95,6 +94,12 @@ export default function DashboardLayout({
             ))}
           </SidebarMenu>
         </SidebarContent>
+        <div className="mt-auto p-8 opacity-40">
+           <div className="h-px bg-white/20 w-full mb-6" />
+           <p className="text-[8px] text-white font-black uppercase tracking-[0.2em] text-center leading-relaxed">
+             Dirección de Educación Secundaria
+           </p>
+        </div>
       </Sidebar>
       <SidebarInset className="bg-transparent">
         <header className="flex h-20 items-center justify-between border-b border-slate-100 px-10 bg-white/80 backdrop-blur-md sticky top-0 z-40">
