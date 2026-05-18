@@ -33,11 +33,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v5 para forzar la recarga con la base de datos completa proporcionada
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v5') || '[]')
+    // Usamos v8 para asegurar la recarga de los 400+ registros procesados
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v8') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v5', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v8', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -46,12 +46,13 @@ export default function BaseCctPage() {
   const filteredSchools = useMemo(() => {
     if (!searchTerm) return schools;
     const term = searchTerm.toUpperCase();
-    return schools.filter(s => 
-      s.cct.toUpperCase().includes(term) || 
-      s.nombre.toUpperCase().includes(term) ||
-      s.municipio.toUpperCase().includes(term) ||
-      s.region.toUpperCase().includes(term)
-    );
+    return schools.filter(s => {
+      const nameMatch = s.nombre ? s.nombre.toUpperCase().includes(term) : false;
+      const cctMatch = s.cct ? s.cct.toUpperCase().includes(term) : false;
+      const munMatch = s.municipio ? s.municipio.toUpperCase().includes(term) : false;
+      const regMatch = s.region ? s.region.toUpperCase().includes(term) : false;
+      return nameMatch || cctMatch || munMatch || regMatch;
+    });
   }, [searchTerm, schools]);
 
   const handleSave = () => {
@@ -76,7 +77,7 @@ export default function BaseCctPage() {
 
     const updated = [newSchool, ...schools]
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v5', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v8', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     toast({ title: "Plantel Registrado", description: `Se ha añadido ${newSchool.cct} a la base maestra.` })
