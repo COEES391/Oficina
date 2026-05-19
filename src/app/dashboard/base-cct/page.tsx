@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList, User, Phone } from "lucide-react"
+import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList, Pencil, User, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function BaseCctPage() {
@@ -19,6 +19,7 @@ export default function BaseCctPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [schools, setSchools] = useState<SchoolInfo[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
   const initialFormState: SchoolInfo = {
@@ -33,11 +34,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v9 para asegurar la recarga con las nuevas columnas de Director y Teléfono
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v9') || '[]')
+    // Forzamos carga v10 para asegurar que se vean los 385+ registros y no se trunquen
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v10') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v9', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v10', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -47,14 +48,20 @@ export default function BaseCctPage() {
     if (!searchTerm) return schools;
     const term = searchTerm.toUpperCase();
     return schools.filter(s => {
-      const nameMatch = s.nombre ? s.nombre.toUpperCase().includes(term) : false;
-      const cctMatch = s.cct ? s.cct.toUpperCase().includes(term) : false;
-      const munMatch = s.municipio ? s.municipio.toUpperCase().includes(term) : false;
-      const dirMatch = s.director ? s.director.toUpperCase().includes(term) : false;
-      const telMatch = s.telefono ? s.telefono.toUpperCase().includes(term) : false;
-      return nameMatch || cctMatch || munMatch || dirMatch || telMatch;
+      const cctMatch = s.cct?.toUpperCase().includes(term);
+      const nameMatch = s.nombre?.toUpperCase().includes(term);
+      const dirMatch = s.director?.toUpperCase().includes(term);
+      const telMatch = s.telefono?.toUpperCase().includes(term);
+      const munMatch = s.municipio?.toUpperCase().includes(term);
+      return cctMatch || nameMatch || dirMatch || telMatch || munMatch;
     });
   }, [searchTerm, schools]);
+
+  const handleEdit = (school: SchoolInfo) => {
+    setFormData(school)
+    setEditingId(`${school.cct}-${school.turno}`)
+    setIsDialogOpen(true)
+  }
 
   const handleSave = () => {
     if (!formData.cct || !formData.nombre) {
@@ -68,7 +75,7 @@ export default function BaseCctPage() {
     else if (cctVal.includes('DST')) mod = 'DST'
     else if (cctVal.includes('DTV')) mod = 'DTV'
 
-    const newSchool: SchoolInfo = {
+    const schoolToSave: SchoolInfo = {
       ...formData,
       cct: cctVal,
       nombre: formData.nombre.toUpperCase(),
@@ -76,12 +83,20 @@ export default function BaseCctPage() {
       modalidad: mod
     }
 
-    const updated = [newSchool, ...schools]
+    let updated;
+    if (editingId) {
+      updated = schools.map(s => (`${s.cct}-${s.turno}` === editingId) ? schoolToSave : s)
+      toast({ title: "Plantel Actualizado", description: `Se guardaron los cambios en ${schoolToSave.cct}.` })
+    } else {
+      updated = [schoolToSave, ...schools]
+      toast({ title: "Plantel Registrado", description: `Se ha añadido ${schoolToSave.cct} a la base maestra.` })
+    }
+
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v9', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v10', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
-    toast({ title: "Plantel Registrado", description: `Se ha añadido ${newSchool.cct} a la base maestra.` })
+    setEditingId(null)
   }
 
   if (!mounted) return null
@@ -96,17 +111,25 @@ export default function BaseCctPage() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setFormData(initialFormState);
+            setEditingId(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
-              <DialogTitle className="uppercase font-black text-primary text-2xl">Alta de Centro de Trabajo</DialogTitle>
+              <DialogTitle className="uppercase font-black text-primary text-2xl">
+                {editingId ? 'Editar Centro de Trabajo' : 'Alta de Centro de Trabajo'}
+              </DialogTitle>
               <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
-                Ingrese los datos estadísticos, geográficos y de contacto para el ciclo 2026.
+                Ingrese los datos estadísticos, geográficos y de contacto del plantel federalizado.
               </DialogDescription>
             </DialogHeader>
 
@@ -150,7 +173,7 @@ export default function BaseCctPage() {
 
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                    <User className="h-4 w-4" /> Información de Contacto
+                    <User className="h-4 w-4" /> Información de Contacto y Referencia
                   </h3>
                 </div>
 
@@ -224,7 +247,9 @@ export default function BaseCctPage() {
 
             <DialogFooter className="p-8 border-t bg-slate-50/50">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
-              <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">Guardar Plantel</Button>
+              <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">
+                {editingId ? 'Actualizar Plantel' : 'Guardar Plantel'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -269,6 +294,7 @@ export default function BaseCctPage() {
                 <TableHead className="text-[10px] font-black uppercase text-center"><Users className="h-3 w-3 inline mr-1" /> Alums</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center"><ClipboardList className="h-3 w-3 inline mr-1" /> Gpos</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center">DSR</TableHead>
+                <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -318,10 +344,15 @@ export default function BaseCctPage() {
                   <TableCell className="text-center">
                     <Badge className="bg-slate-100 text-slate-600 text-[10px] font-black">{s.dsr}</Badge>
                   </TableCell>
+                  <TableCell className="text-right pr-8">
+                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
+                        <Pencil className="h-4 w-4" />
+                     </Button>
+                  </TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-20 bg-slate-50/20">
+                  <TableCell colSpan={12} className="text-center py-20 bg-slate-50/20">
                     <div className="flex flex-col items-center gap-3 opacity-40">
                       <Search className="h-10 w-10 text-primary" />
                       <p className="text-[10px] font-black uppercase text-muted-foreground">No se encontraron planteles con los criterios de búsqueda.</p>
