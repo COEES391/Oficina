@@ -35,11 +35,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Forzamos la actualización total de la base de datos a la v17 para asegurar visibilidad de todos los registros
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v17') || '[]')
+    // Usamos v18 para forzar la recarga con la base de datos masiva corregida
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v18') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v17', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v18', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -94,7 +94,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v17', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v18', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
@@ -124,7 +124,7 @@ export default function BaseCctPage() {
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingId ? 'Editar Centro de Trabajo' : 'Alta de Centro de Trabajo'}
@@ -219,14 +219,6 @@ export default function BaseCctPage() {
                   <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
                   <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
-                  <Input className="h-11 border-primary/10" value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
-                  <Input className="h-11 border-primary/10" value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} />
-                </div>
 
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
@@ -305,16 +297,15 @@ export default function BaseCctPage() {
             <TableHeader className="bg-slate-50/50">
               <TableRow>
                 <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Región / Valle</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Región / Valle</TableHead>
+                <TableHead className="text-[10px] font-black uppercase min-w-[120px]">Municipio</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Turno</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[200px]">Nombre del Centro</TableHead>
+                <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre del Centro</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[200px]">Director(a)</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Teléfono</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center"><Users className="h-3 w-3 inline mr-1" /> Alums</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center"><ClipboardList className="h-3 w-3 inline mr-1" /> Gpos</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center">DSR</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>
               </TableRow>
             </TableHeader>
@@ -341,7 +332,7 @@ export default function BaseCctPage() {
                         <School className="h-4 w-4" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight max-w-[200px]">
+                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight max-w-[250px]">
                           {s.nombre}
                         </span>
                         <span className="text-[8px] text-muted-foreground font-bold">{s.servicioEducativo}</span>
@@ -362,9 +353,6 @@ export default function BaseCctPage() {
                   </TableCell>
                   <TableCell className="text-center font-black text-primary text-[11px]">{s.alumnos}</TableCell>
                   <TableCell className="text-center font-black text-slate-600 text-[11px]">{s.grupos}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge className="bg-slate-100 text-slate-600 text-[10px] font-black">{s.dsr}</Badge>
-                  </TableCell>
                   <TableCell className="text-right pr-8">
                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
                         <Pencil className="h-4 w-4" />
@@ -373,7 +361,7 @@ export default function BaseCctPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-20 bg-slate-50/20">
+                  <TableCell colSpan={11} className="text-center py-20 bg-slate-50/20">
                     <div className="flex flex-col items-center gap-3 opacity-40">
                       <Search className="h-10 w-10 text-primary" />
                       <p className="text-[10px] font-black uppercase text-muted-foreground">No se encontraron planteles con los criterios de búsqueda.</p>
