@@ -35,11 +35,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v15 para asegurar la carga completa de los 385+ registros con los nuevos campos de dirección y director
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v15') || '[]')
+    // Usamos v16 para forzar la carga completa de los 385+ registros con los nuevos campos de dirección y director
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v16') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v15', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v16', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -94,7 +94,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v15', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v16', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
@@ -254,6 +254,10 @@ export default function BaseCctPage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Administrativos</Label>
                   <Input type="number" className="h-11 border-primary/10" value={formData.administrativos} onChange={e => setFormData({...formData, administrativos: parseInt(e.target.value) || 0})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Aulas Existentes</Label>
+                  <Input type="number" className="h-11 border-primary/10" value={formData.aulasExistentes} onChange={e => setFormData({...formData, aulasExistentes: parseInt(e.target.value) || 0})} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Aulas en Uso</Label>
