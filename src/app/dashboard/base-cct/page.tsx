@@ -35,11 +35,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v16 para forzar la carga completa de los 385+ registros con los nuevos campos de dirección y director
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v16') || '[]')
+    // Forzamos la actualización total de la base de datos a la v17 para asegurar visibilidad de todos los registros
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v17') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v16', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v17', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -94,7 +94,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v16', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v17', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
