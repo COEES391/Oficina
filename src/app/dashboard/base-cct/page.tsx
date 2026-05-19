@@ -35,11 +35,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v18 para forzar la recarga con la base de datos masiva corregida
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v18') || '[]')
-    if (stored.length === 0) {
+    // Usamos v20 para asegurar la recarga total con los 1147+ registros reportados
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v20') || '[]')
+    if (stored.length === 0 || stored.length < 500) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v18', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v20', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -94,7 +94,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v18', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v20', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
