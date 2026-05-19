@@ -27,18 +27,19 @@ export default function BaseCctPage() {
     control: 'OFICIAL', nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL',
     cct: '', turno: 'MATUTINO', nombre: '', hombres: 0, mujeres: 0, alumnos: 0,
     grupos: 0, maestros: 0, administrativos: 0, aulasExistentes: 0, aulasEnUso: 0,
-    modalidad: 'DES', zonaEscolar: '', sector: '', director: '', telefono: ''
+    modalidad: 'DES', zonaEscolar: '', sector: '', director: '', telefono: '',
+    domicilio: '', localidad: ''
   }
 
   const [formData, setFormData] = useState<SchoolInfo>(initialFormState)
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v11 para asegurar la carga completa de los 385+ registros y habilitar edición
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v11') || '[]')
+    // Usamos v14 para asegurar la carga completa de los 385+ registros con los nuevos campos de dirección y director
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v14') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v11', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v14', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -93,7 +94,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v11', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v14', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
@@ -185,6 +186,14 @@ export default function BaseCctPage() {
                   <Label className="text-[10px] font-black uppercase text-primary">Teléfono de Contacto</Label>
                   <Input className="font-mono h-11 border-primary/10" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} placeholder="10 DÍGITOS..." />
                 </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
+                  <Input className="h-11 border-primary/10" value={formData.domicilio} onChange={e => setFormData({...formData, domicilio: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
+                  <Input className="h-11 border-primary/10" value={formData.localidad} onChange={e => setFormData({...formData, localidad: e.target.value})} />
+                </div>
 
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
@@ -209,6 +218,14 @@ export default function BaseCctPage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
                   <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input className="h-11 border-primary/10" value={formData.zonaEscolar} onChange={e => setFormData({...formData, zonaEscolar: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input className="h-11 border-primary/10" value={formData.sector} onChange={e => setFormData({...formData, sector: e.target.value})} />
                 </div>
 
                 <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
