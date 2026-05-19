@@ -34,11 +34,11 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Forzamos carga v10 para asegurar que se vean los 385+ registros y no se trunquen
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v10') || '[]')
+    // Usamos v11 para asegurar la carga completa de los 385+ registros y habilitar edición
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v11') || '[]')
     if (stored.length === 0) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v10', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v11', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -93,7 +93,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v10', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v11', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)
@@ -218,11 +218,11 @@ export default function BaseCctPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Alumnos Hombres</Label>
+                  <Label className="text-[10px] font-black uppercase text-primary">Hombres</Label>
                   <Input type="number" className="h-11 border-primary/10" value={formData.hombres} onChange={e => setFormData({...formData, hombres: parseInt(e.target.value) || 0})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Alumnos Mujeres</Label>
+                  <Label className="text-[10px] font-black uppercase text-primary">Mujeres</Label>
                   <Input type="number" className="h-11 border-primary/10" value={formData.mujeres} onChange={e => setFormData({...formData, mujeres: parseInt(e.target.value) || 0})} />
                 </div>
                 <div className="space-y-2">
