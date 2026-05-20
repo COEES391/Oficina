@@ -35,11 +35,10 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Usamos v20 para asegurar la recarga total con los 1147+ registros reportados
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v20') || '[]')
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
     if (stored.length === 0 || stored.length < 500) {
       setSchools(schoolsDirectory)
-      localStorage.setItem('schools_master_full_v20', JSON.stringify(schoolsDirectory))
+      localStorage.setItem('schools_master_full_v21', JSON.stringify(schoolsDirectory))
     } else {
       setSchools(stored)
     }
@@ -49,11 +48,11 @@ export default function BaseCctPage() {
     if (!searchTerm) return schools;
     const term = searchTerm.toUpperCase();
     return schools.filter(s => {
-      const cctMatch = s.cct?.toUpperCase().includes(term);
-      const nameMatch = s.nombre?.toUpperCase().includes(term);
-      const dirMatch = s.director?.toUpperCase().includes(term);
-      const telMatch = s.telefono?.toUpperCase().includes(term);
-      const munMatch = s.municipio?.toUpperCase().includes(term);
+      const cctMatch = (s.cct || '').toUpperCase().includes(term);
+      const nameMatch = (s.nombre || '').toUpperCase().includes(term);
+      const dirMatch = (s.director || '').toUpperCase().includes(term);
+      const telMatch = (s.telefono || '').toUpperCase().includes(term);
+      const munMatch = (s.municipio || '').toUpperCase().includes(term);
       return cctMatch || nameMatch || dirMatch || telMatch || munMatch;
     });
   }, [searchTerm, schools]);
@@ -94,7 +93,7 @@ export default function BaseCctPage() {
     }
 
     setSchools(updated)
-    localStorage.setItem('schools_master_full_v20', JSON.stringify(updated))
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated))
     setIsDialogOpen(false)
     setFormData(initialFormState)
     setEditingId(null)

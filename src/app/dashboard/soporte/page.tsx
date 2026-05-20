@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -77,24 +76,11 @@ export default function SupportPage() {
     } else {
       setTickets(stored)
     }
-    
-    // Set initial date after mounting
     setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
   }, [])
 
-  // Auto-lookup when typing CCT
-  useEffect(() => {
-    if (searchTerm.length === 10) {
-      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === searchTerm.toUpperCase());
-      if (match) {
-        handleSelectSchool(match.cct);
-        setSearchTerm('');
-      }
-    }
-  }, [searchTerm]);
-
-  const handleSelectSchool = (cct: string) => {
-    const school = schoolsDirectory.find(s => s.cct === cct);
+  const handleSelectSchool = (cct: string, turno: string) => {
+    const school = schoolsDirectory.find(s => s.cct === cct && s.turno === turno);
     if (school) {
       setFormData({
         ...formData,
@@ -108,8 +94,8 @@ export default function SupportPage() {
         valle: school.valle
       });
       toast({
-        title: "Datos del Plantel Autocompletados",
-        description: `Se han configurado automáticamente: Sector ${school.sector}, Zona ${school.zonaEscolar}, Municipio ${school.municipio}, entre otros.`,
+        title: "Plantel Identificado",
+        description: `${school.nombre} (${school.turno}) cargado correctamente.`,
       });
     }
   }
@@ -157,7 +143,6 @@ export default function SupportPage() {
         responsables: formData.responsables.filter(r => r.trim() !== ''),
         status: t.status 
       } as SupportTicket : t);
-      toast({ title: "Reporte actualizado con éxito" });
     } else {
       const newTicket: SupportTicket = {
         ...formData,
@@ -165,7 +150,6 @@ export default function SupportPage() {
         responsables: formData.responsables.filter(r => r.trim() !== ''),
       }
       updated = [newTicket, ...tickets]
-      toast({ title: "Registro exitoso" })
     }
 
     setTickets(updated)
@@ -173,6 +157,7 @@ export default function SupportPage() {
     setIsDialogOpen(false)
     resetForm()
     setEditingTicketId(null)
+    toast({ title: "Cambios guardados con éxito" })
   }
 
   const resetForm = () => {
@@ -185,7 +170,7 @@ export default function SupportPage() {
   const handleEdit = (ticket: SupportTicket) => {
     setFormData({
       ...ticket,
-      responsables: [...ticket.responsables, '', '', ''].slice(0, 3) as string[],
+      responsables: [...(ticket.responsables || []), '', '', ''].slice(0, 3) as string[],
     });
     setEditingTicketId(ticket.id);
     setIsDialogOpen(true);
@@ -203,9 +188,11 @@ export default function SupportPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase">Gestión de Soporte Técnico</h2>
-          <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">Oficina de Planeación • Control de Servicios</p>
+        <div className="space-y-1">
+          <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Gestión de Soporte Técnico</h2>
+          <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+            <LifeBuoy className="h-4 w-4 text-accent" /> Centro de Control Operativo COEES
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
@@ -216,143 +203,148 @@ export default function SupportPage() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="gap-2 font-black uppercase"><PlusCircle className="h-4 w-4" /> Nuevo Reporte</Button>
+            <Button className="btn-institutional h-12 px-8">
+              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
+            </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0">
-            <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="uppercase font-black text-primary">
-                {editingTicketId ? `Editar Reporte: ${editingTicketId}` : "Nuevo Formato de Reporte Técnico"}
+          <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+            <DialogHeader className="p-8 pb-4">
+              <DialogTitle className="uppercase font-black text-primary text-2xl">
+                {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
               </DialogTitle>
-              <DialogDescription className="font-bold text-xs">Complete el CCT para autocompletar la información geográfica del plantel.</DialogDescription>
+              <DialogDescription className="font-bold text-[11px] uppercase tracking-[0.2em]">
+                Capture los datos del servicio y asocie las evidencias digitales correspondientes.
+              </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 px-6">
-              <div className="grid gap-6 py-4">
-                {/* School Lookup Section */}
-                <div className="p-4 bg-muted/30 rounded-lg space-y-4 border border-primary/10">
-                  <div className="flex flex-col gap-2">
-                    <Label className="text-xs font-black uppercase flex items-center gap-2">
-                      <Search className="h-4 w-4 text-primary" /> Búsqueda por CCT o Nombre del Plantel
+            <ScrollArea className="flex-1 px-8">
+              <div className="grid gap-8 py-6">
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                      <Search className="h-4 w-4" /> Localizador Institucional CCT
                     </Label>
-                    <div className="relative">
-                      <Input 
-                        placeholder="Escribir CCT (10 caracteres) para autocompletar..." 
-                        className="pl-4 bg-white font-mono uppercase" 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)} 
-                        maxLength={10}
-                      />
-                    </div>
+                    <Input 
+                      placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." 
+                      className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm focus:ring-2 focus:ring-primary/20" 
+                      value={searchTerm} 
+                      onChange={(e) => setSearchTerm(e.target.value)} 
+                    />
                   </div>
                   
-                  {searchTerm && searchTerm.length < 10 && (
-                    <div className="max-h-40 overflow-auto bg-white border rounded shadow-lg">
-                      {schoolsDirectory.filter(s => s.nombre.toUpperCase().includes(searchTerm.toUpperCase()) || s.cct.includes(searchTerm.toUpperCase())).slice(0, 10).map(s => (
-                        <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer text-xs border-b last:border-0 flex justify-between items-center" onClick={() => { handleSelectSchool(s.cct); setSearchTerm('') }}>
-                          <div>
-                            <span className="font-bold text-primary">{s.cct}</span> - {s.nombre}
+                  {searchTerm && (
+                    <div className="max-h-60 overflow-auto bg-white border border-primary/5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 divide-y divide-slate-50">
+                      {schoolsDirectory.filter(s => 
+                        (s.nombre || '').toUpperCase().includes(searchTerm.toUpperCase()) || 
+                        (s.cct || '').toUpperCase().includes(searchTerm.toUpperCase())
+                      ).slice(0, 10).map(s => (
+                        <div 
+                          key={`${s.cct}-${s.turno}`} 
+                          className="p-4 hover:bg-primary/5 cursor-pointer transition-colors flex justify-between items-center group" 
+                          onClick={() => { handleSelectSchool(s.cct, s.turno); setSearchTerm('') }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                               <School className="h-5 w-5" />
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-xs font-black text-slate-800">{s.nombre}</span>
+                               <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span>
+                            </div>
                           </div>
-                          <Badge variant="outline" className="text-[9px] uppercase">{s.municipio}</Badge>
+                          <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/10">{s.municipio}</Badge>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Auto-populated fields display */}
                   {formData.cct && (
-                    <div className="grid grid-cols-1 gap-4 animate-in fade-in duration-300">
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-md border shadow-sm">
-                        <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center">
-                          <School className="h-6 w-6 text-primary" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 animate-in slide-in-from-top-4">
+                      <div className="md:col-span-3 flex items-center gap-4 p-5 bg-white rounded-2xl border shadow-sm border-emerald-100">
+                        <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                          <School className="h-7 w-7" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-primary uppercase leading-none mb-1">Plantel Seleccionado</p>
-                          <p className="text-sm font-bold truncate max-w-[400px]">{formData.schoolName}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground">{formData.cct}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Sector</Label>
-                          <Input value={formData.sector} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Zona</Label>
-                          <Input value={formData.zonaEscolar} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Región</Label>
-                          <Input value={formData.region} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Municipio</Label>
-                          <Input value={formData.municipio} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black uppercase text-muted-foreground">Valle</Label>
-                          <Input value={formData.valle} readOnly className="h-7 text-[10px] font-bold bg-white text-center" />
+                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p>
+                          <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4>
+                          <p className="text-[10px] font-mono text-muted-foreground mt-1">{formData.cct} • {formData.municipio} • {formData.region}</p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1"><Label className="text-xs font-bold uppercase">Folio Reporte</Label><Input value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} /></div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase">Tipo de Servicio</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Folio Reporte / ID</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Tipo de Incidencia</Label>
                     <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="red edusat">Red Edusat</SelectItem>
-                        <SelectItem value="red local">Red Local</SelectItem>
-                        <SelectItem value="instalación red local">Instalación Red Local</SelectItem>
-                        <SelectItem value="mantenimiento preventivo">Mantenimiento Preventivo</SelectItem>
-                        <SelectItem value="mantenimiento correctivo">Mantenimiento Correctivo</SelectItem>
+                        <SelectItem value="red edusat" className="text-[11px] uppercase font-bold">Red Edusat</SelectItem>
+                        <SelectItem value="red local" className="text-[11px] uppercase font-bold">Red Local</SelectItem>
+                        <SelectItem value="instalación red local" className="text-[11px] uppercase font-bold">Instalación Red Local</SelectItem>
+                        <SelectItem value="mantenimiento preventivo" className="text-[11px] uppercase font-bold">Mantenimiento Preventivo</SelectItem>
+                        <SelectItem value="mantenimiento correctivo" className="text-[11px] uppercase font-bold">Mantenimiento Correctivo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-1">
-                    <Label className="text-xs font-bold uppercase">Oficina Regional</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Oficina de Atención</Label>
                     <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar oficina..." /></SelectTrigger>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                       <SelectContent>
                         {REGIONAL_OFFICES.map(off => (
-                          <SelectItem key={off} value={off}>{off.replace("Oficina de ", "")}</SelectItem>
+                          <SelectItem key={off} value={off} className="text-[11px] uppercase font-bold">{off.replace("Oficina de ", "")}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1"><Label className="text-xs font-bold uppercase">Número de Oficio</Label><Input value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="EJ: DESySA/PL/001/2024" /></div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Número de Oficio DESySA</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="DESySA/PL/..." />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1"><Label className="text-xs font-bold">Alumnos Ben.</Label><Input type="number" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-1"><Label className="text-xs font-bold">Docentes Ben.</Label><Input type="number" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-1"><Label className="text-xs font-bold">M.C. Serv.</Label><Input type="number" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-1"><Label className="text-xs font-bold">M.P. Serv.</Label><Input type="number" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-xs font-black uppercase text-primary">Gestión de Evidencias Digitales</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2 p-4 border border-dashed rounded-lg bg-slate-50">
-                      <Label className="flex items-center gap-2 text-xs font-black uppercase"><FileText className="h-4 w-4 text-blue-600" /> Reporte Oficial (PDF)</Label>
-                      <Input type="file" accept=".pdf" className="bg-white" onChange={e => handleFileChange(e, 'pdf')} />
-                      {formData.reportPdf && <p className="text-[10px] text-emerald-600 font-bold">✓ PDF listo para cargar</p>}
+                <div className="space-y-6 pt-6 border-t border-slate-100">
+                  <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        Reporte Oficial (Formato PDF)
+                      </Label>
+                      <Input type="file" accept=".pdf" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'pdf')} />
+                      {formData.reportPdf && <p className="text-[9px] text-emerald-600 font-black flex items-center gap-1 mt-2">✓ ARCHIVO CONFIGURADO</p>}
                     </div>
-                    <div className="space-y-2 p-4 border border-dashed rounded-lg bg-slate-50">
-                      <Label className="flex items-center gap-2 text-xs font-black uppercase"><ImageIcon className="h-4 w-4 text-pink-600" /> Evidencia en Fotos (MÁX 5)</Label>
-                      <Input type="file" multiple accept="image/*" className="bg-white" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
-                      <div className="flex gap-2 flex-wrap mt-2">
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
+                        <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shadow-sm">
+                          <ImageIcon className="h-4 w-4" />
+                        </div>
+                        Evidencias de Sitio (Máx 5)
+                      </Label>
+                      <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
+                      <div className="flex gap-3 flex-wrap mt-3">
                         {formData.evidencePhotos?.map((p, i) => (
-                          <div key={i} className="relative h-12 w-12 border-2 border-white rounded shadow-sm overflow-hidden">
+                          <div key={i} className="relative h-14 w-14 border-4 border-white rounded-xl shadow-md overflow-hidden group">
                             <Image src={p} alt="ev" fill className="object-cover" />
-                            <button className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
-                               <X className="h-3 w-3" />
+                            <button className="absolute inset-0 bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
+                               <X className="h-4 w-4" />
                             </button>
                           </div>
                         ))}
@@ -361,136 +353,116 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold uppercase">Observaciones Operativas</Label>
-                  <Textarea className="min-h-[100px]" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico del servicio realizado..." />
+                <div className="space-y-2 pt-4">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Observaciones Técnicas del Servicio</Label>
+                  <Textarea className="min-h-[120px] rounded-[1.5rem] p-5 bg-slate-50 border-primary/10 focus:bg-white transition-all shadow-inner" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico, hallazgos y trabajos realizados en el plantel..." />
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-6 border-t bg-slate-50">
-              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); setSearchTerm(''); }} className="font-bold uppercase text-xs">Cancelar</Button>
-              <Button onClick={handleSave} className="font-black uppercase text-xs px-10">
-                {editingTicketId ? "Actualizar Servicio" : "Guardar Servicio Técnico"}
+            <DialogFooter className="p-8 border-t bg-slate-50/50">
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button>
+              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">
+                {editingTicketId ? "Actualizar Registro" : "Guardar Servicio Técnico"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="shadow-md border-t-4 border-t-primary overflow-hidden">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50">
-              <TableRow>
-                <TableHead className="font-black text-[10px] uppercase w-[80px]">Folio</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">CCT / Plantel</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Servicio</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">ESTATUS</TableHead>
-                <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
-                <TableHead className="text-right font-black text-[10px] uppercase">Acción</TableHead>
+      <Card className="executive-card p-0 overflow-hidden">
+        <Table>
+          <TableHeader className="bg-slate-50/50">
+            <TableRow>
+              <TableHead className="font-black text-[10px] uppercase w-[100px] text-center">Folio</TableHead>
+              <TableHead className="font-black text-[10px] uppercase min-w-[200px]">CCT / Nombre del Plantel</TableHead>
+              <TableHead className="font-black text-[10px] uppercase">Tipo de Servicio</TableHead>
+              <TableHead className="font-black text-[10px] uppercase">Estatus Operativo</TableHead>
+              <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
+              <TableHead className="text-right font-black text-[10px] uppercase pr-8">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tickets.map(t => (
+              <TableRow key={t.id} className="hover:bg-slate-50 transition-colors group">
+                <TableCell className="font-black text-primary text-sm text-center">{t.id}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
+                    <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="capitalize text-[10px] font-black text-slate-500">
+                  <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary uppercase">
+                    {t.tipoIncidencia}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
+                    <SelectTrigger className={cn(
+                      "h-8 w-40 text-[9px] font-black uppercase border-2 rounded-xl transition-all",
+                      t.status === 'atendido' ? 'border-emerald-500/30 text-emerald-700 bg-emerald-50' : 
+                      t.status === 'en proceso' ? 'border-amber-500/30 text-amber-700 bg-amber-50' : 
+                      'border-rose-500/30 text-rose-700 bg-rose-50'
+                    )}>
+                      <div className="flex items-center gap-2">
+                        <Circle className={cn("h-2 w-2 fill-current", 
+                          t.status === 'atendido' ? 'text-emerald-500' : 
+                          t.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'
+                        )} />
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-200">
+                      <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">PENDIENTE</SelectItem>
+                      <SelectItem value="en proceso" className="text-[10px] font-black text-amber-600">EN PROCESO</SelectItem>
+                      <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">ATENDIDO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-center gap-3">
+                    {t.reportPdf && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Folio ${t.id} - Reporte Técnico` })}>
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {t.evidencePhotos && t.evidencePhotos.length > 0 && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600 hover:bg-pink-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Folio ${t.id} - Galería de Sitio` })}>
+                        <ImageIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right pr-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
+                     <Pencil className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.map(t => (
-                <TableRow key={t.id} className="hover:bg-slate-50/50 transition-colors">
-                  <TableCell className="font-black text-primary text-sm">{t.id}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
-                      <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[200px]">{t.schoolName}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="capitalize text-[11px] font-black text-slate-600">
-                    <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">
-                      {t.tipoIncidencia || 'Sin especificar'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
-                      <SelectTrigger className={cn(
-                        "h-8 w-36 text-[10px] font-black uppercase border-2 transition-colors",
-                        t.status === 'atendido' ? 'border-emerald-500 text-emerald-700 bg-emerald-50' : 
-                        t.status === 'en proceso' ? 'border-amber-500 text-amber-700 bg-amber-50' : 
-                        'border-rose-500 text-rose-700 bg-rose-50'
-                      )}>
-                        <div className="flex items-center gap-1.5">
-                          <Circle className={cn("h-2 w-2 fill-current", 
-                            t.status === 'atendido' ? 'text-emerald-500' : 
-                            t.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'
-                          )} />
-                          <SelectValue />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">
-                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-rose-500" /> PENDIENTE</div>
-                        </SelectItem>
-                        <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">
-                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-amber-500" /> EN PROCESO</div>
-                        </SelectItem>
-                        <SelectItem value="atendido" className="text-[10px] font-bold text-emerald-600">
-                           <div className="flex items-center gap-1.5"><Circle className="h-2 w-2 fill-emerald-500" /> ATENDIDO</div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-2">
-                      {t.reportPdf && (
-                        <Button variant="outline" size="icon" className="h-8 w-8 border-blue-200 hover:bg-blue-50" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Reporte ${t.id} - ${t.tipoIncidencia}` })}>
-                          <FileText className="h-4 w-4 text-blue-600" />
-                        </Button>
-                      )}
-                      {t.evidencePhotos && t.evidencePhotos.length > 0 && (
-                        <Button variant="outline" size="icon" className="h-8 w-8 border-pink-200 hover:bg-pink-50" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Galería ${t.id} - ${t.cct}` })}>
-                          <ImageIcon className="h-4 w-4 text-pink-600" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => handleEdit(t)}>
-                       <Pencil className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {tickets.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-20 bg-slate-50/30">
-                    <div className="flex flex-col items-center gap-2 opacity-50">
-                      <LifeBuoy className="h-10 w-10 text-primary" />
-                      <p className="font-bold text-sm uppercase">Sin registros de soporte técnico.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+            ))}
+          </TableBody>
+        </Table>
       </Card>
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-2 border-b bg-slate-50">
-            <DialogTitle className="uppercase font-black text-primary flex items-center gap-2">
-              {evidenceToView?.type === 'pdf' ? <FileText className="h-5 w-5 text-blue-600" /> : <ImageIcon className="h-5 w-5 text-pink-600" />}
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogHeader className="p-8 pb-4 border-b bg-slate-50">
+            <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-4">
+              {evidenceToView?.type === 'pdf' ? <FileText className="h-6 w-6 text-blue-600" /> : <ImageIcon className="h-6 w-6 text-pink-600" />}
               {evidenceToView?.title}
-              <ExternalLink className="h-3 w-3 text-muted-foreground ml-2" />
             </DialogTitle>
-            <DialogDescription className="font-bold text-xs">Visor de evidencias oficiales Oficina de Planeación.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 relative">
              {evidenceToView?.type === 'pdf' ? (
                 <iframe src={evidenceToView.data as string} className="w-full h-full border-none" />
              ) : (
-                <ScrollArea className="h-full w-full p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ScrollArea className="h-full w-full p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {(evidenceToView?.data as string[])?.map((img, idx) => (
-                      <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border-4 border-white shadow-xl group">
-                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                      <div key={idx} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl group cursor-zoom-in">
+                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                           <Eye className="h-8 w-8 text-white" />
+                           <Eye className="h-10 w-10 text-white" />
                         </div>
                       </div>
                     ))}
@@ -498,8 +470,8 @@ export default function SupportPage() {
                 </ScrollArea>
              )}
           </div>
-          <div className="p-4 border-t bg-white flex justify-end">
-            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-xs">Cerrar Visor</Button>
+          <div className="p-6 border-t bg-white flex justify-end">
+            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg">Cerrar Visor Operativo</Button>
           </div>
         </DialogContent>
       </Dialog>
