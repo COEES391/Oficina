@@ -136,7 +136,16 @@ export default function SupportPage() {
 
   const handleMaterialQuantityChange = (material: string, quantity: number) => {
     const current = formData.materialesEdusat || [];
-    const updated = current.map(m => m.name === material ? { ...m, quantity } : m);
+    const exists = current.find(m => m.name === material);
+    
+    let updated;
+    if (exists) {
+      updated = current.map(m => m.name === material ? { ...m, quantity } : m);
+    } else if (quantity > 0) {
+      updated = [...current, { name: material, quantity }];
+    } else {
+      updated = current;
+    }
     setFormData({ ...formData, materialesEdusat: updated });
   }
 
@@ -342,7 +351,6 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                {/* Sección Especial para Teleplanteles */}
                 {formData.tipoIncidencia === 'teleplanteles' && (
                   <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
                     <div className="flex items-center gap-3 border-b border-pink-100 pb-3">
@@ -374,11 +382,14 @@ export default function SupportPage() {
                             </SelectContent>
                           </Select>
                        </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
+                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
+                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Sección Especial para RED Edusat */}
                 {formData.tipoIncidencia === 'red edusat' && (
                   <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border-2 border-blue-100 space-y-6 animate-in zoom-in-95 duration-300">
                     <div className="flex items-center gap-3 border-b border-blue-100 pb-3">
@@ -421,7 +432,7 @@ export default function SupportPage() {
                             const quantity = materialData?.quantity || 0;
 
                             return (
-                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-50 bg-slate-50/30">
+                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-100 bg-slate-50/30">
                                 <div className="flex items-center space-x-2">
                                   <Checkbox 
                                     id={`mat-${mat}`} 
@@ -433,17 +444,15 @@ export default function SupportPage() {
                                     {mat}
                                   </label>
                                 </div>
-                                {isChecked && (
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
-                                    <Input 
-                                      type="number"
-                                      className="h-8 w-16 text-center text-[10px] font-black bg-white"
-                                      value={quantity}
-                                      onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
+                                  <Input 
+                                    type="number"
+                                    className="h-8 w-16 text-center text-[10px] font-black bg-white border-blue-100"
+                                    value={quantity}
+                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
                               </div>
                             )
                           })}
@@ -465,8 +474,8 @@ export default function SupportPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Número de Oficio DESySA</Label>
-                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="DESySA/PL/..." />
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Número de Oficio COEES</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
                   </div>
                 </div>
 

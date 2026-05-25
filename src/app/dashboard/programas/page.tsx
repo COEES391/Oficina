@@ -121,7 +121,11 @@ export default function ProgramsPage() {
     numCensal: '',
     serieDecodificador: '',
     calidadSeñal: '',
-    materialesEdusat: []
+    materialesEdusat: [],
+    numDecodificadores: 0,
+    numSerie: '',
+    estatusSeñal: '',
+    numReportes: 0
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -176,7 +180,15 @@ export default function ProgramsPage() {
 
   const handleMaterialQuantityChange = (material: string, quantity: number) => {
     const current = formData.materialesEdusat || [];
-    const updated = current.map(m => m.name === material ? { ...m, quantity } : m);
+    const exists = current.find(m => m.name === material);
+    let updated;
+    if (exists) {
+      updated = current.map(m => m.name === material ? { ...m, quantity } : m);
+    } else if (quantity > 0) {
+      updated = [...current, { name: material, quantity }];
+    } else {
+      updated = current;
+    }
     setFormData({ ...formData, materialesEdusat: updated });
   }
 
@@ -277,6 +289,41 @@ export default function ProgramsPage() {
       setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]);
     }
     setIsDialogOpen(true);
+  }
+
+  const handleAddAssistant = () => {
+    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    if (assistants.length === 1) return
+    setAssistants(assistants.filter((_, i) => i !== index))
+  }
+
+  const updateAssistant = (index: number, field: keyof AssistantEntry, value: string) => {
+    const newAssistants = [...assistants]
+    newAssistants[index] = { ...newAssistants[index], [field]: value }
+
+    if (field === 'cct') {
+      const cleanValue = value.trim().toUpperCase()
+      if (cleanValue.length === 10) {
+        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+        if (school) {
+          newAssistants[index] = {
+            ...newAssistants[index],
+            cct: school.cct,
+            nombreCT: school.nombre,
+            ze: school.zonaEscolar,
+            sector: school.sector,
+            modalidad: school.modalidad,
+            municipio: school.municipio,
+            region: school.region,
+            valle: school.valle
+          }
+        }
+      }
+    }
+    setAssistants(newAssistants)
   }
 
   if (!mounted) return null
@@ -674,6 +721,45 @@ export default function ProgramsPage() {
                                   </Select>
                                 </div>
 
+                                {formData.tipoIncidencia === 'teleplanteles' && (
+                                  <div className="col-span-1 md:col-span-2 p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
+                                    <div className="flex items-center gap-3 border-b border-pink-100 pb-3">
+                                      <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
+                                          <Tv className="h-6 w-6" />
+                                      </div>
+                                      <h3 className="text-sm font-black uppercase text-pink-900 tracking-wider">Módulo Técnico de Teleplanteles</h3>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Decodificadores</Label>
+                                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numDecodificadores} onChange={e => setFormData({...formData, numDecodificadores: parseInt(e.target.value) || 0})} />
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Número de Serie</Label>
+                                          <Input className="bg-white border-pink-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-XXXX" value={formData.numSerie} onChange={e => setFormData({...formData, numSerie: e.target.value.toUpperCase()})} />
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Estatus de la Señal</Label>
+                                          <Select value={formData.estatusSeñal} onValueChange={(val: any) => setFormData({...formData, estatusSeñal: val})}>
+                                            <SelectTrigger className="bg-white border-pink-200 rounded-xl h-11 uppercase font-bold text-[10px]">
+                                              <SelectValue placeholder="SELECCIONAR..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="débil" className="text-[10px] font-black text-rose-600 uppercase">DÉBIL</SelectItem>
+                                              <SelectItem value="estable" className="text-[10px] font-black text-amber-600 uppercase">ESTABLE</SelectItem>
+                                              <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
+                                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
                                 {formData.tipoIncidencia === 'red edusat' && (
                                   <div className="col-span-1 md:col-span-2 p-8 bg-blue-50/50 rounded-[2.5rem] border-2 border-blue-100 space-y-6 animate-in zoom-in-95 duration-300">
                                     <div className="flex items-center gap-3 border-b border-blue-100 pb-3">
@@ -716,7 +802,7 @@ export default function ProgramsPage() {
                                             const quantity = materialData?.quantity || 0;
 
                                             return (
-                                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-50 bg-slate-50/30">
+                                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-100 bg-slate-50/30">
                                                 <div className="flex items-center space-x-2">
                                                   <Checkbox 
                                                     id={`atres-mat-${mat}`} 
@@ -728,17 +814,15 @@ export default function ProgramsPage() {
                                                     {mat}
                                                   </label>
                                                 </div>
-                                                {isChecked && (
-                                                  <div className="flex items-center gap-2">
-                                                    <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
-                                                    <Input 
-                                                      type="number"
-                                                      className="h-8 w-16 text-center text-[10px] font-black bg-white"
-                                                      value={quantity}
-                                                      onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
-                                                    />
-                                                  </div>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
+                                                  <Input 
+                                                    type="number"
+                                                    className="h-8 w-16 text-center text-[10px] font-black bg-white border-blue-100"
+                                                    value={quantity}
+                                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
+                                                  />
+                                                </div>
                                               </div>
                                             )
                                           })}
@@ -748,8 +832,8 @@ export default function ProgramsPage() {
                                 )}
 
                                 <div className="space-y-2">
-                                  <Label className="text-[11px] font-black uppercase text-primary">Número de Oficio</Label>
-                                  <Input className="h-12 bg-slate-50 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="DESySA/PL/..." />
+                                  <Label className="text-[11px] font-black uppercase text-primary">Número de Oficio COEES</Label>
+                                  <Input className="h-12 bg-slate-50 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-1"><Label className="text-[9px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-10 bg-slate-50" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
