@@ -25,9 +25,9 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <body className={`${montserrat.variable} font-sans relative min-h-screen overflow-x-hidden`}>
+      <body className={`${montserrat.variable} font-sans relative min-h-screen overflow-x-hidden bg-background`}>
         {/* Background Image Layer */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none opacity-[0.03] scale-110">
+        <div className="fixed inset-0 z-[-2] pointer-events-none opacity-[0.03] scale-110">
           <Image 
             src={bgImage.imageUrl} 
             alt="Education Background" 
@@ -38,8 +38,8 @@ export default function RootLayout({
           />
         </div>
         
-        {/* Subtle Gradient Overlay */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none bg-gradient-to-br from-white via-slate-50/50 to-slate-100" />
+        {/* Subtle Background Base */}
+        <div className="fixed inset-0 z-[-1] pointer-events-none bg-background opacity-95" />
         
         <div className="relative z-10 min-h-screen">
           {children}
