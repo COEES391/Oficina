@@ -1,11 +1,10 @@
-
 {
   "placeholderImages": [
     {
       "id": "desysa-logo",
       "description": "Imagen institucional de tecnología, computación e inteligencia artificial para el portal integral.",
-      "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=800&auto=format&fit=crop",
-      "imageHint": "artificial intelligence technology"
+      "imageUrl": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop",
+      "imageHint": "technology artificial intelligence"
     },
     {
       "id": "education-bg",

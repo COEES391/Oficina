@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -52,15 +51,15 @@ export default function LoginPage() {
       </div>
 
       <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10">
-        <CardHeader className="text-center pt-12 pb-6 space-y-6">
+        <CardHeader className="text-center pt-12 pb-6 space-y-8">
           {/* Logo Container - Technological Identity */}
-          <div className="mx-auto relative h-32 w-32 rounded-3xl overflow-hidden shadow-2xl border-4 border-white transition-transform duration-500 hover:scale-105 bg-white">
+          <div className="mx-auto relative h-40 w-40 rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image 
               src={logoData.imageUrl} 
               alt="Identidad Tecnológica Institucional" 
               fill
               className="object-cover"
-              data-ai-hint="artificial intelligence technology"
+              data-ai-hint="technology computing"
               priority
             />
           </div>
