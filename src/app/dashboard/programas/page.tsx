@@ -11,10 +11,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { 
   PlusCircle, 
@@ -23,27 +21,14 @@ import {
   Activity,
   Target,
   MapPin,
-  Calendar,
-  Mail,
   CheckCircle2,
-  Users,
   Plus,
-  School,
-  FileText,
-  ImageIcon,
-  X,
-  ExternalLink,
-  Eye,
-  Info,
   Search,
-  Radio,
-  UserCog,
-  Network,
-  Tv,
-  Monitor
+  School,
+  Mail,
+  UserCog
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import Image from 'next/image'
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
@@ -64,29 +49,6 @@ const FUNCIONES = [
   "PREFECTO",
   "TRABAJADOR SOCIAL"
 ]
-
-const REGIONAL_OFFICES = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
-  "Oficina de COEES Tultitlan"
-];
-
-const MAINTENANCE_CHECKLIST = [
-  "SUSTITUCIÓN DE CONECTORES",
-  "SUSTITUCIÓN DE CORDONES DE PARCHEO",
-  "SUSTITUCIÓN DE CABLE UTP",
-  "SUSTITUCIÓN DE ROSETAS",
-  "SUSTITUCIÓN DE CANALETAS",
-  "CONFIGURACIÓN DE RED"
-];
-
-const EDUSAT_MICROPAK = ['REVISIÓN', 'POLARIZACIÓN', 'PRUEBA', 'CAMBIO'];
-const EDUSAT_ANTENA = ['ORIENTACIÓN', 'REPARACIÓN', 'REUBICACIÓN', 'CAMBIO'];
-const EDUSAT_DECO_ACCIONES = ['CONFIGURACIÓN', 'REUBICACIÓN', 'CAMBIO'];
-const EDUSAT_CABLEADO = ['CAMBIO DE CAMPANAS', 'CAMBIO DE DIVISOR', 'CAMBIO DE CABLE'];
-const EDUSAT_PREVENTIVO = ['REVISIÓN GENERAL', 'LIMPIEZA GENERAL', 'CUIDADO PREVENTIVO'];
 
 type AssistantEntry = {
   paterno: string;
@@ -114,53 +76,13 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     latitud: '', longitud: '',
-    tecnicos: '',
-    tipoIncidencia: 'mantenimiento',
-    oficinaRegionalAtencion: '',
-    numeroOficio: '',
-    alumnosBeneficiados: 0,
-    docentesBeneficiados: 0,
-    serviciosMC: 0,
-    serviciosMP: 0,
-    reportPdf: '',
-    evidencePhotos: [],
-    numCensal: '',
-    serieDecodificador: '',
-    calidadSeñal: '',
-    materialesEdusat: [],
-    numNodos: 0,
-    switchModelo: '',
-    materialesRedLocal: [],
-    numDecodificadores: 0,
-    numSerie: '',
-    estatusSeñal: '',
-    numReportes: 0,
-    mantenimientoChecklist: [],
-    mantenimientoDetalle: {
-      equipoTecnologico: '',
-      equipoTecnologicoOtro: '',
-      equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
-      fallaIdentificada: '',
-      servicioRealizado: ''
-    },
-    edusatDetalle: {
-      micropak: [],
-      antena: [],
-      decodificadorAcciones: [],
-      cableado: [],
-      preventivo: [],
-      numCensal: '',
-      numSerie: '',
-      calidadSeñal: '',
-      materiales: Array(8).fill({ material: '', cantidad: '', actividades: '' })
-    }
+    tecnicos: ''
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
@@ -212,7 +134,8 @@ export default function ProgramsPage() {
     const finalData = {
       ...formData,
       id: editingId || `PROG-${formData.name.substring(0,2).toUpperCase()}-${Date.now()}`,
-      asistentes: validAssistants
+      asistentes: validAssistants,
+      email: validAssistants.length > 0 ? validAssistants[0].email : formData.email
     };
 
     const updated = editingId ? records.map(r => r.id === editingId ? finalData : r) : [finalData, ...records];
@@ -233,18 +156,15 @@ export default function ProgramsPage() {
       filtered = filtered.filter(r => 
         (r.cct || '').toUpperCase().includes(term) || 
         (r.schoolName || '').toUpperCase().includes(term) ||
-        (r.email || '').toUpperCase().includes(term)
+        (r.email || '').toUpperCase().includes(term) ||
+        (r.asistentes?.some(a => (a.email || '').toUpperCase().includes(term) || (a.rfc || '').toUpperCase().includes(term)))
       );
     }
     return filtered;
   }, [records, activeTab, searchTerm]);
 
   const handleEdit = (rec: ProgramStatus) => {
-    setFormData({
-      ...rec,
-      mantenimientoDetalle: rec.mantenimientoDetalle || initialFormState.mantenimientoDetalle,
-      edusatDetalle: rec.edusatDetalle || initialFormState.edusatDetalle
-    });
+    setFormData(rec);
     setEditingId(rec.id);
     if (rec.asistentes && rec.asistentes.length > 0) {
       setAssistants(rec.asistentes);
@@ -330,7 +250,7 @@ export default function ProgramsPage() {
              <div className="flex flex-1 max-md:w-full relative">
                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                <Input 
-                 placeholder="Filtrar por CCT, Plantel o Email..." 
+                 placeholder="Filtrar por CCT, Plantel, RFC o Correo Institucional..." 
                  className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
@@ -350,19 +270,26 @@ export default function ProgramsPage() {
                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Contacto / Email</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Contacto Principal / Email</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Estatus</TableHead>
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentTabRecords.length > 0 ? currentTabRecords.map((rec, idx) => (
-                    <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
+                    <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors group">
                       <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                       <TableCell className="text-sm font-bold text-slate-700 uppercase">{rec.schoolName}</TableCell>
-                      <TableCell className="text-[10px] font-mono lowercase text-muted-foreground">
-                        {rec.email || (rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes[0].email : '-')}
+                      <TableCell>
+                        <div className="flex flex-col">
+                           <span className="text-[10px] font-mono lowercase text-primary font-bold">
+                             {rec.email || (rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes[0].email : '-')}
+                           </span>
+                           {rec.asistentes && rec.asistentes.length > 1 && (
+                             <span className="text-[8px] text-muted-foreground uppercase font-black">+{rec.asistentes.length - 1} Cuentas adicionales</span>
+                           )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={cn("text-[10px] font-black uppercase px-4 py-1.5", rec.status === 'activo' || rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400')}>
@@ -377,7 +304,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={14} className="text-center py-20 bg-slate-50/20">
+                      <TableCell colSpan={6} className="text-center py-20 bg-slate-50/20">
                          <p className="text-[10px] font-black uppercase text-muted-foreground opacity-50">Sin resultados para la búsqueda.</p>
                       </TableCell>
                     </TableRow>
@@ -395,6 +322,9 @@ export default function ProgramsPage() {
             <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-3">
               <Target className="h-7 w-7 text-accent" /> Gestión de {activeTab}
             </DialogTitle>
+            <DialogDescription className="font-bold text-[10px] uppercase tracking-widest">
+              Identificador Operativo: {editingId || 'Nuevo Registro'}
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="auditoria" className="flex-1 flex flex-col overflow-hidden">
@@ -421,7 +351,7 @@ export default function ProgramsPage() {
                             <Input className="h-14 font-mono uppercase border-primary/10 text-lg bg-slate-50 focus:bg-white" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Estatus</Label>
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Estatus Operativo</Label>
                             <Select value={formData.status} onValueChange={(val:any) => setFormData({...formData, status: val})}>
                               <SelectTrigger className="h-14 border-primary/10 font-black text-[11px] bg-slate-50 uppercase"><SelectValue /></SelectTrigger>
                               <SelectContent>
@@ -433,33 +363,48 @@ export default function ProgramsPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">CCT</Label>
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">CCT del Plantel</Label>
                             <Input placeholder="EJ: 15DESXXXXX" className="h-12 font-mono uppercase border-primary/10 bg-slate-50" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre del Plantel</Label>
-                            <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100" />
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre Institucional</Label>
+                            <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 uppercase" />
                           </div>
 
                           <div className="col-span-1 md:col-span-2 space-y-4">
                             <h4 className="text-[10px] font-black uppercase text-accent border-b border-accent/20 pb-2 tracking-[0.2em]">Ficha Técnica del Plantel</h4>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 shadow-inner">
-                              <div className="space-y-1"><Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Zona Escolar</Label><Input value={formData.zonaEscolar} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" /></div>
-                              <div className="space-y-1"><Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Sector</Label><Input value={formData.sector} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" /></div>
-                              <div className="space-y-1"><Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Municipio</Label><Input value={formData.municipio} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" /></div>
+                              <div className="space-y-1">
+                                <Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Zona Escolar</Label>
+                                <Input value={formData.zonaEscolar || 'S/Z'} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Sector</Label>
+                                <Input value={formData.sector || 'S/S'} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[9px] font-black text-muted-foreground uppercase opacity-70">Municipio</Label>
+                                <Input value={formData.municipio || 'S/M'} readOnly className="bg-white/50 text-[10px] h-9 font-black border-none uppercase" />
+                              </div>
                             </div>
                           </div>
 
                           {activeTab === 'Geoposición' && (
                              <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Latitud Geográfica</Label>
+                                  <Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} placeholder="EJ: 19.XXXXXX" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Longitud Geográfica</Label>
+                                  <Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} placeholder="EJ: -99.XXXXXX" />
+                                </div>
                              </div>
                           )}
 
                           <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t">
-                             <Label className="text-[11px] font-black uppercase text-primary">Observaciones Generales</Label>
-                             <Textarea className="min-h-[120px] bg-slate-50 border-primary/10 rounded-2xl" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
+                             <Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas / Generales</Label>
+                             <Textarea className="min-h-[120px] bg-slate-50 border-primary/10 rounded-2xl p-5" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
                           </div>
                       </div>
                     </div>
@@ -483,10 +428,10 @@ export default function ProgramsPage() {
                         <TableHeader className="bg-slate-100 sticky top-0 z-10">
                           <TableRow>
                             <TableHead className="w-10 text-[10px] font-black uppercase">#</TableHead>
-                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Nombre Completo</TableHead>
+                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Nombre del Servidor Público</TableHead>
                             <TableHead className="min-w-[150px] text-[10px] font-black uppercase">RFC</TableHead>
-                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Función</TableHead>
-                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Correo Institucional</TableHead>
+                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Función Institucional</TableHead>
+                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Correo @desysa.edu.mx</TableHead>
                             <TableHead className="w-10 sticky right-0 bg-slate-100"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -496,9 +441,9 @@ export default function ProgramsPage() {
                               <TableCell className="text-center font-bold text-xs text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="p-2">
                                 <div className="grid grid-cols-3 gap-1">
-                                  <Input placeholder="Paterno" className="h-8 text-[10px]" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value)} />
-                                  <Input placeholder="Materno" className="h-8 text-[10px]" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value)} />
-                                  <Input placeholder="Nombres" className="h-8 text-[10px] font-bold" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} />
+                                  <Input placeholder="Paterno" className="h-8 text-[10px] uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} />
+                                  <Input placeholder="Materno" className="h-8 text-[10px] uppercase" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value.toUpperCase())} />
+                                  <Input placeholder="Nombres" className="h-8 text-[10px] font-bold uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} />
                                 </div>
                               </TableCell>
                               <TableCell className="p-2">
@@ -517,7 +462,7 @@ export default function ProgramsPage() {
                                 </Select>
                               </TableCell>
                               <TableCell className="p-2">
-                                <Input placeholder="correo@desysa.edu.mx" className="h-8 text-[10px] font-mono lowercase" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
+                                <Input placeholder="correo@desysa.edu.mx" className="h-8 text-[10px] font-mono lowercase border-primary/20 text-primary font-bold" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
                               </TableCell>
                               <TableCell className="p-2 sticky right-0 bg-white/80 backdrop-blur-sm shadow-l">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveAssistant(idx)} disabled={assistants.length === 1}>
