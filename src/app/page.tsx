@@ -51,31 +51,31 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.15)] border-none bg-white/70 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10 border-t-8 border-t-primary">
+      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/80 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 border-t-8 border-t-primary">
         <CardHeader className="text-center pt-14 pb-8 space-y-8">
-          <div className="mx-auto relative h-36 w-36 group">
-            <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] rotate-6 group-hover:rotate-12 transition-transform duration-700" />
-            <div className="absolute inset-0 bg-white rounded-[2.5rem] border-2 border-primary/5 flex items-center justify-center p-4 shadow-xl relative z-10">
+          <div className="mx-auto relative h-32 w-32 group">
+            <div className="absolute inset-0 bg-primary/5 rounded-full scale-110 blur-xl opacity-50 group-hover:bg-primary/10 transition-all duration-700" />
+            <div className="absolute inset-0 bg-white rounded-3xl border-2 border-primary/5 flex items-center justify-center p-3 shadow-xl relative z-10">
               <Image 
                 src={logoData.imageUrl} 
-                alt="Logo COEES 2026" 
+                alt="Logo COEES Edoméx 2026" 
                 fill
-                className="object-contain p-5"
+                className="object-contain p-4"
                 data-ai-hint="institutional logo"
                 priority
               />
             </div>
           </div>
           <div className="space-y-3">
-            <CardTitle className="text-4xl font-black tracking-tighter text-primary uppercase leading-[0.9]">
+            <CardTitle className="text-4xl font-black tracking-tighter text-primary uppercase leading-[0.85]">
               Portal <br /> Integral
             </CardTitle>
             <div className="flex flex-col items-center justify-center gap-3">
-              <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
-              <CardDescription className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.1em] text-center leading-tight max-w-[280px]">
+              <span className="h-0.5 w-12 bg-accent/40 rounded-full" />
+              <CardDescription className="text-slate-500 font-black text-[10px] uppercase tracking-[0.15em] text-center leading-tight max-w-[280px]">
                 COMPUTACIÓN ELECTRÓNICA EN LA EDUCACIÓN SECUNDARIA (COEES)
               </CardDescription>
-              <span className="h-0.5 w-10 bg-accent/30 rounded-full" />
+              <span className="h-0.5 w-12 bg-accent/40 rounded-full" />
             </div>
           </div>
         </CardHeader>
@@ -83,12 +83,12 @@ export default function LoginPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="rfc" className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
-                <User className="h-3.5 w-3.5 text-primary" /> Usuario
+                <User className="h-3.5 w-3.5 text-primary" /> Usuario Operativo
               </Label>
               <Input
                 id="rfc"
-                placeholder="INGRESA USUARIO"
-                className="h-16 rounded-2xl bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-black uppercase px-6 shadow-inner"
+                placeholder="INGRESA TU USUARIO"
+                className="h-14 rounded-2xl bg-slate-50 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-black uppercase px-6 shadow-inner"
                 value={rfc || ''}
                 onChange={(e) => setRfc(e.target.value.toUpperCase())}
               />
@@ -102,7 +102,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="h-16 rounded-2xl bg-white/50 pr-14 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold px-6 shadow-inner"
+                  className="h-14 rounded-2xl bg-slate-50 pr-14 border-slate-200 focus:border-primary focus:ring-primary/20 text-sm font-bold px-6 shadow-inner"
                   value={password || ''}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -110,28 +110,28 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-3 top-3 h-10 w-10 text-slate-400 hover:text-primary rounded-xl"
+                  className="absolute right-3 top-2 h-10 w-10 text-slate-400 hover:text-primary rounded-xl"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-16 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-95 text-white">
-              Iniciar Sesión
+            <Button type="submit" className="w-full h-16 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/95 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95 text-white">
+              Acceder al Sistema
             </Button>
           </form>
         </CardContent>
         <CardFooter className="pt-0 pb-12 px-12">
-           <div className="w-full py-4 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Servidor de Acceso Seguro v2.5</span>
+           <div className="w-full py-4 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-center gap-3 shadow-inner">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Servidor de Acceso Seguro v2026.1</span>
            </div>
         </CardFooter>
       </Card>
       
-      <div className="absolute bottom-10 text-center w-full">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] opacity-60">
+      <div className="absolute bottom-8 text-center w-full">
+        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.6em] opacity-80">
           Dirección de Educación Secundaria • Servicios de Apoyo
         </p>
       </div>

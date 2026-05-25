@@ -3,15 +3,15 @@
   "placeholderImages": [
     {
       "id": "desysa-logo",
-      "description": "Logotipo oficial de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA) - Edoméx 2026.",
-      "imageUrl": "https://images.unsplash.com/photo-1594608661623-aa0bd3a69d98?q=80&w=500&auto=format&fit=crop",
-      "imageHint": "education logo"
+      "description": "Logotipo oficial institucional Edoméx-SEIEM-DESySA 2026 - COEES.",
+      "imageUrl": "https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=800&auto=format&fit=crop",
+      "imageHint": "institutional emblem"
     },
     {
       "id": "education-bg",
-      "description": "Fondo temático de educación secundaria para el portal.",
-      "imageUrl": "https://picsum.photos/seed/edu/1920/1080",
-      "imageHint": "secondary school"
+      "description": "Fondo temático de educación secundaria para el portal integral.",
+      "imageUrl": "https://picsum.photos/seed/edomex2026/1920/1080",
+      "imageHint": "school background"
     }
   ]
 }
