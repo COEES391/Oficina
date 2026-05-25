@@ -28,30 +28,6 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const EDUSAT_MATERIALS = [
-  "cable",
-  "Antena",
-  "amplificador",
-  "LNB",
-  "espliter",
-  "decodificador",
-  "grapas",
-  "cinturones de plastico"
-];
-
-const NETWORK_MATERIALS = [
-  "CANALETA",
-  "CABLE UTP",
-  "ROSETAS",
-  "CONECTORES",
-  "PIJAS",
-  "TAQUETES",
-  "CINTURONES",
-  "SWITCH",
-  "ROUTER",
-  "CONECTORES RJ45"
-];
-
 const MAINTENANCE_CHECKLIST = [
   "SUSTITUCIÓN DE CONECTORES",
   "SUSTITUCIÓN DE CORDONES DE PARCHEO",
@@ -60,6 +36,12 @@ const MAINTENANCE_CHECKLIST = [
   "SUSTITUCIÓN DE CANALETAS",
   "CONFIGURACIÓN DE RED"
 ];
+
+const EDUSAT_MICROPAK = ['REVISIÓN', 'POLARIZACIÓN', 'PRUEBA', 'CAMBIO'];
+const EDUSAT_ANTENA = ['ORIENTACIÓN', 'REPARACIÓN', 'REUBICACIÓN', 'CAMBIO'];
+const EDUSAT_DECO_ACCIONES = ['CONFIGURACIÓN', 'REUBICACIÓN', 'CAMBIO'];
+const EDUSAT_CABLEADO = ['CAMBIO DE CAMPANAS', 'CAMBIO DE DIVISOR', 'CAMBIO DE CABLE'];
+const EDUSAT_PREVENTIVO = ['REVISIÓN GENERAL', 'LIMPIEZA GENERAL', 'CUIDADO PREVENTIVO'];
 
 export default function SupportPage() {
   const { toast } = useToast()
@@ -126,6 +108,17 @@ export default function SupportPage() {
       equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
       fallaIdentificada: '',
       servicioRealizado: ''
+    },
+    edusatDetalle: {
+      micropak: [],
+      antena: [],
+      decodificadorAcciones: [],
+      cableado: [],
+      preventivo: [],
+      numCensal: '',
+      numSerie: '',
+      calidadSeñal: '',
+      materiales: Array(8).fill({ material: '', cantidad: '', actividades: '' })
     }
   }
 
@@ -164,44 +157,6 @@ export default function SupportPage() {
     }
   }
 
-  const handleMaterialToggle = (material: string, type: 'edusat' | 'network') => {
-    const current = type === 'edusat' ? (formData.materialesEdusat || []) : (formData.materialesRedLocal || []);
-    const exists = current.find(m => m.name === material);
-    
-    let updated;
-    if (exists) {
-      updated = current.filter(m => m.name !== material);
-    } else {
-      updated = [...current, { name: material, quantity: 1 }];
-    }
-    
-    if (type === 'edusat') {
-      setFormData({ ...formData, materialesEdusat: updated });
-    } else {
-      setFormData({ ...formData, materialesRedLocal: updated });
-    }
-  }
-
-  const handleMaterialQuantityChange = (material: string, quantity: number, type: 'edusat' | 'network') => {
-    const current = type === 'edusat' ? (formData.materialesEdusat || []) : (formData.materialesRedLocal || []);
-    const exists = current.find(m => m.name === material);
-    
-    let updated;
-    if (exists) {
-      updated = current.map(m => m.name === material ? { ...m, quantity } : m);
-    } else if (quantity > 0) {
-      updated = [...current, { name: material, quantity }];
-    } else {
-      updated = current;
-    }
-
-    if (type === 'edusat') {
-      setFormData({ ...formData, materialesEdusat: updated });
-    } else {
-      setFormData({ ...formData, materialesRedLocal: updated });
-    }
-  }
-
   const handleMantenimientoToggle = (item: string) => {
     const current = formData.mantenimientoChecklist || [];
     const exists = current.includes(item);
@@ -210,6 +165,29 @@ export default function SupportPage() {
     } else {
       setFormData({ ...formData, mantenimientoChecklist: [...current, item] });
     }
+  }
+
+  const handleEdusatChecklistToggle = (category: keyof NonNullable<SupportTicket['edusatDetalle']>, item: string) => {
+    const current = (formData.edusatDetalle?.[category] as string[]) || [];
+    const exists = current.includes(item);
+    const updated = exists ? current.filter(i => i !== item) : [...current, item];
+    setFormData({
+      ...formData,
+      edusatDetalle: {
+        ...formData.edusatDetalle!,
+        [category]: updated
+      }
+    });
+  }
+
+  const handleEdusatMaterialChange = (index: number, field: string, value: string) => {
+    const current = formData.edusatDetalle || initialFormState.edusatDetalle!;
+    const newMaterials = [...current.materiales];
+    newMaterials[index] = { ...newMaterials[index], [field]: value };
+    setFormData({
+      ...formData,
+      edusatDetalle: { ...current, materiales: newMaterials }
+    });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo' | 'contrato') => {
@@ -289,11 +267,10 @@ export default function SupportPage() {
     setFormData({
       ...ticket,
       responsables: [...(ticket.responsables || []), '', '', ''].slice(0, 3) as string[],
-      materialesEdusat: ticket.materialesEdusat || [],
-      materialesRedLocal: ticket.materialesRedLocal || [],
       mantenimientoChecklist: ticket.mantenimientoChecklist || [],
       tecnicos: ticket.tecnicos || '',
-      mantenimientoDetalle: ticket.mantenimientoDetalle || initialFormState.mantenimientoDetalle
+      mantenimientoDetalle: ticket.mantenimientoDetalle || initialFormState.mantenimientoDetalle,
+      edusatDetalle: ticket.edusatDetalle || initialFormState.edusatDetalle
     });
     setEditingTicketId(ticket.id);
     setIsDialogOpen(true);
@@ -340,7 +317,7 @@ export default function SupportPage() {
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
@@ -631,33 +608,124 @@ export default function SupportPage() {
                           </div>
                        </div>
                     </div>
+                  </div>
+                )}
+
+                {formData.tipoIncidencia === 'red edusat' && (
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-primary/20 space-y-8 animate-in zoom-in-95 duration-300 shadow-xl">
+                    <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
+                       <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                          <Radio className="h-7 w-7" />
+                       </div>
+                       <div>
+                         <h3 className="text-lg font-black uppercase text-primary tracking-wider leading-none">Módulo Técnico RED Edusat Avanzado</h3>
+                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Diagnóstico Institucional por Componentes</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">MICROPAK (LNB)</Label>
+                          {EDUSAT_MICROPAK.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`lnb-${item}`} checked={(formData.edusatDetalle?.micropak || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('micropak', item)} />
+                               <label htmlFor={`lnb-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">ANT. PARABÓLICA</Label>
+                          {EDUSAT_ANTENA.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`ant-${item}`} checked={(formData.edusatDetalle?.antena || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('antena', item)} />
+                               <label htmlFor={`ant-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">DECODIFICADOR</Label>
+                          {EDUSAT_DECO_ACCIONES.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`deco-acc-${item}`} checked={(formData.edusatDetalle?.decodificadorAcciones || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('decodificadorAcciones', item)} />
+                               <label htmlFor={`deco-acc-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">CABLEADO</Label>
+                          {EDUSAT_CABLEADO.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`cab-${item}`} checked={(formData.edusatDetalle?.cableado || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('cableado', item)} />
+                               <label htmlFor={`cab-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">M. PREVENTIVO</Label>
+                          {EDUSAT_PREVENTIVO.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`prev-${item}`} checked={(formData.edusatDetalle?.preventivo || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('preventivo', item)} />
+                               <label htmlFor={`prev-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número Censal:</Label>
+                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numCensal} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numCensal: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
+                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
+                          <Select value={formData.edusatDetalle?.calidadSeñal} onValueChange={val => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, calidadSeñal: val}})}>
+                            <SelectTrigger className="h-10 bg-white font-black uppercase text-[10px] border-primary/20"><SelectValue placeholder="CALIDAD..." /></SelectTrigger>
+                            <SelectContent>
+                               <SelectItem value="nulo" className="text-[10px] font-black text-rose-600">NULO</SelectItem>
+                               <SelectItem value="bajo" className="text-[10px] font-black text-amber-600">BAJO</SelectItem>
+                               <SelectItem value="óptimo" className="text-[10px] font-black text-emerald-600">ÓPTIMO</SelectItem>
+                               <SelectItem value="excelente" className="text-[10px] font-black text-primary">EXCELENTE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                       </div>
+                    </div>
 
                     <div className="space-y-4">
-                       <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Materiales requeridos para la instalación:</Label>
-                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {NETWORK_MATERIALS.map(mat => {
-                            const materialData = formData.materialesRedLocal?.find(m => m.name === mat);
-                            const isChecked = !!materialData;
-                            const quantity = materialData?.quantity || 0;
-                            return (
-                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-indigo-100 bg-white shadow-sm">
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`net-mat-${mat}`} 
-                                    checked={isChecked}
-                                    onCheckedChange={() => handleMaterialToggle(mat, 'network')}
-                                    className="border-indigo-300 data-[state=checked]:bg-indigo-600"
-                                  />
-                                  <label htmlFor={`net-mat-${mat}`} className="text-[8px] font-black uppercase text-indigo-900 cursor-pointer">{mat}</label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
-                                  <Input type="number" className="h-7 w-14 text-center text-[10px] font-black bg-slate-50" value={quantity} onChange={e => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0, 'network')} />
-                                </div>
-                              </div>
-                            )
-                          })}
-                       </div>
+                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                        <Monitor className="h-4 w-4" /> Materiales Utilizados y Actividades por la Brigada
+                      </Label>
+                      <div className="border rounded-2xl overflow-hidden shadow-md bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-100">
+                            <TableRow>
+                              <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase min-w-[200px]">Material Utilizado</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase w-[100px]">Cantidad</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Array.from({ length: 8 }).map((_, idx) => (
+                              <TableRow key={idx} className="hover:bg-slate-50/50">
+                                <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                                <TableCell className="p-1">
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.material || ''} onChange={e => handleEdusatMaterialChange(idx, 'material', e.target.value.toUpperCase())} />
+                                </TableCell>
+                                <TableCell className="p-1">
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1 text-center font-black" value={formData.edusatDetalle?.materiales[idx]?.cantidad || ''} onChange={e => handleEdusatMaterialChange(idx, 'cantidad', e.target.value)} />
+                                </TableCell>
+                                <TableCell className="p-1">
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.actividades || ''} onChange={e => handleEdusatMaterialChange(idx, 'actividades', e.target.value.toUpperCase())} />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -696,77 +764,6 @@ export default function SupportPage() {
                        <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
                           <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
-                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.tipoIncidencia === 'red edusat' && (
-                  <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border-2 border-blue-100 space-y-6 animate-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-3 border-b border-blue-100 pb-3">
-                       <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
-                          <Radio className="h-6 w-6" />
-                       </div>
-                       <h3 className="text-sm font-black uppercase text-primary tracking-wider">Módulo Técnico RED Edusat</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1"># Censal</Label>
-                          <Input className="bg-white border-blue-200 rounded-xl h-11 font-mono uppercase" placeholder="CENSAL-XXXX" value={formData.numCensal} onChange={e => setFormData({...formData, numCensal: e.target.value.toUpperCase()})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Serie del Decodificador</Label>
-                          <Input className="bg-white border-blue-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-DECO-XXXX" value={formData.serieDecodificador} onChange={e => setFormData({...formData, serieDecodificador: e.target.value.toUpperCase()})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Calidad de Señal</Label>
-                          <Select value={formData.calidadSeñal} onValueChange={(val: any) => setFormData({...formData, calidadSeñal: val})}>
-                            <SelectTrigger className="bg-white border-blue-200 rounded-xl h-11 uppercase font-bold text-[10px]">
-                               <SelectValue placeholder="SELECCIONAR..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                               <SelectItem value="nulo" className="text-[10px] font-black text-rose-600 uppercase">NULO</SelectItem>
-                               <SelectItem value="óptimo" className="text-[10px] font-black text-amber-600 uppercase">ÓPTIMO</SelectItem>
-                               <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
-                            </SelectContent>
-                          </Select>
-                       </div>
-                    </div>
-
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-black uppercase text-primary pl-1">Material Utilizado (Seleccionar los utilizados en sitio)</Label>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-2xl border border-blue-100 shadow-inner">
-                          {EDUSAT_MATERIALS.map(mat => {
-                            const materialData = formData.materialesEdusat?.find(m => m.name === mat);
-                            const isChecked = !!materialData;
-                            const quantity = materialData?.quantity || 0;
-
-                            return (
-                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-100 bg-slate-50/30">
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`mat-${mat}`} 
-                                    checked={isChecked}
-                                    onCheckedChange={() => handleMaterialToggle(mat, 'edusat')}
-                                    className="border-blue-300 data-[state=checked]:bg-primary"
-                                  />
-                                  <label htmlFor={`mat-${mat}`} className="text-[9px] font-black uppercase text-slate-600 leading-none cursor-pointer">
-                                    {mat}
-                                  </label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
-                                  <Input 
-                                    type="number"
-                                    className="h-8 w-16 text-center text-[10px] font-black bg-white border-blue-100"
-                                    value={quantity}
-                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0, 'edusat')}
-                                  />
-                                </div>
-                              </div>
-                            )
-                          })}
                        </div>
                     </div>
                   </div>

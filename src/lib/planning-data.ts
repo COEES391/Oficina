@@ -37,11 +37,6 @@ export type ProgramStatus = {
   serviciosMP?: number;
   reportPdf?: string;
   evidencePhotos?: string[];
-  // Campos Edusat
-  numCensal?: string;
-  serieDecodificador?: string;
-  calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
-  materialesEdusat?: { name: string; quantity: number }[];
   // Campos RED Local
   lugarServicio?: string;
   lugarServicioOtro?: string;
@@ -59,13 +54,25 @@ export type ProgramStatus = {
   numSerie?: string;
   estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
   numReportes?: number;
-  // Campos Mantenimiento Detallado (Nueva Imagen)
+  // Campos Mantenimiento Detallado
   mantenimientoDetalle?: {
     equipoTecnologico: 'HDT' | 'EQUIPO DE COMPUTO' | 'OTRO' | '';
     equipoTecnologicoOtro?: string;
     equipos: Array<{ equipo: string; marca: string; serie: string; censal: string }>;
     fallaIdentificada: string;
     servicioRealizado: string;
+  };
+  // Campos RED Edusat Avanzado (Nuevo Formato)
+  edusatDetalle?: {
+    micropak: string[];
+    antena: string[];
+    decodificadorAcciones: string[];
+    cableado: string[];
+    preventivo: string[];
+    numCensal: string;
+    numSerie: string;
+    calidadSeñal: string;
+    materiales: Array<{ material: string; cantidad: string; actividades: string }>;
   };
 };
 
@@ -104,11 +111,6 @@ export type SupportTicket = {
   estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
   contratoFile?: string;
   numReportes?: number;
-  // Campos especializados para RED Edusat
-  numCensal?: string;
-  serieDecodificador?: string;
-  calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
-  materialesEdusat?: { name: string; quantity: number }[];
   // Campos especializados para RED Local
   lugarServicio?: string;
   lugarServicioOtro?: string;
@@ -121,13 +123,25 @@ export type SupportTicket = {
   numNodos?: number;
   materialesRedLocal?: { name: string; quantity: number }[];
   mantenimientoChecklist?: string[];
-  // Campos Mantenimiento Detallado (Nueva Imagen)
+  // Campos Mantenimiento Detallado
   mantenimientoDetalle?: {
     equipoTecnologico: 'HDT' | 'EQUIPO DE COMPUTO' | 'OTRO' | '';
     equipoTecnologicoOtro?: string;
     equipos: Array<{ equipo: string; marca: string; serie: string; censal: string }>;
     fallaIdentificada: string;
     servicioRealizado: string;
+  };
+  // Campos RED Edusat Avanzado (Nuevo Formato)
+  edusatDetalle?: {
+    micropak: string[];
+    antena: string[];
+    decodificadorAcciones: string[];
+    cableado: string[];
+    preventivo: string[];
+    numCensal: string;
+    numSerie: string;
+    calidadSeñal: string;
+    materiales: Array<{ material: string; cantidad: string; actividades: string }>;
   };
 };
 
