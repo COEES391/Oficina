@@ -155,7 +155,7 @@ export default function TrainingPage() {
 
   const handleSave = () => {
     if (!courseData.id || !courseData.cursoNombre) {
-      toast({ variant: "destructive", title: "Datos del curso incompletos", description: "Folio y Nombre del curso son obligatorios." })
+      toast({ variant: "destructive", title: "Datos del curso incompletos", description: "El # de Solicitud y Nombre del curso son obligatorios." })
       return
     }
 
@@ -311,7 +311,7 @@ export default function TrainingPage() {
                   <ScrollArea className="h-full p-6">
                     <div className="space-y-8">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Folio Registro</Label><Input className="font-bold border-primary/20" value={courseData.id} onChange={e => setCourseData({...courseData, id: e.target.value.toUpperCase()})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary"># Solicitud</Label><Input className="font-bold border-primary/20" value={courseData.id} onChange={e => setCourseData({...courseData, id: e.target.value.toUpperCase()})} /></div>
                         <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Grupo</Label><Input value={courseData.cursoGrupo} onChange={e => setCourseData({...courseData, cursoGrupo: e.target.value})} /></div>
                         <div className="md:col-span-2 space-y-2"><Label className="text-xs font-black uppercase text-primary">Nombre del Curso</Label><Input value={courseData.cursoNombre} onChange={e => setCourseData({...courseData, cursoNombre: e.target.value})} /></div>
                       </div>
@@ -320,7 +320,7 @@ export default function TrainingPage() {
                         <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Horas</Label><Input type="number" value={courseData.duracionHoras} onChange={e => setCourseData({...courseData, duracionHoras: parseInt(e.target.value) || 0})} /></div>
                         <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Inicio</Label><Input type="date" value={courseData.fechaInicio} onChange={e => setCourseData({...courseData, fechaInicio: e.target.value})} /></div>
                         <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Fecha Término</Label><Input type="date" value={courseData.fechaTermino} onChange={e => setCourseData({...courseData, fechaTermino: e.target.value})} /></div>
-                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">No. Oficio</Label><Input value={courseData.numeroOficio} onChange={e => setCourseData({...courseData, numeroOficio: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-xs font-black uppercase text-primary">Número de Oficio COEES</Label><Input value={courseData.numeroOficio} onChange={e => setCourseData({...courseData, numeroOficio: e.target.value})} /></div>
                       </div>
 
                       <div className="space-y-4">
