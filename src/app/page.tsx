@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -50,16 +51,16 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/80 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 border-t-8 border-t-primary">
+      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10">
         <CardHeader className="text-center pt-12 pb-6 space-y-6">
-          {/* Logo Container - Styled to match the professional sample */}
-          <div className="mx-auto relative h-24 w-24 rounded-2xl overflow-hidden shadow-xl border-4 border-white transition-transform duration-500 hover:scale-110">
+          {/* Logo Container - Technological Identity */}
+          <div className="mx-auto relative h-28 w-28 rounded-2xl overflow-hidden shadow-2xl border-4 border-white transition-transform duration-500 hover:scale-105">
             <Image 
               src={logoData.imageUrl} 
-              alt="Logo DESySA Edoméx 2026" 
+              alt="Identidad Tecnológica Institucional" 
               fill
               className="object-cover"
-              data-ai-hint="institutional technology logo"
+              data-ai-hint="artificial intelligence technology"
               priority
             />
           </div>
