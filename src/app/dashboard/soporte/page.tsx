@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -39,15 +40,25 @@ const EDUSAT_MATERIALS = [
 ];
 
 const NETWORK_MATERIALS = [
-  "Switch",
-  "Cable UTP",
-  "Conectores RJ45",
-  "Canaleta",
-  "Patch Panel",
-  "Faceplates",
-  "Caja para Faceplate",
-  "Rack / Gabinete",
-  "Jumpers"
+  "CANALETA",
+  "CABLE UTP",
+  "ROSETAS",
+  "CONECTORES",
+  "PIJAS",
+  "TAQUETES",
+  "CINTURONES",
+  "SWITCH",
+  "ROUTER",
+  "CONECTORES RJ45"
+];
+
+const MAINTENANCE_CHECKLIST = [
+  "SUSTITUCIÓN DE CONECTORES",
+  "SUSTITUCIÓN DE CORDONES DE PARCHEO",
+  "SUSTITUCIÓN DE CABLE UTP",
+  "SUSTITUCIÓN DE ROSETAS",
+  "SUSTITUCIÓN DE CANALETAS",
+  "CONFIGURACIÓN DE RED"
 ];
 
 export default function SupportPage() {
@@ -99,7 +110,16 @@ export default function SupportPage() {
     materialesEdusat: [],
     numNodos: 0,
     switchModelo: '',
-    materialesRedLocal: []
+    materialesRedLocal: [],
+    lugarServicio: '',
+    lugarServicioOtro: '',
+    diagnosticoRed: '',
+    cuentaRedLocal: '',
+    electricaAdecuada: '',
+    cuentaInternet: '',
+    proveedorInternet: '',
+    anchoBanda: '',
+    mantenimientoChecklist: []
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -172,6 +192,16 @@ export default function SupportPage() {
       setFormData({ ...formData, materialesEdusat: updated });
     } else {
       setFormData({ ...formData, materialesRedLocal: updated });
+    }
+  }
+
+  const handleMantenimientoToggle = (item: string) => {
+    const current = formData.mantenimientoChecklist || [];
+    const exists = current.includes(item);
+    if (exists) {
+      setFormData({ ...formData, mantenimientoChecklist: current.filter(i => i !== item) });
+    } else {
+      setFormData({ ...formData, mantenimientoChecklist: [...current, item] });
     }
   }
 
@@ -255,6 +285,7 @@ export default function SupportPage() {
       responsables: [...(ticket.responsables || []), '', '', ''].slice(0, 3) as string[],
       materialesEdusat: ticket.materialesEdusat || [],
       materialesRedLocal: ticket.materialesRedLocal || [],
+      mantenimientoChecklist: ticket.mantenimientoChecklist || [],
       tecnicos: ticket.tecnicos || ''
     });
     setEditingTicketId(ticket.id);
@@ -292,7 +323,7 @@ export default function SupportPage() {
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[950px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
@@ -389,6 +420,146 @@ export default function SupportPage() {
                     onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
                   />
                 </div>
+
+                {formData.tipoIncidencia === 'red local' && (
+                  <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-indigo-100 pb-3">
+                       <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                          <Network className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-indigo-900 tracking-wider">Módulo Técnico de RED Local</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                       <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Donde se brinda el servicio:</Label>
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {['TALLER DE CÓMPUTO', 'AULA DE MEDIOS', 'HDT', 'OFIMÁTICA', 'ÁREA ADMINISTRATIVA', 'OTRO'].map(lugar => (
+                            <div key={lugar} className="flex items-center space-x-2 bg-white/50 p-2 rounded-lg border border-indigo-50">
+                               <Checkbox 
+                                id={`lugar-${lugar}`} 
+                                checked={formData.lugarServicio === lugar}
+                                onCheckedChange={() => setFormData({...formData, lugarServicio: lugar})}
+                                className="border-indigo-300"
+                               />
+                               <label htmlFor={`lugar-${lugar}`} className="text-[9px] font-bold uppercase text-indigo-900 cursor-pointer">{lugar}</label>
+                            </div>
+                          ))}
+                       </div>
+                       {formData.lugarServicio === 'OTRO' && (
+                         <Input className="h-10 bg-white" placeholder="ESPECIFICAR OTRO..." value={formData.lugarServicioOtro} onChange={e => setFormData({...formData, lugarServicioOtro: e.target.value.toUpperCase()})} />
+                       )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Diagnóstico:</Label>
+                          <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnosticoRed: val})} className="grid grid-cols-1 gap-2">
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="ampliacion" id="diag-ampli" />
+                                <Label htmlFor="diag-ampli" className="text-[10px] font-black uppercase">Ampliación</Label>
+                             </div>
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="mantenimiento" id="diag-mante" />
+                                <Label htmlFor="diag-mante" className="text-[10px] font-black uppercase">Mantenimiento</Label>
+                             </div>
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="nueva red" id="diag-nueva" />
+                                <Label htmlFor="diag-nueva" className="text-[10px] font-black uppercase">Instalación de nueva red</Label>
+                             </div>
+                          </RadioGroup>
+
+                          <div className="space-y-3 pt-4 border-t border-indigo-100">
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con red local?</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'S'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'N'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">Instalación eléctrica adecuada</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'S'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'N'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con internet?</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'S'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'N'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase text-indigo-400">Proveedor de Internet:</Label>
+                                <Select value={formData.proveedorInternet} onValueChange={(val) => setFormData({...formData, proveedorInternet: val})}>
+                                   <SelectTrigger className="h-9 bg-white text-[10px] font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                                   <SelectContent>
+                                      {['TOTALPLAY', 'TELMEX', 'MEGACABLE', 'IZZY', 'WIX', 'OTRO'].map(p => <SelectItem key={p} value={p} className="text-[10px] font-bold">{p}</SelectItem>)}
+                                   </SelectContent>
+                                </Select>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase text-indigo-400">¿Cuál es el ancho de banda?</Label>
+                                <Input className="h-9 bg-white font-black" value={formData.anchoBanda} onChange={e => setFormData({...formData, anchoBanda: e.target.value})} placeholder="EJ: 100 MBPS" />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="space-y-6">
+                          <div className="bg-white p-5 rounded-[1.5rem] border-2 border-indigo-100 shadow-sm">
+                             <Label className="text-[10px] font-black uppercase text-indigo-600 block mb-2">Número de Nodos:</Label>
+                             <Input type="number" className="h-12 text-2xl font-black text-center border-indigo-200" value={formData.numNodos} onChange={e => setFormData({...formData, numNodos: parseInt(e.target.value) || 0})} />
+                          </div>
+
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Mantenimiento Preventivo y/o Correctivo:</Label>
+                             <div className="grid grid-cols-1 gap-2 bg-white/40 p-4 rounded-2xl border border-indigo-50">
+                                {MAINTENANCE_CHECKLIST.map(item => (
+                                  <div key={item} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                                     <Checkbox 
+                                      id={`mante-${item}`} 
+                                      checked={(formData.mantenimientoChecklist || []).includes(item)}
+                                      onCheckedChange={() => handleMantenimientoToggle(item)}
+                                      className="border-indigo-400 data-[state=checked]:bg-indigo-600"
+                                     />
+                                     <label htmlFor={`mante-${item}`} className="text-[9px] font-black uppercase text-slate-700 cursor-pointer">{item}</label>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Materiales requeridos para la instalación:</Label>
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {NETWORK_MATERIALS.map(mat => {
+                            const materialData = formData.materialesRedLocal?.find(m => m.name === mat);
+                            const isChecked = !!materialData;
+                            const quantity = materialData?.quantity || 0;
+                            return (
+                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-indigo-100 bg-white shadow-sm">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`net-mat-${mat}`} 
+                                    checked={isChecked}
+                                    onCheckedChange={() => handleMaterialToggle(mat, 'network')}
+                                    className="border-indigo-300 data-[state=checked]:bg-indigo-600"
+                                  />
+                                  <label htmlFor={`net-mat-${mat}`} className="text-[8px] font-black uppercase text-indigo-900 cursor-pointer">{mat}</label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
+                                  <Input type="number" className="h-7 w-14 text-center text-[10px] font-black bg-slate-50" value={quantity} onChange={e => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0, 'network')} />
+                                </div>
+                              </div>
+                            )
+                          })}
+                       </div>
+                    </div>
+                  </div>
+                )}
 
                 {formData.tipoIncidencia === 'teleplanteles' && (
                   <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
@@ -603,6 +774,7 @@ export default function SupportPage() {
                   <Badge variant="outline" className={cn("text-[9px] font-black uppercase", 
                     t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : 
                     t.tipoIncidencia === 'red edusat' ? "border-blue-300 text-blue-600 bg-blue-50" :
+                    t.tipoIncidencia === 'red local' ? "border-indigo-300 text-indigo-600 bg-indigo-50" :
                     "border-primary/20 text-primary"
                   )}>
                     {t.tipoIncidencia}
