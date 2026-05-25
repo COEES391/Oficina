@@ -54,14 +54,6 @@ const TOTAL_UNIVERSE = 830;
 const TRAINING_GOAL_2026 = 5600;
 const QUARTERLY_TRAINING_GOAL = 1400;
 
-const PROGRAM_RUBROS = [
-  'Biblioteca Digital',
-  'Cuentas Institucionales',
-  'Geoposición',
-  'Conoce mi Escuela',
-  'ATRES'
-];
-
 type DashboardGoals = {
   periodType: 'Ciclo Escolar' | 'Año Fiscal';
   periodName: string;
@@ -120,20 +112,16 @@ export default function DashboardPage() {
         p.asistentes.forEach((ast: any) => {
           fromPrograms.push({
             id: `PROG-AST-${ast.rfc}-${p.id}`,
+            cursoNombre: 'Biblioteca Digital',
             asistentePaterno: ast.paterno,
             asistenteMaterno: ast.materno,
             asistenteNombres: ast.nombres,
             asistenteRFC: ast.rfc,
-            asistenteGenero: ast.genero,
-            asistenteFuncion: ast.funcion,
             asistenteValle: ast.valle || p.valle,
             asistenteMunicipio: ast.municipio || p.municipio,
-            asistenteSector: ast.sector || p.sector,
-            asistenteZE: ast.ze || p.zonaEscolar,
-            asistenteModalidad: ast.modalidad || p.modalidad,
+            asistenteRegion: ast.region || p.region,
+            asistenteCCT: ast.cct || p.cct,
             fechaInicio: p.date,
-            alumnosBeneficiados: p.alumnosBeneficiados || 0,
-            docentesBeneficiados: p.docentesBeneficiados || 0,
             source: 'BIBLIOTECA_DIGITAL'
           });
         });
@@ -157,11 +145,6 @@ export default function DashboardPage() {
     const proceso = filteredTickets.filter(t => t.status === 'en proceso').length;
     const pendientes = filteredTickets.filter(t => t.status === 'pendiente').length;
     
-    const totalEquipos = filteredTickets.reduce((acc, t) => acc + (t.numeroEquipos || 0), 0);
-    const alumnos = filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0), 0);
-    const docentes = filteredTickets.reduce((acc, t) => acc + (t.docentesBeneficiados || 0), 0);
-    const beneficiados = alumnos + docentes;
-    
     const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
     const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
 
@@ -181,12 +164,11 @@ export default function DashboardPage() {
         { name: 'PENDIENTES', value: pendientes, fill: '#f43f5e' },
       ],
       typesData,
-      totalEquipos,
-      alumnos,
-      docentes,
-      beneficiados,
       serviciosMP,
       serviciosMC,
+      beneficiados: filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0),
+      alumnos: filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0), 0),
+      docentes: filteredTickets.reduce((acc, t) => acc + (t.docentesBeneficiados || 0), 0),
       total: filteredTickets.length
     };
   }, [filteredTickets]);
@@ -195,32 +177,52 @@ export default function DashboardPage() {
     const total = filteredTrainings.length;
     const progressTotal = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
 
-    // Data del Informe Trimestral Oficial
+    // Indicador A: TICCAD (Desglose real por curso)
+    const courseCounts: Record<string, number> = {};
+    filteredTrainings.forEach(tr => {
+      const name = tr.cursoNombre || 'Curso sin nombre';
+      courseCounts[name] = (courseCounts[name] || 0) + 1;
+    });
+
+    const sortedCourses = Object.entries(courseCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
     const indicadorA = {
-      alcanzado: 982,
+      alcanzado: total,
       meta: QUARTERLY_TRAINING_GOAL,
-      faltante: 418,
-      porcentaje: 70.14,
-      cursos: [
-        { name: 'ChatGPT: en el aprendizaje', value: 334 },
-        { name: 'ChatPDF: el asistente virtual', value: 79 },
-        { name: 'Excel en línea', value: 200 },
-        { name: 'Kahoot!, diviértete evaluando', value: 112 },
-        { name: 'Productividad Microsoft 365', value: 257 },
-      ]
+      faltante: Math.max(0, QUARTERLY_TRAINING_GOAL - total),
+      porcentaje: total > 0 ? parseFloat(((total / QUARTERLY_TRAINING_GOAL) * 100).toFixed(2)) : 0,
+      cursos: sortedCourses.length > 0 ? sortedCourses : [{ name: 'Sin registros aún', value: 0 }]
     };
+
+    // Indicador B: Vinculación Territorial (Unique Schools)
+    const uniqueSchools = new Set(filteredTrainings.map(t => t.asistenteCCT)).size;
+    const targetSchools = 150; // Meta trimestral de escuelas a diagnosticar
+    const indicadorB = {
+      porcentaje: Math.min(100, Math.round((uniqueSchools / targetSchools) * 100)),
+      total: uniqueSchools
+    };
+
+    // Indicador C: Servicios Técnicos (Extraídos de Soporte)
+    const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length;
+    const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
+    const alcanzadoC = redEscolarCount + redEdusatCount;
+    const metaC = 108;
 
     const indicadorC = {
-      alcanzado: 66,
-      meta: 108,
-      faltante: 42,
-      porcentaje: 61.11,
+      alcanzado: alcanzadoC,
+      meta: metaC,
+      faltante: Math.max(0, metaC - alcanzadoC),
+      porcentaje: alcanzadoC > 0 ? parseFloat(((alcanzadoC / metaC) * 100).toFixed(2)) : 0,
       servicios: [
-        { name: 'Red Escolar (55 Escuelas)', value: 66 },
-        { name: 'Red Edusat (33 Telesec.)', value: 34 }
+        { name: `Red Escolar (${new Set(filteredTickets.filter(t => t.tipoIncidencia?.includes('red local')).map(t => t.cct)).size} Esc.)`, value: redEscolarCount },
+        { name: `Red Edusat (${new Set(filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').map(t => t.cct)).size} Teles.)`, value: redEdusatCount }
       ]
     };
 
+    // Planeación por Región
     const regionsMapping = [
       { name: 'Toluca', goal: 2156, filter: 'TOLUCA' },
       { name: 'Nezahualcóyotl', goal: 860, filter: 'NEZAHUALCOYOTL' },
@@ -241,24 +243,11 @@ export default function DashboardPage() {
       total, 
       progressTotal,
       indicadorA,
+      indicadorB,
       indicadorC,
       byRegionalOffice
     };
-  }, [filteredTrainings, goals.trainingGoal]);
-
-  const programCoverage = useMemo(() => {
-    return PROGRAM_RUBROS.map(name => {
-      const records = programs.filter(p => p.name === name);
-      const uniqueCcts = new Set(records.map(p => p.cct)).size;
-      return { 
-        name: name === 'Cuentas Institucionales' ? 'Cuentas' : name === 'Biblioteca Digital' ? 'Biblioteca' : name,
-        fullName: name,
-        value: uniqueCcts,
-        percentage: Math.min(100, Math.round((uniqueCcts / TOTAL_UNIVERSE) * 100)),
-        fill: name === 'Conoce mi Escuela' || name === 'ATRES' ? '#621132' : '#B38E5D'
-      };
-    });
-  }, [programs]);
+  }, [filteredTrainings, filteredTickets, goals.trainingGoal]);
 
   if (!mounted) return null;
 
@@ -329,11 +318,9 @@ export default function DashboardPage() {
             <div className="md:col-span-2 space-y-6">
               <Card className="executive-card">
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" /> Distribución Operativa por Estatus
-                    </CardTitle>
-                  </div>
+                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" /> Distribución Operativa por Estatus
+                  </CardTitle>
                   <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">ANÁLISIS DE ESTATUS</Badge>
                 </CardHeader>
                 <CardContent className="h-[300px]">
@@ -399,7 +386,6 @@ export default function DashboardPage() {
                      <CheckCircle2 className="h-6 w-6" />
                    </div>
                  </div>
-                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Servicios de conservación</p>
               </Card>
 
               <Card className="executive-card p-6 border-l-4 border-rose-500">
@@ -412,7 +398,6 @@ export default function DashboardPage() {
                      <AlertCircle className="h-6 w-6" />
                    </div>
                  </div>
-                 <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Atención de fallas críticas</p>
               </Card>
               
               <Card className="executive-card p-6 border-l-4 border-slate-400">
@@ -490,29 +475,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-8">
-            {/* Indicador A */}
+            {/* Indicador A Dinámico */}
             <Card className="executive-card border-l-8 border-l-primary">
               <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-lg font-black uppercase text-primary">Indicador A</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Docentes capacitados sobre Tecnologías de la Información (TICCAD)</CardDescription>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Docentes capacitados sobre TICCAD (Datos Operativos)</CardDescription>
                 </div>
                 <div className="text-right">
-                  <Badge className="bg-primary text-white text-xs px-4 py-1">{trainingStats.indicadorA.porcentaje}% Cumplimiento</Badge>
+                  <Badge className="bg-primary text-white text-xs px-4 py-1">{trainingStats.indicadorA.porcentaje}% Cumplimiento Trimestral</Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div className="md:col-span-2 space-y-4">
-                    <h4 className="text-[11px] font-black uppercase text-accent border-b pb-1">Distribución por Curso - 1er Informe</h4>
+                    <h4 className="text-[11px] font-black uppercase text-accent border-b pb-1">Distribución por Curso Real</h4>
                     <div className="space-y-4">
                       {trainingStats.indicadorA.cursos.map((curso, idx) => (
                         <div key={idx} className="space-y-1.5">
                           <div className="flex justify-between items-center text-[10px] font-black uppercase">
                             <span className="text-slate-600 truncate max-w-[80%]">{idx + 1}. {curso.name}</span>
-                            <span className="text-primary">{curso.value} Docentes</span>
+                            <span className="text-primary">{curso.value} Asistentes</span>
                           </div>
-                          <Progress value={(curso.value / trainingStats.indicadorA.alcanzado) * 100} className="h-1.5 bg-slate-100" />
+                          <Progress value={indicadorA.alcanzado > 0 ? (curso.value / trainingStats.indicadorA.alcanzado) * 100 : 0} className="h-1.5 bg-slate-100" />
                         </div>
                       ))}
                     </div>
@@ -539,84 +524,72 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Indicador B */}
+            {/* Indicador B Dinámico */}
             <Card className="executive-card border-l-8 border-l-accent">
               <CardHeader className="bg-slate-50/50">
                 <CardTitle className="text-lg font-black uppercase text-accent">Indicador B</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas para el fortalecimiento didáctico</CardDescription>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estrategia de vinculación territorial "Más territorio, menos escritorio"</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                  <div className="flex flex-col md:flex-row items-center gap-8">
                     <div className="flex-1 space-y-4">
                        <div className="p-5 bg-accent/5 rounded-2xl border border-accent/10">
                           <h4 className="text-[11px] font-black text-accent uppercase mb-2 flex items-center gap-2">
-                             <Globe className="h-4 w-4" /> Vinculación Territorial 2026
+                             <Globe className="h-4 w-4" /> Cobertura Institucional de Diagnósticos
                           </h4>
-                          <p className="text-xs font-semibold text-slate-700 leading-relaxed italic">
-                             "Durante el primer trimestre (enero-marzo) 2026, se llevó a cabo el despliegue de una estrategia de vinculación territorial que se alinea con el Plan de Desarrollo del Estado de México 2023-2029 <strong>'Más territorio, menos escritorio'</strong>."
+                          <p className="text-xs font-semibold text-slate-700 leading-relaxed">
+                             Se han realizado diagnósticos específicos en <strong>{trainingStats.indicadorB.total}</strong> centros de trabajo únicos, alineados con el Plan de Desarrollo 2023-2029.
                           </p>
                        </div>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase">
-                          Propósito: Establecer contacto formal con directivos y docentes para realizar diagnósticos de necesidades específicas en sitio y calendarizar la oferta formativa presencial.
-                       </p>
                     </div>
-                    <div className="h-32 w-32 rounded-full border-8 border-emerald-100 flex items-center justify-center bg-white shadow-xl relative animate-pulse">
-                       <span className="text-2xl font-black text-emerald-600">100%</span>
-                       <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">Cumplido</Badge>
+                    <div className="h-32 w-32 rounded-full border-8 border-emerald-100 flex items-center justify-center bg-white shadow-xl relative">
+                       <span className="text-2xl font-black text-emerald-600">{trainingStats.indicadorB.porcentaje}%</span>
+                       <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">En Tiempo</Badge>
                     </div>
                  </div>
               </CardContent>
             </Card>
 
-            {/* Indicador C */}
+            {/* Indicador C Dinámico */}
             <Card className="executive-card border-l-8 border-l-slate-400">
               <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-lg font-black uppercase text-slate-700">Indicador C</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría, capacitación y actualización técnica</CardDescription>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría y actualización técnica en redes</CardDescription>
                 </div>
                 <div className="text-right">
-                  <Badge className="bg-slate-700 text-white text-xs px-4 py-1">{trainingStats.indicadorC.porcentaje}% Eficiencia</Badge>
+                  <Badge className="bg-slate-700 text-white text-xs px-4 py-1">{trainingStats.indicadorC.porcentaje}% Eficiencia Real</Badge>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
-                       <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                             <Navigation className="h-6 w-6" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-slate-400 uppercase">Red Escolar</p>
-                             <h4 className="text-xl font-black text-slate-700">66 Servicios Realizados</h4>
-                             <p className="text-[9px] font-bold text-muted-foreground uppercase">En 55 escuelas secundarias (Generales y Técnicas)</p>
-                          </div>
-                       </div>
-                       <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                             <Radio className="h-6 w-6" />
-                          </div>
-                          <div>
-                             <p className="text-[10px] font-black text-slate-400 uppercase">Red Edusat</p>
-                             <h4 className="text-xl font-black text-slate-700">34 Servicios Realizados</h4>
-                             <p className="text-[9px] font-bold text-muted-foreground uppercase">En 33 escuelas telesecundarias</p>
-                          </div>
-                       </div>
+                       {trainingStats.indicadorC.servicios.map((serv, idx) => (
+                         <div key={idx} className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                               {idx === 0 ? <Navigation className="h-6 w-6" /> : <Radio className="h-6 w-6" />}
+                            </div>
+                            <div>
+                               <p className="text-[10px] font-black text-slate-400 uppercase">{serv.name}</p>
+                               <h4 className="text-xl font-black text-slate-700">{serv.value} Servicios</h4>
+                            </div>
+                         </div>
+                       ))}
                     </div>
                     <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
                        <div className="flex justify-between items-end mb-2">
-                          <p className="text-[10px] font-black uppercase text-slate-400">Meta Red Local: 108 Servicios</p>
+                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Redes vs Meta: {indicadorC.meta}</p>
                           <p className="text-2xl font-black text-primary">{trainingStats.indicadorC.alcanzado}</p>
                        </div>
                        <Progress value={trainingStats.indicadorC.porcentaje} className="h-3 bg-white" />
                        <div className="mt-4 grid grid-cols-2 gap-4">
                           <div className="text-center p-3 bg-white rounded-xl shadow-sm">
-                             <p className="text-[8px] font-black text-slate-400 uppercase">Faltante Meta</p>
+                             <p className="text-[8px] font-black text-slate-400 uppercase">Pendiente</p>
                              <p className="text-lg font-black text-rose-500">{trainingStats.indicadorC.faltante}</p>
                           </div>
                           <div className="text-center p-3 bg-white rounded-xl shadow-sm">
                              <p className="text-[8px] font-black text-slate-400 uppercase">Estatus Trim.</p>
-                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">En Proceso</Badge>
+                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">Auditado</Badge>
                           </div>
                        </div>
                     </div>
@@ -630,46 +603,41 @@ export default function DashboardPage() {
       {activeReport === 'programas' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {programCoverage.map((prog) => (
-              <Card key={prog.fullName} className="executive-card p-6 border-l-4 group hover:scale-[1.02] transition-all" style={{ borderLeftColor: prog.fill }}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{prog.name}</p>
-                    <h3 className="text-3xl font-black text-slate-900 mt-1">{prog.value}</h3>
+            {['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map((name) => {
+              const records = programs.filter(p => p.name === name);
+              const value = new Set(records.map(p => p.cct)).size;
+              const percentage = Math.min(100, Math.round((value / TOTAL_UNIVERSE) * 100));
+              return (
+                <Card key={name} className="executive-card p-6 border-l-4 group hover:scale-[1.02] transition-all" style={{ borderLeftColor: percentage > 50 ? '#621132' : '#B38E5D' }}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest truncate max-w-[80px]">{name}</p>
+                      <h3 className="text-3xl font-black text-slate-900 mt-1">{value}</h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shadow-inner">
+                      <span className="text-[10px] font-black text-primary">{percentage}%</span>
+                    </div>
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shadow-inner">
-                    <span className="text-[10px] font-black text-primary">{prog.percentage}%</span>
-                  </div>
-                </div>
-                <Progress value={prog.percentage} className="h-1.5 mt-4" />
-                <p className="text-[8px] font-bold text-slate-400 mt-2 uppercase tracking-tighter">
-                  {prog.fullName === 'Geoposición' ? 'Puntos de control' : `Cobertura sobre ${TOTAL_UNIVERSE} planteles`}
-                </p>
-              </Card>
-            ))}
+                  <Progress value={percentage} className="h-1.5 mt-4" />
+                </Card>
+              )
+            })}
           </div>
 
           <Card className="executive-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Comparativa de Cobertura Institucional
-                </CardTitle>
-                <CardDescription className="text-[9px] font-bold uppercase">Levantamiento Técnico Ciclo 2025-2026</CardDescription>
-              </div>
+              <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" /> Comparativa de Cobertura Institucional
+              </CardTitle>
             </CardHeader>
             <CardContent className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={programCoverage} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(programs.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
                   <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
-                    {programCoverage.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60} fill="#621132" />
                 </RechartsBarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -686,5 +654,4 @@ export default function DashboardPage() {
     </div>
   )
 }
-
     
