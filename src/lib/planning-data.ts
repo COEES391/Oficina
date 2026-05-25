@@ -145,25 +145,6 @@ export type SupportTicket = {
   };
 };
 
-const getEditorialData = (): ProgramStatus[] => {
-  const data: ProgramStatus[] = [];
-  for (let i = 1; i <= 5; i++) {
-    const cct = `15DES0065B`;
-    data.push({
-      id: `ED-${i}`,
-      cct: cct,
-      status: 'concluido',
-      date: '2023-04-19',
-      name: 'Conoce mi Escuela',
-      progress: 100,
-      schoolName: 'DR. MANUEL SANDOVAL VALLARTA',
-      valle: 'MEXICO',
-      municipio: 'AMECAMECA'
-    });
-  }
-  return data;
-};
-
 const getAccountsData = (): ProgramStatus[] => {
   const rawAccounts = [
     { n: "Guadalupe", p: "Avila Morales", r: "AIMG710117CC6", v: "MEXICO", c: "15DTV0044V", f: "Docente", e: "dtv0044v.gam@desysa.edu.mx" },
@@ -172,6 +153,7 @@ const getAccountsData = (): ProgramStatus[] => {
     { n: "Mayra Yetlanezi", p: "Castro Camarillo", r: "CACM911021CN5", v: "MEXICO", c: "15DTV0044V", f: "Docente", e: "dtv0044v.mycc@desysa.edu.mx" },
     { n: "Luis Enrique", p: "Cortes Mejía", r: "COML960713L23", v: "MEXICO", c: "15DTV0044V", f: "Asistente de Servicios", e: "dtv0044v.lecm@desysa.edu.mx" },
     { n: "Goria Elizabeth", p: "Fuentes Camargo", r: "FUCG750329EBA", v: "MEXICO", c: "15DTV0044V", f: "Subdirectora", e: "dtv0044v.gefc@desysa.edu.mx" },
+    { n: "Luis Alberto", p: "García Fernandez", r: "GAFL751210R50", v: "MEXICO", c: "15DTV0044V", f: "Docente", e: "dtv0044v.lagf@desysa.edu.mx" },
     { n: "NORMA ANGELICA", p: "DIAZ SALAS", r: "DISN6803277W4", v: "MEXICO", c: "15FIS0023X", f: "ADMINISTRATIVO", e: "fis0023x.nads@desysa.edu.mx" },
     { n: "ISIDRO CONSTANTINO", p: "TORRES GONZALEZ", r: "TOGI500515AS6", v: "MEXICO", c: "15FIS0023X", f: "SUPERVISOR", e: "fis0023x.ictg@desysa.edu.mx" },
     { n: "Rolando", p: "Solano Ramírez", r: "SORR521120365", v: "MEXICO", c: "15DTV0118W", f: "Director", e: "dtv0118w.rsr@desysa.edu.mx" },
@@ -292,7 +274,15 @@ const getAccountsData = (): ProgramStatus[] => {
     { n: "Martin", p: "Rocha Guzman", r: "ROGM690605XXX", v: "MEXICO", c: "15DTV0168D", f: "Director", e: "dtv0168d.mrg@desysa.edu.mx" },
     { n: "SONIA", p: "SANCHEZ", r: "SAMS820322UJ3", v: "MEXICO", c: "15DST0106D", f: "DIRECTORA", e: "dst0106d.ss@desysa.edu.mx" },
     { n: "Ma. Isbel", p: "Tovar García", r: "TOGI670113UC2", v: "MEXICO", c: "15DST0144G", f: "SUBDIRECTORA", e: "dst0144g.mitg@desysa.edu.mx" },
-    { n: "VÍCTOR RODOLFO", p: "ROSAS IBÁÑEZ", r: "ROIV720222R6A", v: "MEXICO", c: "15FZT0021E", f: "Supervisor", e: "fzt0021e.vrri@desysa.gob.mx" }
+    { n: "VÍCTOR RODOLFO", p: "ROSAS IBÁÑEZ", r: "ROIV720222R6A", v: "MEXICO", c: "15FZT0021E", f: "Supervisor", e: "fzt0021e.vrri@desysa.gob.mx" },
+    { n: "Marco Antonio", p: "Lopez Iturbe", r: "LOIM700803QQ5", v: "TOLUCA", c: "15DES0100R", f: "Directivo", e: "des100r.mali@desysa.edu.mx" },
+    { n: "Darby", p: "López Sánchez", r: "LOSD560906AP1", v: "MEXICO", c: "15DTV0089R", f: "Director", e: "dtv0089r.dls@desysa.edu.mx" },
+    { n: "Cesar", p: "Hernandez Basilio", r: "HEBC710405N51", v: "MEXICO", c: "15DES0352V", f: "Director", e: "des0352v.chb@desysa.edu.mx" },
+    { n: "Sodelba", p: "Torres Parrales", r: "TOPS640518QS4", v: "TOLUCA", c: "15DES0295U", f: "Directora", e: "des0295u.stp@desysa.edu.mx" },
+    { n: "Jaime", p: "Hernández Ramos", r: "HERJ550715GF5", v: "MEXICO", c: "15DES0335E", f: "Docente", e: "des0335e.jhr@desysa.edu.mx" },
+    { n: "Juana", p: "Hernández Reyna", r: "HERJ640702JGA", v: "MEXICO", c: "15DES0031L", f: "Directora", e: "des0031l.jhr@desysa.edu.mx" },
+    { n: "Jose Luis", p: "Medina Sandoval", r: "MESL621021E22", v: "TOLUCA", c: "15DES0359O", f: "Directivo", e: "des0359o.jlms@desysa.edu.mx" },
+    { n: "JOSE", p: "GUTIERREZ HERNANDEZ", r: "GUHJ6607111W9", v: "MEXICO", c: "15DES0349H", f: "DIRECTOR", e: "des0349h.jgh@desysa.edu.mx" }
   ];
 
   const grouped: Record<string, any[]> = {};
@@ -323,7 +313,7 @@ const getAccountsData = (): ProgramStatus[] => {
     asistentes: users,
     schoolName: `CENTRO DE TRABAJO ${cct}`,
     valle: users[0].valle,
-    email: `${cct.toLowerCase()}@desysa.gob.mx`
+    email: users[0].email
   }));
 };
 
@@ -355,7 +345,6 @@ const getGeopositioningData = (): ProgramStatus[] => {
 
 export const programsData: ProgramStatus[] = [
   { id: 'BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', alumnosBeneficiados: 450, docentesBeneficiados: 25 },
-  ...getEditorialData(),
   ...getAccountsData(),
   ...getGeopositioningData()
 ];

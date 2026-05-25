@@ -201,69 +201,6 @@ export default function ProgramsPage() {
     }
   }
 
-  const handleMantenimientoDetalleChange = (index: number, field: string, value: string) => {
-    const current = formData.mantenimientoDetalle || initialFormState.mantenimientoDetalle!;
-    const newEquipos = [...current.equipos];
-    newEquipos[index] = { ...newEquipos[index], [field]: value };
-    setFormData({
-      ...formData,
-      mantenimientoDetalle: { ...current, equipos: newEquipos }
-    });
-  }
-
-  const handleEdusatChecklistToggle = (category: keyof NonNullable<ProgramStatus['edusatDetalle']>, item: string) => {
-    const current = (formData.edusatDetalle?.[category] as string[]) || [];
-    const exists = current.includes(item);
-    const updated = exists ? current.filter(i => i !== item) : [...current, item];
-    setFormData({
-      ...formData,
-      edusatDetalle: {
-        ...formData.edusatDetalle!,
-        [category]: updated
-      }
-    });
-  }
-
-  const handleEdusatMaterialChange = (index: number, field: string, value: string) => {
-    const current = formData.edusatDetalle || initialFormState.edusatDetalle!;
-    const newMaterials = [...current.materiales];
-    newMaterials[index] = { ...newMaterials[index], [field]: value };
-    setFormData({
-      ...formData,
-      edusatDetalle: { ...current, materiales: newMaterials }
-    });
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
-    const files = e.target.files
-    if (!files) return
-
-    if (type === 'pdf') {
-      const file = files[0]
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData({ ...formData, reportPdf: reader.result as string })
-      }
-      reader.readAsDataURL(file)
-    } else {
-      const newPhotos = Array.from(files)
-      if ((formData.evidencePhotos?.length || 0) + newPhotos.length > 5) {
-        toast({ variant: "destructive", title: "Límite", description: "Máximo 5 fotos." })
-        return
-      }
-      newPhotos.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setFormData(prev => ({
-            ...prev,
-            evidencePhotos: [...(prev.evidencePhotos || []), reader.result as string]
-          }))
-        }
-        reader.readAsDataURL(file)
-      })
-    }
-  }
-
   const handleSave = () => {
     if (!formData.cct) {
       toast({ variant: "destructive", title: "Datos Incompletos", description: "El CCT es obligatorio." });
@@ -295,7 +232,8 @@ export default function ProgramsPage() {
       const term = searchTerm.toUpperCase();
       filtered = filtered.filter(r => 
         (r.cct || '').toUpperCase().includes(term) || 
-        (r.schoolName || '').toUpperCase().includes(term)
+        (r.schoolName || '').toUpperCase().includes(term) ||
+        (r.email || '').toUpperCase().includes(term)
       );
     }
     return filtered;
@@ -389,10 +327,10 @@ export default function ProgramsPage() {
                </div>
              </div>
 
-             <div className="flex flex-1 max-w-md w-full relative">
+             <div className="flex flex-1 max-md:w-full relative">
                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                <Input 
-                 placeholder="Filtrar por CCT o Plantel..." 
+                 placeholder="Filtrar por CCT, Plantel o Email..." 
                  className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
@@ -412,6 +350,7 @@ export default function ProgramsPage() {
                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Contacto / Email</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">Estatus</TableHead>
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
@@ -422,6 +361,9 @@ export default function ProgramsPage() {
                       <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
                       <TableCell className="text-sm font-bold text-slate-700 uppercase">{rec.schoolName}</TableCell>
+                      <TableCell className="text-[10px] font-mono lowercase text-muted-foreground">
+                        {rec.email || (rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes[0].email : '-')}
+                      </TableCell>
                       <TableCell>
                         <Badge className={cn("text-[10px] font-black uppercase px-4 py-1.5", rec.status === 'activo' || rec.status === 'concluido' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400')}>
                           {rec.status}
