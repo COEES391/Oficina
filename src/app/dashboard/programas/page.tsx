@@ -28,7 +28,7 @@ import {
   Plus,
   School,
   FileText,
-  Image as ImageIcon,
+  ImageIcon,
   X,
   ExternalLink,
   Eye,
@@ -114,7 +114,6 @@ export default function ProgramsPage() {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('programs_full') || '[]')
     
-    // Check if geopositions are missing (forcing 337 minimum)
     const geoCount = stored.filter((r: any) => r.name === 'Geoposición').length;
     
     if (stored.length === 0 || geoCount < 337) {
@@ -239,7 +238,6 @@ export default function ProgramsPage() {
   const currentTabRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
     
-    // Sort "Conoce mi Escuela" by CCT
     if (activeTab === 'Conoce mi Escuela') {
        filtered = [...filtered].sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
@@ -642,6 +640,7 @@ export default function ProgramsPage() {
                                       <SelectItem value="instalación red local" className="text-[10px] uppercase">Instalación Red Local</SelectItem>
                                       <SelectItem value="mantenimiento preventivo" className="text-[10px] uppercase">Mantenimiento Preventivo</SelectItem>
                                       <SelectItem value="mantenimiento correctivo" className="text-[10px] uppercase">Mantenimiento Correctivo</SelectItem>
+                                      <SelectItem value="teleplanteles" className="text-[10px] uppercase">Teleplanteles</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

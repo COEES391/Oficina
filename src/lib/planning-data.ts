@@ -27,7 +27,7 @@ export type ProgramStatus = {
   longitud?: string;
   agrupado_editorial?: string;
   // Campos para ATRES (Reporte Técnico)
-  tipoIncidencia?: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo';
+  tipoIncidencia?: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
   oficinaRegionalAtencion?: string;
   numeroOficio?: string;
   alumnosBeneficiados?: number;
@@ -304,7 +304,7 @@ export type SupportTicket = {
   alumnosBeneficiados?: number;
   docentesBeneficiados?: number;
   numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo';
+  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
   materialUtilizado?: string;
   setes?: 'S' | 'N';
   observaciones?: string;

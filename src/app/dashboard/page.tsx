@@ -169,6 +169,7 @@ export default function DashboardPage() {
       { name: 'INST. RED', value: filteredTickets.filter(t => t.tipoIncidencia === 'instalación red local').length, fill: '#475569' },
       { name: 'MANT. PREV.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length, fill: '#059669' },
       { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
+      { name: 'TELEPLANTEL', value: filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length, fill: '#ec4899' },
     ];
 
     return {

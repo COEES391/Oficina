@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, Image as ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -288,6 +288,7 @@ export default function SupportPage() {
                         <SelectItem value="instalación red local" className="text-[11px] uppercase font-bold">Instalación Red Local</SelectItem>
                         <SelectItem value="mantenimiento preventivo" className="text-[11px] uppercase font-bold">Mantenimiento Preventivo</SelectItem>
                         <SelectItem value="mantenimiento correctivo" className="text-[11px] uppercase font-bold">Mantenimiento Correctivo</SelectItem>
+                        <SelectItem value="teleplanteles" className="text-[11px] uppercase font-bold">Teleplanteles</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
