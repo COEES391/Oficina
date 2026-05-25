@@ -32,7 +32,8 @@ import {
   X,
   ExternalLink,
   Eye,
-  Info
+  Info,
+  Search
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -87,6 +88,7 @@ export default function ProgramsPage() {
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialFormState: ProgramStatus = {
@@ -238,6 +240,14 @@ export default function ProgramsPage() {
   const currentTabRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
     
+    if (searchTerm) {
+      const term = searchTerm.toUpperCase();
+      filtered = filtered.filter(r => 
+        (r.cct || '').toUpperCase().includes(term) || 
+        (r.schoolName || '').toUpperCase().includes(term)
+      );
+    }
+
     if (activeTab === 'Conoce mi Escuela') {
        filtered = [...filtered].sort((a,b) => (a.cct||'').localeCompare(b.cct||''));
     }
@@ -259,7 +269,7 @@ export default function ProgramsPage() {
       });
     }
     return filtered;
-  }, [records, activeTab]);
+  }, [records, activeTab, searchTerm]);
 
   const handleEdit = (rec: ProgramStatus) => {
     setFormData(rec);
@@ -285,7 +295,7 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-6">
         <TabsList className="w-full h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm">
           {PROGRAM_RUBROS.map(rubro => (
             <TabsTrigger 
@@ -299,7 +309,7 @@ export default function ProgramsPage() {
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-6 animate-in fade-in duration-500">
-          <Card className="executive-card p-6 flex items-center justify-between">
+          <Card className="executive-card p-6 flex flex-col md:flex-row items-center justify-between gap-4">
              <div className="flex items-center gap-4">
                <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
                  {activeTab === 'Geoposición' ? <MapPin className="h-6 w-6" /> : <Target className="h-6 w-6" />}
@@ -309,7 +319,18 @@ export default function ProgramsPage() {
                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Registros de Auditoría Técnica</p>
                </div>
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setIsDialogOpen(true); }} className="btn-institutional px-8 text-[11px]">
+
+             <div className="flex flex-1 max-w-md w-full relative">
+               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+               <Input 
+                 placeholder="Filtrar por CCT o Plantel..." 
+                 className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+               />
+             </div>
+
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setIsDialogOpen(true); }} className="btn-institutional px-8 text-[11px] h-10">
                 <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
              </Button>
           </Card>
@@ -491,7 +512,7 @@ export default function ProgramsPage() {
                   )) : (
                     <TableRow>
                       <TableCell colSpan={14} className="text-center py-20 bg-slate-50/20">
-                         <p className="text-[10px] font-black uppercase text-muted-foreground opacity-50">Cargando base de datos técnica...</p>
+                         <p className="text-[10px] font-black uppercase text-muted-foreground opacity-50">Sin resultados para la búsqueda.</p>
                       </TableCell>
                     </TableRow>
                   )}
