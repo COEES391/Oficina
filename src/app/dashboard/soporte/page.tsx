@@ -203,7 +203,6 @@ export default function SupportPage() {
       reader.readAsDataURL(file)
     } else if (type === 'contrato') {
       const file = files[0]
-      const reader = new FileReader()
       reader.onloadend = () => {
         setFormData({ ...formData, contratoFile: reader.result as string })
       }
@@ -229,7 +228,7 @@ export default function SupportPage() {
 
   const handleSave = () => {
     if (!formData.id || !formData.cct || !formData.tipoIncidencia) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "Folio, CCT y Tipo de Servicio son obligatorios." })
+      toast({ variant: "destructive", title: "Faltan datos", description: "El número de solicitud, CCT y Tipo de Servicio son obligatorios." })
       return
     }
 
@@ -386,7 +385,7 @@ export default function SupportPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Folio Reporte / ID</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud</Label>
                     <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} />
                   </div>
                   <div className="space-y-2">
