@@ -1,3 +1,4 @@
+
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -10,24 +11,20 @@ import {
   RefreshCcw,
   GraduationCap,
   Briefcase,
-  TrendingUp,
   Target,
   Zap,
   Calendar,
-  MonitorCheck,
   Activity,
   AlertCircle,
   BarChart3,
   Search,
-  ArrowUpRight,
   ClipboardList,
   MapPin,
-  Settings2,
   Cpu,
   Globe,
   Radio,
   Navigation,
-  Tv
+  Monitor
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -38,8 +35,6 @@ import {
   Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   Cell,
-  PieChart,
-  Pie,
   Legend
 } from 'recharts'
 import { supportData, type SupportTicket, type TrainingRecord, type ProgramStatus, programsData } from '@/lib/planning-data'
@@ -80,19 +75,27 @@ export default function DashboardPage() {
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
+  // Sincronización automática al montar el componente
   useEffect(() => {
     setMounted(true)
-    const storedTickets = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
-    setTickets(storedTickets.length > 0 ? storedTickets : supportData)
+    const syncData = () => {
+      const storedTickets = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
+      setTickets(storedTickets.length > 0 ? storedTickets : supportData)
 
-    const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
-    setTrainings(storedTrainings)
+      const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
+      setTrainings(storedTrainings)
 
-    const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v22') || '[]')
-    setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
+      const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v22') || '[]')
+      setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
 
-    const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
-    if (storedGoals) setGoals(storedGoals)
+      const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
+      if (storedGoals) setGoals(storedGoals)
+    }
+
+    syncData()
+    // Escuchar cambios en otras pestañas si se usa el sistema en paralelo
+    window.addEventListener('storage', syncData)
+    return () => window.removeEventListener('storage', syncData)
   }, [])
 
   const filteredTickets = useMemo(() => {
@@ -115,43 +118,15 @@ export default function DashboardPage() {
     });
   }, [programs, valleFilter, dateStart, dateEnd, cctFilter]);
 
-  const consolidatedTrainings = useMemo(() => {
-    const base = trainings.map(t => ({ ...t, source: 'CAPACITACION' }));
-    const fromPrograms: any[] = [];
-    
-    programs.forEach(p => {
-      if (p.name === 'Biblioteca Digital' && p.asistentes && p.asistentes.length > 0) {
-        p.asistentes.forEach((ast: any) => {
-          fromPrograms.push({
-            id: `PROG-AST-${ast.rfc}-${p.id}`,
-            cursoNombre: 'Biblioteca Digital',
-            asistentePaterno: ast.paterno,
-            asistenteMaterno: ast.materno,
-            asistenteNombres: ast.nombres,
-            asistenteRFC: ast.rfc,
-            asistenteValle: ast.valle || p.valle,
-            asistenteMunicipio: ast.municipio || p.municipio,
-            asistenteRegion: ast.region || p.region,
-            asistenteCCT: ast.cct || p.cct,
-            fechaInicio: p.date,
-            source: 'BIBLIOTECA_DIGITAL'
-          });
-        });
-      }
-    });
-
-    return [...base, ...fromPrograms];
-  }, [trainings, programs]);
-
   const filteredTrainings = useMemo(() => {
-    return consolidatedTrainings.filter(tr => {
+    return trainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
       const matchCct = !cctFilter || (tr.asistenteCCT && tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase()));
       return matchValle && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [consolidatedTrainings, valleFilter, dateStart, dateEnd, cctFilter]);
+  }, [trainings, valleFilter, dateStart, dateEnd, cctFilter]);
 
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
@@ -166,9 +141,9 @@ export default function DashboardPage() {
     const teleplantelesCount = filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length;
     const mantenimientoCount = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento').length;
 
-    const alcanzadoC = redEscolarCount + redEdusatCount;
     const metaC = 78; 
-    const porcentajeC = metaC > 0 ? parseFloat(((alcanzadoC / metaC) * 100).toFixed(2)) : 0;
+    const alcanzadoC = redEscolarCount + redEdusatCount;
+    const porcentajeC = metaC > 0 ? Math.min(100, parseFloat(((alcanzadoC / metaC) * 100).toFixed(2))) : 0;
 
     const typesData = [
       { name: 'RED EDUSAT', value: redEdusatCount, fill: '#621132' },
@@ -220,14 +195,13 @@ export default function DashboardPage() {
       alcanzado: total,
       meta: QUARTERLY_TRAINING_GOAL,
       faltante: Math.max(0, QUARTERLY_TRAINING_GOAL - total),
-      porcentaje: total > 0 ? parseFloat(((total / QUARTERLY_TRAINING_GOAL) * 100).toFixed(2)) : 0,
+      porcentaje: total > 0 ? Math.min(100, parseFloat(((total / QUARTERLY_TRAINING_GOAL) * 100).toFixed(2))) : 0,
       cursos: sortedCourses.length > 0 ? sortedCourses : [{ name: 'Sin registros aún', value: 0 }]
     };
 
     const uniqueSchools = new Set(filteredTrainings.map(t => t.asistenteCCT)).size;
-    const targetSchools = 150; 
     const indicadorB = {
-      porcentaje: Math.min(100, Math.round((uniqueSchools / targetSchools) * 100)),
+      porcentaje: Math.min(100, Math.round((uniqueSchools / 150) * 100)), // Meta de 150 escuelas para Indicador B
       total: uniqueSchools
     };
 
