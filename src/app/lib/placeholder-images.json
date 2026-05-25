@@ -3,9 +3,9 @@
   "placeholderImages": [
     {
       "id": "desysa-logo",
-      "description": "Logotipo oficial institucional Edoméx-SEIEM-DESySA 2026 - COEES.",
-      "imageUrl": "https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=800&auto=format&fit=crop",
-      "imageHint": "institutional emblem"
+      "description": "Logotipo oficial COEES 2026 - Computación Electrónica en la Educación Secundaria.",
+      "imageUrl": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop",
+      "imageHint": "green tech logo education"
     },
     {
       "id": "education-bg",
