@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School, Tv, Wifi, Activity } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -63,6 +63,12 @@ export default function SupportPage() {
     serviciosMP: 0,
     reportPdf: '',
     evidencePhotos: [],
+    // Teleplanteles
+    numDecodificadores: 0,
+    numSerie: '',
+    estatusSeñal: '',
+    contratoFile: '',
+    numReportes: 0
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -100,7 +106,7 @@ export default function SupportPage() {
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo' | 'contrato') => {
     const files = e.target.files
     if (!files) return
 
@@ -109,6 +115,13 @@ export default function SupportPage() {
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData({ ...formData, reportPdf: reader.result as string })
+      }
+      reader.readAsDataURL(file)
+    } else if (type === 'contrato') {
+      const file = files[0]
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData({ ...formData, contratoFile: reader.result as string })
       }
       reader.readAsDataURL(file)
     } else {
@@ -207,7 +220,7 @@ export default function SupportPage() {
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[950px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
@@ -293,6 +306,56 @@ export default function SupportPage() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Sección Especial para Teleplanteles */}
+                {formData.tipoIncidencia === 'teleplanteles' && (
+                  <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-pink-100 pb-3">
+                       <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
+                          <Tv className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-pink-900 tracking-wider">Módulo Técnico de Teleplanteles</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Decodificadores</Label>
+                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numDecodificadores} onChange={e => setFormData({...formData, numDecodificadores: parseInt(e.target.value) || 0})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Número de Serie</Label>
+                          <Input className="bg-white border-pink-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-XXXX" value={formData.numSerie} onChange={e => setFormData({...formData, numSerie: e.target.value.toUpperCase()})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Estatus de la Señal</Label>
+                          <Select value={formData.estatusSeñal} onValueChange={(val: any) => setFormData({...formData, estatusSeñal: val})}>
+                            <SelectTrigger className="bg-white border-pink-200 rounded-xl h-11 uppercase font-bold text-[10px]">
+                               <SelectValue placeholder="SELECCIONAR..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                               <SelectItem value="débil" className="text-[10px] font-black text-rose-600 uppercase">DÉBIL</SelectItem>
+                               <SelectItem value="estable" className="text-[10px] font-black text-amber-600 uppercase">ESTABLE</SelectItem>
+                               <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes Previos</Label>
+                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-pink-700 pl-1">
+                             <FileText className="h-3 w-3" /> Cargar Contrato / Documento
+                          </Label>
+                          <Input type="file" accept="image/*,.pdf" className="bg-white border-pink-200 rounded-xl h-11 text-[10px]" onChange={e => handleFileChange(e, 'contrato')} />
+                          {formData.contratoFile && <p className="text-[8px] font-black text-emerald-600 uppercase flex items-center gap-1">✓ DOCUMENTO ADJUNTO</p>}
+                       </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div className="space-y-2">
@@ -390,10 +453,17 @@ export default function SupportPage() {
                   <div className="flex flex-col">
                     <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
                     <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
+                    {t.tipoIncidencia === 'teleplanteles' && (
+                       <div className="flex items-center gap-2 mt-1">
+                          <Badge className="bg-pink-100 text-pink-700 text-[8px] border-pink-200">
+                             SEÑAL: {t.estatusSeñal?.toUpperCase() || 'S/D'}
+                          </Badge>
+                       </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="capitalize text-[10px] font-black text-slate-500">
-                  <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary uppercase">
+                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase", t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : "border-primary/20 text-primary")}>
                     {t.tipoIncidencia}
                   </Badge>
                 </TableCell>
@@ -422,8 +492,8 @@ export default function SupportPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-center gap-3">
-                    {t.reportPdf && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'pdf', data: t.reportPdf!, title: `Folio ${t.id} - Reporte Técnico` })}>
+                    {(t.reportPdf || t.contratoFile) && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'pdf', data: (t.contratoFile || t.reportPdf)!, title: `Folio ${t.id} - Documentación` })}>
                         <FileText className="h-4 w-4" />
                       </Button>
                     )}

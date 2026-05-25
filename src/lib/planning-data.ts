@@ -38,6 +38,42 @@ export type ProgramStatus = {
   evidencePhotos?: string[];
 };
 
+export type SupportTicket = {
+  id: string;
+  cct: string;
+  schoolName: string;
+  zonaEscolar?: string;
+  sector?: string;
+  modalidad?: string;
+  municipio?: string;
+  region?: string;
+  valle?: string;
+  responsables: string[];
+  oficinaRegionalAtencion: string;
+  numeroOficio?: string;
+  alumnosBeneficiados?: number;
+  docentesBeneficiados?: number;
+  numeroEquipos: number;
+  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
+  materialUtilizado?: string;
+  setes?: 'S' | 'N';
+  observaciones?: string;
+  descripcionEquipo?: string;
+  fechaEntrada: string;
+  fechaSalida?: string;
+  serviciosMC: number;
+  serviciosMP: number;
+  status: 'atendido' | 'en proceso' | 'pendiente';
+  reportPdf?: string;
+  evidencePhotos?: string[];
+  // Campos especializados para Teleplanteles
+  numDecodificadores?: number;
+  numSerie?: string;
+  estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
+  contratoFile?: string;
+  numReportes?: number;
+};
+
 const getEditorialData = (): ProgramStatus[] => {
   const data: ProgramStatus[] = [];
   for (let i = 1; i <= 827; i++) {
@@ -288,36 +324,6 @@ export const programsData: ProgramStatus[] = [
   ...getEditorialData()
 ];
 
-export type SupportTicket = {
-  id: string;
-  cct: string;
-  schoolName: string;
-  zonaEscolar?: string;
-  sector?: string;
-  modalidad?: string;
-  municipio?: string;
-  region?: string;
-  valle?: string;
-  responsables: string[];
-  oficinaRegionalAtencion: string;
-  numeroOficio?: string;
-  alumnosBeneficiados?: number;
-  docentesBeneficiados?: number;
-  numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
-  materialUtilizado?: string;
-  setes?: 'S' | 'N';
-  observaciones?: string;
-  descripcionEquipo?: string;
-  fechaEntrada: string;
-  fechaSalida?: string;
-  serviciosMC: number;
-  serviciosMP: number;
-  status: 'atendido' | 'en proceso' | 'pendiente';
-  reportPdf?: string;
-  evidencePhotos?: string[];
-};
-
 export const supportData: SupportTicket[] = [
   { 
     id: 'S-001', 
@@ -336,38 +342,5 @@ export const supportData: SupportTicket[] = [
     numeroEquipos: 12
   }
 ];
-
-export type TrainingRecord = {
-  id: string;
-  cursoGrupo: string;
-  cursoNombre: string;
-  duracionHoras: number;
-  fechaInicio: string;
-  fechaTermino: string;
-  instructores: string[];
-  numeroOficio: string;
-  materialUtilizado: string;
-  cctSede: string;
-  setes: 'S' | 'N';
-  asistentePaterno: string;
-  asistenteMaterno: string;
-  asistenteNombres: string;
-  asistenteRFC: string;
-  asistenteGenero: 'MASCULINO' | 'FEMENINO' | '';
-  asistenteFuncion: string;
-  asistenteEmail: string;
-  asistenteCCT: string;
-  asistenteNombreCT: string;
-  asistenteZE: string;
-  asistenteSector: string;
-  asistenteModalidad: string;
-  asistenteMunicipio: string;
-  asistenteRegion: string;
-  asistenteValle: string;
-  evidencePhotos?: string[];
-  observaciones: string;
-  alumnosBeneficiados?: number;
-  docentesBeneficiados?: number;
-};
 
 export const trainingRecords: TrainingRecord[] = [];
