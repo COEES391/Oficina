@@ -36,7 +36,8 @@ import {
   Info,
   Search,
   Radio,
-  UserCog
+  UserCog,
+  Network
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -75,6 +76,18 @@ const EDUSAT_MATERIALS = [
   "decodificador",
   "grapas",
   "cinturones de plastico"
+];
+
+const NETWORK_MATERIALS = [
+  "Switch",
+  "Cable UTP",
+  "Conectores RJ45",
+  "Canaleta",
+  "Patch Panel",
+  "Faceplates",
+  "Caja para Faceplate",
+  "Rack / Gabinete",
+  "Jumpers"
 ];
 
 type AssistantEntry = {
@@ -124,6 +137,9 @@ export default function ProgramsPage() {
     serieDecodificador: '',
     calidadSeñal: '',
     materialesEdusat: [],
+    numNodos: 0,
+    switchModelo: '',
+    materialesRedLocal: [],
     numDecodificadores: 0,
     numSerie: '',
     estatusSeñal: '',
@@ -168,8 +184,8 @@ export default function ProgramsPage() {
     }
   }
 
-  const handleMaterialToggle = (material: string) => {
-    const current = formData.materialesEdusat || [];
+  const handleMaterialToggle = (material: string, type: 'edusat' | 'network') => {
+    const current = type === 'edusat' ? (formData.materialesEdusat || []) : (formData.materialesRedLocal || []);
     const exists = current.find(m => m.name === material);
     let updated;
     if (exists) {
@@ -177,11 +193,16 @@ export default function ProgramsPage() {
     } else {
       updated = [...current, { name: material, quantity: 1 }];
     }
-    setFormData({ ...formData, materialesEdusat: updated });
+    
+    if (type === 'edusat') {
+      setFormData({ ...formData, materialesEdusat: updated });
+    } else {
+      setFormData({ ...formData, materialesRedLocal: updated });
+    }
   }
 
-  const handleMaterialQuantityChange = (material: string, quantity: number) => {
-    const current = formData.materialesEdusat || [];
+  const handleMaterialQuantityChange = (material: string, quantity: number, type: 'edusat' | 'network') => {
+    const current = type === 'edusat' ? (formData.materialesEdusat || []) : (formData.materialesRedLocal || []);
     const exists = current.find(m => m.name === material);
     let updated;
     if (exists) {
@@ -191,7 +212,12 @@ export default function ProgramsPage() {
     } else {
       updated = current;
     }
-    setFormData({ ...formData, materialesEdusat: updated });
+    
+    if (type === 'edusat') {
+      setFormData({ ...formData, materialesEdusat: updated });
+    } else {
+      setFormData({ ...formData, materialesRedLocal: updated });
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
@@ -600,7 +626,7 @@ export default function ProgramsPage() {
                     <div className="grid gap-8 py-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
                               CCT (Clave de Centro de Trabajo)
                             </Label>
                             <Input 
@@ -630,7 +656,7 @@ export default function ProgramsPage() {
                           </div>
 
                           <div className="col-span-1 md:col-span-2 space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
                               <UserCog className="h-4 w-4 text-accent" /> Nombre(s) del Técnico(s) Responsable(s)
                             </Label>
                             <Input 
@@ -673,7 +699,7 @@ export default function ProgramsPage() {
 
                           <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-100">
                             <div className="space-y-2">
-                              <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
                                 <Calendar className="h-4 w-4 text-accent" /> Fecha de Auditoría
                               </Label>
                               <Input 
@@ -685,7 +711,7 @@ export default function ProgramsPage() {
                             </div>
 
                             <div className="space-y-2">
-                              <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
                                 <Activity className="h-4 w-4 text-accent" /> Progreso de Implementación (%)
                               </Label>
                               <div className="flex items-center gap-4">
@@ -821,7 +847,7 @@ export default function ProgramsPage() {
                                                   <Checkbox 
                                                     id={`atres-mat-${mat}`} 
                                                     checked={isChecked}
-                                                    onCheckedChange={() => handleMaterialToggle(mat)}
+                                                    onCheckedChange={() => handleMaterialToggle(mat, 'edusat')}
                                                     className="border-blue-300 data-[state=checked]:bg-primary"
                                                   />
                                                   <label htmlFor={`atres-mat-${mat}`} className="text-[9px] font-black uppercase text-slate-600 leading-none cursor-pointer">
@@ -834,7 +860,65 @@ export default function ProgramsPage() {
                                                     type="number"
                                                     className="h-8 w-16 text-center text-[10px] font-black bg-white border-blue-100"
                                                     value={quantity}
-                                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
+                                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0, 'edusat')}
+                                                  />
+                                                </div>
+                                              </div>
+                                            )
+                                          })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {formData.tipoIncidencia === 'instalación red local' && (
+                                  <div className="col-span-1 md:col-span-2 p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-6 animate-in zoom-in-95 duration-300">
+                                    <div className="flex items-center gap-3 border-b border-indigo-100 pb-3">
+                                      <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                                          <Network className="h-6 w-6" />
+                                      </div>
+                                      <h3 className="text-sm font-black uppercase text-indigo-900 tracking-wider">Módulo Técnico de Instalación de Red Local</h3>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Número de Nodos Instalados</Label>
+                                          <Input type="number" className="bg-white border-indigo-200 rounded-xl h-11" value={formData.numNodos} onChange={e => setFormData({...formData, numNodos: parseInt(e.target.value) || 0})} />
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Modelo de Switch / Equipamiento</Label>
+                                          <Input className="bg-white border-indigo-200 rounded-xl h-11 font-bold uppercase" placeholder="EJ: CISCO 24P / TP-LINK..." value={formData.switchModelo} onChange={e => setFormData({...formData, switchModelo: e.target.value.toUpperCase()})} />
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                      <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Insumos y Materiales de Red (Cantidad utilizada)</Label>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-2xl border border-indigo-100 shadow-inner">
+                                          {NETWORK_MATERIALS.map(mat => {
+                                            const materialData = formData.materialesRedLocal?.find(m => m.name === mat);
+                                            const isChecked = !!materialData;
+                                            const quantity = materialData?.quantity || 0;
+
+                                            return (
+                                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-100 bg-slate-50/30">
+                                                <div className="flex items-center space-x-2">
+                                                  <Checkbox 
+                                                    id={`atres-net-mat-${mat}`} 
+                                                    checked={isChecked}
+                                                    onCheckedChange={() => handleMaterialToggle(mat, 'network')}
+                                                    className="border-indigo-300 data-[state=checked]:bg-indigo-600"
+                                                  />
+                                                  <label htmlFor={`atres-net-mat-${mat}`} className="text-[9px] font-black uppercase text-slate-600 leading-none cursor-pointer">
+                                                    {mat}
+                                                  </label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
+                                                  <Input 
+                                                    type="number"
+                                                    className="h-8 w-16 text-center text-[10px] font-black bg-white border-indigo-100"
+                                                    value={quantity}
+                                                    onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0, 'network')}
                                                   />
                                                 </div>
                                               </div>
@@ -887,7 +971,7 @@ export default function ProgramsPage() {
                             ) : activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' ? (
                               <>
                                 <div className="space-y-2">
-                                  <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2 pl-2">
                                     <Mail className="h-4 w-4 text-accent" /> Email Institucional del Centro
                                   </Label>
                                   <Input className="h-12 font-mono lowercase bg-slate-50" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />

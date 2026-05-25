@@ -42,6 +42,15 @@ export type ProgramStatus = {
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
   materialesEdusat?: { name: string; quantity: number }[];
+  // Campos Red Local / Instalación
+  numNodos?: number;
+  switchModelo?: string;
+  materialesRedLocal?: { name: string; quantity: number }[];
+  // Campos Teleplanteles
+  numDecodificadores?: number;
+  numSerie?: string;
+  estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
+  numReportes?: number;
 };
 
 export type SupportTicket = {
@@ -84,6 +93,10 @@ export type SupportTicket = {
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
   materialesEdusat?: { name: string; quantity: number }[];
+  // Campos especializados para Instalación Red Local
+  numNodos?: number;
+  switchModelo?: string;
+  materialesRedLocal?: { name: string; quantity: number }[];
 };
 
 const getEditorialData = (): ProgramStatus[] => {
