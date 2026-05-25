@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
-import { Eye, EyeOff, Lock, User, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Lock, User } from 'lucide-react'
 
 export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
@@ -53,23 +52,20 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/80 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 border-t-8 border-t-primary">
         <CardHeader className="text-center pt-12 pb-6 space-y-6">
-          {/* Logo Container - Styled to match the requested look */}
-          <div className="mx-auto relative h-24 w-full flex items-center justify-center group">
-            <div className="relative h-20 w-48 transition-transform duration-500 group-hover:scale-105">
-              <Image 
-                src={logoData.imageUrl} 
-                alt="Logo COEES Edoméx 2026" 
-                fill
-                className="object-contain filter contrast-125 saturate-150"
-                data-ai-hint="green technology logo education"
-                priority
-              />
-            </div>
+          {/* Logo Container - Styled to match the professional sample */}
+          <div className="mx-auto relative h-24 w-24 rounded-2xl overflow-hidden shadow-xl border-4 border-white transition-transform duration-500 hover:scale-110">
+            <Image 
+              src={logoData.imageUrl} 
+              alt="Logo DESySA Edoméx 2026" 
+              fill
+              className="object-cover"
+              data-ai-hint="institutional technology logo"
+              priority
+            />
           </div>
           
           <div className="space-y-4">
             <div className="flex flex-col items-center">
-               <span className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.4em] mb-1">COEES 2026</span>
                <CardTitle className="text-4xl font-black tracking-tighter text-primary uppercase leading-[0.9]">
                  Portal <br /> Integral
                </CardTitle>
