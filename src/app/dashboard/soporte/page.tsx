@@ -733,7 +733,7 @@ export default function SupportPage() {
 
                 {formData.tipoIncidencia === 'teleplanteles' && (
                   <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-3 border-b border-pink-100 pb-3">
+                    <div className="flex items-center gap-3 border-pink-100 pb-3">
                        <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
                           <Tv className="h-6 w-6" />
                        </div>
@@ -788,16 +788,18 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
-                    <>
-                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                    </>
-                  )}
-                </div>
+                {formData.tipoIncidencia !== 'teleplanteles' && (
+                  <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
+                      <>
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-6 pt-6 border-t border-slate-100">
                   <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
