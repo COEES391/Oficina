@@ -36,6 +36,11 @@ export type ProgramStatus = {
   serviciosMP?: number;
   reportPdf?: string;
   evidencePhotos?: string[];
+  // Campos Edusat
+  numCensal?: string;
+  serieDecodificador?: string;
+  calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
+  materialesEdusat?: string[];
 };
 
 export type SupportTicket = {
@@ -72,6 +77,11 @@ export type SupportTicket = {
   estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
   contratoFile?: string;
   numReportes?: number;
+  // Campos especializados para RED Edusat
+  numCensal?: string;
+  serieDecodificador?: string;
+  calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
+  materialesEdusat?: string[];
 };
 
 const getEditorialData = (): ProgramStatus[] => {
@@ -230,7 +240,7 @@ const getGeopositioningData = (): ProgramStatus[] => {
     ['15DTV0357W', '-99.636315', '19.669649'], ['15DTV0358V', '-100.006317', '19.537400'], ['15DTV0359U', '-99.347146', '19.642274'],
     ['15DTV0360J', '-98.987095', '19.939222'], ['15DTV0361I', '-99.975482', '19.763151'], ['15DTV0362H', '-100.016093', '18.791618'],
     ['15DTV0363G', '-99.927610', '19.572537'], ['15DTV0364F', '-100.270804', '18.947449'], ['15DTV0365E', '-100.058484', '18.785834'],
-    ['15DTV0366D', '-99.775896', '18.901861'], ['15DTV0367C', '-100.154698', '19.489219'], ['15DTV0368B', '-99.413942', '19.122059'],
+    ['15DTV0366D', '-99.775896', '18.901861'], ['15DTV0367C', '-100.154698', '19.489219'], ['15DTV0368B', '-99.417593', '19.122059'],
     ['15DTV0369A', '-98.844053', '19.143365'], ['15DTV0370Q', '-99.781978', '18.978760'], ['15DTV0371P', '-99.655637', '19.686298'],
     ['15DTV0372O', '-99.456438', '18.804637'], ['15DTV0373N', '-100.338297', '19.019490'], ['15DTV0374M', '-98.781993', '19.061292'],
     ['15DTV0375L', '-100.128269', '19.610609'], ['15DTV0376K', '-99.298375', '19.694173'], ['15DTV0377J', '-99.581874', '18.881580'],
@@ -328,7 +338,7 @@ export const supportData: SupportTicket[] = [
   { 
     id: 'S-001', 
     cct: '15DES0065B', 
-    schoolName: 'JUAN PÉREZ SÁNCHEZ', 
+    schoolName: 'DR. MANUEL SANDOVAL VALLARTA', 
     status: 'atendido', 
     tipoIncidencia: 'mantenimiento preventivo', 
     fechaEntrada: '2024-05-20',

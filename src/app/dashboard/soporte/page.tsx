@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, ExternalLink, School, Tv, Wifi, Activity } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -24,6 +25,17 @@ const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Nezahualcóyotl",
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
+];
+
+const EDUSAT_MATERIALS = [
+  "cable",
+  "Antena",
+  "amplificador",
+  "LNB",
+  "espliter",
+  "decodificador",
+  "grapas",
+  "cinturones de plastico"
 ];
 
 export default function SupportPage() {
@@ -63,12 +75,15 @@ export default function SupportPage() {
     serviciosMP: 0,
     reportPdf: '',
     evidencePhotos: [],
-    // Teleplanteles
     numDecodificadores: 0,
     numSerie: '',
     estatusSeñal: '',
     contratoFile: '',
-    numReportes: 0
+    numReportes: 0,
+    numCensal: '',
+    serieDecodificador: '',
+    calidadSeñal: '',
+    materialesEdusat: []
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -104,6 +119,14 @@ export default function SupportPage() {
         description: `${school.nombre} (${school.turno}) cargado correctamente.`,
       });
     }
+  }
+
+  const handleMaterialToggle = (material: string) => {
+    const current = formData.materialesEdusat || [];
+    const updated = current.includes(material) 
+      ? current.filter(m => m !== material) 
+      : [...current, material];
+    setFormData({ ...formData, materialesEdusat: updated });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo' | 'contrato') => {
@@ -184,6 +207,7 @@ export default function SupportPage() {
     setFormData({
       ...ticket,
       responsables: [...(ticket.responsables || []), '', '', ''].slice(0, 3) as string[],
+      materialesEdusat: ticket.materialesEdusat || []
     });
     setEditingTicketId(ticket.id);
     setIsDialogOpen(true);
@@ -340,18 +364,59 @@ export default function SupportPage() {
                           </Select>
                        </div>
                     </div>
+                  </div>
+                )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sección Especial para RED Edusat */}
+                {formData.tipoIncidencia === 'red edusat' && (
+                  <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border-2 border-blue-100 space-y-6 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-blue-100 pb-3">
+                       <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                          <Radio className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-primary tracking-wider">Módulo Técnico RED Edusat</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes Previos</Label>
-                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
+                          <Label className="text-[10px] font-black uppercase text-primary pl-1"># Censal</Label>
+                          <Input className="bg-white border-blue-200 rounded-xl h-11 font-mono uppercase" placeholder="CENSAL-XXXX" value={formData.numCensal} onChange={e => setFormData({...formData, numCensal: e.target.value.toUpperCase()})} />
                        </div>
                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-pink-700 pl-1">
-                             <FileText className="h-3 w-3" /> Cargar Contrato / Documento
-                          </Label>
-                          <Input type="file" accept="image/*,.pdf" className="bg-white border-pink-200 rounded-xl h-11 text-[10px]" onChange={e => handleFileChange(e, 'contrato')} />
-                          {formData.contratoFile && <p className="text-[8px] font-black text-emerald-600 uppercase flex items-center gap-1">✓ DOCUMENTO ADJUNTO</p>}
+                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Serie del Decodificador</Label>
+                          <Input className="bg-white border-blue-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-DECO-XXXX" value={formData.serieDecodificador} onChange={e => setFormData({...formData, serieDecodificador: e.target.value.toUpperCase()})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Calidad de Señal</Label>
+                          <Select value={formData.calidadSeñal} onValueChange={(val: any) => setFormData({...formData, calidadSeñal: val})}>
+                            <SelectTrigger className="bg-white border-blue-200 rounded-xl h-11 uppercase font-bold text-[10px]">
+                               <SelectValue placeholder="SELECCIONAR..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                               <SelectItem value="nulo" className="text-[10px] font-black text-rose-600 uppercase">NULO</SelectItem>
+                               <SelectItem value="óptimo" className="text-[10px] font-black text-amber-600 uppercase">ÓPTIMO</SelectItem>
+                               <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                       </div>
+                    </div>
+
+                    <div className="space-y-3">
+                       <Label className="text-[10px] font-black uppercase text-primary pl-1">Material Utilizado (Seleccionar los utilizados en sitio)</Label>
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-2xl border border-blue-100 shadow-inner">
+                          {EDUSAT_MATERIALS.map(mat => (
+                            <div key={mat} className="flex items-center space-x-2">
+                              <Checkbox 
+                                id={`mat-${mat}`} 
+                                checked={formData.materialesEdusat?.includes(mat)}
+                                onCheckedChange={() => handleMaterialToggle(mat)}
+                                className="border-blue-300 data-[state=checked]:bg-primary"
+                              />
+                              <label htmlFor={`mat-${mat}`} className="text-[10px] font-bold uppercase text-slate-600 leading-none cursor-pointer">
+                                {mat}
+                              </label>
+                            </div>
+                          ))}
                        </div>
                     </div>
                   </div>
@@ -455,15 +520,29 @@ export default function SupportPage() {
                     <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
                     {t.tipoIncidencia === 'teleplanteles' && (
                        <div className="flex items-center gap-2 mt-1">
-                          <Badge className="bg-pink-100 text-pink-700 text-[8px] border-pink-200">
-                             SEÑAL: {t.estatusSeñal?.toUpperCase() || 'S/D'}
+                          <Badge className="bg-pink-100 text-pink-700 text-[8px] border-pink-200 uppercase">
+                             SEÑAL: {t.estatusSeñal || 'S/D'}
+                          </Badge>
+                       </div>
+                    )}
+                    {t.tipoIncidencia === 'red edusat' && (
+                       <div className="flex items-center gap-2 mt-1">
+                          <Badge className="bg-blue-100 text-blue-700 text-[8px] border-blue-200 uppercase">
+                             SEÑAL: {t.calidadSeñal || 'S/D'}
+                          </Badge>
+                          <Badge className="bg-slate-100 text-slate-700 text-[8px] border-slate-200 uppercase">
+                             CENSAL: {t.numCensal || 'S/D'}
                           </Badge>
                        </div>
                     )}
                   </div>
                 </TableCell>
                 <TableCell className="capitalize text-[10px] font-black text-slate-500">
-                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase", t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : "border-primary/20 text-primary")}>
+                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase", 
+                    t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : 
+                    t.tipoIncidencia === 'red edusat' ? "border-blue-300 text-blue-600 bg-blue-50" :
+                    "border-primary/20 text-primary"
+                  )}>
                     {t.tipoIncidencia}
                   </Badge>
                 </TableCell>
