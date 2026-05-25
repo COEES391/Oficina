@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -57,10 +58,11 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-white rounded-[2.5rem] border-2 border-primary/5 flex items-center justify-center p-4 shadow-xl relative z-10">
               <Image 
                 src={logoData.imageUrl} 
-                alt="Logo COEES" 
+                alt="Logo COEES 2026" 
                 fill
                 className="object-contain p-5"
-                data-ai-hint="education logo"
+                data-ai-hint="institutional logo"
+                priority
               />
             </div>
           </div>
