@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -119,7 +119,14 @@ export default function SupportPage() {
     cuentaInternet: '',
     proveedorInternet: '',
     anchoBanda: '',
-    mantenimientoChecklist: []
+    mantenimientoChecklist: [],
+    mantenimientoDetalle: {
+      equipoTecnologico: '',
+      equipoTecnologicoOtro: '',
+      equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
+      fallaIdentificada: '',
+      servicioRealizado: ''
+    }
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -218,7 +225,6 @@ export default function SupportPage() {
       reader.readAsDataURL(file)
     } else if (type === 'contrato') {
       const file = files[0]
-      const reader = new FileReader()
       reader.onloadend = () => {
         setFormData({ ...formData, contratoFile: reader.result as string })
       }
@@ -286,7 +292,8 @@ export default function SupportPage() {
       materialesEdusat: ticket.materialesEdusat || [],
       materialesRedLocal: ticket.materialesRedLocal || [],
       mantenimientoChecklist: ticket.mantenimientoChecklist || [],
-      tecnicos: ticket.tecnicos || ''
+      tecnicos: ticket.tecnicos || '',
+      mantenimientoDetalle: ticket.mantenimientoDetalle || initialFormState.mantenimientoDetalle
     });
     setEditingTicketId(ticket.id);
     setIsDialogOpen(true);
@@ -297,6 +304,16 @@ export default function SupportPage() {
     setTickets(updated);
     localStorage.setItem('support_tickets_full', JSON.stringify(updated));
     toast({ title: `Estatus actualizado a ${newStatus.toUpperCase()}` });
+  }
+
+  const handleMantenimientoTableChange = (index: number, field: string, value: string) => {
+    const current = formData.mantenimientoDetalle || initialFormState.mantenimientoDetalle!;
+    const newEquipos = [...current.equipos];
+    newEquipos[index] = { ...newEquipos[index], [field]: value };
+    setFormData({
+      ...formData,
+      mantenimientoDetalle: { ...current, equipos: newEquipos }
+    });
   }
 
   if (!mounted) return null
@@ -323,7 +340,7 @@ export default function SupportPage() {
               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+          <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
@@ -419,6 +436,91 @@ export default function SupportPage() {
                     onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
                   />
                 </div>
+
+                {formData.tipoIncidencia === 'mantenimiento' && (
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-slate-200 space-y-8 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                       <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                          <Monitor className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-primary tracking-wider">Módulo de Mantenimiento Detallado</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-primary pl-1">Equipo Tecnológico:</Label>
+                      <div className="flex flex-wrap gap-6 items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        {['HDT', 'EQUIPO DE COMPUTO', 'OTRO'].map(opt => (
+                          <div key={opt} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`equipo-${opt}`}
+                              checked={formData.mantenimientoDetalle?.equipoTecnologico === opt}
+                              onCheckedChange={() => setFormData({
+                                ...formData,
+                                mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologico: opt as any }
+                              })}
+                            />
+                            <Label htmlFor={`equipo-${opt}`} className="text-[10px] font-black uppercase cursor-pointer">{opt}</Label>
+                          </div>
+                        ))}
+                        {formData.mantenimientoDetalle?.equipoTecnologico === 'OTRO' && (
+                          <Input 
+                            className="h-9 w-48 bg-slate-50 text-[10px]" 
+                            placeholder="ESPECIFICAR..." 
+                            value={formData.mantenimientoDetalle?.equipoTecnologicoOtro} 
+                            onChange={e => setFormData({
+                              ...formData,
+                              mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologicoOtro: e.target.value.toUpperCase() }
+                            })} 
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden shadow-sm bg-white">
+                      <Table>
+                        <TableHeader className="bg-slate-100">
+                          <TableRow>
+                            <TableHead className="w-12 text-[9px] font-black uppercase text-center">N.P.</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Equipo</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Marca</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">No. Serie</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">No. Censal</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.from({ length: 10 }).map((_, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                              <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.equipo || ''} onChange={e => handleMantenimientoTableChange(idx, 'equipo', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.marca || ''} onChange={e => handleMantenimientoTableChange(idx, 'marca', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.serie || ''} onChange={e => handleMantenimientoTableChange(idx, 'serie', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.censal || ''} onChange={e => handleMantenimientoTableChange(idx, 'censal', e.target.value.toUpperCase())} />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Falla Identificada:</Label>
+                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, fallaIdentificada: e.target.value.toUpperCase()}})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado:</Label>
+                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {formData.tipoIncidencia === 'red local' && (
                   <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">

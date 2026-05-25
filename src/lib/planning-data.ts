@@ -59,6 +59,14 @@ export type ProgramStatus = {
   numSerie?: string;
   estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
   numReportes?: number;
+  // Campos Mantenimiento Detallado (Nueva Imagen)
+  mantenimientoDetalle?: {
+    equipoTecnologico: 'HDT' | 'EQUIPO DE COMPUTO' | 'OTRO' | '';
+    equipoTecnologicoOtro?: string;
+    equipos: Array<{ equipo: string; marca: string; serie: string; censal: string }>;
+    fallaIdentificada: string;
+    servicioRealizado: string;
+  };
 };
 
 export type SupportTicket = {
@@ -113,6 +121,14 @@ export type SupportTicket = {
   numNodos?: number;
   materialesRedLocal?: { name: string; quantity: number }[];
   mantenimientoChecklist?: string[];
+  // Campos Mantenimiento Detallado (Nueva Imagen)
+  mantenimientoDetalle?: {
+    equipoTecnologico: 'HDT' | 'EQUIPO DE COMPUTO' | 'OTRO' | '';
+    equipoTecnologicoOtro?: string;
+    equipos: Array<{ equipo: string; marca: string; serie: string; censal: string }>;
+    fallaIdentificada: string;
+    servicioRealizado: string;
+  };
 };
 
 const getEditorialData = (): ProgramStatus[] => {
