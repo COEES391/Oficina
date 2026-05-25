@@ -89,33 +89,35 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <Sidebar className="border-none bg-[#9f2241] shadow-2xl overflow-hidden">
-        <SidebarHeader className="pt-12 pb-8">
-          <div className="flex flex-col items-center gap-5 px-6">
-            <div className="relative h-20 w-20 bg-white/10 rounded-[2rem] flex items-center justify-center border border-white/10 shadow-inner group overflow-hidden">
+        <SidebarHeader className="pt-8 pb-4">
+          <div className="flex flex-col items-center gap-3 px-4">
+            <div className="relative h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner group overflow-hidden">
                <div className="absolute inset-0 bg-white/5 group-hover:bg-white/10 transition-colors duration-500" />
-               <Monitor className="w-10 h-10 text-white relative z-10" />
+               <Monitor className="w-8 h-8 text-white relative z-10" />
             </div>
             <div className="text-center">
-              <span className="text-2xl font-black text-white uppercase tracking-tighter block leading-none">COEES</span>
-              <p className="text-[9px] text-white/60 uppercase font-black tracking-[0.3em] mt-3">Edoméx 2026</p>
+              <span className="text-xl font-black text-white uppercase tracking-tighter block leading-none">COEES</span>
+              <p className="text-[8px] text-white/50 uppercase font-black tracking-[0.3em] mt-1">Edoméx 2026</p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-6 py-6">
-          <SidebarMenu className="gap-4">
+        <SidebarContent className="px-4 py-2">
+          <SidebarMenu className="gap-1.5">
             {allowedMenuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
-                  className={`h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
+                  className={`h-11 rounded-xl font-black uppercase text-[9px] tracking-widest px-4 transition-all duration-300 ${
                     pathname === item.path 
-                      ? 'bg-white text-[#9f2241] shadow-2xl shadow-black/20 scale-105' 
+                      ? 'bg-white text-[#9f2241] shadow-xl shadow-black/10' 
                       : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    {item.icon}
+                  <div className="flex items-center gap-3">
+                    <div className={pathname === item.path ? 'text-[#9f2241]' : 'text-white/50'}>
+                      {item.icon}
+                    </div>
                     <span>{item.name}</span>
                   </div>
                 </SidebarMenuButton>
@@ -123,32 +125,32 @@ export default function DashboardLayout({
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <div className="mt-auto p-8 opacity-40">
-           <div className="h-px bg-white/20 w-full mb-6" />
-           <p className="text-[8px] text-white font-black uppercase tracking-[0.2em] text-center leading-relaxed">
+        <div className="mt-auto p-6 opacity-30">
+           <div className="h-px bg-white/20 w-full mb-4" />
+           <p className="text-[7px] text-white font-black uppercase tracking-[0.2em] text-center leading-tight">
              Dirección de Educación Secundaria
            </p>
         </div>
       </Sidebar>
       <SidebarInset className="bg-transparent">
-        <header className="flex h-20 items-center justify-between border-b border-slate-100 px-10 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+        <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-6">
             <SidebarTrigger className="lg:hidden text-primary" />
             <div className="flex items-center gap-3">
-               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-               <h1 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema de Gestión Integral COEES</h1>
+               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+               <h1 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema de Gestión Integral COEES</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100 shadow-inner group transition-all hover:bg-white hover:shadow-md">
-              <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-sm">
-                <ShieldCheck className="h-5 w-5" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100 shadow-inner group transition-all hover:bg-white">
+              <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shadow-sm">
+                <ShieldCheck className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-primary leading-none">{userRfc}</span>
-                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                  {currentUser?.role === 'admin' ? 'Administrador del Sistema' : 'Analista Operativo'}
+                <span className="text-[9px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[6px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {currentUser?.role === 'admin' ? 'Administrador' : 'Analista'}
                 </span>
               </div>
             </div>
@@ -156,15 +158,15 @@ export default function DashboardLayout({
             <Button 
               variant="ghost" 
               onClick={handleLogout}
-              className="h-10 px-5 rounded-2xl text-rose-600 font-black uppercase text-[9px] tracking-widest hover:bg-rose-50 flex items-center gap-3 transition-all active:scale-95"
+              className="h-8 px-4 rounded-xl text-rose-600 font-black uppercase text-[8px] tracking-widest hover:bg-rose-50 flex items-center gap-2 transition-all active:scale-95"
             >
-              <LogOut className="h-4 w-4" /> 
-              Salir del Portal
+              <LogOut className="h-3.5 w-3.5" /> 
+              Salir
             </Button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
-          <div className="p-10 max-w-[1800px] mx-auto w-full">
+          <div className="p-8 max-w-[1800px] mx-auto w-full">
             {children}
           </div>
         </main>
