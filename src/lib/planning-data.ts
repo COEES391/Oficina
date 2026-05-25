@@ -40,7 +40,7 @@ export type ProgramStatus = {
   numCensal?: string;
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
-  materialesEdusat?: string[];
+  materialesEdusat?: { name: string; quantity: number }[];
 };
 
 export type SupportTicket = {
@@ -81,7 +81,7 @@ export type SupportTicket = {
   numCensal?: string;
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
-  materialesEdusat?: string[];
+  materialesEdusat?: { name: string; quantity: number }[];
 };
 
 const getEditorialData = (): ProgramStatus[] => {

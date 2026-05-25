@@ -123,9 +123,20 @@ export default function SupportPage() {
 
   const handleMaterialToggle = (material: string) => {
     const current = formData.materialesEdusat || [];
-    const updated = current.includes(material) 
-      ? current.filter(m => m !== material) 
-      : [...current, material];
+    const exists = current.find(m => m.name === material);
+    
+    let updated;
+    if (exists) {
+      updated = current.filter(m => m.name !== material);
+    } else {
+      updated = [...current, { name: material, quantity: 1 }];
+    }
+    setFormData({ ...formData, materialesEdusat: updated });
+  }
+
+  const handleMaterialQuantityChange = (material: string, quantity: number) => {
+    const current = formData.materialesEdusat || [];
+    const updated = current.map(m => m.name === material ? { ...m, quantity } : m);
     setFormData({ ...formData, materialesEdusat: updated });
   }
 
@@ -403,20 +414,39 @@ export default function SupportPage() {
 
                     <div className="space-y-3">
                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Material Utilizado (Seleccionar los utilizados en sitio)</Label>
-                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white p-6 rounded-2xl border border-blue-100 shadow-inner">
-                          {EDUSAT_MATERIALS.map(mat => (
-                            <div key={mat} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`mat-${mat}`} 
-                                checked={formData.materialesEdusat?.includes(mat)}
-                                onCheckedChange={() => handleMaterialToggle(mat)}
-                                className="border-blue-300 data-[state=checked]:bg-primary"
-                              />
-                              <label htmlFor={`mat-${mat}`} className="text-[10px] font-bold uppercase text-slate-600 leading-none cursor-pointer">
-                                {mat}
-                              </label>
-                            </div>
-                          ))}
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-2xl border border-blue-100 shadow-inner">
+                          {EDUSAT_MATERIALS.map(mat => {
+                            const materialData = formData.materialesEdusat?.find(m => m.name === mat);
+                            const isChecked = !!materialData;
+                            const quantity = materialData?.quantity || 0;
+
+                            return (
+                              <div key={mat} className="flex items-center justify-between gap-4 p-2 rounded-xl border border-slate-50 bg-slate-50/30">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`mat-${mat}`} 
+                                    checked={isChecked}
+                                    onCheckedChange={() => handleMaterialToggle(mat)}
+                                    className="border-blue-300 data-[state=checked]:bg-primary"
+                                  />
+                                  <label htmlFor={`mat-${mat}`} className="text-[9px] font-black uppercase text-slate-600 leading-none cursor-pointer">
+                                    {mat}
+                                  </label>
+                                </div>
+                                {isChecked && (
+                                  <div className="flex items-center gap-2">
+                                    <Label className="text-[8px] font-bold text-slate-400">CANT.</Label>
+                                    <Input 
+                                      type="number"
+                                      className="h-8 w-16 text-center text-[10px] font-black bg-white"
+                                      value={quantity}
+                                      onChange={(e) => handleMaterialQuantityChange(mat, parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                        </div>
                     </div>
                   </div>
