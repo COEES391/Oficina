@@ -124,7 +124,7 @@ export default function ProgramsPage() {
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     latitud: '', longitud: '',
     tecnicos: '',
-    tipoIncidencia: 'mantenimiento preventivo',
+    tipoIncidencia: 'mantenimiento',
     oficinaRegionalAtencion: '',
     numeroOficio: '',
     alumnosBeneficiados: 0,
@@ -742,8 +742,7 @@ export default function ProgramsPage() {
                                     <SelectContent>
                                       <SelectItem value="red edusat" className="text-[10px] uppercase">Red Edusat</SelectItem>
                                       <SelectItem value="red local" className="text-[10px] uppercase">Red Local</SelectItem>
-                                      <SelectItem value="mantenimiento preventivo" className="text-[10px] uppercase">Mantenimiento Preventivo</SelectItem>
-                                      <SelectItem value="mantenimiento correctivo" className="text-[10px] uppercase">Mantenimiento Correctivo</SelectItem>
+                                      <SelectItem value="mantenimiento" className="text-[10px] uppercase">Mantenimiento</SelectItem>
                                       <SelectItem value="teleplanteles" className="text-[10px] uppercase">Teleplanteles</SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -762,7 +761,7 @@ export default function ProgramsPage() {
 
                                 {formData.tipoIncidencia === 'teleplanteles' && (
                                   <div className="col-span-1 md:col-span-2 p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
-                                    <div className="flex items-center gap-3 border-b border-pink-100 pb-3">
+                                    <div className="flex items-center gap-3 border-pink-100 pb-3">
                                       <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
                                           <Tv className="h-6 w-6" />
                                       </div>

@@ -88,7 +88,7 @@ export default function SupportPage() {
     alumnosBeneficiados: 0,
     docentesBeneficiados: 0,
     numeroEquipos: 0,
-    tipoIncidencia: 'mantenimiento preventivo',
+    tipoIncidencia: 'mantenimiento',
     materialUtilizado: '',
     setes: 'N',
     observaciones: '',
@@ -401,8 +401,7 @@ export default function SupportPage() {
                       <SelectContent>
                         <SelectItem value="red edusat" className="text-[11px] uppercase font-bold">Red Edusat</SelectItem>
                         <SelectItem value="red local" className="text-[11px] uppercase font-bold">Red Local</SelectItem>
-                        <SelectItem value="mantenimiento preventivo" className="text-[11px] uppercase font-bold">Mantenimiento Preventivo</SelectItem>
-                        <SelectItem value="mantenimiento correctivo" className="text-[11px] uppercase font-bold">Mantenimiento Correctivo</SelectItem>
+                        <SelectItem value="mantenimiento" className="text-[11px] uppercase font-bold">Mantenimiento</SelectItem>
                         <SelectItem value="teleplanteles" className="text-[11px] uppercase font-bold">Teleplanteles</SelectItem>
                       </SelectContent>
                     </Select>

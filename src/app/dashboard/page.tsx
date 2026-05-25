@@ -1,4 +1,3 @@
-
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -149,9 +148,10 @@ export default function DashboardPage() {
     const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
     const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
 
-    const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length;
+    const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local').length;
     const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
     const teleplantelesCount = filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length;
+    const mantenimientoCount = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento').length;
 
     const alcanzadoC = redEscolarCount + redEdusatCount;
     const metaC = 78; // Meta según imagen
@@ -160,8 +160,7 @@ export default function DashboardPage() {
     const typesData = [
       { name: 'RED EDUSAT', value: redEdusatCount, fill: '#621132' },
       { name: 'RED LOCAL', value: redEscolarCount, fill: '#B38E5D' },
-      { name: 'MANT. PREV.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length, fill: '#059669' },
-      { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
+      { name: 'MANTENIMIENTO', value: mantenimientoCount, fill: '#059669' },
       { name: 'TELEPLANTEL', value: teleplantelesCount, fill: '#ec4899' },
     ];
 
@@ -404,8 +403,8 @@ export default function DashboardPage() {
               <Card className="executive-card p-6 border-l-4 border-emerald-500">
                  <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Preventivo</p>
-                     <h3 className="text-4xl font-black mt-2 text-emerald-600">{supportStats.serviciosMP}</h3>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Registrado</p>
+                     <h3 className="text-4xl font-black mt-2 text-emerald-600">{supportStats.serviciosMP + supportStats.serviciosMC}</h3>
                    </div>
                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm">
                      <CheckCircle2 className="h-6 w-6" />
@@ -416,8 +415,8 @@ export default function DashboardPage() {
               <Card className="executive-card p-6 border-l-4 border-rose-500">
                  <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Correctivo</p>
-                     <h3 className="text-4xl font-black mt-2 text-rose-600">{supportStats.serviciosMC}</h3>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Estatus Pendiente</p>
+                     <h3 className="text-4xl font-black mt-2 text-rose-600">{supportStats.statusData.find(s => s.name === 'PENDIENTES')?.value || 0}</h3>
                    </div>
                    <div className="h-10 w-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-sm">
                      <AlertCircle className="h-6 w-6" />

@@ -28,7 +28,7 @@ export type ProgramStatus = {
   agrupado_editorial?: string;
   tecnicos?: string;
   // Campos para ATRES (Reporte Técnico)
-  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
+  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles';
   oficinaRegionalAtencion?: string;
   numeroOficio?: string;
   alumnosBeneficiados?: number;
@@ -78,7 +78,7 @@ export type SupportTicket = {
   alumnosBeneficiados?: number;
   docentesBeneficiados?: number;
   numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
+  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles';
   materialUtilizado?: string;
   setes?: 'S' | 'N';
   observaciones?: string;
@@ -206,7 +206,7 @@ export const supportData: SupportTicket[] = [
     cct: '15DES0065B', 
     schoolName: 'DR. MANUEL SANDOVAL VALLARTA', 
     status: 'atendido', 
-    tipoIncidencia: 'mantenimiento preventivo', 
+    tipoIncidencia: 'mantenimiento', 
     fechaEntrada: '2024-05-20',
     valle: 'MEXICO',
     municipio: 'AMECAMECA',
