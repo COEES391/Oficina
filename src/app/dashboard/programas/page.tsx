@@ -35,7 +35,8 @@ import {
   Eye,
   Info,
   Search,
-  Radio
+  Radio,
+  UserCog
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -109,6 +110,7 @@ export default function ProgramsPage() {
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     latitud: '', longitud: '',
+    tecnicos: '',
     tipoIncidencia: 'mantenimiento preventivo',
     oficinaRegionalAtencion: '',
     numeroOficio: '',
@@ -625,6 +627,18 @@ export default function ProgramsPage() {
                           <div className="col-span-1 md:col-span-2 space-y-2">
                             <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre del CCT / Titular Responsable</Label>
                             <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="h-12 font-bold bg-slate-50" />
+                          </div>
+
+                          <div className="col-span-1 md:col-span-2 space-y-2">
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                              <UserCog className="h-4 w-4 text-accent" /> Nombre(s) del Técnico(s) Responsable(s)
+                            </Label>
+                            <Input 
+                              placeholder="INGRESAR NOMBRES DE LOS TÉCNICOS..." 
+                              className="h-12 bg-slate-50 font-bold uppercase" 
+                              value={formData.tecnicos} 
+                              onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
+                            />
                           </div>
 
                           <div className="col-span-1 md:col-span-2 space-y-4">

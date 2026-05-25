@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -59,6 +59,7 @@ export default function SupportPage() {
     region: '',
     valle: '',
     responsables: ['', '', ''],
+    tecnicos: '',
     oficinaRegionalAtencion: '',
     numeroOficio: '',
     alumnosBeneficiados: 0,
@@ -227,7 +228,8 @@ export default function SupportPage() {
     setFormData({
       ...ticket,
       responsables: [...(ticket.responsables || []), '', '', ''].slice(0, 3) as string[],
-      materialesEdusat: ticket.materialesEdusat || []
+      materialesEdusat: ticket.materialesEdusat || [],
+      tecnicos: ticket.tecnicos || ''
     });
     setEditingTicketId(ticket.id);
     setIsDialogOpen(true);
@@ -349,6 +351,18 @@ export default function SupportPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                    <UserCog className="h-4 w-4" /> Nombre(s) del Técnico(s) Responsable(s)
+                  </Label>
+                  <Input 
+                    className="h-14 rounded-2xl bg-slate-50 border-primary/10 font-bold uppercase" 
+                    placeholder="INGRESAR NOMBRES DE LOS TÉCNICOS..." 
+                    value={formData.tecnicos} 
+                    onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
+                  />
                 </div>
 
                 {formData.tipoIncidencia === 'teleplanteles' && (
@@ -557,23 +571,7 @@ export default function SupportPage() {
                   <div className="flex flex-col">
                     <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
                     <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
-                    {t.tipoIncidencia === 'teleplanteles' && (
-                       <div className="flex items-center gap-2 mt-1">
-                          <Badge className="bg-pink-100 text-pink-700 text-[8px] border-pink-200 uppercase">
-                             SEÑAL: {t.estatusSeñal || 'S/D'}
-                          </Badge>
-                       </div>
-                    )}
-                    {t.tipoIncidencia === 'red edusat' && (
-                       <div className="flex items-center gap-2 mt-1">
-                          <Badge className="bg-blue-100 text-blue-700 text-[8px] border-blue-200 uppercase">
-                             SEÑAL: {t.calidadSeñal || 'S/D'}
-                          </Badge>
-                          <Badge className="bg-slate-100 text-slate-700 text-[8px] border-slate-200 uppercase">
-                             CENSAL: {t.numCensal || 'S/D'}
-                          </Badge>
-                       </div>
-                    )}
+                    {t.tecnicos && <span className="text-[8px] text-accent font-black uppercase mt-1">TÉC: {t.tecnicos}</span>}
                   </div>
                 </TableCell>
                 <TableCell className="capitalize text-[10px] font-black text-slate-500">

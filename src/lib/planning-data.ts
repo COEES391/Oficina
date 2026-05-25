@@ -26,6 +26,7 @@ export type ProgramStatus = {
   latitud?: string;
   longitud?: string;
   agrupado_editorial?: string;
+  tecnicos?: string;
   // Campos para ATRES (Reporte Técnico)
   tipoIncidencia?: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
   oficinaRegionalAtencion?: string;
@@ -54,6 +55,7 @@ export type SupportTicket = {
   region?: string;
   valle?: string;
   responsables: string[];
+  tecnicos?: string;
   oficinaRegionalAtencion: string;
   numeroOficio?: string;
   alumnosBeneficiados?: number;
@@ -329,9 +331,9 @@ const getGeopositioningData = (): ProgramStatus[] => {
 
 export const programsData: ProgramStatus[] = [
   { id: 'BD-1', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', alumnosBeneficiados: 450, docentesBeneficiados: 25 },
-  ...getAccountsData(),
-  ...getGeopositioningData(),
-  ...getEditorialData()
+  ...getEditorialData().slice(0, 10),
+  ...getAccountsData().slice(0, 10),
+  ...getGeopositioningData().slice(0, 10)
 ];
 
 export const supportData: SupportTicket[] = [
@@ -347,6 +349,7 @@ export const supportData: SupportTicket[] = [
     modalidad: 'DES',
     oficinaRegionalAtencion: 'Oficina de Tecnóloga Educativa Nezahualcóyotl',
     responsables: ['ING. CARLOS LÓPEZ'],
+    tecnicos: 'ING. CARLOS LÓPEZ',
     serviciosMC: 0,
     serviciosMP: 12,
     numeroEquipos: 12
