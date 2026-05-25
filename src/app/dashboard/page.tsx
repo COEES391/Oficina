@@ -1,3 +1,4 @@
+
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -22,7 +23,11 @@ import {
   ArrowUpRight,
   ClipboardList,
   MapPin,
-  Settings2
+  Settings2,
+  Cpu,
+  Globe,
+  Radio,
+  Navigation
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -47,6 +52,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 const TOTAL_UNIVERSE = 830;
 const TRAINING_GOAL_2026 = 5600;
+const QUARTERLY_TRAINING_GOAL = 1400;
 
 const PROGRAM_RUBROS = [
   'Biblioteca Digital',
@@ -96,7 +102,6 @@ export default function DashboardPage() {
     if (storedGoals) setGoals(storedGoals)
   }, [])
 
-  // Filtrado de datos para Soporte
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || (t.valle && t.valle.toUpperCase() === valleFilter.toUpperCase());
@@ -106,7 +111,6 @@ export default function DashboardPage() {
     });
   }, [tickets, valleFilter, dateStart, dateEnd]);
 
-  // Consolidación de Capacitación (Base + Asistentes de Biblioteca Digital)
   const consolidatedTrainings = useMemo(() => {
     const base = trainings.map(t => ({ ...t, source: 'CAPACITACION' }));
     const fromPrograms: any[] = [];
@@ -139,7 +143,6 @@ export default function DashboardPage() {
     return [...base, ...fromPrograms];
   }, [trainings, programs]);
 
-  // Filtrado de datos para Capacitación
   const filteredTrainings = useMemo(() => {
     return consolidatedTrainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
@@ -149,7 +152,6 @@ export default function DashboardPage() {
     });
   }, [consolidatedTrainings, valleFilter, dateStart, dateEnd]);
 
-  // Estadísticas de Soporte
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
     const proceso = filteredTickets.filter(t => t.status === 'en proceso').length;
@@ -189,47 +191,35 @@ export default function DashboardPage() {
     };
   }, [filteredTickets]);
 
-  // Estadísticas de Capacitación
   const trainingStats = useMemo(() => {
     const total = filteredTrainings.length;
-    const progress = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
-    
-    let totalAlumnos = 0;
-    let totalDocentes = 0;
-    const processedGroups = new Set();
+    const progressTotal = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
 
-    filteredTrainings.forEach((tr: any) => {
-      let groupId = '';
-      if (tr.source === 'CAPACITACION') {
-        groupId = `CAP-${tr.id.split('-')[0]}`;
-      } else {
-        groupId = `PROG-${tr.id.split('-').pop()}`;
-      }
+    // Data del Informe Trimestral Oficial
+    const indicadorA = {
+      alcanzado: 982,
+      meta: QUARTERLY_TRAINING_GOAL,
+      faltante: 418,
+      porcentaje: 70.14,
+      cursos: [
+        { name: 'ChatGPT: en el aprendizaje', value: 334 },
+        { name: 'ChatPDF: el asistente virtual', value: 79 },
+        { name: 'Excel en línea', value: 200 },
+        { name: 'Kahoot!, diviértete evaluando', value: 112 },
+        { name: 'Productividad Microsoft 365', value: 257 },
+      ]
+    };
 
-      if (!processedGroups.has(groupId)) {
-        totalAlumnos += (tr.alumnosBeneficiados || 0);
-        totalDocentes += (tr.docentesBeneficiados || 0);
-        processedGroups.add(groupId);
-      }
-    });
-
-    // Monthly stats
-    const monthsNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const monthGoals = [387, 566, 447, 466, 418, 516, 450, 0, 950, 570, 467, 363];
-    
-    const byMonthPlanning = monthsNames.map((name, i) => {
-      const actual = filteredTrainings.filter(tr => {
-        const d = new Date(tr.fechaInicio);
-        return d.getMonth() === i;
-      }).length;
-      return { name, actual, goal: monthGoals[i] };
-    });
-
-    const trimesterGoals = [1400, 1400, 1400, 1400];
-    const byTrimester = ['Trim 1', 'Trim 2', 'Trim 3', 'Trim 4'].map((name, i) => {
-      const actual = byMonthPlanning.slice(i * 3, (i + 1) * 3).reduce((acc, m) => acc + m.actual, 0);
-      return { name, actual, goal: trimesterGoals[i] };
-    });
+    const indicadorC = {
+      alcanzado: 66,
+      meta: 108,
+      faltante: 42,
+      porcentaje: 61.11,
+      servicios: [
+        { name: 'Red Escolar (55 Escuelas)', value: 66 },
+        { name: 'Red Edusat (33 Telesec.)', value: 34 }
+      ]
+    };
 
     const regionsMapping = [
       { name: 'Toluca', goal: 2156, filter: 'TOLUCA' },
@@ -247,39 +237,15 @@ export default function DashboardPage() {
       return { name: reg.name, actual, goal: reg.goal };
     });
 
-    const getTopItems = (field: string, limit = 5) => {
-      const counts: Record<string, number> = {};
-      filteredTrainings.forEach((tr: any) => {
-        const val = tr[field] || 'SIN DATO';
-        counts[val] = (counts[val] || 0) + 1;
-      });
-      return Object.entries(counts)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, limit)
-        .map((item, idx) => ({ ...item, fill: idx % 2 === 0 ? '#621132' : '#B38E5D' }));
-    };
-
     return { 
       total, 
-      progress, 
-      byMonthPlanning,
-      byTrimester,
-      byRegionalOffice,
-      bySector: getTopItems('asistenteSector'),
-      byModality: getTopItems('asistenteModalidad'),
-      byZE: getTopItems('asistenteZE'),
-      byGender: getTopItems('asistenteGenero'),
-      byValle: getTopItems('asistenteValle'),
-      beneficiarios: {
-        alumnos: totalAlumnos || (total > 0 ? 450 : 0),
-        docentes: totalDocentes || (total > 0 ? 25 : 0),
-        total: (totalAlumnos + totalDocentes) || (total > 0 ? 475 : 0)
-      }
+      progressTotal,
+      indicadorA,
+      indicadorC,
+      byRegionalOffice
     };
   }, [filteredTrainings, goals.trainingGoal]);
 
-  // Estadísticas de Programas
   const programCoverage = useMemo(() => {
     return PROGRAM_RUBROS.map(name => {
       const records = programs.filter(p => p.name === name);
@@ -477,11 +443,11 @@ export default function DashboardPage() {
       )}
 
       {activeReport === 'capacitacion' && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center bg-white shadow-xl border-t-4 border-primary">
                <div className="mx-auto h-40 w-40 rounded-full border-[12px] border-primary/10 border-t-primary flex items-center justify-center shadow-inner relative">
-                  <span className="text-4xl font-black text-primary">{trainingStats.progress}%</span>
+                  <span className="text-4xl font-black text-primary">{trainingStats.progressTotal}%</span>
                   <Target className="absolute -top-1 -right-1 h-10 w-10 text-accent bg-white rounded-full p-2 shadow-lg border-2 border-accent/20" />
                </div>
                <div className="mt-8 space-y-1">
@@ -500,167 +466,161 @@ export default function DashboardPage() {
                </div>
             </Card>
 
-            <div className="md:col-span-2 space-y-6">
-              <Card className="executive-card">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Region
-                  </CardTitle>
-                  <CardDescription className="text-[9px] font-bold uppercase">Meta de 1,400 por trimestre</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                      <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
-                      <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
-                      <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
-                    </RechartsBarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="executive-card p-6 border-l-4 border-slate-400">
-                 <div className="flex justify-between items-start mb-4">
-                   <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios Directos</p>
-                     <h3 className="text-3xl font-black mt-1 text-slate-700">{trainingStats.beneficiarios.total}</h3>
-                   </div>
-                   <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm">
-                     <Users className="h-6 w-6" />
-                   </div>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Alumnos</p>
-                      <p className="text-xl font-black text-primary">{trainingStats.beneficiarios.alumnos}</p>
-                    </div>
-                    <div className="space-y-1 border-l pl-4 border-slate-100">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Docentes</p>
-                      <p className="text-xl font-black text-accent">{trainingStats.beneficiarios.docentes}</p>
-                    </div>
-                 </div>
-              </Card>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <Card className="executive-card">
-                <CardHeader>
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <Calendar className="h-4 w-4" /> Seguimiento Mensual 2026
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                   <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={trainingStats.byMonthPlanning}>
-                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                         <Bar name="Logro" dataKey="actual" fill="#621132" radius={[4, 4, 0, 0]} />
-                         <Bar name="Meta" dataKey="goal" fill="#B38E5D" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
-                      </RechartsBarChart>
-                   </ResponsiveContainer>
-                </CardContent>
-             </Card>
-
-             <Card className="executive-card">
-                <CardHeader>
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Cumplimiento por Trimestre
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                   <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={trainingStats.byTrimester} layout="vertical">
-                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                         <XAxis type="number" hide />
-                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} width={80} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                         <Bar name="Real" dataKey="actual" fill="#621132" radius={[0, 4, 4, 0]} barSize={20} />
-                         <Bar name="Meta" dataKey="goal" fill="#B38E5D" fillOpacity={0.4} radius={[0, 4, 4, 0]} barSize={20} />
-                      </RechartsBarChart>
-                   </ResponsiveContainer>
-                </CardContent>
-             </Card>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="executive-card">
-              <CardHeader>
+            <Card className="md:col-span-2 executive-card">
+              <CardHeader className="pb-2">
                 <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <Activity className="h-4 w-4" /> Top 5 Sectores Atendidos
+                  <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Región
                 </CardTitle>
+                <CardDescription className="text-[9px] font-bold uppercase">Proyección de Alcance Territorial</CardDescription>
               </CardHeader>
-              <CardContent className="h-[280px]">
+              <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart layout="vertical" data={trainingStats.bySector} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} width={80} />
+                  <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
                     <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                    <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
-                      {trainingStats.bySector.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
+                    <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
+                    <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
                   </RechartsBarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="executive-card">
-              <CardHeader>
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <MonitorCheck className="h-4 w-4" /> Distribución por Modalidad
-                </CardTitle>
+          <div className="grid grid-cols-1 gap-8">
+            {/* Indicador A */}
+            <Card className="executive-card border-l-8 border-l-primary">
+              <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-black uppercase text-primary">Indicador A</CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Docentes capacitados sobre Tecnologías de la Información (TICCAD)</CardDescription>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-primary text-white text-xs px-4 py-1">{trainingStats.indicadorA.porcentaje}% Cumplimiento</Badge>
+                </div>
               </CardHeader>
-              <CardContent className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart layout="vertical" data={trainingStats.byModality} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} width={100} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                    <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
-                      {trainingStats.byModality.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="md:col-span-2 space-y-4">
+                    <h4 className="text-[11px] font-black uppercase text-accent border-b pb-1">Distribución por Curso - 1er Informe</h4>
+                    <div className="space-y-4">
+                      {trainingStats.indicadorA.cursos.map((curso, idx) => (
+                        <div key={idx} className="space-y-1.5">
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase">
+                            <span className="text-slate-600 truncate max-w-[80%]">{idx + 1}. {curso.name}</span>
+                            <span className="text-primary">{curso.value} Docentes</span>
+                          </div>
+                          <Progress value={(curso.value / trainingStats.indicadorA.alcanzado) * 100} className="h-1.5 bg-slate-100" />
+                        </div>
                       ))}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="bg-primary/5 rounded-[2rem] p-6 flex flex-col justify-center items-center text-center space-y-4 border border-primary/10 shadow-inner">
+                    <Cpu className="h-10 w-10 text-primary opacity-40" />
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Docentes Alcanzados</p>
+                      <h4 className="text-4xl font-black text-primary">{trainingStats.indicadorA.alcanzado}</h4>
+                    </div>
+                    <div className="w-full h-px bg-primary/10" />
+                    <div className="grid grid-cols-2 w-full gap-4">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Faltante</p>
+                        <p className="text-sm font-black text-accent">{trainingStats.indicadorA.faltante}</p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Meta Trim.</p>
+                        <p className="text-sm font-black text-slate-600">{trainingStats.indicadorA.meta}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="executive-card">
-              <CardHeader>
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Participación por Género
-                </CardTitle>
+            {/* Indicador B */}
+            <Card className="executive-card border-l-8 border-l-accent">
+              <CardHeader className="bg-slate-50/50">
+                <CardTitle className="text-lg font-black uppercase text-accent">Indicador B</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas para el fortalecimiento didáctico</CardDescription>
               </CardHeader>
-              <CardContent className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={trainingStats.byGender}
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {trainingStats.byGender.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                    <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+              <CardContent className="pt-6">
+                 <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="flex-1 space-y-4">
+                       <div className="p-5 bg-accent/5 rounded-2xl border border-accent/10">
+                          <h4 className="text-[11px] font-black text-accent uppercase mb-2 flex items-center gap-2">
+                             <Globe className="h-4 w-4" /> Vinculación Territorial 2026
+                          </h4>
+                          <p className="text-xs font-semibold text-slate-700 leading-relaxed italic">
+                             "Durante el primer trimestre (enero-marzo) 2026, se llevó a cabo el despliegue de una estrategia de vinculación territorial que se alinea con el Plan de Desarrollo del Estado de México 2023-2029 <strong>'Más territorio, menos escritorio'</strong>."
+                          </p>
+                       </div>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase">
+                          Propósito: Establecer contacto formal con directivos y docentes para realizar diagnósticos de necesidades específicas en sitio y calendarizar la oferta formativa presencial.
+                       </p>
+                    </div>
+                    <div className="h-32 w-32 rounded-full border-8 border-emerald-100 flex items-center justify-center bg-white shadow-xl relative animate-pulse">
+                       <span className="text-2xl font-black text-emerald-600">100%</span>
+                       <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">Cumplido</Badge>
+                    </div>
+                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Indicador C */}
+            <Card className="executive-card border-l-8 border-l-slate-400">
+              <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-black uppercase text-slate-700">Indicador C</CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría, capacitación y actualización técnica</CardDescription>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-slate-700 text-white text-xs px-4 py-1">{trainingStats.indicadorC.porcentaje}% Eficiencia</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                       <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                             <Navigation className="h-6 w-6" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-slate-400 uppercase">Red Escolar</p>
+                             <h4 className="text-xl font-black text-slate-700">66 Servicios Realizados</h4>
+                             <p className="text-[9px] font-bold text-muted-foreground uppercase">En 55 escuelas secundarias (Generales y Técnicas)</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                             <Radio className="h-6 w-6" />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-slate-400 uppercase">Red Edusat</p>
+                             <h4 className="text-xl font-black text-slate-700">34 Servicios Realizados</h4>
+                             <p className="text-[9px] font-bold text-muted-foreground uppercase">En 33 escuelas telesecundarias</p>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
+                       <div className="flex justify-between items-end mb-2">
+                          <p className="text-[10px] font-black uppercase text-slate-400">Meta Red Local: 108 Servicios</p>
+                          <p className="text-2xl font-black text-primary">{trainingStats.indicadorC.alcanzado}</p>
+                       </div>
+                       <Progress value={trainingStats.indicadorC.porcentaje} className="h-3 bg-white" />
+                       <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
+                             <p className="text-[8px] font-black text-slate-400 uppercase">Faltante Meta</p>
+                             <p className="text-lg font-black text-rose-500">{trainingStats.indicadorC.faltante}</p>
+                          </div>
+                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
+                             <p className="text-[8px] font-black text-slate-400 uppercase">Estatus Trim.</p>
+                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">En Proceso</Badge>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
               </CardContent>
             </Card>
           </div>
@@ -726,3 +686,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    
