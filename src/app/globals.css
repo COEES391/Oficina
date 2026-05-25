@@ -4,14 +4,14 @@
 
 @layer base {
   :root {
-    /* Fondo Arena solicitado: #ddc8a4 -> HSL(38 47% 75%) */
+    /* Fondo Arena: #ddc8a4 */
     --background: 38 47% 75%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    /* Color Lateral solicitado: #9f2241 -> HSL(345 65% 38%) */
+    /* Color Institucional Guinda: #9f2241 */
     --primary: 345 65% 38%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
@@ -33,10 +33,14 @@
 @layer base {
   * {
     @apply border-border;
+    font-family: var(--font-sans), sans-serif;
   }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-black tracking-tight;
   }
 }
 
@@ -63,5 +67,5 @@
   @apply bg-slate-50;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-primary/20 transition-colors;
+  @apply bg-slate-300 rounded-full hover:bg-primary/20 transition-colors;
 }
