@@ -27,7 +27,8 @@ import {
   Cpu,
   Globe,
   Radio,
-  Navigation
+  Navigation,
+  Tv
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -71,7 +72,7 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<DashboardGoals>({
     periodType: 'Año Fiscal',
     periodName: '2026',
-    supportGoal: 500,
+    supportGoal: 78,
     trainingGoal: TRAINING_GOAL_2026
   })
 
@@ -148,13 +149,20 @@ export default function DashboardPage() {
     const serviciosMP = filteredTickets.reduce((acc, t) => acc + (t.serviciosMP || 0), 0);
     const serviciosMC = filteredTickets.reduce((acc, t) => acc + (t.serviciosMC || 0), 0);
 
+    const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length;
+    const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
+    const teleplantelesCount = filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length;
+
+    const alcanzadoC = redEscolarCount + redEdusatCount;
+    const metaC = 78; // Meta según imagen
+    const porcentajeC = metaC > 0 ? parseFloat(((alcanzadoC / metaC) * 100).toFixed(2)) : 0;
+
     const typesData = [
-      { name: 'RED EDUSAT', value: filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length, fill: '#621132' },
-      { name: 'RED LOCAL', value: filteredTickets.filter(t => t.tipoIncidencia === 'red local').length, fill: '#B38E5D' },
-      { name: 'INST. RED', value: filteredTickets.filter(t => t.tipoIncidencia === 'instalación red local').length, fill: '#475569' },
+      { name: 'RED EDUSAT', value: redEdusatCount, fill: '#621132' },
+      { name: 'RED LOCAL', value: redEscolarCount, fill: '#B38E5D' },
       { name: 'MANT. PREV.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento preventivo').length, fill: '#059669' },
       { name: 'MANT. CORR.', value: filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento correctivo').length, fill: '#dc2626' },
-      { name: 'TELEPLANTEL', value: filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length, fill: '#ec4899' },
+      { name: 'TELEPLANTEL', value: teleplantelesCount, fill: '#ec4899' },
     ];
 
     return {
@@ -169,7 +177,15 @@ export default function DashboardPage() {
       beneficiados: filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0),
       alumnos: filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0), 0),
       docentes: filteredTickets.reduce((acc, t) => acc + (t.docentesBeneficiados || 0), 0),
-      total: filteredTickets.length
+      total: filteredTickets.length,
+      indicadorC: {
+        alcanzado: alcanzadoC,
+        meta: metaC,
+        porcentaje: porcentajeC,
+        faltante: Math.max(0, metaC - alcanzadoC),
+        redEscolar: redEscolarCount,
+        redEdusat: redEdusatCount
+      }
     };
   }, [filteredTickets]);
 
@@ -177,7 +193,6 @@ export default function DashboardPage() {
     const total = filteredTrainings.length;
     const progressTotal = Math.min(100, Math.round((total / goals.trainingGoal) * 100));
 
-    // Indicador A: TICCAD (Desglose real por curso)
     const courseCounts: Record<string, number> = {};
     filteredTrainings.forEach(tr => {
       const name = tr.cursoNombre || 'Curso sin nombre';
@@ -197,32 +212,13 @@ export default function DashboardPage() {
       cursos: sortedCourses.length > 0 ? sortedCourses : [{ name: 'Sin registros aún', value: 0 }]
     };
 
-    // Indicador B: Vinculación Territorial (Unique Schools)
     const uniqueSchools = new Set(filteredTrainings.map(t => t.asistenteCCT)).size;
-    const targetSchools = 150; // Meta trimestral de escuelas a diagnosticar
+    const targetSchools = 150; 
     const indicadorB = {
       porcentaje: Math.min(100, Math.round((uniqueSchools / targetSchools) * 100)),
       total: uniqueSchools
     };
 
-    // Indicador C: Servicios Técnicos (Extraídos de Soporte)
-    const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local' || t.tipoIncidencia === 'instalación red local').length;
-    const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
-    const alcanzadoC = redEscolarCount + redEdusatCount;
-    const metaC = 108;
-
-    const indicadorC = {
-      alcanzado: alcanzadoC,
-      meta: metaC,
-      faltante: Math.max(0, metaC - alcanzadoC),
-      porcentaje: alcanzadoC > 0 ? parseFloat(((alcanzadoC / metaC) * 100).toFixed(2)) : 0,
-      servicios: [
-        { name: `Red Escolar (${new Set(filteredTickets.filter(t => t.tipoIncidencia?.includes('red local')).map(t => t.cct)).size} Esc.)`, value: redEscolarCount },
-        { name: `Red Edusat (${new Set(filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').map(t => t.cct)).size} Teles.)`, value: redEdusatCount }
-      ]
-    };
-
-    // Planeación por Región
     const regionsMapping = [
       { name: 'Toluca', goal: 2156, filter: 'TOLUCA' },
       { name: 'Nezahualcóyotl', goal: 860, filter: 'NEZAHUALCOYOTL' },
@@ -244,10 +240,9 @@ export default function DashboardPage() {
       progressTotal,
       indicadorA,
       indicadorB,
-      indicadorC,
       byRegionalOffice
     };
-  }, [filteredTrainings, filteredTickets, goals.trainingGoal]);
+  }, [filteredTrainings, goals.trainingGoal]);
 
   if (!mounted) return null;
 
@@ -316,27 +311,57 @@ export default function DashboardPage() {
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              <Card className="executive-card">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Distribución Operativa por Estatus
-                  </CardTitle>
-                  <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary">ANÁLISIS DE ESTATUS</Badge>
+              {/* Indicador C de Soporte */}
+              <Card className="executive-card border-l-8 border-l-primary">
+                <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-black uppercase text-primary">Indicador C</CardTitle>
+                    <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría y actualización técnica</CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <Badge className="bg-primary text-white text-xs px-4 py-1">{supportStats.indicadorC.porcentaje}% Eficiencia Real</Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart data={supportStats.statusData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: '900' }} />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
-                        {supportStats.statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </RechartsBarChart>
-                  </ResponsiveContainer>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-primary shadow-sm">
+                          <Navigation className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Servicios Red Escolar</p>
+                          <h4 className="text-xl font-black text-slate-700">{supportStats.indicadorC.redEscolar} Servicios</h4>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-accent shadow-sm">
+                          <Radio className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Servicios Red Edusat</p>
+                          <h4 className="text-xl font-black text-slate-700">{supportStats.indicadorC.redEdusat} Servicios</h4>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
+                       <div className="flex justify-between items-end mb-2">
+                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Real vs Meta: {supportStats.indicadorC.meta}</p>
+                          <p className="text-2xl font-black text-primary">{supportStats.indicadorC.alcanzado}</p>
+                       </div>
+                       <Progress value={supportStats.indicadorC.porcentaje} className="h-3 bg-white" />
+                       <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
+                             <p className="text-[8px] font-black text-slate-400 uppercase">Faltante</p>
+                             <p className="text-lg font-black text-rose-500">{supportStats.indicadorC.faltante}</p>
+                          </div>
+                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
+                             <p className="text-[8px] font-black text-slate-400 uppercase">Estatus</p>
+                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">Auditado</Badge>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -475,7 +500,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-8">
-            {/* Indicador A Dinámico */}
             <Card className="executive-card border-l-8 border-l-primary">
               <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
                 <div>
@@ -524,7 +548,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Indicador B Dinámico */}
             <Card className="executive-card border-l-8 border-l-accent">
               <CardHeader className="bg-slate-50/50">
                 <CardTitle className="text-lg font-black uppercase text-accent">Indicador B</CardTitle>
@@ -545,53 +568,6 @@ export default function DashboardPage() {
                     <div className="h-32 w-32 rounded-full border-8 border-emerald-100 flex items-center justify-center bg-white shadow-xl relative">
                        <span className="text-2xl font-black text-emerald-600">{trainingStats.indicadorB.porcentaje}%</span>
                        <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">En Tiempo</Badge>
-                    </div>
-                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Indicador C Dinámico */}
-            <Card className="executive-card border-l-8 border-l-slate-400">
-              <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-black uppercase text-slate-700">Indicador C</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría y actualización técnica en redes</CardDescription>
-                </div>
-                <div className="text-right">
-                  <Badge className="bg-slate-700 text-white text-xs px-4 py-1">{trainingStats.indicadorC.porcentaje}% Eficiencia Real</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                       {trainingStats.indicadorC.servicios.map((serv, idx) => (
-                         <div key={idx} className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                               {idx === 0 ? <Navigation className="h-6 w-6" /> : <Radio className="h-6 w-6" />}
-                            </div>
-                            <div>
-                               <p className="text-[10px] font-black text-slate-400 uppercase">{serv.name}</p>
-                               <h4 className="text-xl font-black text-slate-700">{serv.value} Servicios</h4>
-                            </div>
-                         </div>
-                       ))}
-                    </div>
-                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
-                       <div className="flex justify-between items-end mb-2">
-                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Redes vs Meta: {trainingStats.indicadorC.meta}</p>
-                          <p className="text-2xl font-black text-primary">{trainingStats.indicadorC.alcanzado}</p>
-                       </div>
-                       <Progress value={trainingStats.indicadorC.porcentaje} className="h-3 bg-white" />
-                       <div className="mt-4 grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
-                             <p className="text-[8px] font-black text-slate-400 uppercase">Pendiente</p>
-                             <p className="text-lg font-black text-rose-500">{trainingStats.indicadorC.faltante}</p>
-                          </div>
-                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
-                             <p className="text-[8px] font-black text-slate-400 uppercase">Estatus Trim.</p>
-                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">Auditado</Badge>
-                          </div>
-                       </div>
                     </div>
                  </div>
               </CardContent>
@@ -654,4 +630,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-    
