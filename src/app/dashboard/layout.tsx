@@ -1,5 +1,6 @@
+
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Sidebar,
@@ -20,9 +21,11 @@ import {
   LogOut, 
   Monitor,
   ShieldCheck,
-  Database
+  Database,
+  Users as UsersIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { type AppUser } from '@/lib/planning-data'
 
 export default function DashboardLayout({
   children,
@@ -32,6 +35,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [userRfc, setUserRfc] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -41,6 +45,23 @@ export default function DashboardLayout({
       router.push('/')
     } else {
       setUserRfc(rfc)
+      // Recuperar datos del usuario logueado para ver privilegios
+      const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
+      const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc.toUpperCase())
+      
+      // Si es el usuario maestro original
+      if (rfc === 'COEES' || rfc === 'CEDITORIAL') {
+        setCurrentUser({
+          id: 'master',
+          rfc: rfc,
+          name: rfc === 'COEES' ? 'Administrador Maestro' : 'Admin Editorial',
+          password: '',
+          role: 'admin',
+          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+        })
+      } else if (user) {
+        setCurrentUser(user)
+      }
     }
   }, [router])
 
@@ -49,19 +70,25 @@ export default function DashboardLayout({
     router.push('/')
   }
 
-  const menuItems = [
-    { name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
-    { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
-    { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
-    { name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
+  const allMenuItems = [
+    { id: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
+    { id: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
+    { id: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
+    { id: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <UsersIcon className="h-5 w-5" /> },
   ]
+
+  const allowedMenuItems = useMemo(() => {
+    if (!currentUser) return []
+    return allMenuItems.filter(item => currentUser.privileges.includes(item.id))
+  }, [currentUser])
 
   if (!mounted) return null
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-none bg-primary shadow-2xl overflow-hidden">
+      <Sidebar className="border-none bg-[#9f2241] shadow-2xl overflow-hidden">
         <SidebarHeader className="pt-12 pb-8">
           <div className="flex flex-col items-center gap-5 px-6">
             <div className="relative h-20 w-20 bg-white/10 rounded-[2rem] flex items-center justify-center border border-white/10 shadow-inner group overflow-hidden">
@@ -76,14 +103,14 @@ export default function DashboardLayout({
         </SidebarHeader>
         <SidebarContent className="px-6 py-6">
           <SidebarMenu className="gap-4">
-            {menuItems.map((item) => (
+            {allowedMenuItems.map((item) => (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
                   className={`h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest px-6 transition-all duration-500 ${
                     pathname === item.path 
-                      ? 'bg-white text-primary shadow-2xl shadow-black/20 scale-105' 
+                      ? 'bg-white text-[#9f2241] shadow-2xl shadow-black/20 scale-105' 
                       : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -120,7 +147,9 @@ export default function DashboardLayout({
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-primary leading-none">{userRfc}</span>
-                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">Analista Operativo Senior</span>
+                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                  {currentUser?.role === 'admin' ? 'Administrador del Sistema' : 'Analista Operativo'}
+                </span>
               </div>
             </div>
 

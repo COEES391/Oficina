@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
 import { Eye, EyeOff, Lock, User } from 'lucide-react'
+import { type AppUser } from '@/lib/planning-data'
 
 export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
@@ -27,9 +29,21 @@ export default function LoginPage() {
   const handleLogin = () => {
     const cleanRfc = rfc.trim().toUpperCase()
     
+    // 1. Verificar contra usuarios dinámicos en localStorage
+    const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
+    const dynamicUser = storedUsers.find(u => u.rfc.toUpperCase() === cleanRfc && u.password === password)
+
+    if (dynamicUser) {
+      localStorage.setItem('userRfc', cleanRfc)
+      toast({ title: "Acceso concedido", description: `Bienvenido, ${dynamicUser.name}.` })
+      router.push('/dashboard')
+      return
+    }
+
+    // 2. Usuarios Maestros hardcoded (Soporte técnico de emergencia)
     if (cleanRfc === 'COEES' && password === '123456') {
       localStorage.setItem('userRfc', cleanRfc)
-      toast({ title: "Acceso concedido", description: "Bienvenido al Sistema Integral COEES." })
+      toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
       router.push('/dashboard')
     } else if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
       localStorage.setItem('userRfc', cleanRfc)

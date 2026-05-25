@@ -1,3 +1,13 @@
+
+export type AppUser = {
+  id: string;
+  rfc: string;
+  name: string;
+  password: string;
+  role: 'admin' | 'user';
+  privileges: string[]; // ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+};
+
 export type ProgramStatus = {
   id: string;
   name: string;
