@@ -76,6 +76,7 @@ export default function DashboardPage() {
   })
 
   const [valleFilter, setValleFilter] = useState('all')
+  const [cctFilter, setCctFilter] = useState('')
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
@@ -87,7 +88,7 @@ export default function DashboardPage() {
     const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
     setTrainings(storedTrainings)
 
-    const storedPrograms = JSON.parse(localStorage.getItem('programs_full') || '[]')
+    const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v22') || '[]')
     setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
 
     const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
@@ -99,9 +100,20 @@ export default function DashboardPage() {
       const matchValle = valleFilter === 'all' || (t.valle && t.valle.toUpperCase() === valleFilter.toUpperCase());
       const matchDateStart = !dateStart || t.fechaEntrada >= dateStart;
       const matchDateEnd = !dateEnd || t.fechaEntrada <= dateEnd;
-      return matchValle && matchDateStart && matchDateEnd;
+      const matchCct = !cctFilter || (t.cct && t.cct.toUpperCase().includes(cctFilter.toUpperCase()));
+      return matchValle && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [tickets, valleFilter, dateStart, dateEnd]);
+  }, [tickets, valleFilter, dateStart, dateEnd, cctFilter]);
+
+  const filteredPrograms = useMemo(() => {
+    return programs.filter(p => {
+      const matchValle = valleFilter === 'all' || (p.valle && p.valle.toUpperCase() === valleFilter.toUpperCase());
+      const matchDateStart = !dateStart || p.date >= dateStart;
+      const matchDateEnd = !dateEnd || p.date <= dateEnd;
+      const matchCct = !cctFilter || (p.cct && p.cct.toUpperCase().includes(cctFilter.toUpperCase()));
+      return matchValle && matchDateStart && matchDateEnd && matchCct;
+    });
+  }, [programs, valleFilter, dateStart, dateEnd, cctFilter]);
 
   const consolidatedTrainings = useMemo(() => {
     const base = trainings.map(t => ({ ...t, source: 'CAPACITACION' }));
@@ -136,9 +148,10 @@ export default function DashboardPage() {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
-      return matchValle && matchDateStart && matchDateEnd;
+      const matchCct = !cctFilter || (tr.asistenteCCT && tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase()));
+      return matchValle && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [consolidatedTrainings, valleFilter, dateStart, dateEnd]);
+  }, [consolidatedTrainings, valleFilter, dateStart, dateEnd, cctFilter]);
 
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
@@ -154,7 +167,7 @@ export default function DashboardPage() {
     const mantenimientoCount = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento').length;
 
     const alcanzadoC = redEscolarCount + redEdusatCount;
-    const metaC = 78; // Meta según imagen
+    const metaC = 78; 
     const porcentajeC = metaC > 0 ? parseFloat(((alcanzadoC / metaC) * 100).toFixed(2)) : 0;
 
     const typesData = [
@@ -289,6 +302,16 @@ export default function DashboardPage() {
             <Input type="date" className="h-8 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
           </div>
 
+          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 min-w-[150px]">
+            <Search className="h-4 w-4 text-slate-400" />
+            <Input 
+              placeholder="CCT..." 
+              className="h-8 w-full text-[10px] font-black border-none focus-visible:ring-0 bg-transparent uppercase shadow-none" 
+              value={cctFilter} 
+              onChange={e => setCctFilter(e.target.value)} 
+            />
+          </div>
+
           <Select value={valleFilter} onValueChange={setValleFilter}>
             <SelectTrigger className="h-10 text-[10px] font-black w-[180px] rounded-xl border-slate-200 bg-white">
               <SelectValue placeholder="VALLE" />
@@ -300,7 +323,7 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all" onClick={() => {setValleFilter('all'); setDateStart(''); setDateEnd('')}}>
+          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all" onClick={() => {setValleFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}>
             <RefreshCcw className="h-4 w-4 mr-2" /> Reiniciar Tablero
           </Button>
         </div>
@@ -310,7 +333,6 @@ export default function DashboardPage() {
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              {/* Indicador C de Soporte */}
               <Card className="executive-card border-l-8 border-l-primary">
                 <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
                   <div>
@@ -579,7 +601,7 @@ export default function DashboardPage() {
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map((name) => {
-              const records = programs.filter(p => p.name === name);
+              const records = filteredPrograms.filter(p => p.name === name);
               const value = new Set(records.map(p => p.cct)).size;
               const percentage = Math.min(100, Math.round((value / TOTAL_UNIVERSE) * 100));
               return (
@@ -607,10 +629,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(programs.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(filteredPrograms.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                  <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
                   <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60} fill="#621132" />
                 </RechartsBarChart>
