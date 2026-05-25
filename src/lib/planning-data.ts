@@ -28,7 +28,7 @@ export type ProgramStatus = {
   agrupado_editorial?: string;
   tecnicos?: string;
   // Campos para ATRES (Reporte Técnico)
-  tipoIncidencia?: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
+  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
   oficinaRegionalAtencion?: string;
   numeroOficio?: string;
   alumnosBeneficiados?: number;
@@ -42,7 +42,7 @@ export type ProgramStatus = {
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
   materialesEdusat?: { name: string; quantity: number }[];
-  // Campos Red Local / Instalación
+  // Campos Red Local (Legacy - Solo para compatibilidad si existen datos)
   numNodos?: number;
   switchModelo?: string;
   materialesRedLocal?: { name: string; quantity: number }[];
@@ -70,7 +70,7 @@ export type SupportTicket = {
   alumnosBeneficiados?: number;
   docentesBeneficiados?: number;
   numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'instalación red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
+  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento preventivo' | 'mantenimiento correctivo' | 'teleplanteles';
   materialUtilizado?: string;
   setes?: 'S' | 'N';
   observaciones?: string;
@@ -93,7 +93,7 @@ export type SupportTicket = {
   serieDecodificador?: string;
   calidadSeñal?: 'nulo' | 'óptimo' | 'excelente' | '';
   materialesEdusat?: { name: string; quantity: number }[];
-  // Campos especializados para Instalación Red Local
+  // Campos especializados para Red Local
   numNodos?: number;
   switchModelo?: string;
   materialesRedLocal?: { name: string; quantity: number }[];
