@@ -281,7 +281,7 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    setAssistants([{ paterno: '', mt: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+    setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
     toast({ title: "Registro guardado con éxito" })
   }
 
@@ -648,6 +648,23 @@ export default function ProgramsPage() {
                                       </div>
                                     </div>
                                   )}
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-[10px] font-black uppercase text-primary">Número de Oficio COEES</Label>
+                                      <Input className="h-12 bg-slate-50 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
+                                    </div>
+                                    <div className={cn("grid gap-4", formData.tipoIncidencia === 'red edusat' ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4")}>
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Alumnos</Label><Input type="number" className="h-12 text-center" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                                      <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Docentes</Label><Input type="number" className="h-12 text-center" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                                      {formData.tipoIncidencia !== 'red edusat' && (
+                                        <>
+                                          <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 text-center" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                                          <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 text-center" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
 
                                   <div className="space-y-4 pt-6 border-t">
                                      <Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label>
