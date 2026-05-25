@@ -329,7 +329,7 @@ export default function DashboardPage() {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#64748b' }} />
-                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900 }} />
+                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: '900' }} />
                       <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={50}>
                         {supportStats.statusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -352,7 +352,7 @@ export default function DashboardPage() {
                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                          <XAxis type="number" hide />
                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} width={120} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
                          <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={30}>
                             {supportStats.typesData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
                     <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
                     <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
@@ -497,7 +497,7 @@ export default function DashboardPage() {
                             <span className="text-slate-600 truncate max-w-[80%]">{idx + 1}. {curso.name}</span>
                             <span className="text-primary">{curso.value} Asistentes</span>
                           </div>
-                          <Progress value={indicadorA.alcanzado > 0 ? (curso.value / trainingStats.indicadorA.alcanzado) * 100 : 0} className="h-1.5 bg-slate-100" />
+                          <Progress value={trainingStats.indicadorA.alcanzado > 0 ? (curso.value / trainingStats.indicadorA.alcanzado) * 100 : 0} className="h-1.5 bg-slate-100" />
                         </div>
                       ))}
                     </div>
@@ -578,7 +578,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
                        <div className="flex justify-between items-end mb-2">
-                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Redes vs Meta: {indicadorC.meta}</p>
+                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Redes vs Meta: {trainingStats.indicadorC.meta}</p>
                           <p className="text-2xl font-black text-primary">{trainingStats.indicadorC.alcanzado}</p>
                        </div>
                        <Progress value={trainingStats.indicadorC.porcentaje} className="h-3 bg-white" />
