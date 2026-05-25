@@ -59,7 +59,7 @@ export default function LoginPage() {
               alt="Identidad Tecnológica Institucional" 
               fill
               className="object-cover"
-              data-ai-hint="technology computing"
+              data-ai-hint="technology circuit"
               priority
             />
           </div>
