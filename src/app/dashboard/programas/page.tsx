@@ -59,7 +59,10 @@ const FUNCIONES = [
   "DIRECTIVO",
   "JEFE DE ENSEÑANZA",
   "SUPERVISOR",
-  "ASESOR TECNICO PEDAGOGICO"
+  "ASESOR TECNICO PEDAGOGICO",
+  "INTENDENTE",
+  "PREFECTO",
+  "TRABAJADOR SOCIAL"
 ]
 
 const REGIONAL_OFFICES = [
@@ -267,7 +270,7 @@ export default function ProgramsPage() {
       return;
     }
     
-    const validAssistants = formData.capacitacion === 'S' ? assistants.filter(a => a.rfc && a.nombres) : [];
+    const validAssistants = assistants.filter(a => a.rfc && a.nombres);
 
     const finalData = {
       ...formData,
@@ -458,9 +461,9 @@ export default function ProgramsPage() {
                   <TabsTrigger value="auditoria" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-[11px] font-black uppercase tracking-wider transition-all">
                     1. Datos de Auditoría
                   </TabsTrigger>
-                  {activeTab === 'Biblioteca Digital' && formData.capacitacion === 'S' && (
+                  { (activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales') && (
                     <TabsTrigger value="asistentes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-[11px] font-black uppercase tracking-wider transition-all">
-                      2. Lista de Asistentes (Captura Directa)
+                      2. Lista de Cuentas / Personal
                     </TabsTrigger>
                   )}
                 </TabsList>
@@ -472,8 +475,8 @@ export default function ProgramsPage() {
                     <div className="grid gap-8 py-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">CCT</Label>
-                            <Input placeholder="EJ: 15DESXXXXX" className="h-14 font-mono uppercase border-primary/10 text-lg bg-slate-50 focus:bg-white transition-colors" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2"># Solicitud</Label>
+                            <Input className="h-14 font-mono uppercase border-primary/10 text-lg bg-slate-50 focus:bg-white" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                           </div>
                           <div className="space-y-2">
                             <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Estatus</Label>
@@ -482,18 +485,18 @@ export default function ProgramsPage() {
                               <SelectContent>
                                 <SelectItem value="activo" className="text-[11px] font-black uppercase">ACTIVO</SelectItem>
                                 <SelectItem value="inactivo" className="text-[11px] font-black uppercase">INACTIVO</SelectItem>
+                                <SelectItem value="concluido" className="text-[11px] font-black uppercase">CONCLUIDO</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
 
-                          <div className="col-span-1 md:col-span-2 space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre del CCT / Titular Responsable</Label>
-                            <Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value})} className="h-12 font-bold bg-slate-50" />
+                          <div className="space-y-2">
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">CCT</Label>
+                            <Input placeholder="EJ: 15DESXXXXX" className="h-12 font-mono uppercase border-primary/10 bg-slate-50" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
                           </div>
-
-                          <div className="col-span-1 md:col-span-2 space-y-2">
-                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2"><UserCog className="h-4 w-4 text-accent" /> Técnico Responsable</Label>
-                            <Input className="h-12 bg-slate-50 font-bold uppercase" value={formData.tecnicos} onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} />
+                          <div className="space-y-2">
+                            <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre del Plantel</Label>
+                            <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100" />
                           </div>
 
                           <div className="col-span-1 md:col-span-2 space-y-4">
@@ -505,179 +508,87 @@ export default function ProgramsPage() {
                             </div>
                           </div>
 
-                          <div className="col-span-1 md:col-span-2 pt-4 border-t border-slate-100">
-                             {activeTab === 'ATRES' && (
-                               <div className="space-y-8">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                     <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-primary">Tipo de Incidencia</Label>
-                                        <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
-                                          <SelectTrigger className="h-12 bg-slate-50 uppercase font-bold text-[10px]"><SelectValue /></SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="red edusat" className="text-[10px] uppercase">Red Edusat</SelectItem>
-                                            <SelectItem value="red local" className="text-[10px] uppercase">Red Local</SelectItem>
-                                            <SelectItem value="mantenimiento" className="text-[10px] uppercase">Mantenimiento</SelectItem>
-                                            <SelectItem value="teleplanteles" className="text-[10px] uppercase">Teleplanteles</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                     </div>
-                                     <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-primary">Oficina Regional</Label>
-                                        <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                                          <SelectTrigger className="h-12 bg-slate-50 text-[10px] font-bold"><SelectValue placeholder="Seleccionar oficina..." /></SelectTrigger>
-                                          <SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                     </div>
-                                  </div>
+                          {activeTab === 'Geoposición' && (
+                             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Latitud</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Longitud</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                             </div>
+                          )}
 
-                                  {formData.tipoIncidencia === 'red edusat' && (
-                                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-primary/20 space-y-8 animate-in zoom-in-95 duration-300 shadow-xl">
-                                      <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
-                                         <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                                            <Radio className="h-7 w-7" />
-                                         </div>
-                                         <div>
-                                           <h3 className="text-lg font-black uppercase text-primary tracking-wider leading-none">Módulo Técnico RED Edusat Avanzado</h3>
-                                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Diagnóstico Institucional por Componentes</p>
-                                         </div>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">MICROPAK (LNB)</Label>
-                                            {EDUSAT_MICROPAK.map(item => (
-                                              <div key={item} className="flex items-center space-x-2">
-                                                 <Checkbox id={`lnb-${item}`} checked={(formData.edusatDetalle?.micropak || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('micropak', item)} />
-                                                 <label htmlFor={`lnb-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                                              </div>
-                                            ))}
-                                         </div>
-                                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">ANT. PARABÓLICA</Label>
-                                            {EDUSAT_ANTENA.map(item => (
-                                              <div key={item} className="flex items-center space-x-2">
-                                                 <Checkbox id={`ant-${item}`} checked={(formData.edusatDetalle?.antena || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('antena', item)} />
-                                                 <label htmlFor={`ant-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                                              </div>
-                                            ))}
-                                         </div>
-                                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">DECODIFICADOR</Label>
-                                            {EDUSAT_DECO_ACCIONES.map(item => (
-                                              <div key={item} className="flex items-center space-x-2">
-                                                 <Checkbox id={`deco-acc-${item}`} checked={(formData.edusatDetalle?.decodificadorAcciones || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('decodificadorAcciones', item)} />
-                                                 <label htmlFor={`deco-acc-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                                              </div>
-                                            ))}
-                                         </div>
-                                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">CABLEADO</Label>
-                                            {EDUSAT_CABLEADO.map(item => (
-                                              <div key={item} className="flex items-center space-x-2">
-                                                 <Checkbox id={`cab-${item}`} checked={(formData.edusatDetalle?.cableado || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('cableado', item)} />
-                                                 <label htmlFor={`cab-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                                              </div>
-                                            ))}
-                                         </div>
-                                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">M. PREVENTIVO</Label>
-                                            {EDUSAT_PREVENTIVO.map(item => (
-                                              <div key={item} className="flex items-center space-x-2">
-                                                 <Checkbox id={`prev-${item}`} checked={(formData.edusatDetalle?.preventivo || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('preventivo', item)} />
-                                                 <label htmlFor={`prev-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                                              </div>
-                                            ))}
-                                         </div>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
-                                         <div className="space-y-2">
-                                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número Censal:</Label>
-                                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numCensal} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numCensal: e.target.value.toUpperCase()}})} />
-                                         </div>
-                                         <div className="space-y-2">
-                                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
-                                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
-                                         </div>
-                                         <div className="space-y-2">
-                                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
-                                            <Select value={formData.edusatDetalle?.calidadSeñal} onValueChange={val => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, calidadSeñal: val}})}>
-                                              <SelectTrigger className="h-10 bg-white font-black uppercase text-[10px] border-primary/20"><SelectValue placeholder="CALIDAD..." /></SelectTrigger>
-                                              <SelectContent>
-                                                 <SelectItem value="nulo" className="text-[10px] font-black text-rose-600">NULO</SelectItem>
-                                                 <SelectItem value="bajo" className="text-[10px] font-black text-amber-600">BAJO</SelectItem>
-                                                 <SelectItem value="óptimo" className="text-[10px] font-black text-emerald-600">ÓPTIMO</SelectItem>
-                                                 <SelectItem value="excelente" className="text-[10px] font-black text-primary">EXCELENTE</SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                         </div>
-                                      </div>
-
-                                      <div className="space-y-4">
-                                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                                          <Monitor className="h-4 w-4" /> Materiales Utilizados y Actividades por la Brigada
-                                        </Label>
-                                        <div className="border rounded-2xl overflow-hidden shadow-md bg-white">
-                                          <Table>
-                                            <TableHeader className="bg-slate-100">
-                                              <TableRow>
-                                                <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase min-w-[200px]">Material Utilizado</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase w-[100px]">Cantidad</TableHead>
-                                                <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
-                                              </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                              {Array.from({ length: 8 }).map((_, idx) => (
-                                                <TableRow key={idx} className="hover:bg-slate-50/50">
-                                                  <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                                  <TableCell className="p-1">
-                                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.material || ''} onChange={e => handleEdusatMaterialChange(idx, 'material', e.target.value.toUpperCase())} />
-                                                  </TableCell>
-                                                  <TableCell className="p-1">
-                                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1 text-center font-black" value={formData.edusatDetalle?.materiales[idx]?.cantidad || ''} onChange={e => handleEdusatMaterialChange(idx, 'cantidad', e.target.value)} />
-                                                  </TableCell>
-                                                  <TableCell className="p-1">
-                                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.actividades || ''} onChange={e => handleEdusatMaterialChange(idx, 'actividades', e.target.value.toUpperCase())} />
-                                                  </TableCell>
-                                                </TableRow>
-                                              ))}
-                                            </TableBody>
-                                          </Table>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                                    <div className="space-y-2">
-                                      <Label className="text-[10px] font-black uppercase text-primary">Número de Oficio COEES</Label>
-                                      <Input className="h-12 bg-slate-50 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
-                                    </div>
-                                    {formData.tipoIncidencia !== 'teleplanteles' && (
-                                      <div className={cn("grid gap-4", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4")}>
-                                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Alumnos</Label><Input type="number" className="h-12 text-center" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Docentes</Label><Input type="number" className="h-12 text-center" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                                        {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
-                                          <>
-                                            <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 text-center" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                                            <div className="space-y-2"><Label className="text-[9px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 text-center" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                                          </>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="space-y-4 pt-6 border-t">
-                                     <Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label>
-                                     <Textarea className="min-h-[120px] bg-slate-50 border-primary/10 rounded-2xl" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
-                                  </div>
-                               </div>
-                             )}
+                          <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t">
+                             <Label className="text-[11px] font-black uppercase text-primary">Observaciones Generales</Label>
+                             <Textarea className="min-h-[120px] bg-slate-50 border-primary/10 rounded-2xl" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
                           </div>
                       </div>
                     </div>
                   </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="asistentes" className="h-full m-0 p-6 flex flex-col">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                      <p className="text-[10px] font-bold text-blue-800 uppercase">Gestión de personal y cuentas asociadas al plantel.</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] border-primary text-primary hover:bg-primary/5">
+                      <Plus className="h-4 w-4" /> Añadir Cuenta
+                    </Button>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden border rounded-xl shadow-sm">
+                    <ScrollArea className="h-full">
+                      <Table>
+                        <TableHeader className="bg-slate-100 sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="w-10 text-[10px] font-black uppercase">#</TableHead>
+                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Nombre Completo</TableHead>
+                            <TableHead className="min-w-[150px] text-[10px] font-black uppercase">RFC</TableHead>
+                            <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Función</TableHead>
+                            <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Correo Institucional</TableHead>
+                            <TableHead className="w-10 sticky right-0 bg-slate-100"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {assistants.map((ast, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                              <TableCell className="text-center font-bold text-xs text-muted-foreground">{idx + 1}</TableCell>
+                              <TableCell className="p-2">
+                                <div className="grid grid-cols-3 gap-1">
+                                  <Input placeholder="Paterno" className="h-8 text-[10px]" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value)} />
+                                  <Input placeholder="Materno" className="h-8 text-[10px]" value={ast.materno} onChange={e => updateAssistant(idx, 'materno', e.target.value)} />
+                                  <Input placeholder="Nombres" className="h-8 text-[10px] font-bold" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input placeholder="RFC" className="h-8 text-[10px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                  <SelectTrigger className="h-8 text-[10px]">
+                                    <SelectValue placeholder="Función..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {FUNCIONES.map(f => (
+                                      <SelectItem key={f} value={f} className="text-[10px] uppercase font-bold">{f}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input placeholder="correo@desysa.edu.mx" className="h-8 text-[10px] font-mono lowercase" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
+                              </TableCell>
+                              <TableCell className="p-2 sticky right-0 bg-white/80 backdrop-blur-sm shadow-l">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveAssistant(idx)} disabled={assistants.length === 1}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
                 </TabsContent>
              </div>
           </Tabs>
