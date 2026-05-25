@@ -1,4 +1,3 @@
-
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -241,7 +240,7 @@ export default function DashboardPage() {
                 <LayoutDashboard className="h-6 w-6 text-primary" />
              </div>
              <div>
-               <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Panel Ejecutivo</h2>
+               <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">PLANEACIÓN</h2>
                <p className="text-muted-foreground font-black text-[10px] tracking-[0.2em] uppercase mt-1">Análisis Técnico Operativo COEES</p>
              </div>
           </div>

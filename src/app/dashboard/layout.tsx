@@ -50,7 +50,7 @@ export default function DashboardLayout({
   }
 
   const menuItems = [
-    { name: 'Panel Ejecutivo', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
     { name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
