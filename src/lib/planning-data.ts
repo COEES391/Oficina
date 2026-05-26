@@ -86,17 +86,17 @@ export type SupportTicket = {
   responsables: string[];
   tecnicos?: string;
   oficinaRegionalAtencion: string;
-  numeroOficio?: string;
-  alumnosBeneficiados?: number;
-  docentesBeneficiados?: number;
+  numeroOficio: string;
+  alumnosBeneficiados: number;
+  docentesBeneficiados: number;
   numeroEquipos: number;
   tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles';
-  materialUtilizado?: string;
-  setes?: 'S' | 'N';
-  observaciones?: string;
-  descripcionEquipo?: string;
+  materialUtilizado: string;
+  setes: 'S' | 'N';
+  observaciones: string;
+  descripcionEquipo: string;
   fechaEntrada: string;
-  fechaSalida?: string;
+  fechaSalida: string;
   serviciosMC: number;
   serviciosMP: number;
   status: 'atendido' | 'en proceso' | 'pendiente';
@@ -155,49 +155,7 @@ const getAccountsData = (): ProgramStatus[] => {
     { n: "Norna Graciela", p: "Torres Vargas", r: "TOVN780906QP7", c: "15DTV0044V", d: "Telesecundarias", e: "dtv0044v.ngtv@desysa.edu.mx", f: "DOCENTE" },
     { n: "Xochitl", p: "Martinez Olivares", r: "MAOX821128A80", c: "15DTV0044V", d: "Telesecundarias", e: "dtv0044v.xmo@desysa.edu.mx", f: "DOCENTE" },
     { n: "Valentin Gilberto", p: "Rodriguez Zavala", r: "ROZV810429HZ8", c: "15DTV0044V", d: "Telesecundarias", e: "dtv0044v.vgrz@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Esperanza", p: "Sanchez Campos", r: "SACE5409074I3", c: "15DTV0044V", d: "Telesecundarias", e: "dtv0044v.esc@desysa.edu.mx", f: "ASISTENTE" },
-    { n: "NORMA ANGELICA", p: "DIAZ SALAS", r: "DISN6803277W4", c: "15FIS0023X", d: "Generales", e: "fis0023x.nads@desysa.edu.mx", f: "ADMINISTRATIVO" },
-    { n: "ISIDRO CONSTANTINO", p: "TORRES GONZALEZ", r: "TOGI500515AS6", c: "15FIS0023X", d: "Generales", e: "fis0023x.ictg@desysa.edu.mx", f: "SUPERVISOR" },
-    { n: "Rolando", p: "Solano Ramírez", r: "SORR521120365", c: "15DTV0118W", d: "Telesecundarias", e: "dtv0118w.rsr@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Álvaro", p: "López Saldaña", r: "LOSA850322MK8", c: "15DTV0118W", d: "Telesecundarias", e: "dtv0118w.als@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Karla Patricia", p: "Arreola Gutierrez", r: "AEGK8007232L0", c: "15DTV0118W", d: "Telesecundarias", e: "dtv0118w.kpag@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Fátima Araceli", p: "Castro Arriaga", r: "CAAF761022468", c: "15DTV0118W", d: "Telesecundarias", e: "dtv0118w.faca@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Levi Helem", p: "Morales Godinez", r: "MOGL890819EH6", c: "15DTV0118W", d: "Telesecundarias", e: "dtv0118w.lhmg@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Ruth", p: "Cadenas Pliego", r: "CAPR480112V18", c: "15DES0236E", d: "Generales", e: "des0236e.rcp@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Alma Rosa", p: "Camacho Guzmán", r: "CAGX921116E14", c: "15DES0236E", d: "Generales", e: "des0236e.arcg@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Cesar", p: "Aguilar Marcos", r: "AUMC7210231G5", c: "15DTV0022J", d: "Telesecundaria", e: "dtv0022jcam@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Raul", p: "Garcia Lopez", r: "GALR910830RU7", c: "15DTV0094C", d: "Telesecundaria", e: "dtv0094c.rgl@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "MARCO ANTONIO", p: "HERNANDEZ GALLARDO", r: "HEGM4805249S8", c: "15DTV0006S", d: "TELESECUNDARIA", e: "dtv0006smahg@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Martha Imelda", p: "Ramirez Quiroz", r: "RAQM570512TF0", c: "15FTS0002G", d: "Telesecundarias", e: "fts0002gmirq@desysa.edu.mx", f: "JEFA DE SECTOR" },
-    { n: "Victor Hugo", p: "Miranda Rosas", r: "MIRV640913FE4", c: "15DTV0032Q", d: "Telesecundarias", e: "dtv0032qvhmr@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Adelaido", p: "Azpeitia Hernandez", r: "AEHA701116MA5", c: "15DTV0123H", d: "Telesecundarias", e: "dtv0123h.aah@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Hector Alejandro", p: "Rodriguez Gonzalez", r: "ROGH8105131G5", c: "15DES0046N", d: "Generales", e: "des0046n.hrg@desysa.edu.mx", f: "DIRECTIVO" },
-    { n: "Elizander", p: "Dominguez Peña", r: "DOPE700225KW7", c: "15DTV0271Q", d: "Telesecundarias", e: "dtv0271q.edp@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Catalina Juana", p: "Guzman Cardeña", r: "GUCC651231L66", c: "15DTV0108P", d: "Telesecundaria", e: "dtv0108p.cjgc@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Gerardo", p: "Sánchez Solano", r: "SASG790215FX4", c: "15DTV0019W", d: "Telesecundarias", e: "dtv0019w.gss@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Sandra", p: "Zepeda Veloz", r: "ZEVS580114668", c: "15DTV0096A", d: "Telesecundaria", e: "dtv0096a.szv@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "JOEL ENRIQUE", p: "VARGAS CORTES", r: "VACJ7207133B7", c: "15DTV0007R", d: "TELESECUNDARIA", e: "dtv0007r.jevc@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Rosa Lilia", p: "Vazquez", r: "VAZR721102A24", c: "15DTV0083X", d: "TELESECUNDARIA", e: "dtv0083xrlv@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Pedro", p: "Neri Olea", r: "NEOP750629GQ9", c: "15DTV0187S", d: "Telesecundaria", e: "dtv00187s.pno@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Miguel Enrique", p: "Juarez Campos", r: "JUCM6810028B5", c: "DES0354T", d: "Generales", e: "des0354t.mejc@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Rodolfo Anibal", p: "Campos Vargas", r: "CAVR820714X9A", c: "15DTV0135M", d: "Telesecundaria", e: "dtv0135m.racv@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "MARIA ISABEL ELENA", p: "LOPEZ CASTRO", r: "LOCI610330I19", c: "15DTV0003V", d: "TELESECUNDARIAS", e: "dtv0003v.mislc@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "ERIKA JANET", p: "MALDONADO HERNÁNDEZ", r: "MAHE780311K77", c: "DTV0208O", d: "TELESECUNDARIA", e: "Dtv0208o.ejmh@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Andrés", p: "López Pérez", r: "LOPA470520JY3", c: "15DTV0002W", d: "Telesecundarias", e: "dtv0002w.alp@desysa.edu.mx", f: "DIRECTOR" },
-    { n: "Héctor", p: "Pacheco", r: "PAHE5409265Q4", c: "15DTV0061L", d: "Telesecundarias", e: "dtv0061l.hp@desysa.edu.mx", f: "DOCENTE" },
-    { n: "DINA", p: "CUERVO MELGOZA", r: "CUMD700806IE5", c: "15DTV0033P", d: "TELESECUNDARIA", e: "dtv0033p.dcm@desysa.edu.mx", f: "DOCENTE" },
-    { n: "JUDITH", p: "GOMEZ ROSALES", r: "GORJ720506JU7", c: "15DTV0155Z", d: "TELESECUNDARIAS", e: "dtv0155z.jgr@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Mirna", p: "Jonguitud Avila", r: "JOAM730820NQA", c: "15DTV0402S", d: "Telesecundarias", e: "dtv0402s.mja@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "LILIANA", p: "MUCIÑO JIMÉNEZ", r: "MUJL790430LF9", c: "15DTV0098Z", d: "TELESECUNDARIA", e: "dtv0098z.lmj@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Maria Cecilia", p: "Garcia Vivas", r: "GAVC621122MU5", c: "15DES0274H", d: "Generales", e: "des0274h.mcgv@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Orlanda Magdalena", p: "Matias Salvador", r: "MASO621122PXA", c: "DES0317P", d: "Generales", e: "des0317p.omms@desysa.edu.mx", f: "DIRECTORA" },
-    { n: "Monica", p: "Rangel Alvarez", r: "RAAM740827CH2", c: "15DTV0015Z", d: "Telesecundarias", e: "dtv0015zmra@desysa.edu.mx", f: "DOCENTE" },
-    { n: "Salvador", p: "Arguello Ramírez", r: "AURS630214H70", c: "DES0368W", d: "Generales", e: "des0368w.sar@desysa.edu.mx", f: "PREFECTO" },
-    { n: "Aide", p: "Herrera Vázquez", r: "HEVA850722HJ3", c: "15DTV0385S", d: "Telesecundaria", e: "dtv0385s.ahv@desysa.edu.mx", f: "DOCENTE" },
-    { n: "JUANA ARELI", p: "BARRERA HERNANDEZ", r: "BAHJ880319JU3", c: "15DES0349H", d: "Generales", e: "des0349h.jabh@coees.edu.mx", f: "INTENDENTE" },
-    { n: "FELIPE", p: "CANO VAZQUEZ", r: "CAVF900707KT7", c: "15DES0349H", d: "Generales", e: "des0349h.fcv@coees.edu.mx", f: "ADMINISTRATIVO" },
-    { n: "ABRAHAM", p: "CASTRO GACHUZ", r: "CAGX9103164V8", c: "15DES0349H", d: "Generales", e: "des0349h.acg@coees.edu.mx", f: "DOCENTE" },
-    { n: "LAURA", p: "CEDILLO ROMO", r: "CERL911124RP5", c: "15DES0349H", d: "Generales", e: "des0349h.lcr@desysa.edu.mx", f: "DOCENTE" }
+    { n: "Esperanza", p: "Sanchez Campos", r: "SACE5409074I3", c: "15DTV0044V", d: "Telesecundarias", e: "dtv0044v.esc@desysa.edu.mx", f: "ASISTENTE" }
   ];
 
   const grouped: Record<string, any[]> = {};
@@ -842,11 +800,13 @@ const getGeoData = (): ProgramStatus[] => {
 export const programsData: ProgramStatus[] = [
   ...getAccountsData(),
   ...getGeoData(),
-  { id: 'BD-001', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', alumnosBeneficiados: 450, docentesBeneficiados: 25 }
+  { id: 'BD-001', name: 'Biblioteca Digital', cct: '15DES0001R', schoolName: 'SECUNDARIA FEDERAL 1', valle: 'TOLUCA', modalidad: 'DES', status: 'concluido', date: '2025-05-20', progress: 100, numeroEquipos: 15, capacitacion: 'S', alumnosBeneficiados: 450, docentesBeneficiados: 25 },
+  { id: 'CE-001', name: 'Conoce mi Escuela', cct: '15DES0065B', schoolName: 'DR. MANUEL SANDOVAL VALLARTA', status: 'activo', date: '2026-03-01', progress: 50, email: 'des0065b@desysa.edu.mx' },
+  { id: 'AT-001', name: 'ATRES', cct: '15DST0028Q', schoolName: 'TELPOCHCALLI', status: 'activo', date: '2026-03-05', progress: 20, email: 'dst0028q@desysa.edu.mx' }
 ];
 
 export const supportData: SupportTicket[] = [
-  { id: 'S-001', cct: '15DES0065B', schoolName: 'DR. MANUEL SANDOVAL VALLARTA', status: 'atendido', tipoIncidencia: 'mantenimiento', fechaEntrada: '2024-05-20', valle: 'MEXICO', municipio: 'AMECAMECA', oficinaRegionalAtencion: 'Oficina de Tecnóloga Nezahualcóyotl', responsables: ['ING. CARLOS LÓPEZ'], tecnicos: 'ING. CARLOS LÓPEZ', serviciosMC: 0, serviciosMP: 12, numeroEquipos: 12 }
+  { id: 'S-001', cct: '15DES0065B', schoolName: 'DR. MANUEL SANDOVAL VALLARTA', status: 'atendido', tipoIncidencia: 'mantenimiento', fechaEntrada: '2024-05-20', valle: 'MEXICO', municipio: 'AMECAMECA', oficinaRegionalAtencion: 'Oficina de Tecnóloga Nezahualcóyotl', responsables: ['ING. CARLOS LÓPEZ'], tecnicos: 'ING. CARLOS LÓPEZ', serviciosMC: 0, serviciosMP: 12, numeroEquipos: 12, numeroOficio: 'COEES/S/001', alumnosBeneficiados: 557, docentesBeneficiados: 23, setes: 'N', observaciones: 'Mantenimiento preventivo a equipos de cómputo.', descripcionEquipo: 'Laptops y Desktop', materialUtilizado: 'Aire comprimido, pasta térmica' }
 ];
 
 export const trainingRecords: TrainingRecord[] = [];

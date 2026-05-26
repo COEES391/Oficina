@@ -77,21 +77,27 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     setMounted(true)
-    const storedV23 = localStorage.getItem('programs_full_v23')
+    const currentVersion = 'programs_full_v24'
+    const storedV24 = localStorage.getItem(currentVersion)
     
-    if (storedV23) {
-      setRecords(JSON.parse(storedV23))
+    if (storedV24) {
+      setRecords(JSON.parse(storedV24))
     } else {
-      const storedV22 = localStorage.getItem('programs_full_v22')
+      // Intentar recuperar de versiones anteriores v23, v22, v21
+      const v23 = localStorage.getItem('programs_full_v23')
+      const v22 = localStorage.getItem('programs_full_v22')
+      const v21 = localStorage.getItem('programs_full_v21')
+      
       let initialSet: ProgramStatus[] = []
       
-      if (storedV22) {
-        initialSet = JSON.parse(storedV22)
-      }
+      if (v23) initialSet = JSON.parse(v23)
+      else if (v22) initialSet = JSON.parse(v22)
+      else if (v21) initialSet = JSON.parse(v21)
 
       const masterData = programsData
       const finalSet = [...initialSet]
 
+      // Combinar con datos maestros asegurando que los nuevos default estén presentes
       masterData.forEach(master => {
         const exists = finalSet.find(e => (e.id === master.id) || (e.cct === master.cct && e.name === master.name))
         if (!exists) {
@@ -100,7 +106,7 @@ export default function ProgramsPage() {
       })
 
       setRecords(finalSet)
-      localStorage.setItem('programs_full_v23', JSON.stringify(finalSet))
+      localStorage.setItem(currentVersion, JSON.stringify(finalSet))
     }
   }, [])
 
@@ -147,7 +153,7 @@ export default function ProgramsPage() {
       : [{...formData, id: `SOL-${Date.now()}`}, ...records];
     
     setRecords(updated)
-    localStorage.setItem('programs_full_v23', JSON.stringify(updated))
+    localStorage.setItem('programs_full_v24', JSON.stringify(updated))
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
@@ -157,7 +163,7 @@ export default function ProgramsPage() {
   const handleDeleteRecord = (id: string) => {
     const updated = records.filter(r => r.id !== id);
     setRecords(updated);
-    localStorage.setItem('programs_full_v23', JSON.stringify(updated));
+    localStorage.setItem('programs_full_v24', JSON.stringify(updated));
     toast({ title: "Registro eliminado", description: "El registro ha sido borrado de la base maestra." });
   }
 
@@ -189,7 +195,7 @@ export default function ProgramsPage() {
   // Assistant Logic
   const handleOpenAddAssistant = () => {
     setEditingAssistantIndex(null)
-    setAssistantForm({ nombres: '', paterno: '', materno: '', rfc: '', funcion: '', email: '' })
+    setAssistantForm({ nombres: '', pathero: '', materno: '', rfc: '', funcion: '', email: '' })
     setIsAssistantDialogOpen(true)
   }
 
