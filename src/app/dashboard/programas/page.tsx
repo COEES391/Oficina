@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
@@ -25,7 +26,8 @@ import {
   Search,
   Trash2,
   UserPlus,
-  UserCog
+  UserCog,
+  GraduationCap
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -80,7 +82,6 @@ export default function ProgramsPage() {
     if (storedV23) {
       setRecords(JSON.parse(storedV23))
     } else {
-      // Intentar migrar desde v22 para no perder datos previos del usuario
       const storedV22 = localStorage.getItem('programs_full_v22')
       let initialSet: ProgramStatus[] = []
       
@@ -88,7 +89,6 @@ export default function ProgramsPage() {
         initialSet = JSON.parse(storedV22)
       }
 
-      // Combinar con datos maestros nuevos (Geoposición masiva)
       const masterData = programsData
       const finalSet = [...initialSet]
 
@@ -189,7 +189,7 @@ export default function ProgramsPage() {
   // Assistant Logic
   const handleOpenAddAssistant = () => {
     setEditingAssistantIndex(null)
-    setAssistantForm({ nombres: '', pathero: '', materno: '', rfc: '', funcion: '', email: '' })
+    setAssistantForm({ nombres: '', paterno: '', materno: '', rfc: '', funcion: '', email: '' })
     setIsAssistantDialogOpen(true)
   }
 
@@ -389,7 +389,14 @@ export default function ProgramsPage() {
                   <TabsTrigger value="auditoria" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-[11px] font-black uppercase tracking-wider transition-all">
                     1. Datos de Auditoría
                   </TabsTrigger>
-                  <TabsTrigger value="asistentes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-[11px] font-black uppercase tracking-wider transition-all">
+                  <TabsTrigger 
+                    value="asistentes" 
+                    disabled={activeTab === 'Biblioteca Digital' && formData.capacitacion === 'N'}
+                    className={cn(
+                      "rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-[11px] font-black uppercase tracking-wider transition-all",
+                      activeTab === 'Biblioteca Digital' && formData.capacitacion === 'N' && "opacity-30"
+                    )}
+                  >
                     2. Lista de Cuentas / Personal
                   </TabsTrigger>
                 </TabsList>
@@ -425,9 +432,25 @@ export default function ProgramsPage() {
                           </div>
 
                           {activeTab === 'Biblioteca Digital' && (
-                             <div className="space-y-2">
-                                <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Número de Equipos</Label>
-                                <Input type="number" className="h-12 font-black text-lg bg-slate-50 border-primary/10" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 items-end bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                                <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Número de Equipos</Label>
+                                  <Input type="number" className="h-12 font-black text-lg bg-white border-primary/10" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                                </div>
+                                <div className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-primary/10 shadow-sm">
+                                   <Checkbox 
+                                     id="toggle-cap"
+                                     checked={formData.capacitacion === 'S'}
+                                     onCheckedChange={(checked) => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})}
+                                     className="h-6 w-6 border-primary/30 data-[state=checked]:bg-primary"
+                                   />
+                                   <div className="space-y-0.5">
+                                      <Label htmlFor="toggle-cap" className="text-[10px] font-black uppercase text-primary cursor-pointer flex items-center gap-2">
+                                        <GraduationCap className="h-3 w-3" /> ¿Brindar Capacitación?
+                                      </Label>
+                                      <p className="text-[8px] font-bold text-muted-foreground uppercase leading-none">Habilita registro de asistentes</p>
+                                   </div>
+                                </div>
                              </div>
                           )}
 
@@ -542,7 +565,7 @@ export default function ProgramsPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Ap. Paterno</Label>
-                <Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, pathero: e.target.value.toUpperCase()})} className="h-11 rounded-xl" />
+                <Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} className="h-11 rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Ap. Materno</Label>
