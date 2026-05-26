@@ -149,7 +149,8 @@ export default function ProgramsPage() {
         ))
       );
     }
-    return filtered;
+    // Ordenar por CCT de A a Z
+    return [...filtered].sort((a, b) => (a.cct || '').localeCompare(b.cct || ''));
   }, [records, activeTab, searchTerm]);
 
   const handleEdit = (rec: ProgramStatus) => {
