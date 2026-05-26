@@ -75,12 +75,32 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     setMounted(true)
-    const stored = JSON.parse(localStorage.getItem('programs_full_v23') || '[]')
-    if (stored.length === 0) {
-      setRecords(programsData)
-      localStorage.setItem('programs_full_v23', JSON.stringify(programsData))
+    const storedV23 = localStorage.getItem('programs_full_v23')
+    
+    if (storedV23) {
+      setRecords(JSON.parse(storedV23))
     } else {
-      setRecords(stored)
+      // Intentar migrar desde v22 para no perder datos previos del usuario
+      const storedV22 = localStorage.getItem('programs_full_v22')
+      let initialSet: ProgramStatus[] = []
+      
+      if (storedV22) {
+        initialSet = JSON.parse(storedV22)
+      }
+
+      // Combinar con datos maestros nuevos (Geoposición masiva)
+      const masterData = programsData
+      const finalSet = [...initialSet]
+
+      masterData.forEach(master => {
+        const exists = finalSet.find(e => (e.id === master.id) || (e.cct === master.cct && e.name === master.name))
+        if (!exists) {
+          finalSet.push(master)
+        }
+      })
+
+      setRecords(finalSet)
+      localStorage.setItem('programs_full_v23', JSON.stringify(finalSet))
     }
   }, [])
 
@@ -157,7 +177,6 @@ export default function ProgramsPage() {
         ))
       );
     }
-    // Ordenar por CCT de A a Z
     return [...filtered].sort((a, b) => (a.cct || '').localeCompare(b.cct || ''));
   }, [records, activeTab, searchTerm]);
 
@@ -276,10 +295,10 @@ export default function ProgramsPage() {
                         {activeTab === 'Geoposición' ? 'Longitud' : 'Plantel'}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
-                        {activeTab === 'Geoposición' ? 'Latitud' : 'Contacto Principal / Email'}
+                        {activeTab === 'Geoposición' ? 'Latitud' : (activeTab === 'Biblioteca Digital' ? 'Estatus Operativo' : 'Contacto Principal / Email')}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">
-                        {activeTab === 'Geoposición' ? 'Estado (Activo/Inactivo)' : 'Cuentas'}
+                        {activeTab === 'Geoposición' ? 'Estado (Activo/Inactivo)' : (activeTab === 'Biblioteca Digital' ? 'Equipos' : 'Cuentas')}
                       </TableHead>
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
@@ -295,6 +314,10 @@ export default function ProgramsPage() {
                       <TableCell>
                         {activeTab === 'Geoposición' ? (
                           <span className="text-[10px] font-mono font-bold text-primary">{rec.latitud || 'S/D'}</span>
+                        ) : activeTab === 'Biblioteca Digital' ? (
+                           <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20 text-primary">
+                             {rec.status?.toUpperCase() || 'ACTIVO'}
+                           </Badge>
                         ) : (
                           <div className="flex flex-col">
                              <span className="text-[10px] font-mono lowercase text-primary font-bold">
@@ -311,6 +334,8 @@ export default function ProgramsPage() {
                           <Badge variant={rec.status === 'activo' ? 'default' : 'outline'} className={cn("text-[9px] font-black uppercase", rec.status === 'activo' ? "bg-emerald-500 hover:bg-emerald-600" : "")}>
                             {rec.status?.toUpperCase() || 'INACTIVO'}
                           </Badge>
+                        ) : activeTab === 'Biblioteca Digital' ? (
+                           <span className="font-black text-xs text-primary">{rec.numeroEquipos || 0}</span>
                         ) : (
                           rec.asistentes && rec.asistentes.length > 0 ? (
                              <Badge variant="secondary" className="text-[9px] font-black">{rec.asistentes.length} SERVIDORES</Badge>
@@ -398,6 +423,13 @@ export default function ProgramsPage() {
                             <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre Institucional</Label>
                             <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 uppercase border-none" />
                           </div>
+
+                          {activeTab === 'Biblioteca Digital' && (
+                             <div className="space-y-2">
+                                <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Número de Equipos</Label>
+                                <Input type="number" className="h-12 font-black text-lg bg-slate-50 border-primary/10" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                             </div>
+                          )}
 
                           {activeTab === 'Geoposición' && (
                             <>
@@ -510,7 +542,7 @@ export default function ProgramsPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Ap. Paterno</Label>
-                <Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} className="h-11 rounded-xl" />
+                <Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, pathero: e.target.value.toUpperCase()})} className="h-11 rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Ap. Materno</Label>
