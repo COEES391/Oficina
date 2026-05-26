@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -74,10 +75,10 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     setMounted(true)
-    const stored = JSON.parse(localStorage.getItem('programs_full_v22') || '[]')
+    const stored = JSON.parse(localStorage.getItem('programs_full_v23') || '[]')
     if (stored.length === 0) {
       setRecords(programsData)
-      localStorage.setItem('programs_full_v22', JSON.stringify(programsData))
+      localStorage.setItem('programs_full_v23', JSON.stringify(programsData))
     } else {
       setRecords(stored)
     }
@@ -126,7 +127,7 @@ export default function ProgramsPage() {
       : [{...formData, id: `SOL-${Date.now()}`}, ...records];
     
     setRecords(updated)
-    localStorage.setItem('programs_full_v22', JSON.stringify(updated))
+    localStorage.setItem('programs_full_v23', JSON.stringify(updated))
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
@@ -136,7 +137,7 @@ export default function ProgramsPage() {
   const handleDeleteRecord = (id: string) => {
     const updated = records.filter(r => r.id !== id);
     setRecords(updated);
-    localStorage.setItem('programs_full_v22', JSON.stringify(updated));
+    localStorage.setItem('programs_full_v23', JSON.stringify(updated));
     toast({ title: "Registro eliminado", description: "El registro ha sido borrado de la base maestra." });
   }
 
@@ -169,7 +170,7 @@ export default function ProgramsPage() {
   // Assistant Logic
   const handleOpenAddAssistant = () => {
     setEditingAssistantIndex(null)
-    setAssistantForm({ nombres: '', paterno: '', materno: '', rfc: '', funcion: '', email: '' })
+    setAssistantForm({ nombres: '', pathero: '', materno: '', rfc: '', funcion: '', email: '' })
     setIsAssistantDialogOpen(true)
   }
 
