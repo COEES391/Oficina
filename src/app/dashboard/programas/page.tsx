@@ -38,7 +38,8 @@ import {
   Radio,
   Network,
   Monitor,
-  X
+  X,
+  School
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -65,14 +66,6 @@ const FUNCIONES = [
   "CONTRALOR"
 ]
 
-const REGIONAL_OFFICES = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
-  "Oficina de COEES Tultitlan"
-];
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -81,6 +74,7 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   // Assistant Sub-Dialog State
@@ -140,14 +134,9 @@ export default function ProgramsPage() {
     if (storedV24) {
       setRecords(JSON.parse(storedV24))
     } else {
-      const v23 = localStorage.getItem('programs_full_v23')
-      const v22 = localStorage.getItem('programs_full_v22')
       const v21 = localStorage.getItem('programs_full_v21')
-      
       let initialSet: ProgramStatus[] = []
-      if (v23) initialSet = JSON.parse(v23)
-      else if (v22) initialSet = JSON.parse(v22)
-      else if (v21) initialSet = JSON.parse(v21)
+      if (v21) initialSet = JSON.parse(v21)
 
       const masterData = programsData
       const finalSet = [...initialSet]
@@ -166,19 +155,28 @@ export default function ProgramsPage() {
     if (cleanVal.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
       if (school) {
-        setFormData(prev => ({
-          ...prev,
-          schoolName: school.nombre,
-          zonaEscolar: school.zonaEscolar,
-          sector: school.sector,
-          modalidad: school.modalidad,
-          municipio: school.municipio,
-          valle: school.valle,
-          region: school.region,
-          email: `${school.cct.toLowerCase()}@desysa.gob.mx`
-        }));
+        populateWithSchool(school);
       }
     }
+  }
+
+  const populateWithSchool = (school: any) => {
+    setFormData(prev => ({
+      ...prev,
+      cct: school.cct,
+      schoolName: school.nombre,
+      zonaEscolar: school.zonaEscolar,
+      sector: school.sector,
+      modalidad: school.modalidad,
+      municipio: school.municipio,
+      valle: school.valle,
+      region: school.region,
+      email: `${school.cct.toLowerCase()}@desysa.gob.mx`
+    }));
+    toast({
+      title: "Plantel Identificado",
+      description: `${school.nombre} cargado correctamente.`,
+    });
   }
 
   const handleSave = () => {
@@ -194,6 +192,7 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
+    setDialogSearchTerm('')
     toast({ title: "Registro guardado con éxito" })
   }
 
@@ -296,9 +295,9 @@ export default function ProgramsPage() {
              </div>
              <div className="flex flex-1 max-md:w-full relative">
                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-               <Input placeholder="Filtrar registros..." className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+               <Input placeholder="Filtrar por CCT o Plantel..." className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional px-8 text-[11px] h-10">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional px-8 text-[11px] h-10">
                 <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
              </Button>
           </Card>
@@ -311,11 +310,11 @@ export default function ProgramsPage() {
                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
-                        {activeTab === 'Geoposición' ? 'Longitud' : (activeTab === 'ATRES' ? 'CCT / Plantel' : 'Plantel')}
+                        {activeTab === 'Geoposición' ? 'Longitud' : (activeTab === 'ATRES' ? 'Plantel' : 'Plantel')}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
                         {activeTab === 'Geoposición' ? 'Latitud' : 
-                         activeTab === 'ATRES' ? 'Tipo de Servicio' : 
+                         activeTab === 'ATRES' ? 'Tipo de Incidencia' : 
                          'Estatus Operativo'}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">
@@ -324,14 +323,11 @@ export default function ProgramsPage() {
                          activeTab === 'ATRES' ? 'Estatus' : 
                          'Contacto / Email'}
                       </TableHead>
-                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') && (
+                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
                         <TableHead className="text-[10px] font-black uppercase text-center"># Capacitados</TableHead>
                       )}
                       {activeTab === 'ATRES' && (
                         <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
-                      )}
-                      {(activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
-                        <TableHead className="text-[10px] font-black uppercase text-center">Cuentas</TableHead>
                       )}
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
@@ -342,7 +338,7 @@ export default function ProgramsPage() {
                       <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       <TableCell className="font-black text-[10px] text-primary">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
                       <TableCell className="text-xs font-bold text-slate-700 uppercase">
-                        {activeTab === 'Geoposición' ? rec.longitud : (activeTab === 'ATRES' ? `${rec.cct} - ${rec.schoolName}` : rec.schoolName)}
+                        {activeTab === 'Geoposición' ? rec.longitud : rec.schoolName}
                       </TableCell>
                       <TableCell>
                         {activeTab === 'Geoposición' ? <span className="text-[10px] font-mono font-bold">{rec.latitud}</span> : 
@@ -368,7 +364,7 @@ export default function ProgramsPage() {
                           <span className="text-[10px] font-mono lowercase">{rec.email || 'S/D'}</span>
                         )}
                       </TableCell>
-                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') && (
+                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
                         <TableCell className="text-center">
                           <Badge variant="outline" className="text-[9px] font-black bg-accent/10 border-accent/20 text-accent">
                             {rec.asistentes?.length || 0} PERSONAL
@@ -381,11 +377,6 @@ export default function ProgramsPage() {
                              {rec.reportPdf && <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => setEvidenceToView({ type: 'pdf', data: rec.reportPdf!, title: `Documento ${rec.id}` })}><FileText className="h-4 w-4" /></Button>}
                              {rec.evidencePhotos && rec.evidencePhotos.length > 0 && <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600" onClick={() => setEvidenceToView({ type: 'gallery', data: rec.evidencePhotos!, title: `Galería ${rec.id}` })}><ImageIcon className="h-4 w-4" /></Button>}
                           </div>
-                        </TableCell>
-                      )}
-                      {(activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="text-[9px] font-black">{rec.asistentes?.length || 0} CUENTAS</Badge>
                         </TableCell>
                       )}
                       <TableCell className="text-right pr-8">
@@ -425,6 +416,49 @@ export default function ProgramsPage() {
                 <TabsContent value="auditoria" className="h-full m-0 p-0 overflow-hidden">
                   <ScrollArea className="h-full px-8">
                     <div className="grid gap-8 py-6">
+                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner relative">
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                              <Search className="h-4 w-4" /> Localizador Institucional CCT
+                           </Label>
+                           <Input 
+                              placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." 
+                              className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm focus:ring-2 focus:ring-primary/20" 
+                              value={dialogSearchTerm} 
+                              onChange={(e) => {
+                                setDialogSearchTerm(e.target.value);
+                                if (e.target.value.length === 10) handleCctChange(e.target.value);
+                              }} 
+                           />
+                        </div>
+                        
+                        {dialogSearchTerm && dialogSearchTerm.length > 2 && (
+                          <div className="absolute z-[100] left-6 right-6 top-[100px] max-h-60 overflow-auto bg-white border border-primary/10 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 divide-y divide-slate-50">
+                            {schoolsDirectory.filter(s => 
+                              (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || 
+                              (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())
+                            ).slice(0, 10).map(s => (
+                              <div 
+                                key={`${s.cct}-${s.turno}`} 
+                                className="p-4 hover:bg-primary/5 cursor-pointer transition-colors flex justify-between items-center group" 
+                                onClick={() => { populateWithSchool(s); setDialogSearchTerm(''); }}
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                     <School className="h-5 w-5" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                     <span className="text-xs font-black text-slate-800">{s.nombre}</span>
+                                     <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span>
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/10">{s.municipio}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       {activeTab === 'ATRES' ? (
                         <div className="space-y-8 animate-in fade-in">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -511,12 +545,16 @@ export default function ProgramsPage() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
-                              <Label className="text-[11px] font-black uppercase text-primary"># Solicitud</Label>
+                              <Label className="text-[11px] font-black uppercase text-primary"># Solicitud / Folio</Label>
                               <Input className="h-12 font-mono uppercase bg-slate-50" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                             </div>
                             <div className="space-y-2">
                                <Label className="text-[11px] font-black uppercase text-primary">CCT del Plantel</Label>
                                <Input placeholder="EJ: 15DES0001X" className="h-12 uppercase font-black" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                               <Label className="text-[11px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                               <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 border-none" />
                             </div>
                             {activeTab === 'Biblioteca Digital' && (
                                <div className="space-y-2">
@@ -611,7 +649,7 @@ export default function ProgramsPage() {
           <DialogHeader><DialogTitle className="uppercase font-black">Registro de Personal</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <Input placeholder="Nombres" value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} />
-            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} />
+            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, patero: e.target.value.toUpperCase()})} />
             <Input placeholder="RFC" value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} maxLength={13} />
           </div>
           <DialogFooter><Button onClick={handleSaveAssistant} className="btn-institutional w-full">Actualizar Lista</Button></DialogFooter>
