@@ -30,7 +30,7 @@ export type ProgramStatus = {
   latitud?: string;
   longitud?: string;
   tecnicos?: string;
-  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles';
+  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles' | 'cuenta institucional';
   oficinaRegionalAtencion?: string;
   numeroOficio?: string;
   alumnosBeneficiados?: number;
@@ -90,7 +90,7 @@ export type SupportTicket = {
   alumnosBeneficiados: number;
   docentesBeneficiados: number;
   numeroEquipos: number;
-  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles';
+  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles' | 'cuenta institucional';
   materialUtilizado: string;
   setes: 'S' | 'N';
   observaciones: string;
@@ -300,6 +300,7 @@ const getGeoData = (): ProgramStatus[] => {
     ["15DTV0133O", "-99.462084", "19.320368"],
     ["15DTV0135M", "-98.908933", "19.588069"],
     ["15DTV0140Y", "-98.883905", "19.643468"],
+    ["15DTV0142W", "-99.521240", "19.112105"],
     ["15DTV0142W", "-99.521240", "19.112105"],
     ["15DTV0145T", "-98.793748", "19.726764"],
     ["15DTV0150E", "-98.923609", "19.635365"],

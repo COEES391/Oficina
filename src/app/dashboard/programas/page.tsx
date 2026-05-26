@@ -324,7 +324,7 @@ export default function ProgramsPage() {
                          activeTab === 'ATRES' ? 'Estatus' : 
                          'Contacto / Email'}
                       </TableHead>
-                      {activeTab === 'Biblioteca Digital' && (
+                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') && (
                         <TableHead className="text-[10px] font-black uppercase text-center"># Capacitados</TableHead>
                       )}
                       {activeTab === 'ATRES' && (
@@ -368,7 +368,7 @@ export default function ProgramsPage() {
                           <span className="text-[10px] font-mono lowercase">{rec.email || 'S/D'}</span>
                         )}
                       </TableCell>
-                      {activeTab === 'Biblioteca Digital' && (
+                      {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') && (
                         <TableCell className="text-center">
                           <Badge variant="outline" className="text-[9px] font-black bg-accent/10 border-accent/20 text-accent">
                             {rec.asistentes?.length || 0} PERSONAL
@@ -415,7 +415,7 @@ export default function ProgramsPage() {
              <div className="px-8 border-b bg-slate-50/50">
                 <TabsList className="bg-transparent h-12 p-0 gap-6">
                   <TabsTrigger value="auditoria" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 py-3 text-[11px] font-black uppercase transition-all">1. Datos de Auditoría</TabsTrigger>
-                  {activeTab !== 'ATRES' && (
+                  {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela' || activeTab === 'ATRES') && (
                     <TabsTrigger value="asistentes" disabled={activeTab === 'Biblioteca Digital' && formData.capacitacion === 'N'} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-0 py-3 text-[11px] font-black uppercase transition-all">2. Lista de Cuentas / Personal</TabsTrigger>
                   )}
                 </TabsList>
@@ -433,7 +433,7 @@ export default function ProgramsPage() {
                               <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
                                 <SelectTrigger className="h-12 bg-slate-50"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                  {['red edusat', 'red local', 'mantenimiento', 'teleplanteles'].map(t => <SelectItem key={t} value={t} className="uppercase font-bold text-[10px]">{t}</SelectItem>)}
+                                  {['red edusat', 'red local', 'mantenimiento', 'teleplanteles', 'cuenta institucional'].map(t => <SelectItem key={t} value={t} className="uppercase font-bold text-[10px]">{t}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                             </div>

@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -397,6 +398,7 @@ export default function SupportPage() {
                         <SelectItem value="red local" className="text-[11px] uppercase font-bold">Red Local</SelectItem>
                         <SelectItem value="mantenimiento" className="text-[11px] uppercase font-bold">Mantenimiento</SelectItem>
                         <SelectItem value="teleplanteles" className="text-[11px] uppercase font-bold">Teleplanteles</SelectItem>
+                        <SelectItem value="cuenta institucional" className="text-[11px] uppercase font-bold">Cuenta Institucional</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -531,7 +533,7 @@ export default function SupportPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <div className="space-y-4">
                           <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Diagnóstico:</Label>
-                          <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnosticoRed: val})} className="grid grid-cols-1 gap-2">
+                          <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnostosticoRed: val})} className="grid grid-cols-1 gap-2">
                              <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
                                 <RadioGroupItem value="ampliacion" id="diag-ampli" />
                                 <Label htmlFor="diag-ampli" className="text-[10px] font-black uppercase">Ampliación</Label>
@@ -879,6 +881,7 @@ export default function SupportPage() {
                     t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : 
                     t.tipoIncidencia === 'red edusat' ? "border-blue-300 text-blue-600 bg-blue-50" :
                     t.tipoIncidencia === 'red local' ? "border-indigo-300 text-indigo-600 bg-indigo-50" :
+                    t.tipoIncidencia === 'cuenta institucional' ? "border-emerald-300 text-emerald-600 bg-emerald-50" :
                     "border-primary/20 text-primary"
                   )}>
                     {t.tipoIncidencia}
