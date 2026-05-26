@@ -271,9 +271,15 @@ export default function ProgramsPage() {
                    <TableRow>
                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Plantel</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase">Contacto Principal / Email</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase text-center">Cuentas</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">
+                        {activeTab === 'Geoposición' ? 'Longitud' : 'Plantel'}
+                      </TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">
+                        {activeTab === 'Geoposición' ? 'Latitud' : 'Contacto Principal / Email'}
+                      </TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-center">
+                        {activeTab === 'Geoposición' ? 'Estado (Activo/Inactivo)' : 'Cuentas'}
+                      </TableHead>
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -282,22 +288,34 @@ export default function ProgramsPage() {
                     <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors group">
                       <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       <TableCell className="font-black text-[10px] text-primary">{rec.cct}</TableCell>
-                      <TableCell className="text-xs font-bold text-slate-700 uppercase">{rec.schoolName}</TableCell>
+                      <TableCell className="text-xs font-bold text-slate-700 uppercase">
+                        {activeTab === 'Geoposición' ? (rec.longitud || 'S/D') : rec.schoolName}
+                      </TableCell>
                       <TableCell>
-                        <div className="flex flex-col">
-                           <span className="text-[10px] font-mono lowercase text-primary font-bold">
-                              {rec.email || (rec.asistentes && rec.asistentes[0]?.email) || 'S/D'}
-                           </span>
-                           {rec.asistentes && rec.asistentes.length > 1 && (
-                             <span className="text-[8px] font-black uppercase text-muted-foreground">+{rec.asistentes.length - 1} cuentas adicionales</span>
-                           )}
-                        </div>
+                        {activeTab === 'Geoposición' ? (
+                          <span className="text-[10px] font-mono font-bold text-primary">{rec.latitud || 'S/D'}</span>
+                        ) : (
+                          <div className="flex flex-col">
+                             <span className="text-[10px] font-mono lowercase text-primary font-bold">
+                                {rec.email || (rec.asistentes && rec.asistentes[0]?.email) || 'S/D'}
+                             </span>
+                             {rec.asistentes && rec.asistentes.length > 1 && (
+                               <span className="text-[8px] font-black uppercase text-muted-foreground">+{rec.asistentes.length - 1} cuentas adicionales</span>
+                             )}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {rec.asistentes && rec.asistentes.length > 0 ? (
-                           <Badge variant="secondary" className="text-[9px] font-black">{rec.asistentes.length} SERVIDORES</Badge>
+                        {activeTab === 'Geoposición' ? (
+                          <Badge variant={rec.status === 'activo' ? 'default' : 'outline'} className={cn("text-[9px] font-black uppercase", rec.status === 'activo' ? "bg-emerald-500 hover:bg-emerald-600" : "")}>
+                            {rec.status?.toUpperCase() || 'INACTIVO'}
+                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] font-black opacity-30">0</Badge>
+                          rec.asistentes && rec.asistentes.length > 0 ? (
+                             <Badge variant="secondary" className="text-[9px] font-black">{rec.asistentes.length} SERVIDORES</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] font-black opacity-30">0</Badge>
+                          )
                         )}
                       </TableCell>
                       <TableCell className="text-right pr-8">
@@ -379,6 +397,19 @@ export default function ProgramsPage() {
                             <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Nombre Institucional</Label>
                             <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 uppercase border-none" />
                           </div>
+
+                          {activeTab === 'Geoposición' && (
+                            <>
+                              <div className="space-y-2">
+                                <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Latitud</Label>
+                                <Input className="h-12 font-mono bg-slate-50 border-primary/10" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} placeholder="EJ: 19.818" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[11px] font-black uppercase text-primary tracking-widest">Longitud</Label>
+                                <Input className="h-12 font-mono bg-slate-50 border-primary/10" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} placeholder="EJ: -99.146" />
+                              </div>
+                            </>
+                          )}
 
                           <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t">
                              <Label className="text-[11px] font-black uppercase text-primary">Observaciones Técnicas</Label>
