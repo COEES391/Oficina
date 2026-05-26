@@ -73,21 +73,6 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const MAINTENANCE_CHECKLIST = [
-  "SUSTITUCIÓN DE CONECTORES",
-  "SUSTITUCIÓN DE CORDONES DE PARCHEO",
-  "SUSTITUCIÓN DE CABLE UTP",
-  "SUSTITUCIÓN DE ROSETAS",
-  "SUSTITUCIÓN DE CANALETAS",
-  "CONFIGURACIÓN DE RED"
-];
-
-const EDUSAT_MICROPAK = ['REVISIÓN', 'POLARIZACIÓN', 'PRUEBA', 'CAMBIO'];
-const EDUSAT_ANTENA = ['ORIENTACIÓN', 'REPARACIÓN', 'REUBICACIÓN', 'CAMBIO'];
-const EDUSAT_DECO_ACCIONES = ['CONFIGURACIÓN', 'REUBICACIÓN', 'CAMBIO'];
-const EDUSAT_CABLEADO = ['CAMBIO DE CAMPANAS', 'CAMBIO DE DIVISOR', 'CAMBIO DE CABLE'];
-const EDUSAT_PREVENTIVO = ['REVISIÓN GENERAL', 'LIMPIEZA GENERAL', 'CUIDADO PREVENTIVO'];
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -267,19 +252,6 @@ export default function ProgramsPage() {
     setFormData({ ...formData, mantenimientoDetalle: { ...current, equipos: newEquipos } });
   }
 
-  const handleEdusatChecklistToggle = (category: keyof NonNullable<ProgramStatus['edusatDetalle']>, item: string) => {
-    const current = (formData.edusatDetalle?.[category] as string[]) || [];
-    const updated = current.includes(item) ? current.filter(i => i !== item) : [...current, item];
-    setFormData({ ...formData, edusatDetalle: { ...formData.edusatDetalle!, [category]: updated } });
-  }
-
-  const handleMantenimientoToggle = (item: string) => {
-    const current = formData.mantenimientoChecklist || [];
-    const updated = current.includes(item) ? current.filter(i => i !== item) : [...current, item];
-    setFormData({ ...formData, mantenimientoChecklist: updated });
-  }
-
-  // Assistant Logic
   const handleSaveAssistant = () => {
     if (!assistantForm.nombres || !assistantForm.rfc) return;
     const newAsistentes = [...(formData.asistentes || [])]
@@ -342,12 +314,25 @@ export default function ProgramsPage() {
                         {activeTab === 'Geoposición' ? 'Longitud' : (activeTab === 'ATRES' ? 'CCT / Plantel' : 'Plantel')}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
-                        {activeTab === 'Geoposición' ? 'Latitud' : (activeTab === 'Biblioteca Digital' ? 'Estatus Operativo' : (activeTab === 'ATRES' ? 'Tipo de Servicio' : 'Contacto / Email'))}
+                        {activeTab === 'Geoposición' ? 'Latitud' : 
+                         activeTab === 'ATRES' ? 'Tipo de Servicio' : 
+                         'Estatus Operativo'}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase text-center">
-                        {activeTab === 'Geoposición' ? 'Estado' : (activeTab === 'Biblioteca Digital' ? 'Equipos' : (activeTab === 'ATRES' ? 'Estatus Operativo' : 'Cuentas'))}
+                        {activeTab === 'Geoposición' ? 'Estado' : 
+                         activeTab === 'Biblioteca Digital' ? 'Equipos' : 
+                         activeTab === 'ATRES' ? 'Estatus' : 
+                         'Contacto / Email'}
                       </TableHead>
-                      {activeTab === 'ATRES' && <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>}
+                      {activeTab === 'Biblioteca Digital' && (
+                        <TableHead className="text-[10px] font-black uppercase text-center"># Capacitados</TableHead>
+                      )}
+                      {activeTab === 'ATRES' && (
+                        <TableHead className="text-[10px] font-black uppercase text-center">Evidencias</TableHead>
+                      )}
+                      {(activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
+                        <TableHead className="text-[10px] font-black uppercase text-center">Cuentas</TableHead>
+                      )}
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -362,24 +347,45 @@ export default function ProgramsPage() {
                       <TableCell>
                         {activeTab === 'Geoposición' ? <span className="text-[10px] font-mono font-bold">{rec.latitud}</span> : 
                          activeTab === 'ATRES' ? <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/20">{rec.tipoIncidencia || 'mantenimiento'}</Badge> :
-                         <span className="text-[10px] font-mono lowercase">{rec.email || 'S/D'}</span>}
+                         <Badge variant="outline" className={cn("text-[9px] font-black uppercase", rec.status === 'activo' || rec.status === 'pendiente' ? 'border-amber-200 text-amber-600' : 'border-emerald-200 text-emerald-600')}>
+                           {rec.status?.toUpperCase() || 'ACTIVO'}
+                         </Badge>}
                       </TableCell>
                       <TableCell className="text-center">
-                        {activeTab === 'ATRES' ? (
+                        {activeTab === 'Geoposición' ? (
+                          <div className={cn("h-8 flex items-center justify-center gap-2 rounded-xl text-[9px] font-black uppercase", rec.status === 'activo' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700')}>
+                            <Circle className={cn("h-2 w-2 fill-current", rec.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
+                            {rec.status?.toUpperCase() || 'ACTIVO'}
+                          </div>
+                        ) : activeTab === 'Biblioteca Digital' ? (
+                          <span className="text-[10px] font-black text-primary">{rec.numeroEquipos || 0} EQUIPOS</span>
+                        ) : activeTab === 'ATRES' ? (
                           <div className={cn("h-8 flex items-center justify-center gap-2 rounded-xl text-[9px] font-black uppercase", rec.status === 'atendido' ? 'bg-emerald-50 text-emerald-700' : (rec.status === 'en proceso' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'))}>
                             <Circle className={cn("h-2 w-2 fill-current", rec.status === 'atendido' ? 'text-emerald-500' : (rec.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'))} />
                             {rec.status?.replace('activo', 'atendido') || 'PENDIENTE'}
                           </div>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] font-black">{rec.status === 'activo' ? 'ACTIVO' : 'CONCLUIDO'}</Badge>
+                          <span className="text-[10px] font-mono lowercase">{rec.email || 'S/D'}</span>
                         )}
                       </TableCell>
+                      {activeTab === 'Biblioteca Digital' && (
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-[9px] font-black bg-accent/10 border-accent/20 text-accent">
+                            {rec.asistentes?.length || 0} PERSONAL
+                          </Badge>
+                        </TableCell>
+                      )}
                       {activeTab === 'ATRES' && (
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-2">
                              {rec.reportPdf && <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => setEvidenceToView({ type: 'pdf', data: rec.reportPdf!, title: `Documento ${rec.id}` })}><FileText className="h-4 w-4" /></Button>}
                              {rec.evidencePhotos && rec.evidencePhotos.length > 0 && <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600" onClick={() => setEvidenceToView({ type: 'gallery', data: rec.evidencePhotos!, title: `Galería ${rec.id}` })}><ImageIcon className="h-4 w-4" /></Button>}
                           </div>
+                        </TableCell>
+                      )}
+                      {(activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-[9px] font-black">{rec.asistentes?.length || 0} CUENTAS</Badge>
                         </TableCell>
                       )}
                       <TableCell className="text-right pr-8">
@@ -512,6 +518,18 @@ export default function ProgramsPage() {
                                <Label className="text-[11px] font-black uppercase text-primary">CCT del Plantel</Label>
                                <Input placeholder="EJ: 15DES0001X" className="h-12 uppercase font-black" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
                             </div>
+                            {activeTab === 'Biblioteca Digital' && (
+                               <div className="space-y-2">
+                                  <Label className="text-[11px] font-black uppercase text-primary">Número de Equipos</Label>
+                                  <Input type="number" className="h-12 font-black text-xl" value={formData.numeroEquipos} onChange={e => setFormData({...formData, numeroEquipos: parseInt(e.target.value) || 0})} />
+                               </div>
+                            )}
+                            {activeTab === 'Biblioteca Digital' && (
+                               <div className="flex items-center space-x-3 pt-8">
+                                  <Checkbox id="capacitacion" checked={formData.capacitacion === 'S'} onCheckedChange={(checked) => setFormData({...formData, capacitacion: checked ? 'S' : 'N'})} />
+                                  <Label htmlFor="capacitacion" className="text-[11px] font-black uppercase text-primary cursor-pointer">¿Brindar Capacitación al Personal?</Label>
+                               </div>
+                            )}
                             {activeTab === 'Geoposición' && (
                               <>
                                 <Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} placeholder="Latitud" />
@@ -593,7 +611,7 @@ export default function ProgramsPage() {
           <DialogHeader><DialogTitle className="uppercase font-black">Registro de Personal</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <Input placeholder="Nombres" value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} />
-            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, pathero: e.target.value.toUpperCase()})} />
+            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} />
             <Input placeholder="RFC" value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} maxLength={13} />
           </div>
           <DialogFooter><Button onClick={handleSaveAssistant} className="btn-institutional w-full">Actualizar Lista</Button></DialogFooter>
