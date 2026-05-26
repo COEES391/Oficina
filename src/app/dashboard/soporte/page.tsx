@@ -299,7 +299,8 @@ export default function SupportPage() {
   const filteredTickets = tickets.filter(t => 
     (t.cct || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
     (t.schoolName || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
-    (t.id || '').toUpperCase().includes(listSearchTerm.toUpperCase())
+    (t.id || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
+    (t.tecnicos || '').toUpperCase().includes(listSearchTerm.toUpperCase())
   );
 
   if (!mounted) return null
@@ -318,7 +319,7 @@ export default function SupportPage() {
           <div className="relative w-full md:w-80 group">
              <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
              <Input 
-                placeholder="BUSCAR CCT, PLANTEL O FOLIO..." 
+                placeholder="BUSCAR CCT, PLANTEL, FOLIO O TÉCNICO..." 
                 className="h-10 pl-11 rounded-2xl border-primary/10 bg-white/80 backdrop-blur-sm text-[10px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
                 value={listSearchTerm}
                 onChange={(e) => setListSearchTerm(e.target.value)}
@@ -700,7 +701,7 @@ export default function SupportPage() {
                          </div>
                          <div className="space-y-2">
                             <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
-                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
+                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
                          </div>
                          <div className="space-y-2">
                             <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
@@ -959,8 +960,7 @@ export default function SupportPage() {
                     <Search className="h-8 w-8" />
                     <p className="text-[10px] font-black uppercase">No se encontraron reportes con los criterios de búsqueda.</p>
                   </div>
-                </TableCell>
-              </TableRow>
+                </TableRow>
             )}
           </TableBody>
         </Table>
