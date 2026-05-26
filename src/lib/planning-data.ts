@@ -12,7 +12,7 @@ export type ProgramStatus = {
   id: string;
   name: string;
   progress: number;
-  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo';
+  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente';
   date: string;
   cct?: string;
   schoolName?: string;
