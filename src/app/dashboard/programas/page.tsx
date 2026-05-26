@@ -300,6 +300,9 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase text-center">
                         {activeTab === 'Geoposición' ? 'Estado (Activo/Inactivo)' : (activeTab === 'Biblioteca Digital' ? 'Equipos' : 'Cuentas')}
                       </TableHead>
+                      {activeTab === 'Biblioteca Digital' && (
+                        <TableHead className="text-[10px] font-black uppercase text-center"># Capacitados</TableHead>
+                      )}
                       <TableHead className="text-right text-[10px] font-black uppercase pr-8">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -344,6 +347,13 @@ export default function ProgramsPage() {
                           )
                         )}
                       </TableCell>
+                      {activeTab === 'Biblioteca Digital' && (
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="text-[9px] font-black bg-accent/10 text-accent border-accent/20">
+                            {rec.asistentes?.length || 0} PERSONAL
+                          </Badge>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right pr-8">
                          <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8 hover:text-primary transition-colors">
@@ -357,7 +367,7 @@ export default function ProgramsPage() {
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-20 bg-slate-50/20">
+                      <TableCell colSpan={activeTab === 'Biblioteca Digital' ? 7 : 6} className="text-center py-20 bg-slate-50/20">
                          <div className="flex flex-col items-center gap-2 opacity-40">
                             <Search className="h-10 w-10 text-primary" />
                             <p className="text-[10px] font-black uppercase text-muted-foreground">Sin resultados para la búsqueda.</p>
