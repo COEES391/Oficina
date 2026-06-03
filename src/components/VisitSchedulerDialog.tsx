@@ -119,7 +119,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[1300px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-        <DialogHeader className="p-8 pb-4 bg-slate-50 border-b">
+        <DialogHeader className="p-6 pb-3 bg-slate-50 border-b">
           <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
             <Calendar className="h-8 w-8 text-accent" /> Programación de Visitas: {areaName}
           </DialogTitle>
@@ -129,116 +129,114 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          {/* Formulario de Captura con ScrollArea */}
-          <div className="w-full md:w-[420px] border-r bg-white flex flex-col">
-            <div className="p-8 border-b bg-slate-50/30 flex items-center justify-between">
+          {/* Formulario de Captura Compacto */}
+          <div className="w-full md:w-[400px] border-r bg-white flex flex-col">
+            <div className="p-5 border-b bg-slate-50/30 flex items-center justify-between">
                <button 
                 onClick={handleResetForm}
-                className="text-[11px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
+                className="text-[10px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
                >
                  <PlusCircle className="h-4 w-4 group-hover:scale-110 transition-transform" /> 
                  Nueva Salida
                </button>
-               <Badge variant="outline" className="text-[8px] font-black border-none text-slate-300">MODO CAPTURA</Badge>
+               <Badge variant="outline" className="text-[7px] font-black border-none text-slate-300">MODO CAPTURA</Badge>
             </div>
             
-            <ScrollArea className="flex-1">
-              <div className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CCT del Plantel</Label>
-                  <div className="relative">
-                    <Input 
-                        placeholder="15DES0000X" 
-                        className="h-11 font-mono uppercase border-primary/10 bg-slate-50 pl-10 focus:bg-white transition-colors" 
-                        value={formData.cct} 
-                        onChange={e => handleCctChange(e.target.value)} 
-                        maxLength={10}
-                    />
-                    <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+            <div className="p-5 space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary">CCT del Plantel</Label>
+                <div className="relative">
+                  <Input 
+                      placeholder="15DES0000X" 
+                      className="h-10 font-mono uppercase border-primary/10 bg-slate-50 pl-10 focus:bg-white transition-colors text-xs" 
+                      value={formData.cct} 
+                      onChange={e => handleCctChange(e.target.value)} 
+                      maxLength={10}
+                  />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                </div>
+                {formData.schoolName && (
+                  <div className="flex items-center gap-1.5 p-1.5 bg-emerald-50 rounded-lg animate-in slide-in-from-left-2">
+                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                      <p className="text-[8px] font-black text-emerald-700 uppercase leading-none truncate">{formData.schoolName}</p>
                   </div>
-                  {formData.schoolName && (
-                    <div className="flex items-center gap-1.5 p-2 bg-emerald-50 rounded-lg animate-in slide-in-from-left-2">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        <p className="text-[9px] font-black text-emerald-700 uppercase leading-none">{formData.schoolName}</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Fecha de Visita</Label>
-                  <Input type="date" className="h-11 border-primary/10 font-bold bg-slate-50 focus:bg-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Propósito / Motivo</Label>
-                  <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
-                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mantenimiento Equipo de Computo" className="text-[10px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
-                      <SelectItem value="Mantenimiento Red Local" className="text-[10px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
-                      <SelectItem value="Mantenimiento Red Edusat" className="text-[10px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
-                      <SelectItem value="Teleplanteles" className="text-[10px] font-bold">TELEPLANTELES</SelectItem>
-                      <SelectItem value="Instalación Red Local" className="text-[10px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
-                      <SelectItem value="Instalación Equipo de Computo" className="text-[10px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Personal Comisionado</Label>
-                  <div className="relative">
-                    <Input 
-                        className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50 pl-10 focus:bg-white" 
-                        placeholder="NOMBRES..." 
-                        value={formData.technicians} 
-                        onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
-                    />
-                    <UserCog className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Estatus Inicial</Label>
-                  <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
-                      <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
-                      <SelectItem value="atendido" className="text-[10px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Button onClick={handleSave} className="w-full btn-institutional h-16 mt-8 shadow-2xl text-[11px] group border-4 border-white/20">
-                  <CheckCircle2 className="h-6 w-6 mr-2 group-hover:scale-110 transition-transform" />
-                  Crear Registro de Visita
-                </Button>
-                
-                <p className="text-[8px] text-slate-400 font-bold uppercase text-center pb-8">
-                  El registro aparecerá automáticamente <br /> en la bitácora de la derecha.
-                </p>
+                )}
               </div>
-            </ScrollArea>
+
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary">Fecha de Visita</Label>
+                <Input type="date" className="h-10 border-primary/10 font-bold bg-slate-50 focus:bg-white text-xs" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary">Propósito / Motivo</Label>
+                <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
+                  <SelectTrigger className="h-10 border-primary/10 font-bold uppercase text-[9px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[9px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
+                    <SelectItem value="Mantenimiento Red Local" className="text-[9px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
+                    <SelectItem value="Mantenimiento Red Edusat" className="text-[9px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
+                    <SelectItem value="Teleplanteles" className="text-[9px] font-bold">TELEPLANTELES</SelectItem>
+                    <SelectItem value="Instalación Red Local" className="text-[9px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
+                    <SelectItem value="Instalación Equipo de Computo" className="text-[9px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary">Personal Comisionado</Label>
+                <div className="relative">
+                  <Input 
+                      className="h-10 border-primary/10 font-bold uppercase text-[9px] bg-slate-50 pl-10 focus:bg-white" 
+                      placeholder="NOMBRES..." 
+                      value={formData.technicians} 
+                      onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
+                  />
+                  <UserCog className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary">Estatus Inicial</Label>
+                <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                  <SelectTrigger className="h-10 border-primary/10 font-bold uppercase text-[9px] bg-slate-50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendiente" className="text-[9px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
+                    <SelectItem value="en proceso" className="text-[9px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
+                    <SelectItem value="atendido" className="text-[9px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={handleSave} className="w-full btn-institutional h-12 mt-4 shadow-xl text-[10px] group border-2 border-white/20">
+                <CheckCircle2 className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                Crear Registro de Visita
+              </Button>
+              
+              <p className="text-[7px] text-slate-400 font-bold uppercase text-center pt-2">
+                El registro aparecerá automáticamente <br /> en la bitácora de la derecha.
+              </p>
+            </div>
           </div>
 
           {/* Listado de Visitas */}
-          <div className="flex-1 bg-slate-50/50 p-8 flex flex-col overflow-hidden">
-             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
+          <div className="flex-1 bg-slate-50/50 p-6 flex flex-col overflow-hidden">
+             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
                 <div className="flex items-center gap-3">
-                   <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400">
-                      <Clock className="h-5 w-5" />
+                   <div className="h-9 w-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400">
+                      <Clock className="h-4 w-4" />
                    </div>
                    <div>
-                      <h3 className="text-[11px] font-black uppercase text-slate-700 tracking-[0.2em] leading-none">Agenda de Salidas</h3>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Registros vigentes: {areaVisits.length}</p>
+                      <h3 className="text-[10px] font-black uppercase text-slate-700 tracking-[0.2em] leading-none">Agenda de Salidas</h3>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Registros: {areaVisits.length}</p>
                    </div>
                 </div>
                 
-                <div className="relative w-full md:w-80 group">
-                   <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                <div className="relative w-full md:w-72 group">
+                   <Search className="absolute left-4 top-2.5 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                    <Input 
                       placeholder="FILTRAR POR CCT O PLANTEL..." 
-                      className="h-10 pl-11 rounded-2xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                      className="h-9 pl-10 rounded-2xl border-primary/10 bg-white text-[9px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
                       value={listSearchTerm}
                       onChange={(e) => setListSearchTerm(e.target.value)}
                    />
@@ -250,35 +248,35 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                    <Table>
                       <TableHeader className="bg-slate-50 sticky top-0 z-10">
                          <TableRow>
-                            <TableHead className="text-[10px] font-black uppercase h-14 pl-8">Fecha</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase h-14">CCT / Plantel</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase h-14">Propósito</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase h-14">Personal</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase h-14 text-center">Estatus Operativo</TableHead>
-                            <TableHead className="w-16 h-14"></TableHead>
+                            <TableHead className="text-[9px] font-black uppercase h-12 pl-6">Fecha</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase h-12">CCT / Plantel</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase h-12">Propósito</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase h-12">Personal</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase h-12 text-center">Estatus</TableHead>
+                            <TableHead className="w-12 h-12"></TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
                         {areaVisits.length > 0 ? areaVisits.map((v) => (
                           <TableRow key={v.id} className="hover:bg-slate-50 transition-colors group">
-                            <TableCell className="font-black text-[10px] text-primary pl-8">{v.date}</TableCell>
+                            <TableCell className="font-black text-[9px] text-primary pl-6">{v.date}</TableCell>
                             <TableCell>
                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-black text-slate-700">{v.cct}</span>
-                                  <span className="text-[8px] font-bold text-muted-foreground uppercase truncate max-w-[180px]">{v.schoolName}</span>
+                                  <span className="text-[9px] font-black text-slate-700">{v.cct}</span>
+                                  <span className="text-[7px] font-bold text-muted-foreground uppercase truncate max-w-[150px]">{v.schoolName}</span>
                                </div>
                             </TableCell>
                             <TableCell>
-                               <Badge variant="outline" className="text-[8px] font-black border-primary/10 text-accent uppercase bg-accent/5">{v.purpose}</Badge>
+                               <Badge variant="outline" className="text-[7px] font-black border-primary/10 text-accent uppercase bg-accent/5">{v.purpose}</Badge>
                             </TableCell>
-                            <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[120px]">{v.technicians}</TableCell>
+                            <TableCell className="text-[8px] font-bold text-slate-500 uppercase truncate max-w-[100px]">{v.technicians}</TableCell>
                             <TableCell className="text-center">
-                               <div className={cn("inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase shadow-sm border", 
+                               <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase shadow-sm border", 
                                   v.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                                   v.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                   'bg-rose-50 text-rose-700 border-rose-100'
                                )}>
-                                  <Circle className={cn("h-2.5 w-2.5 fill-current", 
+                                  <Circle className={cn("h-2 w-2 fill-current", 
                                     v.status === 'atendido' ? 'text-emerald-500' : 
                                     v.status === 'en proceso' ? 'text-amber-500' : 
                                     'text-rose-500'
@@ -286,25 +284,18 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                                   {v.status}
                                </div>
                             </TableCell>
-                            <TableCell className="pr-8">
-                               <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
-                                  <Trash2 className="h-4 w-4" />
+                            <TableCell className="pr-6">
+                               <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </TableCell>
                           </TableRow>
                         )) : (
                           <TableRow>
-                             <TableCell colSpan={6} className="text-center py-32 opacity-30">
-                                <div className="flex flex-col items-center gap-6">
-                                   <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center border-4 border-dashed border-slate-200">
-                                      <Search className="h-10 w-10 text-slate-300" />
-                                   </div>
-                                   <div className="space-y-1">
-                                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">Bitácora de Agenda Vacía</p>
-                                      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400">
-                                         {listSearchTerm ? 'No hay coincidencias para el CCT buscado.' : 'Use el panel izquierdo para agendar una nueva salida.'}
-                                      </p>
-                                   </div>
+                             <TableCell colSpan={6} className="text-center py-20 opacity-30">
+                                <div className="flex flex-col items-center gap-4">
+                                   <Search className="h-8 w-8 text-slate-300" />
+                                   <p className="text-[9px] font-black uppercase">Sin registros en agenda</p>
                                 </div>
                              </TableCell>
                           </TableRow>
@@ -316,8 +307,8 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
           </div>
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end">
-           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-200 hover:bg-white shadow-sm">Cerrar Agenda Operativa</Button>
+        <DialogFooter className="p-4 bg-slate-50 border-t flex justify-end">
+           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl h-10 px-8 text-[9px] font-black uppercase border-slate-200 hover:bg-white shadow-sm">Cerrar Agenda Operativa</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
