@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { type VisitSchedule } from '@/lib/planning-data'
-import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle, Bell, AlertTriangle, X } from 'lucide-react'
+import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle, Bell, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -39,11 +39,14 @@ const PURPOSE_MAPPING: Record<string, string[]> = {
     "Promoción"
   ],
   programas: [
-    "Auditoría Técnica",
-    "Supervisión de Equipamiento",
-    "Levantamiento Geográfico",
-    "Entrega de Cuentas",
-    "Mantenimiento Preventivo"
+    "Cuenta Institucional: Creación",
+    "Cuenta Institucional: Restructuración",
+    "Cuenta Institucional: Contraseña",
+    "Biblioteca Digital",
+    "Curso Biblioteca Digital",
+    "Promoción",
+    "Mantenimiento Equipo",
+    "Mantenimiento Red Local"
   ]
 };
 
@@ -135,7 +138,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     setVisits(updated)
     localStorage.setItem('coees_visits_v1', JSON.stringify(updated))
     
-    setFormData({ ...initialForm, areaId })
+    handleResetForm()
     toast({ 
       title: "Visita Creada", 
       description: "El registro se ha añadido a la bitácora.",
