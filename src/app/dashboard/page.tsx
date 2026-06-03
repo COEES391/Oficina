@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { 
   LayoutDashboard,
@@ -83,26 +83,48 @@ export default function DashboardPage() {
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
-  useEffect(() => {
-    setMounted(true)
-    const syncData = () => {
-      const storedTickets = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
-      setTickets(storedTickets.length > 0 ? storedTickets : supportData)
-
-      const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
-      setTrainings(storedTrainings)
-
-      const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
-      setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
-
-      const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
-      if (storedGoals) setGoals(storedGoals)
+  const syncData = useCallback(() => {
+    // SOPORTE
+    const rawTickets = localStorage.getItem('support_tickets_full');
+    if (rawTickets) {
+      setTickets(JSON.parse(rawTickets));
+    } else {
+      setTickets(supportData);
+      localStorage.setItem('support_tickets_full', JSON.stringify(supportData));
     }
 
+    // CAPACITACIÓN
+    const rawTrainings = localStorage.getItem('training_records_full');
+    setTrainings(rawTrainings ? JSON.parse(rawTrainings) : []);
+
+    // PROGRAMAS
+    const rawPrograms = localStorage.getItem('programs_full_v24');
+    if (rawPrograms) {
+      setPrograms(JSON.parse(rawPrograms));
+    } else {
+      setPrograms(programsData);
+      localStorage.setItem('programs_full_v24', JSON.stringify(programsData));
+    }
+
+    // METAS
+    const storedGoals = localStorage.getItem('dashboard_goals');
+    if (storedGoals) setGoals(JSON.parse(storedGoals));
+  }, []);
+
+  useEffect(() => {
+    setMounted(true)
     syncData()
+
+    // Escuchar cambios desde otras pestañas
     window.addEventListener('storage', syncData)
-    return () => window.removeEventListener('storage', syncData)
-  }, [])
+    // Refrescar al recuperar el foco (asegura datos frescos tras navegar en la misma pestaña)
+    window.addEventListener('focus', syncData)
+    
+    return () => {
+      window.removeEventListener('storage', syncData)
+      window.removeEventListener('focus', syncData)
+    }
+  }, [syncData])
 
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
@@ -148,9 +170,8 @@ export default function DashboardPage() {
     const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
     const teleplantelesCount = filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length;
 
-    const metaC = 78; 
     const alcanzadoC = redEscolarCount + redEdusatCount;
-    const porcentajeC = metaC > 0 ? Math.min(100, parseFloat(((alcanzadoC / metaC) * 100).toFixed(2))) : 0;
+    const porcentajeC = goals.supportGoal > 0 ? Math.min(100, parseFloat(((alcanzadoC / goals.supportGoal) * 100).toFixed(2))) : 0;
 
     const typesData = [
       { name: 'RED EDUSAT', value: redEdusatCount, fill: '#621132' },
@@ -193,14 +214,14 @@ export default function DashboardPage() {
       total: filteredTickets.length,
       indicadorC: {
         alcanzado: alcanzadoC,
-        meta: metaC,
+        meta: goals.supportGoal,
         porcentaje: porcentajeC,
-        faltante: Math.max(0, metaC - alcanzadoC),
+        faltante: Math.max(0, goals.supportGoal - alcanzadoC),
         redEscolar: redEscolarCount,
         redEdusat: redEdusatCount
       }
     };
-  }, [filteredTickets]);
+  }, [filteredTickets, goals.supportGoal]);
 
   const trainingStats = useMemo(() => {
     const total = filteredTrainings.length;
