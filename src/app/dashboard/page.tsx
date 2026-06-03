@@ -24,7 +24,8 @@ import {
   Radio,
   Navigation,
   Monitor,
-  Building2
+  Building2,
+  Table as TableIcon
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -43,7 +44,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/tabs'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 const TOTAL_UNIVERSE = 830;
 const TRAINING_GOAL_2026 = 5600;
@@ -153,14 +158,13 @@ export default function DashboardPage() {
       { name: 'TELEPLANTEL', value: teleplantelesCount, fill: '#ec4899' },
     ];
 
-    // Red Local by Municipio and Oficina
-    const redLocalTickets = filteredTickets.filter(t => t.tipoIncidencia === 'red local');
     const redLocalByMunicipio: Record<string, number> = {};
-    redLocalTickets.forEach(t => {
+    filteredTickets.filter(t => t.tipoIncidencia === 'red local').forEach(t => {
       if (t.municipio) redLocalByMunicipio[t.municipio] = (redLocalByMunicipio[t.municipio] || 0) + 1;
     });
+    
     const redLocalByOficina: Record<string, number> = {};
-    redLocalTickets.forEach(t => {
+    filteredTickets.filter(t => t.tipoIncidencia === 'red local').forEach(t => {
       if (t.oficinaRegionalAtencion) {
         const cleanOfi = t.oficinaRegionalAtencion.replace('Oficina de Tecnóloga Educativa ', '').replace('Oficina de ', '');
         redLocalByOficina[cleanOfi] = (redLocalByOficina[cleanOfi] || 0) + 1;
@@ -241,12 +245,34 @@ export default function DashboardPage() {
       return { name: reg.name, actual, goal: reg.goal };
     });
 
+    // Nuevo: Análisis Detallado (Nombre del curso + Modalidad (Mes) + Oficina)
+    const detailedAnalysis: {curso: string; modalidad: string; mes: string; oficina: string; total: number}[] = [];
+    const groups: Record<string, number> = {};
+
+    filteredTrainings.forEach(tr => {
+      const date = new Date(tr.fechaInicio);
+      const mes = format(date, 'MMMM', { locale: es }).toUpperCase();
+      const oficina = tr.asistenteMunicipio?.toUpperCase() === 'TOLUCA' || tr.asistenteValle === 'TOLUCA' ? 'TOLUCA' : 
+                      tr.asistenteMunicipio?.toUpperCase() === 'ECATEPEC' ? 'ECATEPEC' :
+                      tr.asistenteMunicipio?.toUpperCase() === 'NAUCALPAN' ? 'NAUCALPAN' :
+                      tr.asistenteMunicipio?.toUpperCase() === 'NEZAHUALCOYOTL' ? 'NEZAHUALCÓYOTL' : (tr.asistenteValle || 'S/D');
+      
+      const key = `${tr.cursoNombre}|${tr.asistenteModalidad}|${mes}|${oficina}`;
+      groups[key] = (groups[key] || 0) + 1;
+    });
+
+    Object.entries(groups).forEach(([key, val]) => {
+      const [curso, modalidad, mes, oficina] = key.split('|');
+      detailedAnalysis.push({ curso, modalidad, mes, oficina, total: val });
+    });
+
     return { 
       total, 
       progressTotal,
       indicadorA,
       indicadorB,
-      byRegionalOffice
+      byRegionalOffice,
+      detailedAnalysis: detailedAnalysis.sort((a,b) => b.total - a.total)
     };
   }, [filteredTrainings, goals.trainingGoal]);
 
@@ -639,6 +665,68 @@ export default function DashboardPage() {
                        <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">En Tiempo</Badge>
                     </div>
                  </div>
+              </CardContent>
+            </Card>
+
+            {/* Nuevo Apartado Solicitado: Análisis Operativo por Curso */}
+            <Card className="executive-card border-t-4 border-primary">
+              <CardHeader className="bg-slate-50/30">
+                <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                  <TableIcon className="h-4 w-4" /> Desglose Operativo de Atención Técnica
+                </CardTitle>
+                <CardDescription className="text-[9px] font-bold uppercase text-muted-foreground">Relación detallada: Nombre del Curso + Modalidad (Mes) + Oficina Regional</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader className="bg-slate-100/50 sticky top-0 z-10">
+                      <TableRow>
+                        <TableHead className="text-[9px] font-black uppercase pl-8 h-12">Nombre del Curso / Taller</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase h-12">Modalidad</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase h-12">Mes Atención</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase h-12">Oficina que Atendió</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase h-12 text-center">Impacto (Servidores)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trainingStats.detailedAnalysis.length > 0 ? trainingStats.detailedAnalysis.map((item, idx) => (
+                        <TableRow key={idx} className="hover:bg-slate-50 transition-colors group">
+                          <TableCell className="pl-8 py-4">
+                            <span className="text-[10px] font-black text-slate-700 uppercase leading-tight">{item.curso}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200 bg-white">
+                              {item.modalidad}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[10px] font-bold text-accent uppercase">{item.mes}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                               <Building2 className="h-3 w-3 text-primary opacity-40" />
+                               <span className="text-[9px] font-black text-slate-500 uppercase">{item.oficina}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="inline-flex items-center justify-center h-7 w-12 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">
+                              {item.total}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-20 opacity-30">
+                            <div className="flex flex-col items-center gap-2">
+                              <Search className="h-10 w-10 text-slate-300" />
+                              <p className="text-[10px] font-black uppercase">Sin registros operativos para mostrar</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </CardContent>
             </Card>
           </div>
