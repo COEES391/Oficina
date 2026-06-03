@@ -44,6 +44,7 @@ import { supportData, type SupportTicket, type TrainingRecord, type ProgramStatu
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -115,9 +116,7 @@ export default function DashboardPage() {
     setMounted(true)
     syncData()
 
-    // Escuchar cambios desde otras pestañas
     window.addEventListener('storage', syncData)
-    // Refrescar al recuperar el foco (asegura datos frescos tras navegar en la misma pestaña)
     window.addEventListener('focus', syncData)
     
     return () => {
@@ -151,12 +150,13 @@ export default function DashboardPage() {
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
       const matchValle = valleFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === valleFilter.toUpperCase());
+      const matchOficina = oficinaFilter === 'all' || (tr.asistenteValle && tr.asistenteValle.toUpperCase() === oficinaFilter.toUpperCase()) || (tr.asistenteMunicipio && tr.asistenteMunicipio.toUpperCase() === oficinaFilter.toUpperCase());
       const matchDateStart = !dateStart || tr.fechaInicio >= dateStart;
       const matchDateEnd = !dateEnd || tr.fechaInicio <= dateEnd;
       const matchCct = !cctFilter || (tr.asistenteCCT && tr.asistenteCCT.toUpperCase().includes(cctFilter.toUpperCase()));
-      return matchValle && matchDateStart && matchDateEnd && matchCct;
+      return matchValle && matchOficina && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [trainings, valleFilter, dateStart, dateEnd, cctFilter]);
+  }, [trainings, valleFilter, oficinaFilter, dateStart, dateEnd, cctFilter]);
 
   const supportStats = useMemo(() => {
     const atendidos = filteredTickets.filter(t => t.status === 'atendido').length;
@@ -364,7 +364,6 @@ export default function DashboardPage() {
         </Tabs>
       </div>
 
-      {/* Reorganized Filter Bar */}
       <Card className="executive-card p-6 bg-white border-none shadow-xl">
         <div className="flex flex-col space-y-6">
           <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
@@ -898,7 +897,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
                     <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
                   </RechartsBarChart>
                 </ResponsiveContainer>
