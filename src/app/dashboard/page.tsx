@@ -25,7 +25,9 @@ import {
   Navigation,
   Monitor,
   Building2,
-  Table as TableIcon
+  Table as TableIcon,
+  UserCheck,
+  PieChart
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -90,7 +92,7 @@ export default function DashboardPage() {
       const storedTrainings = JSON.parse(localStorage.getItem('training_records_full') || '[]')
       setTrainings(storedTrainings)
 
-      const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v22') || '[]')
+      const storedPrograms = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
       setPrograms(storedPrograms.length > 0 ? storedPrograms : programsData)
 
       const storedGoals = JSON.parse(localStorage.getItem('dashboard_goals') || 'null')
@@ -245,7 +247,6 @@ export default function DashboardPage() {
       return { name: reg.name, actual, goal: reg.goal };
     });
 
-    // Nuevo: Análisis Detallado (Nombre del curso + Modalidad (Mes) + Oficina)
     const detailedAnalysis: {curso: string; modalidad: string; mes: string; oficina: string; total: number}[] = [];
     const groups: Record<string, number> = {};
 
@@ -275,6 +276,40 @@ export default function DashboardPage() {
       detailedAnalysis: detailedAnalysis.sort((a,b) => b.total - a.total)
     };
   }, [filteredTrainings, goals.trainingGoal]);
+
+  const accountStats = useMemo(() => {
+    const accountRecords = filteredPrograms.filter(p => p.name === 'Cuentas Institucionales');
+    let totalAccounts = 0;
+    const modalityCounts: Record<string, number> = { 'DES': 0, 'DST': 0, 'DTV': 0 };
+
+    accountRecords.forEach(rec => {
+      const accounts = rec.asistentes || [];
+      totalAccounts += accounts.length;
+      
+      let mod = rec.modalidad || '';
+      if (!mod && rec.cct) {
+        if (rec.cct.includes('DES')) mod = 'DES';
+        else if (rec.cct.includes('DST')) mod = 'DST';
+        else if (rec.cct.includes('DTV')) mod = 'DTV';
+      }
+      
+      if (mod && modalityCounts.hasOwnProperty(mod)) {
+        modalityCounts[mod] += accounts.length;
+      }
+    });
+
+    const chartData = Object.entries(modalityCounts).map(([name, value]) => ({ 
+      name, 
+      value,
+      fill: name === 'DES' ? '#621132' : name === 'DST' ? '#B38E5D' : '#9f2241'
+    }));
+
+    return {
+      totalAccounts,
+      modalityCounts,
+      chartData
+    };
+  }, [filteredPrograms]);
 
   if (!mounted) return null;
 
@@ -668,7 +703,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Nuevo Apartado Solicitado: Análisis Operativo por Curso */}
             <Card className="executive-card border-t-4 border-primary">
               <CardHeader className="bg-slate-50/30">
                 <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
@@ -721,8 +755,7 @@ export default function DashboardPage() {
                               <Search className="h-10 w-10 text-slate-300" />
                               <p className="text-[10px] font-black uppercase">Sin registros operativos para mostrar</p>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </TableRow>
                       )}
                     </TableBody>
                   </Table>
@@ -757,24 +790,73 @@ export default function DashboardPage() {
             })}
           </div>
 
-          <Card className="executive-card">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" /> Comparativa de Cobertura Institucional
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(filteredPrograms.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                  <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                  <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60} fill="#621132" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="executive-card md:col-span-2 border-l-8 border-l-[#9f2241]">
+              <CardHeader className="bg-slate-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
+                       <UserCheck className="h-6 w-6" /> Estadística de Cuentas Institucionales
+                    </CardTitle>
+                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Identidad Digital de Servidores Públicos</CardDescription>
+                  </div>
+                  <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase leading-none">Total Cuentas</p>
+                    <h4 className="text-2xl font-black text-primary mt-1">{accountStats.totalAccounts}</h4>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                  {Object.entries(accountStats.modalityCounts).map(([mod, count]) => (
+                    <div key={mod} className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 shadow-inner group hover:bg-white transition-all relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                        <UserCheck className="h-12 w-12" />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{mod === 'DES' ? 'Generales' : mod === 'DST' ? 'Técnicas' : 'Telesecundarias'}</p>
+                      <h4 className="text-3xl font-black text-slate-800 mt-2">{count}</h4>
+                      <Badge variant="outline" className="mt-3 text-[8px] font-black uppercase bg-white border-primary/10 text-primary">{mod}</Badge>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart data={accountStats.chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
+                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '11px', fontWeight: '900' }} />
+                      <Bar name="Cuentas Activas" dataKey="value" radius={[10, 10, 0, 0]} barSize={50}>
+                        {accountStats.chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="executive-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" /> Cobertura Institucional
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-[450px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(filteredPrograms.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                    <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: 900 }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 
