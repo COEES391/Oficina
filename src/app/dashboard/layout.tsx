@@ -22,10 +22,12 @@ import {
   Monitor,
   ShieldCheck,
   Database,
-  Users as UsersIcon
+  Users as UsersIcon,
+  CalendarDays
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
+import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 
 export default function DashboardLayout({
   children,
@@ -38,6 +40,10 @@ export default function DashboardLayout({
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null)
   const [mounted, setMounted] = useState(false)
 
+  // Visit Scheduler State
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
+  const [selectedArea, setSelectedArea] = useState({ id: '', name: '' })
+
   useEffect(() => {
     setMounted(true)
     const rfc = localStorage.getItem('userRfc')
@@ -45,11 +51,9 @@ export default function DashboardLayout({
       router.push('/')
     } else {
       setUserRfc(rfc)
-      // Recuperar datos del usuario logueado para ver privilegios
       const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
       const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc.toUpperCase())
       
-      // Si es el usuario maestro original
       if (rfc === 'COEES' || rfc === 'CEDITORIAL') {
         setCurrentUser({
           id: 'master',
@@ -70,11 +74,16 @@ export default function DashboardLayout({
     router.push('/')
   }
 
+  const handleOpenScheduler = (areaId: string, areaName: string) => {
+    setSelectedArea({ id: areaId, name: areaName })
+    setIsSchedulerOpen(true)
+  }
+
   const allMenuItems = [
     { id: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
-    { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
-    { id: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
+    { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" />, hasVisits: true },
+    { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" />, hasVisits: true },
+    { id: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" />, hasVisits: true },
     { id: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
     { id: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <UsersIcon className="h-5 w-5" /> },
   ]
@@ -102,9 +111,9 @@ export default function DashboardLayout({
           </div>
         </SidebarHeader>
         <SidebarContent className="px-4 py-2">
-          <SidebarMenu className="gap-1.5">
+          <SidebarMenu className="gap-2">
             {allowedMenuItems.map((item) => (
-              <SidebarMenuItem key={item.path}>
+              <SidebarMenuItem key={item.path} className="flex flex-col gap-1">
                 <SidebarMenuButton 
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
@@ -121,6 +130,18 @@ export default function DashboardLayout({
                     <span>{item.name}</span>
                   </div>
                 </SidebarMenuButton>
+
+                {item.hasVisits && (
+                   <div className="px-4 animate-in slide-in-from-left-2 duration-300">
+                      <button 
+                         onClick={() => handleOpenScheduler(item.id, item.name)}
+                         className="w-full flex items-center gap-2 py-1.5 text-[7px] font-black uppercase text-white/40 hover:text-white tracking-[0.2em] transition-all group"
+                      >
+                         <CalendarDays className="h-3 w-3 group-hover:scale-110 transition-transform" />
+                         <span>Programación de visitas</span>
+                      </button>
+                   </div>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -171,6 +192,14 @@ export default function DashboardLayout({
           </div>
         </main>
       </SidebarInset>
+
+      {/* Visitas Scheduler Modal */}
+      <VisitSchedulerDialog 
+        open={isSchedulerOpen} 
+        onOpenChange={setIsSchedulerOpen} 
+        areaId={selectedArea.id} 
+        areaName={selectedArea.name} 
+      />
     </SidebarProvider>
   )
 }

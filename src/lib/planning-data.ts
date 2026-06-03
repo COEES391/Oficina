@@ -8,6 +8,18 @@ export type AppUser = {
   privileges: string[]; // ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
 };
 
+export type VisitSchedule = {
+  id: string;
+  areaId: string; // 'soporte' | 'capacitacion' | 'programas'
+  cct: string;
+  schoolName: string;
+  date: string;
+  purpose: string;
+  technicians: string;
+  status: 'programada' | 'realizada' | 'cancelada';
+  observaciones: string;
+};
+
 export type ProgramStatus = {
   id: string;
   name: string;
