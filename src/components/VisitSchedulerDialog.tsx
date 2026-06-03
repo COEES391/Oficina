@@ -22,6 +22,30 @@ type VisitSchedulerDialogProps = {
   areaName: string;
 }
 
+const PURPOSE_MAPPING: Record<string, string[]> = {
+  soporte: [
+    "Mantenimiento Equipo de Computo",
+    "Mantenimiento Red Local",
+    "Mantenimiento Red Edusat",
+    "Teleplanteles",
+    "Instalación Red Local",
+    "Instalación Equipo de Computo"
+  ],
+  capacitacion: [
+    "Capacitación al Curso/Diplomado",
+    "Asesoría",
+    "Diseño de Curso",
+    "Promoción"
+  ],
+  programas: [
+    "Auditoría Técnica",
+    "Supervisión de Equipamiento",
+    "Levantamiento Geográfico",
+    "Entrega de Cuentas",
+    "Mantenimiento Preventivo"
+  ]
+};
+
 export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: VisitSchedulerDialogProps) {
   const { toast } = useToast()
   const [visits, setVisits] = useState<VisitSchedule[]>([])
@@ -51,15 +75,13 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   }, [])
 
   useEffect(() => {
-    setFormData(prev => ({ ...prev, areaId: areaId }))
+    setFormData(prev => ({ ...prev, areaId: areaId, purpose: '' }))
   }, [areaId])
 
-  // Reiniciar filtro al cerrar/abrir
   useEffect(() => {
     if (!open) setFilterCritical(false)
   }, [open])
 
-  // Trigger alerts when dialog opens
   useEffect(() => {
     if (open && mounted) {
       const criticalCount = visits.filter(v => 
@@ -151,6 +173,8 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     return visits.filter(v => v.areaId === areaId && (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today).length;
   }, [visits, areaId, today]);
 
+  const currentPurposeOptions = PURPOSE_MAPPING[areaId] || PURPOSE_MAPPING['soporte'];
+
   if (!mounted) return null
 
   return (
@@ -184,7 +208,6 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          {/* Panel de Captura COMPACTO */}
           <div className="w-full md:w-[320px] border-r bg-white flex flex-col shrink-0 overflow-hidden">
             <div className="p-2 border-b bg-slate-50/50 flex items-center justify-between shrink-0">
                <button 
@@ -228,12 +251,9 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                 <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
                   <SelectTrigger className="h-7 border-primary/10 font-bold uppercase text-[8px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[8px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
-                    <SelectItem value="Mantenimiento Red Local" className="text-[8px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
-                    <SelectItem value="Mantenimiento Red Edusat" className="text-[8px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
-                    <SelectItem value="Teleplanteles" className="text-[8px] font-bold">TELEPLANTELES</SelectItem>
-                    <SelectItem value="Instalación Red Local" className="text-[8px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
-                    <SelectItem value="Instalación Equipo de Computo" className="text-[8px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
+                    {currentPurposeOptions.map(opt => (
+                      <SelectItem key={opt} value={opt} className="text-[8px] font-bold uppercase">{opt}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -273,7 +293,6 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
             </div>
           </div>
 
-          {/* Listado de Visitas con Alertas */}
           <div className="flex-1 bg-slate-50/30 p-4 flex flex-col overflow-hidden">
              <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-3 shrink-0">
                 <div className="flex items-center gap-2">
@@ -331,7 +350,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                               <TableCell>
                                  <div className="flex flex-col">
                                     <span className="text-[9px] font-black text-slate-700 leading-none">{v.cct}</span>
-                                    <span className="text-[7px] font-bold text-muted-foreground uppercase truncate max-w-[140px] mt-1">{v.schoolName}</span>
+                                    <span className="text-[7px] font-bold text-muted-foreground uppercase truncate max-w-[1400px] mt-1">{v.schoolName}</span>
                                  </div>
                               </TableCell>
                               <TableCell>
