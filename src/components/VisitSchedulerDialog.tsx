@@ -46,7 +46,10 @@ const PURPOSE_MAPPING: Record<string, string[]> = {
     "Curso Biblioteca Digital",
     "Promoción",
     "Mantenimiento Equipo",
-    "Mantenimiento Red Local"
+    "Mantenimiento Red Local",
+    "ATRES",
+    "Geoposición",
+    "Conoce mi Escuela"
   ]
 };
 
