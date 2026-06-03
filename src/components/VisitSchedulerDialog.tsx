@@ -129,9 +129,9 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          {/* Formulario de Captura */}
-          <div className="w-full md:w-[380px] border-r bg-white p-8 space-y-6">
-            <div className="flex items-center justify-between border-b-2 border-accent/10 pb-2">
+          {/* Formulario de Captura con ScrollArea */}
+          <div className="w-full md:w-[420px] border-r bg-white flex flex-col">
+            <div className="p-8 border-b bg-slate-50/30 flex items-center justify-between">
                <button 
                 onClick={handleResetForm}
                 className="text-[11px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
@@ -142,81 +142,83 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                <Badge variant="outline" className="text-[8px] font-black border-none text-slate-300">MODO CAPTURA</Badge>
             </div>
             
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary">CCT del Plantel</Label>
-                <div className="relative">
-                   <Input 
-                      placeholder="15DES0000X" 
-                      className="h-11 font-mono uppercase border-primary/10 bg-slate-50 pl-10 focus:bg-white transition-colors" 
-                      value={formData.cct} 
-                      onChange={e => handleCctChange(e.target.value)} 
-                      maxLength={10}
-                   />
-                   <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+            <ScrollArea className="flex-1">
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT del Plantel</Label>
+                  <div className="relative">
+                    <Input 
+                        placeholder="15DES0000X" 
+                        className="h-11 font-mono uppercase border-primary/10 bg-slate-50 pl-10 focus:bg-white transition-colors" 
+                        value={formData.cct} 
+                        onChange={e => handleCctChange(e.target.value)} 
+                        maxLength={10}
+                    />
+                    <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+                  </div>
+                  {formData.schoolName && (
+                    <div className="flex items-center gap-1.5 p-2 bg-emerald-50 rounded-lg animate-in slide-in-from-left-2">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                        <p className="text-[9px] font-black text-emerald-700 uppercase leading-none">{formData.schoolName}</p>
+                    </div>
+                  )}
                 </div>
-                {formData.schoolName && (
-                   <div className="flex items-center gap-1.5 p-2 bg-emerald-50 rounded-lg animate-in slide-in-from-left-2">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      <p className="text-[9px] font-black text-emerald-700 uppercase leading-none">{formData.schoolName}</p>
-                   </div>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary">Fecha de Visita</Label>
-                <Input type="date" className="h-11 border-primary/10 font-bold bg-slate-50 focus:bg-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary">Propósito / Motivo</Label>
-                <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
-                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[10px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
-                    <SelectItem value="Mantenimiento Red Local" className="text-[10px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
-                    <SelectItem value="Mantenimiento Red Edusat" className="text-[10px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
-                    <SelectItem value="Teleplanteles" className="text-[10px] font-bold">TELEPLANTELES</SelectItem>
-                    <SelectItem value="Instalación Red Local" className="text-[10px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
-                    <SelectItem value="Instalación Equipo de Computo" className="text-[10px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary">Personal Comisionado</Label>
-                <div className="relative">
-                   <Input 
-                      className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50 pl-10 focus:bg-white" 
-                      placeholder="NOMBRES..." 
-                      value={formData.technicians} 
-                      onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
-                   />
-                   <UserCog className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Fecha de Visita</Label>
+                  <Input type="date" className="h-11 border-primary/10 font-bold bg-slate-50 focus:bg-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary">Estatus Inicial</Label>
-                <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
-                    <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
-                    <SelectItem value="atendido" className="text-[10px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Propósito / Motivo</Label>
+                  <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
+                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mantenimiento Equipo de Computo" className="text-[10px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
+                      <SelectItem value="Mantenimiento Red Local" className="text-[10px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
+                      <SelectItem value="Mantenimiento Red Edusat" className="text-[10px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
+                      <SelectItem value="Teleplanteles" className="text-[10px] font-bold">TELEPLANTELES</SelectItem>
+                      <SelectItem value="Instalación Red Local" className="text-[10px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
+                      <SelectItem value="Instalación Equipo de Computo" className="text-[10px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Button onClick={handleSave} className="w-full btn-institutional h-16 mt-6 shadow-xl text-[11px] group">
-                <CheckCircle2 className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
-                Crear Registro de Visita
-              </Button>
-              
-              <p className="text-[8px] text-slate-400 font-bold uppercase text-center mt-4">
-                El registro aparecerá automáticamente <br /> en la bitácora de la derecha.
-              </p>
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Personal Comisionado</Label>
+                  <div className="relative">
+                    <Input 
+                        className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50 pl-10 focus:bg-white" 
+                        placeholder="NOMBRES..." 
+                        value={formData.technicians} 
+                        onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
+                    />
+                    <UserCog className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Estatus Inicial</Label>
+                  <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
+                      <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
+                      <SelectItem value="atendido" className="text-[10px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button onClick={handleSave} className="w-full btn-institutional h-16 mt-8 shadow-2xl text-[11px] group border-4 border-white/20">
+                  <CheckCircle2 className="h-6 w-6 mr-2 group-hover:scale-110 transition-transform" />
+                  Crear Registro de Visita
+                </Button>
+                
+                <p className="text-[8px] text-slate-400 font-bold uppercase text-center pb-8">
+                  El registro aparecerá automáticamente <br /> en la bitácora de la derecha.
+                </p>
+              </div>
+            </ScrollArea>
           </div>
 
           {/* Listado de Visitas */}
