@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { type VisitSchedule } from '@/lib/planning-data'
-import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle, Bell, AlertTriangle } from 'lucide-react'
+import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle, Bell, AlertTriangle, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -26,6 +26,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   const { toast } = useToast()
   const [visits, setVisits] = useState<VisitSchedule[]>([])
   const [listSearchTerm, setListSearchTerm] = useState('')
+  const [filterCritical, setFilterCritical] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -52,6 +53,11 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   useEffect(() => {
     setFormData(prev => ({ ...prev, areaId: areaId }))
   }, [areaId])
+
+  // Reiniciar filtro al cerrar/abrir
+  useEffect(() => {
+    if (!open) setFilterCritical(false)
+  }, [open])
 
   // Trigger alerts when dialog opens
   useEffect(() => {
@@ -135,12 +141,15 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         (v.schoolName || '').toUpperCase().includes(listSearchTerm.toUpperCase())
       )
     }
+    if (filterCritical) {
+      filtered = filtered.filter(v => (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today)
+    }
     return filtered.sort((a, b) => b.date.localeCompare(a.date))
-  }, [visits, areaId, listSearchTerm])
+  }, [visits, areaId, listSearchTerm, filterCritical, today])
 
   const criticalVisitsCount = useMemo(() => {
-    return areaVisits.filter(v => (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today).length;
-  }, [areaVisits, today]);
+    return visits.filter(v => v.areaId === areaId && (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today).length;
+  }, [visits, areaId, today]);
 
   if (!mounted) return null
 
@@ -157,10 +166,20 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
             </DialogDescription>
           </div>
           {criticalVisitsCount > 0 && (
-            <Badge className="h-8 px-4 bg-rose-600 text-white border-none animate-pulse flex items-center gap-2 rounded-xl">
-              <Bell className="h-4 w-4" />
-              <span className="text-[10px] font-black uppercase">Alertas Críticas: {criticalVisitsCount}</span>
-            </Badge>
+            <Button 
+              onClick={() => setFilterCritical(!filterCritical)}
+              className={cn(
+                "h-10 px-6 border-none flex items-center gap-2 rounded-2xl transition-all duration-300 shadow-lg",
+                filterCritical 
+                  ? "bg-rose-700 text-white hover:bg-rose-800 scale-105 ring-4 ring-rose-200" 
+                  : "bg-rose-600 text-white hover:bg-rose-700 animate-pulse"
+              )}
+            >
+              {filterCritical ? <X className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+              <span className="text-[10px] font-black uppercase">
+                {filterCritical ? "Limpiar Filtro de Alertas" : `Alertas Críticas: ${criticalVisitsCount}`}
+              </span>
+            </Button>
           )}
         </DialogHeader>
 
@@ -262,7 +281,9 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                       <Clock className="h-3.5 w-3.5" />
                    </div>
                    <div>
-                      <h3 className="text-[9px] font-black uppercase text-slate-700 tracking-[0.15em] leading-none">Bitácora de Salidas</h3>
+                      <h3 className="text-[9px] font-black uppercase text-slate-700 tracking-[0.15em] leading-none">
+                        {filterCritical ? "Viendo Alertas Críticas" : "Bitácora de Salidas"}
+                      </h3>
                       <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Registros: {areaVisits.length}</p>
                    </div>
                 </div>
@@ -295,7 +316,10 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                           const isAlert = (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today;
                           
                           return (
-                            <TableRow key={v.id} className={cn("hover:bg-slate-50 transition-colors group", isAlert && "bg-rose-50/30")}>
+                            <TableRow key={v.id} className={cn(
+                              "hover:bg-slate-50 transition-all group relative", 
+                              isAlert && "bg-rose-50/50 border-l-4 border-l-rose-600"
+                            )}>
                               <TableCell className="pl-6">
                                  <div className="flex items-center gap-2">
                                     {isAlert && <Bell className="h-3 w-3 text-rose-600 animate-bounce" />}
@@ -352,7 +376,9 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                              <TableCell colSpan={5} className="text-center py-20 opacity-30">
                                 <div className="flex flex-col items-center gap-2">
                                    <Search className="h-6 w-6 text-slate-300" />
-                                   <p className="text-[8px] font-black uppercase">Sin registros</p>
+                                   <p className="text-[8px] font-black uppercase">
+                                     {filterCritical ? "No hay alertas críticas en esta área" : "Sin registros"}
+                                   </p>
                                 </div>
                              </TableCell>
                           </TableRow>
