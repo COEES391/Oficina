@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -39,7 +40,9 @@ import {
   Monitor,
   X,
   School,
-  CalendarDays
+  CalendarDays,
+  Filter,
+  Building2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -52,20 +55,13 @@ const PROGRAM_RUBROS = [
   'ATRES'
 ];
 
-const FUNCIONES = [
-  "ADMINISTRATIVO",
-  "DOCENTE",
-  "DIRECTIVO",
-  "SUBDIRECTOR",
-  "JEFE DE ENSEÑANZA",
-  "SUPERVISOR",
-  "ASESOR TECNICO PEDAGOGICO",
-  "INTENDENTE",
-  "PREFECTO",
-  "TRABAJADOR SOCIAL",
-  "BIBLIOTECARIO",
-  "CONTRALOR"
-]
+const REGIONAL_OFFICES = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
+];
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -76,6 +72,7 @@ export default function ProgramsPage() {
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [officeFilter, setOfficeFilter] = useState('all')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
@@ -136,18 +133,8 @@ export default function ProgramsPage() {
     if (storedV24) {
       setRecords(JSON.parse(storedV24))
     } else {
-      const v21 = localStorage.getItem('programs_full_v21')
-      let initialSet: ProgramStatus[] = []
-      if (v21) initialSet = JSON.parse(v21)
-
-      const masterData = programsData
-      const finalSet = [...initialSet]
-      masterData.forEach(master => {
-        const exists = finalSet.find(e => (e.id === master.id) || (e.cct === master.cct && e.name === master.name))
-        if (!exists) finalSet.push(master)
-      })
-      setRecords(finalSet)
-      localStorage.setItem(currentVersion, JSON.stringify(finalSet))
+      setRecords(programsData)
+      localStorage.setItem(currentVersion, JSON.stringify(programsData))
     }
   }, [])
 
@@ -200,6 +187,7 @@ export default function ProgramsPage() {
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
+    
     if (searchTerm) {
       const term = searchTerm.toUpperCase();
       filtered = filtered.filter(r => 
@@ -207,8 +195,13 @@ export default function ProgramsPage() {
         (r.schoolName || '').toUpperCase().includes(term)
       );
     }
+
+    if (officeFilter !== 'all') {
+      filtered = filtered.filter(r => r.oficinaRegionalAtencion === officeFilter);
+    }
+
     return [...filtered].sort((a, b) => (a.cct || '').localeCompare(b.cct || ''));
-  }, [records, activeTab, searchTerm]);
+  }, [records, activeTab, searchTerm, officeFilter]);
 
   const handleEdit = (rec: ProgramStatus) => {
     setFormData({
@@ -274,11 +267,9 @@ export default function ProgramsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
-           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
-             <CalendarDays className="h-4 w-4" /> Agenda de Visitas
-           </Button>
-        </div>
+        <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional h-12 px-10 rounded-xl shadow-lg">
+          <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-6">
@@ -290,26 +281,47 @@ export default function ProgramsPage() {
           ))}
         </TabsList>
 
-        <TabsContent value={activeTab} className="space-y-6 animate-in fade-in duration-500">
-          <Card className="executive-card p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-             <div className="flex items-center gap-4">
-               <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                 <Target className="h-6 w-6" />
-               </div>
-               <div>
-                 <h3 className="text-xl font-black uppercase text-slate-900 leading-none">{activeTab}</h3>
-                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Registros de Auditoría Técnica</p>
-               </div>
+        <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+             <div className="flex items-center gap-3 w-full md:w-auto">
+                <Search className="h-5 w-5 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
              </div>
-             <div className="flex flex-1 max-md:w-full relative">
-               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-               <Input placeholder="Filtrar por CCT o Plantel..." className="pl-10 h-10 rounded-xl border-primary/10 bg-slate-50 text-[10px] font-bold uppercase shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+             
+             <div className="relative flex-1 w-full">
+                <Input 
+                  placeholder="FILTRAR POR CCT O PLANTEL..." 
+                  className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional px-8 text-[11px] h-10">
-                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
-             </Button>
-          </Card>
 
+             <div className="flex items-center gap-4 w-full md:w-auto">
+                <Select value={officeFilter} onValueChange={setOfficeFilter}>
+                  <SelectTrigger className="h-12 w-full md:w-[240px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      <SelectValue placeholder="OFICINA DE ATENCIÓN..." />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200">
+                    <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
+                    {REGIONAL_OFFICES.map(off => (
+                      <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button variant="outline" className="h-12 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
+                  <CalendarDays className="h-5 w-5" /> Agenda de Visitas
+                </Button>
+             </div>
+          </div>
+        </Card>
+
+        <TabsContent value={activeTab} className="space-y-6 animate-in fade-in duration-500">
           <Card className="executive-card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
@@ -341,8 +353,8 @@ export default function ProgramsPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecords.map((rec, idx) => (
-                    <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors">
+                  {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
+                    <TableRow key={rec.id} className="hover:bg-slate-50 transition-colors group">
                       <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                       <TableCell className="font-black text-[10px] text-primary">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
                       <TableCell className="text-xs font-bold text-slate-700 uppercase">
@@ -389,12 +401,21 @@ export default function ProgramsPage() {
                       )}
                       <TableCell className="text-right pr-8">
                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8"><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-8 w-8 text-rose-600"><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8 hover:text-primary transition-colors"><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-8 w-8 text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
                          </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-20 opacity-30">
+                        <div className="flex flex-col items-center gap-2">
+                           <Search className="h-8 w-8" />
+                           <p className="text-[10px] font-black uppercase">No se encontraron registros con los criterios seleccionados.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -496,6 +517,17 @@ export default function ProgramsPage() {
                                <Label className="text-[10px] font-black uppercase">Nombre Institucional</Label>
                                <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 border-none" />
                             </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase">Oficina de Atención</Label>
+                              <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                                <SelectTrigger className="h-12 bg-slate-50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                <SelectContent>
+                                  {REGIONAL_OFFICES.map(off => (
+                                    <SelectItem key={off} value={off} className="uppercase font-bold text-[10px]">{off.replace("Oficina de ", "")}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
 
                           {formData.tipoIncidencia === 'mantenimiento' && (
@@ -563,6 +595,17 @@ export default function ProgramsPage() {
                             <div className="col-span-2 space-y-2">
                                <Label className="text-[11px] font-black uppercase text-primary">Nombre del Plantel</Label>
                                <Input value={formData.schoolName} readOnly className="h-12 font-bold bg-slate-100 border-none" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[11px] font-black uppercase text-primary">Oficina de Atención</Label>
+                              <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                                <SelectTrigger className="h-12 bg-slate-50"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                <SelectContent>
+                                  {REGIONAL_OFFICES.map(off => (
+                                    <SelectItem key={off} value={off} className="uppercase font-bold text-[10px]">{off.replace("Oficina de ", "")}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             {activeTab === 'Biblioteca Digital' && (
                                <div className="space-y-2">
@@ -665,7 +708,7 @@ export default function ProgramsPage() {
           <DialogHeader><DialogTitle className="uppercase font-black">Registro de Personal</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <Input placeholder="Nombres" value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} />
-            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, patero: e.target.value.toUpperCase()})} />
+            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} />
             <Input placeholder="RFC" value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} maxLength={13} />
           </div>
           <DialogFooter><Button onClick={handleSaveAssistant} className="btn-institutional w-full">Actualizar Lista</Button></DialogFooter>
