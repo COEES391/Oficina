@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { type VisitSchedule } from '@/lib/planning-data'
-import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react'
+import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle, Bell, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
 
 type VisitSchedulerDialogProps = {
   open: boolean;
@@ -27,11 +28,13 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   const [listSearchTerm, setListSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
 
+  const today = format(new Date(), 'yyyy-MM-dd')
+
   const initialForm: Omit<VisitSchedule, 'id'> = {
     areaId: areaId,
     cct: '',
     schoolName: '',
-    date: new Date().toISOString().split('T')[0],
+    date: today,
     purpose: '',
     technicians: '',
     status: 'pendiente',
@@ -50,6 +53,25 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     setFormData(prev => ({ ...prev, areaId: areaId }))
   }, [areaId])
 
+  // Trigger alerts when dialog opens
+  useEffect(() => {
+    if (open && mounted) {
+      const criticalCount = visits.filter(v => 
+        v.areaId === areaId && 
+        (v.status === 'pendiente' || v.status === 'en proceso') && 
+        v.date <= today
+      ).length;
+
+      if (criticalCount > 0) {
+        toast({
+          title: "¡Atención Operativa!",
+          description: `Existen ${criticalCount} visitas pendientes o en proceso con fecha crítica.`,
+          variant: "destructive"
+        })
+      }
+    }
+  }, [open, mounted, visits, areaId, today, toast])
+
   const handleCctChange = (val: string) => {
     const cleanVal = val.toUpperCase()
     setFormData(prev => ({ ...prev, cct: cleanVal }))
@@ -67,10 +89,6 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
 
   const handleResetForm = () => {
     setFormData({ ...initialForm, areaId })
-    toast({
-      description: "Formulario restablecido para nueva captura.",
-      className: "bg-slate-800 text-white border-none",
-    })
   }
 
   const handleSave = () => {
@@ -120,22 +138,34 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     return filtered.sort((a, b) => b.date.localeCompare(a.date))
   }, [visits, areaId, listSearchTerm])
 
+  const criticalVisitsCount = useMemo(() => {
+    return areaVisits.filter(v => (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today).length;
+  }, [areaVisits, today]);
+
   if (!mounted) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[1300px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-        <DialogHeader className="p-4 pb-2 bg-slate-50 border-b shrink-0">
-          <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-accent" /> Agenda de Visitas: {areaName}
-          </DialogTitle>
-          <DialogDescription className="font-bold text-[9px] uppercase tracking-widest text-muted-foreground">
-            Agenda de salidas técnicas y supervisión institucional COEES 2026.
-          </DialogDescription>
+        <DialogHeader className="p-4 pb-2 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
+          <div className="space-y-1">
+            <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
+              <Calendar className="h-6 w-6 text-accent" /> Agenda de Visitas: {areaName}
+            </DialogTitle>
+            <DialogDescription className="font-bold text-[9px] uppercase tracking-widest text-muted-foreground">
+              Agenda de salidas técnicas y supervisión institucional COEES 2026.
+            </DialogDescription>
+          </div>
+          {criticalVisitsCount > 0 && (
+            <Badge className="h-8 px-4 bg-rose-600 text-white border-none animate-pulse flex items-center gap-2 rounded-xl">
+              <Bell className="h-4 w-4" />
+              <span className="text-[10px] font-black uppercase">Alertas Críticas: {criticalVisitsCount}</span>
+            </Badge>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          {/* Panel de Captura EXTREMADAMENTE COMPACTO */}
+          {/* Panel de Captura COMPACTO */}
           <div className="w-full md:w-[320px] border-r bg-white flex flex-col shrink-0 overflow-hidden">
             <div className="p-2 border-b bg-slate-50/50 flex items-center justify-between shrink-0">
                <button 
@@ -219,15 +249,12 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                   <CheckCircle2 className="h-3.5 w-3.5 mr-2 group-hover:scale-110 transition-transform" />
                   GUARDAR REGISTRO
                 </Button>
-                
-                <p className="text-[6px] text-slate-400 font-bold uppercase text-center mt-1 leading-tight">
-                  LOS DATOS SE REFLEJARÁN <br /> EN LA BITÁCORA DERECHA.
-                </p>
+                <p className="text-[6px] text-slate-400 font-bold uppercase text-center mt-1">LOS DATOS SE REFLEJARÁN EN LA BITÁCORA.</p>
               </div>
             </div>
           </div>
 
-          {/* Listado de Visitas */}
+          {/* Listado de Visitas con Alertas */}
           <div className="flex-1 bg-slate-50/30 p-4 flex flex-col overflow-hidden">
              <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-3 shrink-0">
                 <div className="flex items-center gap-2">
@@ -235,7 +262,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                       <Clock className="h-3.5 w-3.5" />
                    </div>
                    <div>
-                      <h3 className="text-[9px] font-black uppercase text-slate-700 tracking-[0.15em] leading-none">Agenda de Salidas</h3>
+                      <h3 className="text-[9px] font-black uppercase text-slate-700 tracking-[0.15em] leading-none">Bitácora de Salidas</h3>
                       <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Registros: {areaVisits.length}</p>
                    </div>
                 </div>
@@ -264,52 +291,63 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {areaVisits.length > 0 ? areaVisits.map((v) => (
-                          <TableRow key={v.id} className="hover:bg-slate-50 transition-colors group">
-                            <TableCell className="font-black text-[8px] text-primary pl-6">{v.date}</TableCell>
-                            <TableCell>
-                               <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-slate-700 leading-none">{v.cct}</span>
-                                  <span className="text-[7px] font-bold text-muted-foreground uppercase truncate max-w-[140px] mt-1">{v.schoolName}</span>
-                               </div>
-                            </TableCell>
-                            <TableCell>
-                               <Badge variant="outline" className="text-[7px] font-black border-primary/5 text-accent uppercase bg-accent/5 py-0 px-2 h-5">{v.purpose}</Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                               <Select 
-                                  defaultValue={v.status} 
-                                  onValueChange={(val: any) => handleUpdateStatus(v.id, val)}
-                               >
-                                  <SelectTrigger className={cn(
-                                    "h-7 w-32 text-[7px] font-black uppercase border-2 rounded-full mx-auto transition-all",
-                                    v.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-500/30' :
-                                    v.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-500/30' :
-                                    'bg-rose-50 text-rose-700 border-rose-500/30'
-                                  )}>
-                                    <div className="flex items-center gap-1">
-                                      <Circle className={cn("h-1.5 w-1.5 fill-current", 
-                                        v.status === 'atendido' ? 'text-emerald-500' : 
-                                        v.status === 'en proceso' ? 'text-amber-500' : 
-                                        'text-rose-500'
-                                      )} />
-                                      <SelectValue />
-                                    </div>
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl border-slate-200">
-                                    <SelectItem value="pendiente" className="text-[8px] font-black text-rose-600">🔴 PENDIENTE</SelectItem>
-                                    <SelectItem value="en proceso" className="text-[8px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
-                                    <SelectItem value="atendido" className="text-[8px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
-                                  </SelectContent>
-                               </Select>
-                            </TableCell>
-                            <TableCell className="pr-4">
-                               <Button variant="ghost" size="icon" className="h-6 w-6 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                            </TableCell>
-                          </TableRow>
-                        )) : (
+                        {areaVisits.length > 0 ? areaVisits.map((v) => {
+                          const isAlert = (v.status === 'pendiente' || v.status === 'en proceso') && v.date <= today;
+                          
+                          return (
+                            <TableRow key={v.id} className={cn("hover:bg-slate-50 transition-colors group", isAlert && "bg-rose-50/30")}>
+                              <TableCell className="pl-6">
+                                 <div className="flex items-center gap-2">
+                                    {isAlert && <Bell className="h-3 w-3 text-rose-600 animate-bounce" />}
+                                    <span className={cn("font-black text-[8px]", isAlert ? "text-rose-600" : "text-primary")}>
+                                      {v.date}
+                                    </span>
+                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                 <div className="flex flex-col">
+                                    <span className="text-[9px] font-black text-slate-700 leading-none">{v.cct}</span>
+                                    <span className="text-[7px] font-bold text-muted-foreground uppercase truncate max-w-[140px] mt-1">{v.schoolName}</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                 <Badge variant="outline" className="text-[7px] font-black border-primary/5 text-accent uppercase bg-accent/5 py-0 px-2 h-5">{v.purpose}</Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                 <Select 
+                                    defaultValue={v.status} 
+                                    onValueChange={(val: any) => handleUpdateStatus(v.id, val)}
+                                 >
+                                    <SelectTrigger className={cn(
+                                      "h-7 w-32 text-[7px] font-black uppercase border-2 rounded-full mx-auto transition-all",
+                                      v.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-500/30' :
+                                      v.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-500/30' :
+                                      'bg-rose-50 text-rose-700 border-rose-500/30'
+                                    )}>
+                                      <div className="flex items-center gap-1">
+                                        <Circle className={cn("h-1.5 w-1.5 fill-current", 
+                                          v.status === 'atendido' ? 'text-emerald-500' : 
+                                          v.status === 'en proceso' ? 'text-amber-500' : 
+                                          'text-rose-500'
+                                        )} />
+                                        <SelectValue />
+                                      </div>
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-slate-200">
+                                      <SelectItem value="pendiente" className="text-[8px] font-black text-rose-600">🔴 PENDIENTE</SelectItem>
+                                      <SelectItem value="en proceso" className="text-[8px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
+                                      <SelectItem value="atendido" className="text-[8px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
+                                    </SelectContent>
+                                 </Select>
+                              </TableCell>
+                              <TableCell className="pr-4">
+                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        }) : (
                           <TableRow>
                              <TableCell colSpan={5} className="text-center py-20 opacity-30">
                                 <div className="flex flex-col items-center gap-2">
