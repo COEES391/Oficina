@@ -755,7 +755,8 @@ export default function DashboardPage() {
                               <Search className="h-10 w-10 text-slate-300" />
                               <p className="text-[10px] font-black uppercase">Sin registros operativos para mostrar</p>
                             </div>
-                          </TableRow>
+                          </TableCell>
+                        </TableRow>
                       )}
                     </TableBody>
                   </Table>
