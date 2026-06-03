@@ -29,7 +29,8 @@ const PURPOSE_MAPPING: Record<string, string[]> = {
     "Mantenimiento Red Edusat",
     "Teleplanteles",
     "Instalación Red Local",
-    "Instalación Equipo de Computo"
+    "Instalación Equipo de Computo",
+    "Promoción"
   ],
   capacitacion: [
     "Capacitación al Curso/Diplomado",
