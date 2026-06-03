@@ -313,594 +313,601 @@ export default function SupportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="space-y-1 w-full">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Gestión de Soporte Técnico</h2>
-          <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
             <LifeBuoy className="h-4 w-4 text-accent" /> Centro de Control Operativo COEES
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-          <div className="relative w-full md:w-80 group">
-             <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-             <Input 
-                placeholder="FILTRAR POR CCT, PLANTEL, TÉCNICO O FOLIO..." 
-                className="h-10 pl-11 rounded-2xl border-primary/10 bg-white/80 backdrop-blur-sm text-[10px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                value={listSearchTerm}
-                onChange={(e) => setListSearchTerm(e.target.value)}
-             />
-          </div>
-
-          <div className="w-full md:w-64">
-            <Select value={officeFilter} onValueChange={setOfficeFilter}>
-              <SelectTrigger className="h-10 rounded-2xl border-primary/10 bg-white/80 backdrop-blur-sm text-[10px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5 text-primary" />
-                  <SelectValue placeholder="FILTRAR POR OFICINA..." />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200">
-                <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
-                {REGIONAL_OFFICES.map(off => (
-                  <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
-            <CalendarDays className="h-4 w-4" /> Agenda de Visitas
-          </Button>
-
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) {
-              resetForm();
-              setEditingTicketId(null);
-              setSearchTerm('');
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button className="btn-institutional h-10 px-8 whitespace-nowrap">
-                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
-              <DialogHeader className="p-8 pb-4">
-                <DialogTitle className="uppercase font-black text-primary text-2xl">
-                  {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
-                </DialogTitle>
-                <DialogDescription className="font-bold text-[11px] uppercase tracking-[0.2em]">
-                  Capture los datos del servicio y asocie las evidencias digitales correspondientes.
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="flex-1 px-8">
-                <div className="grid gap-8 py-6">
-                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
-                        <Search className="h-4 w-4" /> Localizador Institucional CCT
-                      </Label>
-                      <Input 
-                        placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." 
-                        className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm focus:ring-2 focus:ring-primary/20" 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)} 
-                      />
-                    </div>
-                    
-                    {searchTerm && (
-                      <div className="max-h-60 overflow-auto bg-white border border-primary/5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 divide-y divide-slate-50">
-                        {schoolsDirectory.filter(s => 
-                          (s.nombre || '').toUpperCase().includes(searchTerm.toUpperCase()) || 
-                          (s.cct || '').toUpperCase().includes(searchTerm.toUpperCase())
-                        ).slice(0, 10).map(s => (
-                          <div 
-                            key={`${s.cct}-${s.turno}`} 
-                            className="p-4 hover:bg-primary/5 cursor-pointer transition-colors flex justify-between items-center group" 
-                            onClick={() => { handleSelectSchool(s.cct, s.turno); setSearchTerm('') }}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                                 <School className="h-5 w-5" />
-                              </div>
-                              <div className="flex flex-col">
-                                 <span className="text-xs font-black text-slate-800">{s.nombre}</span>
-                                 <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span>
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/10">{s.municipio}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {formData.cct && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 animate-in slide-in-from-top-4">
-                        <div className="md:col-span-3 flex items-center gap-4 p-5 bg-white rounded-2xl border shadow-sm border-emerald-100">
-                          <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                            <School className="h-7 w-7" />
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p>
-                            <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4>
-                            <p className="text-[10px] font-mono text-muted-foreground mt-1">{formData.cct} • {formData.municipio} • {formData.region}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud</Label>
-                      <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-primary pl-2">Tipo de Incidencia</Label>
-                      <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
-                        <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="red edusat" className="text-[11px] uppercase font-bold">Red Edusat</SelectItem>
-                          <SelectItem value="red local" className="text-[11px] uppercase font-bold">Red Local</SelectItem>
-                          <SelectItem value="mantenimiento" className="text-[11px] uppercase font-bold">Mantenimiento</SelectItem>
-                          <SelectItem value="teleplanteles" className="text-[11px] uppercase font-bold">Teleplanteles</SelectItem>
-                          <SelectItem value="cuenta institucional" className="text-[11px] uppercase font-bold">Cuenta Institucional</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            resetForm();
+            setEditingTicketId(null);
+            setSearchTerm('');
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button className="btn-institutional h-12 px-10 rounded-xl shadow-lg whitespace-nowrap">
+              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+            <DialogHeader className="p-8 pb-4">
+              <DialogTitle className="uppercase font-black text-primary text-2xl">
+                {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
+              </DialogTitle>
+              <DialogDescription className="font-bold text-[11px] uppercase tracking-[0.2em]">
+                Capture los datos del servicio y asocie las evidencias digitales correspondientes.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 px-8">
+              <div className="grid gap-8 py-6">
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
-                      <UserCog className="h-4 w-4" /> Nombre(s) del Técnico(s) Responsable(s)
+                      <Search className="h-4 w-4" /> Localizador Institucional CCT
                     </Label>
                     <Input 
-                      className="h-14 rounded-2xl bg-slate-50 border-primary/10 font-bold uppercase" 
-                      placeholder="INGRESAR NOMBRES DE LOS TÉCNICOS..." 
-                      value={formData.tecnicos} 
-                      onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
+                      placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." 
+                      className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm focus:ring-2 focus:ring-primary/20" 
+                      value={searchTerm} 
+                      onChange={(e) => setSearchTerm(e.target.value)} 
                     />
                   </div>
-
-                  {formData.tipoIncidencia === 'mantenimiento' && (
-                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-slate-200 space-y-8 animate-in zoom-in-95 duration-300">
-                      <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-                         <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
-                            <Monitor className="h-6 w-6" />
-                         </div>
-                         <h3 className="text-sm font-black uppercase text-primary tracking-wider">Módulo de Mantenimiento Detallado</h3>
-                      </div>
-
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Equipo Tecnológico:</Label>
-                        <div className="flex flex-wrap gap-6 items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                          {['HDT', 'EQUIPO DE COMPUTO', 'OTRO'].map(opt => (
-                            <div key={opt} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`equipo-${opt}`}
-                                checked={formData.mantenimientoDetalle?.equipoTecnologico === opt}
-                                onCheckedChange={() => setFormData({
-                                  ...formData,
-                                  mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologico: opt as any }
-                                })}
-                              />
-                              <Label htmlFor={`equipo-${opt}`} className="text-[10px] font-black uppercase cursor-pointer">{opt}</Label>
+                  
+                  {searchTerm && (
+                    <div className="max-h-60 overflow-auto bg-white border border-primary/5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 divide-y divide-slate-50">
+                      {schoolsDirectory.filter(s => 
+                        (s.nombre || '').toUpperCase().includes(searchTerm.toUpperCase()) || 
+                        (s.cct || '').toUpperCase().includes(searchTerm.toUpperCase())
+                      ).slice(0, 10).map(s => (
+                        <div 
+                          key={`${s.cct}-${s.turno}`} 
+                          className="p-4 hover:bg-primary/5 cursor-pointer transition-colors flex justify-between items-center group" 
+                          onClick={() => { handleSelectSchool(s.cct, s.turno); setSearchTerm('') }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                               <School className="h-5 w-5" />
                             </div>
-                          ))}
-                          {formData.mantenimientoDetalle?.equipoTecnologico === 'OTRO' && (
-                            <Input 
-                              className="h-9 w-48 bg-slate-50 text-[10px]" 
-                              placeholder="ESPECIFICAR..." 
-                              value={formData.mantenimientoDetalle?.equipoTecnologicoOtro} 
-                              onChange={e => setFormData({
-                                ...formData,
-                                mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologicoOtro: e.target.value.toUpperCase() }
-                              })} 
-                            />
-                          )}
+                            <div className="flex flex-col">
+                               <span className="text-xs font-black text-slate-800">{s.nombre}</span>
+                               <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[9px] font-black uppercase border-primary/10">{s.municipio}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {formData.cct && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 animate-in slide-in-from-top-4">
+                      <div className="md:col-span-3 flex items-center gap-4 p-5 bg-white rounded-2xl border shadow-sm border-emerald-100">
+                        <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                          <School className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p>
+                          <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4>
+                          <p className="text-[10px] font-mono text-muted-foreground mt-1">{formData.cct} • {formData.municipio} • {formData.region}</p>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Tipo de Incidencia</Label>
+                    <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="red edusat" className="text-[11px] uppercase font-bold">Red Edusat</SelectItem>
+                        <SelectItem value="red local" className="text-[11px] uppercase font-bold">Red Local</SelectItem>
+                        <SelectItem value="mantenimiento" className="text-[11px] uppercase font-bold">Mantenimiento</SelectItem>
+                        <SelectItem value="teleplanteles" className="text-[11px] uppercase font-bold">Teleplanteles</SelectItem>
+                        <SelectItem value="cuenta institucional" className="text-[11px] uppercase font-bold">Cuenta Institucional</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                      <div className="border rounded-xl overflow-hidden shadow-sm bg-white">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                    <UserCog className="h-4 w-4" /> Nombre(s) del Técnico(s) Responsable(s)
+                  </Label>
+                  <Input 
+                    className="h-14 rounded-2xl bg-slate-50 border-primary/10 font-bold uppercase" 
+                    placeholder="INGRESAR NOMBRES DE LOS TÉCNICOS..." 
+                    value={formData.tecnicos} 
+                    onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} 
+                  />
+                </div>
+
+                {formData.tipoIncidencia === 'mantenimiento' && (
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-slate-200 space-y-8 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                       <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg">
+                          <Monitor className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-primary tracking-wider">Módulo de Mantenimiento Detallado</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-primary pl-1">Equipo Tecnológico:</Label>
+                      <div className="flex flex-wrap gap-6 items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        {['HDT', 'EQUIPO DE COMPUTO', 'OTRO'].map(opt => (
+                          <div key={opt} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`equipo-${opt}`}
+                              checked={formData.mantenimientoDetalle?.equipoTecnologico === opt}
+                              onCheckedChange={() => setFormData({
+                                ...formData,
+                                mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologico: opt as any }
+                              })}
+                            />
+                            <Label htmlFor={`equipo-${opt}`} className="text-[10px] font-black uppercase cursor-pointer">{opt}</Label>
+                          </div>
+                        ))}
+                        {formData.mantenimientoDetalle?.equipoTecnologico === 'OTRO' && (
+                          <Input 
+                            className="h-9 w-48 bg-slate-50 text-[10px]" 
+                            placeholder="ESPECIFICAR..." 
+                            value={formData.mantenimientoDetalle?.equipoTecnologicoOtro} 
+                            onChange={e => setFormData({
+                              ...formData,
+                              mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologicoOtro: e.target.value.toUpperCase() }
+                            })} 
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border rounded-xl overflow-hidden shadow-sm bg-white">
+                      <Table>
+                        <TableHeader className="bg-slate-100">
+                          <TableRow>
+                            <TableHead className="w-12 text-[9px] font-black uppercase text-center">N.P.</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Equipo</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Marca</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">No. Serie</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">No. Censal</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.from({ length: 10 }).map((_, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                              <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.equipo || ''} onChange={e => handleMantenimientoTableChange(idx, 'equipo', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.marca || ''} onChange={e => handleMantenimientoTableChange(idx, 'marca', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.serie || ''} onChange={e => handleMantenimientoTableChange(idx, 'serie', e.target.value.toUpperCase())} />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.censal || ''} onChange={e => handleMantenimientoTableChange(idx, 'censal', e.target.value.toUpperCase())} />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Falla Identificada:</Label>
+                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, fallaIdentificada: e.target.value.toUpperCase()}})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado:</Label>
+                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {formData.tipoIncidencia === 'red local' && (
+                  <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-b border-indigo-100 pb-3">
+                       <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                          <Network className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-indigo-900 tracking-wider">Módulo Técnico de RED Local</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                       <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Donde se brinda el servicio:</Label>
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {['TALLER DE CÓMPUTO', 'AULA DE MEDIOS', 'HDT', 'OFIMÁTICA', 'ÁREA ADMINISTRATIVA', 'OTRO'].map(lugar => (
+                            <div key={lugar} className="flex items-center space-x-2 bg-white/50 p-2 rounded-lg border border-indigo-50">
+                               <Checkbox 
+                                id={`lugar-${lugar}`} 
+                                checked={formData.lugarServicio === lugar}
+                                onCheckedChange={() => setFormData({...formData, lugarServicio: lugar})}
+                                className="border-indigo-300"
+                               />
+                               <label htmlFor={`lugar-${lugar}`} className="text-[9px] font-bold uppercase text-indigo-900 cursor-pointer">{lugar}</label>
+                            </div>
+                          ))}
+                       </div>
+                       {formData.lugarServicio === 'OTRO' && (
+                         <Input className="h-10 bg-white" placeholder="ESPECIFICAR OTRO..." value={formData.lugarServicioOtro} onChange={e => setFormData({...formData, lugarServicioOtro: e.target.value.toUpperCase()})} />
+                       )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-4">
+                          <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Diagnóstico:</Label>
+                          <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnosticoRed: val})} className="grid grid-cols-1 gap-2">
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="ampliacion" id="diag-ampli" />
+                                <Label htmlFor="diag-ampli" className="text-[10px] font-black uppercase">Ampliación</Label>
+                             </div>
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="mantenimiento" id="diag-mante" />
+                                <Label htmlFor="diag-mante" className="text-[10px] font-black uppercase">Mantenimiento</Label>
+                             </div>
+                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
+                                <RadioGroupItem value="nueva red" id="diag-nueva" />
+                                <Label htmlFor="diag-nueva" className="text-[10px] font-black uppercase">Instalación de nueva red</Label>
+                             </div>
+                          </RadioGroup>
+
+                          <div className="space-y-3 pt-4 border-t border-indigo-100">
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con red local?</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'S'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'N'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">Instalación eléctrica adecuada</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'S'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'N'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
+                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con internet?</span>
+                                <div className="flex gap-4">
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'S'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
+                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'N'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
+                                </div>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase text-indigo-400">Proveedor de Internet:</Label>
+                                <Select value={formData.proveedorInternet} onValueChange={(val) => setFormData({...formData, proveedorInternet: val})}>
+                                   <SelectTrigger className="h-9 bg-white text-[10px] font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                                   <SelectContent>
+                                      {['TOTALPLAY', 'TELMEX', 'MEGACABLE', 'IZZY', 'WIX', 'OTRO'].map(p => <SelectItem key={p} value={p} className="text-[10px] font-bold">{p}</SelectItem>)}
+                                   </SelectContent>
+                                </Select>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[9px] font-black uppercase text-indigo-400">¿Cuál es el ancho de banda?</Label>
+                                <Input className="h-9 bg-white font-black" value={formData.anchoBanda} onChange={e => setFormData({...formData, anchoBanda: e.target.value})} placeholder="EJ: 100 MBPS" />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="space-y-6">
+                          <div className="bg-white p-5 rounded-[1.5rem] border-2 border-indigo-100 shadow-sm">
+                             <Label className="text-[10px] font-black uppercase text-indigo-600 block mb-2">Número de Nodos:</Label>
+                             <Input type="number" className="h-12 text-2xl font-black text-center border-indigo-200" value={formData.numNodos} onChange={e => setFormData({...formData, numNodos: parseInt(e.target.value) || 0})} />
+                          </div>
+
+                          <div className="space-y-3">
+                             <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Mantenimiento Preventivo y/o Correctivo:</Label>
+                             <div className="grid grid-cols-1 gap-2 bg-white/40 p-4 rounded-2xl border border-indigo-50">
+                                {MAINTENANCE_CHECKLIST.map(item => (
+                                  <div key={item} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
+                                     <Checkbox 
+                                      id={`mante-${item}`} 
+                                      checked={(formData.mantenimientoChecklist || []).includes(item)}
+                                      onCheckedChange={() => handleMantenimientoToggle(item)}
+                                      className="border-indigo-400 data-[state=checked]:bg-indigo-600"
+                                     />
+                                     <label htmlFor={`mante-${item}`} className="text-[9px] font-black uppercase text-slate-700 cursor-pointer">{item}</label>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {formData.tipoIncidencia === 'red edusat' && (
+                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-primary/20 space-y-8 animate-in zoom-in-95 duration-300 shadow-xl">
+                    <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
+                       <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                          <Radio className="h-7 w-7" />
+                       </div>
+                       <div>
+                         <h3 className="text-lg font-black uppercase text-primary tracking-wider leading-none">Módulo Técnico RED Edusat Avanzado</h3>
+                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Diagnóstico Institucional por Componentes</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">MICROPAK (LNB)</Label>
+                          {EDUSAT_MICROPAK.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`lnb-${item}`} checked={(formData.edusatDetalle?.micropak || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('micropak', item)} />
+                               <label htmlFor={`lnb-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">ANT. PARABÓLICA</Label>
+                          {EDUSAT_ANTENA.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`ant-${item}`} checked={(formData.edusatDetalle?.antena || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('antena', item)} />
+                               <label htmlFor={`ant-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">DECODIFICADOR</Label>
+                          {EDUSAT_DECO_ACCIONES.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`deco-acc-${item}`} checked={(formData.edusatDetalle?.decodificadorAcciones || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('decodificadorAcciones', item)} />
+                               <label htmlFor={`deco-acc-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">CABLEADO</Label>
+                          {EDUSAT_CABLEADO.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`cab-${item}`} checked={(formData.edusatDetalle?.cableado || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('cableado', item)} />
+                               <label htmlFor={`cab-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">M. PREVENTIVO</Label>
+                          {EDUSAT_PREVENTIVO.map(item => (
+                            <div key={item} className="flex items-center space-x-2">
+                               <Checkbox id={`prev-${item}`} checked={(formData.edusatDetalle?.preventivo || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('preventivo', item)} />
+                               <label htmlFor={`prev-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número Censal:</Label>
+                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numCensal} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numCensal: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
+                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
+                          <Select value={formData.edusatDetalle?.calidadSeñal} onValueChange={val => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, calidadSeñal: val}})}>
+                            <SelectTrigger className="h-10 bg-white font-black uppercase text-[10px] border-primary/20"><SelectValue placeholder="CALIDAD..." /></SelectTrigger>
+                            <SelectContent>
+                               <SelectItem value="nulo" className="text-[10px] font-black text-rose-600">NULO</SelectItem>
+                               <SelectItem value="bajo" className="text-[10px] font-black text-amber-600">BAJO</SelectItem>
+                               <SelectItem value="óptimo" className="text-[10px] font-black text-emerald-600">ÓPTIMO</SelectItem>
+                               <SelectItem value="excelente" className="text-[10px] font-black text-primary">EXCELENTE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                        <Monitor className="h-4 w-4" /> Materiales Utilizados y Actividades por la Brigada
+                      </Label>
+                      <div className="border rounded-2xl overflow-hidden shadow-md bg-white">
                         <Table>
                           <TableHeader className="bg-slate-100">
                             <TableRow>
-                              <TableHead className="w-12 text-[9px] font-black uppercase text-center">N.P.</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase">Equipo</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase">Marca</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase">No. Serie</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase">No. Censal</TableHead>
+                              <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase min-w-[200px]">Material Utilizado</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase w-[100px]">Cantidad</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {Array.from({ length: 10 }).map((_, idx) => (
+                            {Array.from({ length: 8 }).map((_, idx) => (
                               <TableRow key={idx} className="hover:bg-slate-50/50">
                                 <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
                                 <TableCell className="p-1">
-                                  <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.equipo || ''} onChange={e => handleMantenimientoTableChange(idx, 'equipo', e.target.value.toUpperCase())} />
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.material || ''} onChange={e => handleEdusatMaterialChange(idx, 'material', e.target.value.toUpperCase())} />
                                 </TableCell>
                                 <TableCell className="p-1">
-                                  <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.marca || ''} onChange={e => handleMantenimientoTableChange(idx, 'marca', e.target.value.toUpperCase())} />
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1 text-center font-black" value={formData.edusatDetalle?.materiales[idx]?.cantidad || ''} onChange={e => handleEdusatMaterialChange(idx, 'cantidad', e.target.value)} />
                                 </TableCell>
                                 <TableCell className="p-1">
-                                  <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.serie || ''} onChange={e => handleMantenimientoTableChange(idx, 'serie', e.target.value.toUpperCase())} />
-                                </TableCell>
-                                <TableCell className="p-1">
-                                  <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.censal || ''} onChange={e => handleMantenimientoTableChange(idx, 'censal', e.target.value.toUpperCase())} />
+                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.actividades || ''} onChange={e => handleEdusatMaterialChange(idx, 'actividades', e.target.value.toUpperCase())} />
                                 </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                         </Table>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Falla Identificada:</Label>
-                          <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, fallaIdentificada: e.target.value.toUpperCase()}})} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado:</Label>
-                          <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, servicioRealizado: e.target.value.toUpperCase()}})} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.tipoIncidencia === 'red local' && (
-                    <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">
-                      <div className="flex items-center gap-3 border-b border-indigo-100 pb-3">
-                         <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
-                            <Network className="h-6 w-6" />
-                         </div>
-                         <h3 className="text-sm font-black uppercase text-indigo-900 tracking-wider">Módulo Técnico de RED Local</h3>
-                      </div>
-
-                      <div className="space-y-4">
-                         <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Donde se brinda el servicio:</Label>
-                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {['TALLER DE CÓMPUTO', 'AULA DE MEDIOS', 'HDT', 'OFIMÁTICA', 'ÁREA ADMINISTRATIVA', 'OTRO'].map(lugar => (
-                              <div key={lugar} className="flex items-center space-x-2 bg-white/50 p-2 rounded-lg border border-indigo-50">
-                                 <Checkbox 
-                                  id={`lugar-${lugar}`} 
-                                  checked={formData.lugarServicio === lugar}
-                                  onCheckedChange={() => setFormData({...formData, lugarServicio: lugar})}
-                                  className="border-indigo-300"
-                                 />
-                                 <label htmlFor={`lugar-${lugar}`} className="text-[9px] font-bold uppercase text-indigo-900 cursor-pointer">{lugar}</label>
-                              </div>
-                            ))}
-                         </div>
-                         {formData.lugarServicio === 'OTRO' && (
-                           <Input className="h-10 bg-white" placeholder="ESPECIFICAR OTRO..." value={formData.lugarServicioOtro} onChange={e => setFormData({...formData, lugarServicioOtro: e.target.value.toUpperCase()})} />
-                         )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="space-y-4">
-                            <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Diagnóstico:</Label>
-                            <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnosticoRed: val})} className="grid grid-cols-1 gap-2">
-                               <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                  <RadioGroupItem value="ampliacion" id="diag-ampli" />
-                                  <Label htmlFor="diag-ampli" className="text-[10px] font-black uppercase">Ampliación</Label>
-                               </div>
-                               <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                  <RadioGroupItem value="mantenimiento" id="diag-mante" />
-                                  <Label htmlFor="diag-mante" className="text-[10px] font-black uppercase">Mantenimiento</Label>
-                               </div>
-                               <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                  <RadioGroupItem value="nueva red" id="diag-nueva" />
-                                  <Label htmlFor="diag-nueva" className="text-[10px] font-black uppercase">Instalación de nueva red</Label>
-                               </div>
-                            </RadioGroup>
-
-                            <div className="space-y-3 pt-4 border-t border-indigo-100">
-                               <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                  <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con red local?</span>
-                                  <div className="flex gap-4">
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'S'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'N'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                  </div>
-                               </div>
-                               <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                  <span className="text-[10px] font-bold uppercase text-indigo-900">Instalación eléctrica adecuada</span>
-                                  <div className="flex gap-4">
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'S'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'N'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                  </div>
-                               </div>
-                               <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                  <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con internet?</span>
-                                  <div className="flex gap-4">
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'S'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                     <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'N'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                  </div>
-                               </div>
-                               <div className="space-y-2">
-                                  <Label className="text-[9px] font-black uppercase text-indigo-400">Proveedor de Internet:</Label>
-                                  <Select value={formData.proveedorInternet} onValueChange={(val) => setFormData({...formData, proveedorInternet: val})}>
-                                     <SelectTrigger className="h-9 bg-white text-[10px] font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                                     <SelectContent>
-                                        {['TOTALPLAY', 'TELMEX', 'MEGACABLE', 'IZZY', 'WIX', 'OTRO'].map(p => <SelectItem key={p} value={p} className="text-[10px] font-bold">{p}</SelectItem>)}
-                                     </SelectContent>
-                                  </Select>
-                               </div>
-                               <div className="space-y-2">
-                                  <Label className="text-[9px] font-black uppercase text-indigo-400">¿Cuál es el ancho de banda?</Label>
-                                  <Input className="h-9 bg-white font-black" value={formData.anchoBanda} onChange={e => setFormData({...formData, anchoBanda: e.target.value})} placeholder="EJ: 100 MBPS" />
-                               </div>
-                            </div>
-                         </div>
-
-                         <div className="space-y-6">
-                            <div className="bg-white p-5 rounded-[1.5rem] border-2 border-indigo-100 shadow-sm">
-                               <Label className="text-[10px] font-black uppercase text-indigo-600 block mb-2">Número de Nodos:</Label>
-                               <Input type="number" className="h-12 text-2xl font-black text-center border-indigo-200" value={formData.numNodos} onChange={e => setFormData({...formData, numNodos: parseInt(e.target.value) || 0})} />
-                            </div>
-
-                            <div className="space-y-3">
-                               <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Mantenimiento Preventivo y/o Correctivo:</Label>
-                               <div className="grid grid-cols-1 gap-2 bg-white/40 p-4 rounded-2xl border border-indigo-50">
-                                  {MAINTENANCE_CHECKLIST.map(item => (
-                                    <div key={item} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
-                                       <Checkbox 
-                                        id={`mante-${item}`} 
-                                        checked={(formData.mantenimientoChecklist || []).includes(item)}
-                                        onCheckedChange={() => handleMantenimientoToggle(item)}
-                                        className="border-indigo-400 data-[state=checked]:bg-indigo-600"
-                                       />
-                                       <label htmlFor={`mante-${item}`} className="text-[9px] font-black uppercase text-slate-700 cursor-pointer">{item}</label>
-                                    </div>
-                                  ))}
-                               </div>
-                            </div>
-                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.tipoIncidencia === 'red edusat' && (
-                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-primary/20 space-y-8 animate-in zoom-in-95 duration-300 shadow-xl">
-                      <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
-                         <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                            <Radio className="h-7 w-7" />
-                         </div>
-                         <div>
-                           <h3 className="text-lg font-black uppercase text-primary tracking-wider leading-none">Módulo Técnico RED Edusat Avanzado</h3>
-                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Diagnóstico Institucional por Componentes</p>
-                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">MICROPAK (LNB)</Label>
-                            {EDUSAT_MICROPAK.map(item => (
-                              <div key={item} className="flex items-center space-x-2">
-                                 <Checkbox id={`lnb-${item}`} checked={(formData.edusatDetalle?.micropak || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('micropak', item)} />
-                                 <label htmlFor={`lnb-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                              </div>
-                            ))}
-                         </div>
-                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">ANT. PARABÓLICA</Label>
-                            {EDUSAT_ANTENA.map(item => (
-                              <div key={item} className="flex items-center space-x-2">
-                                 <Checkbox id={`ant-${item}`} checked={(formData.edusatDetalle?.antena || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('antena', item)} />
-                                 <label htmlFor={`ant-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                              </div>
-                            ))}
-                         </div>
-                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">DECODIFICADOR</Label>
-                            {EDUSAT_DECO_ACCIONES.map(item => (
-                              <div key={item} className="flex items-center space-x-2">
-                                 <Checkbox id={`deco-acc-${item}`} checked={(formData.edusatDetalle?.decodificadorAcciones || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('decodificadorAcciones', item)} />
-                                 <label htmlFor={`deco-acc-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                              </div>
-                            ))}
-                         </div>
-                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">CABLEADO</Label>
-                            {EDUSAT_CABLEADO.map(item => (
-                              <div key={item} className="flex items-center space-x-2">
-                                 <Checkbox id={`cab-${item}`} checked={(formData.edusatDetalle?.cableado || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('cableado', item)} />
-                                 <label htmlFor={`cab-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                              </div>
-                            ))}
-                         </div>
-                         <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">M. PREVENTIVO</Label>
-                            {EDUSAT_PREVENTIVO.map(item => (
-                              <div key={item} className="flex items-center space-x-2">
-                                 <Checkbox id={`prev-${item}`} checked={(formData.edusatDetalle?.preventivo || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('preventivo', item)} />
-                                 <label htmlFor={`prev-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                              </div>
-                            ))}
-                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número Censal:</Label>
-                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numCensal} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numCensal: e.target.value.toUpperCase()}})} />
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
-                            <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
-                            <Select value={formData.edusatDetalle?.calidadSeñal} onValueChange={val => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, calidadSeñal: val}})}>
-                              <SelectTrigger className="h-10 bg-white font-black uppercase text-[10px] border-primary/20"><SelectValue placeholder="CALIDAD..." /></SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="nulo" className="text-[10px] font-black text-rose-600">NULO</SelectItem>
-                                 <SelectItem value="bajo" className="text-[10px] font-black text-amber-600">BAJO</SelectItem>
-                                 <SelectItem value="óptimo" className="text-[10px] font-black text-emerald-600">ÓPTIMO</SelectItem>
-                                 <SelectItem value="excelente" className="text-[10px] font-black text-primary">EXCELENTE</SelectItem>
-                              </SelectContent>
-                            </Select>
-                         </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                          <Monitor className="h-4 w-4" /> Materiales Utilizados y Actividades por la Brigada
-                        </Label>
-                        <div className="border rounded-2xl overflow-hidden shadow-md bg-white">
-                          <Table>
-                            <TableHeader className="bg-slate-100">
-                              <TableRow>
-                                <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase min-w-[200px]">Material Utilizado</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase w-[100px]">Cantidad</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {Array.from({ length: 8 }).map((_, idx) => (
-                                <TableRow key={idx} className="hover:bg-slate-50/50">
-                                  <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                  <TableCell className="p-1">
-                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.material || ''} onChange={e => handleEdusatMaterialChange(idx, 'material', e.target.value.toUpperCase())} />
-                                  </TableCell>
-                                  <TableCell className="p-1">
-                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1 text-center font-black" value={formData.edusatDetalle?.materiales[idx]?.cantidad || ''} onChange={e => handleEdusatMaterialChange(idx, 'cantidad', e.target.value)} />
-                                  </TableCell>
-                                  <TableCell className="p-1">
-                                    <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.actividades || ''} onChange={e => handleEdusatMaterialChange(idx, 'actividades', e.target.value.toUpperCase())} />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.tipoIncidencia === 'teleplanteles' && (
-                    <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
-                      <div className="flex items-center gap-3 border-pink-100 pb-3">
-                         <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
-                            <Tv className="h-6 w-6" />
-                         </div>
-                         <h3 className="text-sm font-black uppercase text-pink-900 tracking-wider">Módulo Técnico de Teleplanteles</h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Decodificadores</Label>
-                            <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numDecodificadores} onChange={e => setFormData({...formData, numDecodificadores: parseInt(e.target.value) || 0})} />
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Número de Serie</Label>
-                            <Input className="bg-white border-pink-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-XXXX" value={formData.numSerie} onChange={e => setFormData({...formData, numSerie: e.target.value.toUpperCase()})} />
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Estatus de la Señal</Label>
-                            <Select value={formData.estatusSeñal} onValueChange={(val: any) => setFormData({...formData, estatusSeñal: val})}>
-                              <SelectTrigger className="bg-white border-pink-200 rounded-xl h-11 uppercase font-bold text-[10px]">
-                                 <SelectValue placeholder="SELECCIONAR..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                 <SelectItem value="débil" className="text-[10px] font-black text-rose-600 uppercase">DÉBIL</SelectItem>
-                                 <SelectItem value="estable" className="text-[10px] font-black text-amber-600 uppercase">ESTABLE</SelectItem>
-                                 <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
-                              </SelectContent>
-                            </Select>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
-                            <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
-                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-primary pl-2">Oficina de Atención</Label>
-                      <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                        <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                        <SelectContent>
-                          {REGIONAL_OFFICES.map(off => (
-                            <SelectItem key={off} value={off} className="text-[11px] uppercase font-bold">{off.replace("Oficina de ", "")}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-primary pl-2">Número de Oficio COEES</Label>
-                      <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
                     </div>
                   </div>
+                )}
 
-                  {formData.tipoIncidencia !== 'teleplanteles' && (
-                    <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
-                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                      {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
-                        <>
-                          <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                          <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                        </>
-                      )}
+                {formData.tipoIncidencia === 'teleplanteles' && (
+                  <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-3 border-pink-100 pb-3">
+                       <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
+                          <Tv className="h-6 w-6" />
+                       </div>
+                       <h3 className="text-sm font-black uppercase text-pink-900 tracking-wider">Módulo Técnico de Teleplanteles</h3>
                     </div>
-                  )}
-
-                  <div className="space-y-6 pt-6 border-t border-slate-100">
-                    <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
-                        <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
-                          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
-                            <FileText className="h-4 w-4" />
-                          </div>
-                          Reporte Oficial (Formato PDF)
-                        </Label>
-                        <Input type="file" accept=".pdf" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'pdf')} />
-                        {formData.reportPdf && <p className="text-[9px] text-emerald-600 font-black flex items-center gap-1 mt-2">✓ ARCHIVO CONFIGURADO</p>}
-                      </div>
-                      <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
-                        <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
-                          <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shadow-sm">
-                            <ImageIcon className="h-4 w-4" />
-                          </div>
-                          Evidencias de Sitio (Máx 5)
-                        </Label>
-                        <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
-                        <div className="flex gap-3 flex-wrap mt-3">
-                          {formData.evidencePhotos?.map((p, i) => (
-                            <div key={i} className="relative h-14 w-14 border-4 border-white rounded-xl shadow-md overflow-hidden group">
-                              <Image src={p} alt="ev" fill className="object-cover" />
-                              <button className="absolute inset-0 bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
-                                 <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Decodificadores</Label>
+                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numDecodificadores} onChange={e => setFormData({...formData, numDecodificadores: parseInt(e.target.value) || 0})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Número de Serie</Label>
+                          <Input className="bg-white border-pink-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-XXXX" value={formData.numSerie} onChange={e => setFormData({...formData, numSerie: e.target.value.toUpperCase()})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Estatus de la Señal</Label>
+                          <Select value={formData.estatusSeñal} onValueChange={(val: any) => setFormData({...formData, estatusSeñal: val})}>
+                            <SelectTrigger className="bg-white border-pink-200 rounded-xl h-11 uppercase font-bold text-[10px]">
+                               <SelectValue placeholder="SELECCIONAR..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                               <SelectItem value="débil" className="text-[10px] font-black text-rose-600 uppercase">DÉBIL</SelectItem>
+                               <SelectItem value="estable" className="text-[10px] font-black text-amber-600 uppercase">ESTABLE</SelectItem>
+                               <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
+                            </SelectContent>
+                          </Select>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
+                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
+                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="space-y-2 pt-4">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Observaciones Técnicas del Servicio</Label>
-                    <Textarea className="min-h-[120px] rounded-[1.5rem] p-5 bg-slate-50 border-primary/10 focus:bg-white transition-all shadow-inner" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico, hallazgos y trabajos realizados en el plantel..." />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Oficina de Atención</Label>
+                    <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-primary/10 font-bold uppercase text-[11px]"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                      <SelectContent>
+                        {REGIONAL_OFFICES.map(off => (
+                          <SelectItem key={off} value={off} className="text-[11px] uppercase font-bold">{off.replace("Oficina de ", "")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Número de Oficio COEES</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-mono uppercase" value={formData.numeroOficio} onChange={e => setFormData({...formData, numeroOficio: e.target.value})} placeholder="COEES/PL/..." />
                   </div>
                 </div>
-              </ScrollArea>
-              <DialogFooter className="p-8 border-t bg-slate-50/50">
-                <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button>
-                <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">
-                  {editingTicketId ? "Actualizar Registro" : "Guardar Servicio Técnico"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+
+                {formData.tipoIncidencia !== 'teleplanteles' && (
+                  <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
+                      <>
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-6 pt-6 border-t border-slate-100">
+                  <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        Reporte Oficial (Formato PDF)
+                      </Label>
+                      <Input type="file" accept=".pdf" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'pdf')} />
+                      {formData.reportPdf && <p className="text-[9px] text-emerald-600 font-black flex items-center gap-1 mt-2">✓ ARCHIVO CONFIGURADO</p>}
+                    </div>
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
+                        <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shadow-sm">
+                          <ImageIcon className="h-4 w-4" />
+                        </div>
+                        Evidencias de Sitio (Máx 5)
+                      </Label>
+                      <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
+                      <div className="flex gap-3 flex-wrap mt-3">
+                        {formData.evidencePhotos?.map((p, i) => (
+                          <div key={i} className="relative h-14 w-14 border-4 border-white rounded-xl shadow-md overflow-hidden group">
+                            <Image src={p} alt="ev" fill className="object-cover" />
+                            <button className="absolute inset-0 bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
+                               <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-4">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Observaciones Técnicas del Servicio</Label>
+                  <Textarea className="min-h-[120px] rounded-[1.5rem] p-5 bg-slate-50 border-primary/10 focus:bg-white transition-all shadow-inner" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico, hallazgos y trabajos realizados en el plantel..." />
+                </div>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="p-8 border-t bg-slate-50/50">
+              <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button>
+              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">
+                {editingTicketId ? "Actualizar Registro" : "Guardar Servicio Técnico"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+           <div className="flex items-center gap-3 w-full md:w-auto">
+              <Search className="h-5 w-5 text-primary" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
+           </div>
+           
+           <div className="relative flex-1 w-full">
+              <Input 
+                placeholder="FILTRAR POR CCT, PLANTEL, TÉCNICO O FOLIO..." 
+                className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
+                value={listSearchTerm}
+                onChange={(e) => setListSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
+           </div>
+
+           <div className="flex items-center gap-4 w-full md:w-auto">
+              <Select value={officeFilter} onValueChange={setOfficeFilter}>
+                <SelectTrigger className="h-12 w-full md:w-[240px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <SelectValue placeholder="OFICINA DE ATENCIÓN..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-200">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
+                  {REGIONAL_OFFICES.map(off => (
+                    <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" className="h-12 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
+                <CalendarDays className="h-5 w-5" /> Agenda de Visitas
+              </Button>
+           </div>
+        </div>
+      </Card>
 
       <Card className="executive-card p-0 overflow-hidden">
         <Table>
