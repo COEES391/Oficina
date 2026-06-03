@@ -23,7 +23,8 @@ import {
   Globe,
   Radio,
   Navigation,
-  Monitor
+  Monitor,
+  Building2
 } from 'lucide-react'
 import { 
   BarChart as RechartsBarChart, 
@@ -70,11 +71,11 @@ export default function DashboardPage() {
   })
 
   const [valleFilter, setValleFilter] = useState('all')
+  const [oficinaFilter, setOficinaFilter] = useState('all')
   const [cctFilter, setCctFilter] = useState('')
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
 
-  // Sincronización automática al montar el componente
   useEffect(() => {
     setMounted(true)
     const syncData = () => {
@@ -92,7 +93,6 @@ export default function DashboardPage() {
     }
 
     syncData()
-    // Escuchar cambios en otras pestañas si se usa el sistema en paralelo
     window.addEventListener('storage', syncData)
     return () => window.removeEventListener('storage', syncData)
   }, [])
@@ -100,22 +100,24 @@ export default function DashboardPage() {
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchValle = valleFilter === 'all' || (t.valle && t.valle.toUpperCase() === valleFilter.toUpperCase());
+      const matchOficina = oficinaFilter === 'all' || (t.oficinaRegionalAtencion && t.oficinaRegionalAtencion.toUpperCase().includes(oficinaFilter.toUpperCase()));
       const matchDateStart = !dateStart || t.fechaEntrada >= dateStart;
       const matchDateEnd = !dateEnd || t.fechaEntrada <= dateEnd;
       const matchCct = !cctFilter || (t.cct && t.cct.toUpperCase().includes(cctFilter.toUpperCase()));
-      return matchValle && matchDateStart && matchDateEnd && matchCct;
+      return matchValle && matchOficina && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [tickets, valleFilter, dateStart, dateEnd, cctFilter]);
+  }, [tickets, valleFilter, oficinaFilter, dateStart, dateEnd, cctFilter]);
 
   const filteredPrograms = useMemo(() => {
     return programs.filter(p => {
       const matchValle = valleFilter === 'all' || (p.valle && p.valle.toUpperCase() === valleFilter.toUpperCase());
+      const matchOficina = oficinaFilter === 'all' || (p.oficinaRegionalAtencion && p.oficinaRegionalAtencion.toUpperCase().includes(oficinaFilter.toUpperCase()));
       const matchDateStart = !dateStart || p.date >= dateStart;
       const matchDateEnd = !dateEnd || p.date <= dateEnd;
       const matchCct = !cctFilter || (p.cct && p.cct.toUpperCase().includes(cctFilter.toUpperCase()));
-      return matchValle && matchDateStart && matchDateEnd && matchCct;
+      return matchValle && matchOficina && matchDateStart && matchDateEnd && matchCct;
     });
-  }, [programs, valleFilter, dateStart, dateEnd, cctFilter]);
+  }, [programs, valleFilter, oficinaFilter, dateStart, dateEnd, cctFilter]);
 
   const filteredTrainings = useMemo(() => {
     return trainings.filter(tr => {
@@ -138,7 +140,6 @@ export default function DashboardPage() {
     const redEscolarCount = filteredTickets.filter(t => t.tipoIncidencia === 'red local').length;
     const redEdusatCount = filteredTickets.filter(t => t.tipoIncidencia === 'red edusat').length;
     const teleplantelesCount = filteredTickets.filter(t => t.tipoIncidencia === 'teleplanteles').length;
-    const mantenimientoCount = filteredTickets.filter(t => t.tipoIncidencia === 'mantenimiento').length;
 
     const metaC = 78; 
     const alcanzadoC = redEscolarCount + redEdusatCount;
@@ -147,9 +148,27 @@ export default function DashboardPage() {
     const typesData = [
       { name: 'RED EDUSAT', value: redEdusatCount, fill: '#621132' },
       { name: 'RED LOCAL', value: redEscolarCount, fill: '#B38E5D' },
-      { name: 'MANTENIMIENTO', value: mantenimientoCount, fill: '#059669' },
+      { name: 'MANT. PREVENTIVO', value: serviciosMP, fill: '#059669' },
+      { name: 'MANT. CORRECTIVO', value: serviciosMC, fill: '#10b981' },
       { name: 'TELEPLANTEL', value: teleplantelesCount, fill: '#ec4899' },
     ];
+
+    // Red Local by Municipio and Oficina
+    const redLocalTickets = filteredTickets.filter(t => t.tipoIncidencia === 'red local');
+    const redLocalByMunicipio: Record<string, number> = {};
+    redLocalTickets.forEach(t => {
+      if (t.municipio) redLocalByMunicipio[t.municipio] = (redLocalByMunicipio[t.municipio] || 0) + 1;
+    });
+    const redLocalByOficina: Record<string, number> = {};
+    redLocalTickets.forEach(t => {
+      if (t.oficinaRegionalAtencion) {
+        const cleanOfi = t.oficinaRegionalAtencion.replace('Oficina de Tecnóloga Educativa ', '').replace('Oficina de ', '');
+        redLocalByOficina[cleanOfi] = (redLocalByOficina[cleanOfi] || 0) + 1;
+      }
+    });
+
+    const redLocalMunData = Object.entries(redLocalByMunicipio).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value).slice(0, 5);
+    const redLocalOfiData = Object.entries(redLocalByOficina).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
 
     return {
       statusData: [
@@ -158,6 +177,8 @@ export default function DashboardPage() {
         { name: 'PENDIENTES', value: pendientes, fill: '#f43f5e' },
       ],
       typesData,
+      redLocalMunData,
+      redLocalOfiData,
       serviciosMP,
       serviciosMC,
       beneficiados: filteredTickets.reduce((acc, t) => acc + (t.alumnosBeneficiados || 0) + (t.docentesBeneficiados || 0), 0),
@@ -200,7 +221,7 @@ export default function DashboardPage() {
 
     const uniqueSchools = new Set(filteredTrainings.map(t => t.asistenteCCT)).size;
     const indicadorB = {
-      porcentaje: Math.min(100, Math.round((uniqueSchools / 150) * 100)), // Meta de 150 escuelas para Indicador B
+      porcentaje: Math.min(100, Math.round((uniqueSchools / 150) * 100)),
       total: uniqueSchools
     };
 
@@ -286,7 +307,7 @@ export default function DashboardPage() {
           </div>
 
           <Select value={valleFilter} onValueChange={setValleFilter}>
-            <SelectTrigger className="h-10 text-[10px] font-black w-[180px] rounded-xl border-slate-200 bg-white">
+            <SelectTrigger className="h-10 text-[10px] font-black w-[150px] rounded-xl border-slate-200 bg-white">
               <SelectValue placeholder="VALLE" />
             </SelectTrigger>
             <SelectContent>
@@ -296,7 +317,21 @@ export default function DashboardPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all" onClick={() => {setValleFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}>
+          <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
+            <SelectTrigger className="h-10 text-[10px] font-black w-[180px] rounded-xl border-slate-200 bg-white">
+               <Building2 className="h-3.5 w-3.5 mr-2 text-primary" />
+               <SelectValue placeholder="OFICINA REGIONAL" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
+              <SelectItem value="Toluca" className="text-[10px] font-black uppercase">Toluca</SelectItem>
+              <SelectItem value="Ecatepec" className="text-[10px] font-black uppercase">Ecatepec</SelectItem>
+              <SelectItem value="Naucalpan" className="text-[10px] font-black uppercase">Naucalpan</SelectItem>
+              <SelectItem value="Nezahualcóyotl" className="text-[10px] font-black uppercase">Nezahualcóyotl</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all" onClick={() => {setValleFilter('all'); setOficinaFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}>
             <RefreshCcw className="h-4 w-4 mr-2" /> Reiniciar Tablero
           </Button>
         </div>
@@ -359,28 +394,64 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="executive-card">
-                <CardHeader>
-                  <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                    <Activity className="h-4 w-4" /> Análisis por Tipo de Servicio
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                   <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30, top: 10, bottom: 10 }}>
-                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                         <XAxis type="number" hide />
-                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} width={120} />
-                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                         <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={30}>
-                            {supportStats.typesData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                         </Bar>
-                      </RechartsBarChart>
-                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="executive-card">
+                  <CardHeader>
+                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Activity className="h-4 w-4" /> Análisis por Tipo de Servicio
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30, top: 10, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontBold: 900 }} width={110} />
+                          <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
+                          <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={25}>
+                              {supportStats.typesData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                          </Bar>
+                        </RechartsBarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="executive-card">
+                  <CardHeader>
+                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Building2 className="h-4 w-4" /> Red Local: Distribución Territorial
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                     <Tabs defaultValue="municipio" className="w-full">
+                        <TabsList className="grid grid-cols-2 w-full mb-4 bg-slate-50 h-8">
+                           <TabsTrigger value="municipio" className="text-[9px] font-black uppercase">Por Municipio</TabsTrigger>
+                           <TabsTrigger value="oficina" className="text-[9px] font-black uppercase">Por Oficina</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="municipio" className="h-[220px]">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <RechartsBarChart data={supportStats.redLocalMunData}>
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900 }} />
+                                 <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
+                                 <Bar dataKey="value" fill="#B38E5D" radius={[4, 4, 0, 0]} />
+                              </RechartsBarChart>
+                           </ResponsiveContainer>
+                        </TabsContent>
+                        <TabsContent value="oficina" className="h-[220px]">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <RechartsBarChart data={supportStats.redLocalOfiData}>
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
+                                 <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
+                                 <Bar dataKey="value" fill="#621132" radius={[4, 4, 0, 0]} />
+                              </RechartsBarChart>
+                           </ResponsiveContainer>
+                        </TabsContent>
+                     </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6">
@@ -398,12 +469,16 @@ export default function DashboardPage() {
               <Card className="executive-card p-6 border-l-4 border-emerald-500">
                  <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Registrado</p>
+                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Realizado</p>
                      <h3 className="text-4xl font-black mt-2 text-emerald-600">{supportStats.serviciosMP + supportStats.serviciosMC}</h3>
                    </div>
                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm">
                      <CheckCircle2 className="h-6 w-6" />
                    </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-2 mt-4">
+                    <div className="text-[9px] font-black text-slate-500 uppercase">Prev: <span className="text-emerald-600">{supportStats.serviciosMP}</span></div>
+                    <div className="text-[9px] font-black text-slate-500 uppercase">Corr: <span className="text-emerald-600">{supportStats.serviciosMC}</span></div>
                  </div>
               </Card>
 
