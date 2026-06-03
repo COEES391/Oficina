@@ -16,7 +16,7 @@ export type VisitSchedule = {
   date: string;
   purpose: string;
   technicians: string;
-  status: 'programada' | 'realizada' | 'cancelada';
+  status: 'atendido' | 'en proceso' | 'pendiente';
   observaciones: string;
 };
 
@@ -662,6 +662,7 @@ const getGeoData = (): ProgramStatus[] => {
     ["15DES0241Q", "-99.853904", "19.902985"],
     ["15DES0242P", "-98.916400", "19.564128"],
     ["15DES0243O", "-99.777993", "18.956929"],
+    ["15DES0244N", "-98.865791", "19.295650"],
     ["15DES0244N", "-98.865791", "19.295650"],
     ["15DES0245M", "-98.963396", "19.377678"],
     ["15DES0246L", "-99.021264", "19.595849"],
