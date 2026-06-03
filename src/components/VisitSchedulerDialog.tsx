@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { type VisitSchedule } from '@/lib/planning-data'
-import { Calendar, MapPin, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, School, LayoutGrid, Circle } from 'lucide-react'
+import { Calendar, MapPin, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, School, LayoutGrid, Circle, Eraser } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
@@ -24,8 +24,7 @@ type VisitSchedulerDialogProps = {
 export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: VisitSchedulerDialogProps) {
   const { toast } = useToast()
   const [visits, setVisits] = useState<VisitSchedule[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [listSearchTerm, setListSearchTerm] = useState('') // Filtro para la tabla
+  const [listSearchTerm, setListSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
 
   const initialForm: Omit<VisitSchedule, 'id'> = {
@@ -58,8 +57,20 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
       const match = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal)
       if (match) {
         setFormData(prev => ({ ...prev, schoolName: match.nombre }))
+      } else {
+        setFormData(prev => ({ ...prev, schoolName: '' }))
       }
+    } else {
+      setFormData(prev => ({ ...prev, schoolName: '' }))
     }
+  }
+
+  const handleResetForm = () => {
+    setFormData({ ...initialForm, areaId })
+    toast({
+      description: "Formulario restablecido para nueva captura.",
+      className: "bg-slate-800 text-white border-none",
+    })
   }
 
   const handleSave = () => {
@@ -76,9 +87,13 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     const updated = [newVisit, ...visits]
     setVisits(updated)
     localStorage.setItem('coees_visits_v1', JSON.stringify(updated))
+    
+    // Limpiar después de crear
     setFormData({ ...initialForm, areaId })
-    setSearchTerm('')
-    toast({ title: "Visita Programada", description: "Se ha registrado la salida técnica correctamente." })
+    toast({ 
+      title: "Visita Creada", 
+      description: "El registro se ha añadido a la bitácora de la derecha.",
+    })
   }
 
   const handleDelete = (id: string) => {
@@ -116,9 +131,16 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* Formulario de Captura */}
           <div className="w-full md:w-[380px] border-r bg-white p-8 space-y-6">
-            <h3 className="text-[11px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 tracking-[0.2em] flex items-center gap-2">
-              <PlusCircle className="h-4 w-4" /> Nueva Salida
-            </h3>
+            <div className="flex items-center justify-between border-b-2 border-accent/10 pb-2">
+               <button 
+                onClick={handleResetForm}
+                className="text-[11px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
+               >
+                 <PlusCircle className="h-4 w-4 group-hover:scale-110 transition-transform" /> 
+                 Nueva Salida
+               </button>
+               <Badge variant="outline" className="text-[8px] font-black border-none text-slate-300">MODO CAPTURA</Badge>
+            </div>
             
             <div className="space-y-4">
               <div className="space-y-2">
@@ -126,27 +148,30 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                 <div className="relative">
                    <Input 
                       placeholder="15DES0000X" 
-                      className="h-11 font-mono uppercase border-primary/10 bg-slate-50 pl-10" 
+                      className="h-11 font-mono uppercase border-primary/10 bg-slate-50 pl-10 focus:bg-white transition-colors" 
                       value={formData.cct} 
                       onChange={e => handleCctChange(e.target.value)} 
                       maxLength={10}
                    />
-                   <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                   <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
                 </div>
                 {formData.schoolName && (
-                   <p className="text-[9px] font-bold text-emerald-600 uppercase px-2">✓ {formData.schoolName}</p>
+                   <div className="flex items-center gap-1.5 p-2 bg-emerald-50 rounded-lg animate-in slide-in-from-left-2">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      <p className="text-[9px] font-black text-emerald-700 uppercase leading-none">{formData.schoolName}</p>
+                   </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary">Fecha de Visita</Label>
-                <Input type="date" className="h-11 border-primary/10 font-bold" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                <Input type="date" className="h-11 border-primary/10 font-bold bg-slate-50 focus:bg-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary">Propósito / Motivo</Label>
                 <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
-                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px]"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Mantenimiento Equipo de Computo" className="text-[10px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
                     <SelectItem value="Mantenimiento Red Local" className="text-[10px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
@@ -160,13 +185,21 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary">Personal Comisionado</Label>
-                <Input className="h-11 border-primary/10 font-bold uppercase text-[10px]" placeholder="NOMBRES..." value={formData.technicians} onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} />
+                <div className="relative">
+                   <Input 
+                      className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50 pl-10 focus:bg-white" 
+                      placeholder="NOMBRES..." 
+                      value={formData.technicians} 
+                      onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
+                   />
+                   <UserCog className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary">Estatus Inicial</Label>
                 <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px] bg-slate-50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendiente" className="text-[10px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
                     <SelectItem value="en proceso" className="text-[10px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
@@ -175,18 +208,29 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                 </Select>
               </div>
 
-              <Button onClick={handleSave} className="w-full btn-institutional h-14 mt-4 shadow-xl">
-                Agendar Visita
+              <Button onClick={handleSave} className="w-full btn-institutional h-16 mt-6 shadow-xl text-[11px] group">
+                <CheckCircle2 className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
+                Crear Registro de Visita
               </Button>
+              
+              <p className="text-[8px] text-slate-400 font-bold uppercase text-center mt-4">
+                El registro aparecerá automáticamente <br /> en la bitácora de la derecha.
+              </p>
             </div>
           </div>
 
           {/* Listado de Visitas */}
           <div className="flex-1 bg-slate-50/50 p-8 flex flex-col overflow-hidden">
              <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
-                <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-2">
-                  <Clock className="h-4 w-4" /> Agenda de Salidas ({areaVisits.length})
-                </h3>
+                <div className="flex items-center gap-3">
+                   <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400">
+                      <Clock className="h-5 w-5" />
+                   </div>
+                   <div>
+                      <h3 className="text-[11px] font-black uppercase text-slate-700 tracking-[0.2em] leading-none">Agenda de Salidas</h3>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Registros vigentes: {areaVisits.length}</p>
+                   </div>
+                </div>
                 
                 <div className="relative w-full md:w-80 group">
                    <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -204,18 +248,18 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                    <Table>
                       <TableHeader className="bg-slate-50 sticky top-0 z-10">
                          <TableRow>
-                            <TableHead className="text-[10px] font-black uppercase">Fecha</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">CCT / Plantel</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Propósito</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase">Personal</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">Estatus Operativo</TableHead>
-                            <TableHead className="w-16"></TableHead>
+                            <TableHead className="text-[10px] font-black uppercase h-14 pl-8">Fecha</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase h-14">CCT / Plantel</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase h-14">Propósito</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase h-14">Personal</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase h-14 text-center">Estatus Operativo</TableHead>
+                            <TableHead className="w-16 h-14"></TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
                         {areaVisits.length > 0 ? areaVisits.map((v) => (
-                          <TableRow key={v.id} className="hover:bg-slate-50 transition-colors">
-                            <TableCell className="font-black text-[10px] text-primary">{v.date}</TableCell>
+                          <TableRow key={v.id} className="hover:bg-slate-50 transition-colors group">
+                            <TableCell className="font-black text-[10px] text-primary pl-8">{v.date}</TableCell>
                             <TableCell>
                                <div className="flex flex-col">
                                   <span className="text-[10px] font-black text-slate-700">{v.cct}</span>
@@ -223,7 +267,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                                </div>
                             </TableCell>
                             <TableCell>
-                               <Badge variant="outline" className="text-[8px] font-black border-primary/10 text-accent uppercase">{v.purpose}</Badge>
+                               <Badge variant="outline" className="text-[8px] font-black border-primary/10 text-accent uppercase bg-accent/5">{v.purpose}</Badge>
                             </TableCell>
                             <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[120px]">{v.technicians}</TableCell>
                             <TableCell className="text-center">
@@ -240,20 +284,25 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                                   {v.status}
                                </div>
                             </TableCell>
-                            <TableCell>
-                               <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(v.id)}>
+                            <TableCell className="pr-8">
+                               <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                             </TableCell>
                           </TableRow>
                         )) : (
                           <TableRow>
-                             <TableCell colSpan={6} className="text-center py-24 opacity-30">
-                                <div className="flex flex-col items-center gap-4">
-                                   <Search className="h-12 w-12" />
-                                   <p className="text-[10px] font-black uppercase tracking-widest">
-                                      {listSearchTerm ? 'No se encontraron visitas que coincidan con el CCT.' : 'No hay visitas programadas en la bitácora.'}
-                                   </p>
+                             <TableCell colSpan={6} className="text-center py-32 opacity-30">
+                                <div className="flex flex-col items-center gap-6">
+                                   <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center border-4 border-dashed border-slate-200">
+                                      <Search className="h-10 w-10 text-slate-300" />
+                                   </div>
+                                   <div className="space-y-1">
+                                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">Bitácora de Agenda Vacía</p>
+                                      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400">
+                                         {listSearchTerm ? 'No hay coincidencias para el CCT buscado.' : 'Use el panel izquierdo para agendar una nueva salida.'}
+                                      </p>
+                                   </div>
                                 </div>
                              </TableCell>
                           </TableRow>
@@ -266,7 +315,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
         </div>
 
         <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end">
-           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl h-10 px-8 text-[10px] font-black uppercase">Cerrar Agenda</Button>
+           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-200 hover:bg-white shadow-sm">Cerrar Agenda Operativa</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
