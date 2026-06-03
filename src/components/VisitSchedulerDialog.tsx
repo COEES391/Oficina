@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { type VisitSchedule } from '@/lib/planning-data'
-import { Calendar, MapPin, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, School, LayoutGrid, Circle, Eraser } from 'lucide-react'
+import { Calendar, UserCog, Search, PlusCircle, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 
@@ -102,6 +102,13 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
     toast({ title: "Registro eliminado" })
   }
 
+  const handleUpdateStatus = (id: string, newStatus: VisitSchedule['status']) => {
+    const updated = visits.map(v => v.id === id ? { ...v, status: newStatus } : v)
+    setVisits(updated)
+    localStorage.setItem('coees_visits_v1', JSON.stringify(updated))
+    toast({ title: "Estatus Actualizado", description: `La visita ha sido marcada como ${newStatus.toUpperCase()}.` })
+  }
+
   const areaVisits = useMemo(() => {
     let filtered = visits.filter(v => v.areaId === areaId)
     if (listSearchTerm) {
@@ -129,92 +136,92 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* Panel de Captura EXTREMADAMENTE COMPACTO */}
-          <div className="w-full md:w-[360px] border-r bg-white flex flex-col shrink-0 overflow-hidden">
-            <div className="p-3 border-b bg-slate-50/50 flex items-center justify-between shrink-0">
+          <div className="w-full md:w-[320px] border-r bg-white flex flex-col shrink-0 overflow-hidden">
+            <div className="p-2 border-b bg-slate-50/50 flex items-center justify-between shrink-0">
                <button 
                 onClick={handleResetForm}
-                className="text-[9px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
+                className="text-[8px] font-black uppercase text-accent hover:text-primary transition-colors flex items-center gap-2 group"
                >
-                 <PlusCircle className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" /> 
+                 <PlusCircle className="h-3 w-3 group-hover:scale-110 transition-transform" /> 
                  Nueva Salida
                </button>
-               <Badge variant="outline" className="text-[7px] font-black border-none text-slate-300">CAPTURA DIRECTA</Badge>
+               <Badge variant="outline" className="text-[6px] font-black border-none text-slate-300">CAPTURA DIRECTA</Badge>
             </div>
             
-            <div className="p-4 space-y-2 flex-1 overflow-y-auto lg:overflow-hidden">
+            <div className="p-3 space-y-2 flex-1 overflow-hidden">
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary">CCT del Plantel</Label>
+                <Label className="text-[8px] font-black uppercase text-primary">CCT del Plantel</Label>
                 <div className="relative">
                   <Input 
                       placeholder="15DES0000X" 
-                      className="h-8 font-mono uppercase border-primary/10 bg-slate-50 pl-8 focus:bg-white text-[10px]" 
+                      className="h-7 font-mono uppercase border-primary/10 bg-slate-50 pl-7 focus:bg-white text-[9px]" 
                       value={formData.cct} 
                       onChange={e => handleCctChange(e.target.value)} 
                       maxLength={10}
                   />
-                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-300" />
+                  <Search className="absolute left-2 top-2 h-3 w-3 text-slate-300" />
                 </div>
                 {formData.schoolName && (
-                  <div className="flex items-center gap-1.5 p-1 bg-emerald-50 rounded-lg mt-1">
-                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
-                      <p className="text-[8px] font-black text-emerald-700 uppercase leading-none truncate">{formData.schoolName}</p>
+                  <div className="flex items-center gap-1 p-1 bg-emerald-50 rounded mt-1">
+                      <CheckCircle2 className="h-2 w-2 text-emerald-600" />
+                      <p className="text-[7px] font-black text-emerald-700 uppercase leading-none truncate">{formData.schoolName}</p>
                   </div>
                 )}
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary">Fecha de Visita</Label>
-                <Input type="date" className="h-8 border-primary/10 font-bold bg-slate-50 focus:bg-white text-[10px]" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                <Label className="text-[8px] font-black uppercase text-primary">Fecha de Visita</Label>
+                <Input type="date" className="h-7 border-primary/10 font-bold bg-slate-50 focus:bg-white text-[9px]" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary">Propósito / Motivo</Label>
+                <Label className="text-[8px] font-black uppercase text-primary">Propósito / Motivo</Label>
                 <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
-                  <SelectTrigger className="h-8 border-primary/10 font-bold uppercase text-[9px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                  <SelectTrigger className="h-7 border-primary/10 font-bold uppercase text-[8px] bg-slate-50"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[9px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
-                    <SelectItem value="Mantenimiento Red Local" className="text-[9px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
-                    <SelectItem value="Mantenimiento Red Edusat" className="text-[9px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
-                    <SelectItem value="Teleplanteles" className="text-[9px] font-bold">TELEPLANTELES</SelectItem>
-                    <SelectItem value="Instalación Red Local" className="text-[9px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
-                    <SelectItem value="Instalación Equipo de Computo" className="text-[9px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
+                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[8px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
+                    <SelectItem value="Mantenimiento Red Local" className="text-[8px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
+                    <SelectItem value="Mantenimiento Red Edusat" className="text-[8px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
+                    <SelectItem value="Teleplanteles" className="text-[8px] font-bold">TELEPLANTELES</SelectItem>
+                    <SelectItem value="Instalación Red Local" className="text-[8px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
+                    <SelectItem value="Instalación Equipo de Computo" className="text-[8px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary">Personal Comisionado</Label>
+                <Label className="text-[8px] font-black uppercase text-primary">Personal Comisionado</Label>
                 <div className="relative">
                   <Input 
-                      className="h-8 border-primary/10 font-bold uppercase text-[9px] bg-slate-50 pl-8 focus:bg-white" 
+                      className="h-7 border-primary/10 font-bold uppercase text-[8px] bg-slate-50 pl-7 focus:bg-white" 
                       placeholder="NOMBRES..." 
                       value={formData.technicians} 
                       onChange={e => setFormData({...formData, technicians: e.target.value.toUpperCase()})} 
                   />
-                  <UserCog className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-300" />
+                  <UserCog className="absolute left-2 top-2 h-3 w-3 text-slate-300" />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary">Estatus Inicial</Label>
+                <Label className="text-[8px] font-black uppercase text-primary">Estatus Inicial</Label>
                 <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                  <SelectTrigger className="h-8 border-primary/10 font-bold uppercase text-[9px] bg-slate-50"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-7 border-primary/10 font-bold uppercase text-[8px] bg-slate-50"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pendiente" className="text-[9px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
-                    <SelectItem value="en proceso" className="text-[9px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
-                    <SelectItem value="atendido" className="text-[9px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
+                    <SelectItem value="pendiente" className="text-[8px] font-bold text-rose-600">🔴 PENDIENTE</SelectItem>
+                    <SelectItem value="en proceso" className="text-[8px] font-bold text-amber-600">🟡 EN PROCESO</SelectItem>
+                    <SelectItem value="atendido" className="text-[8px] font-bold text-emerald-600">🟢 ATENDIDO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="pt-2">
-                <Button onClick={handleSave} className="w-full btn-institutional h-11 shadow-lg text-[10px] group border-2 border-white/20">
-                  <CheckCircle2 className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Guardar Registro
+                <Button onClick={handleSave} className="w-full btn-institutional h-10 shadow-lg text-[9px] group border-2 border-white/20">
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-2 group-hover:scale-110 transition-transform" />
+                  GUARDAR REGISTRO
                 </Button>
                 
-                <p className="text-[7px] text-slate-400 font-bold uppercase text-center mt-2 leading-tight">
-                  Los datos se reflejarán <br /> en la bitácora derecha.
+                <p className="text-[6px] text-slate-400 font-bold uppercase text-center mt-1 leading-tight">
+                  LOS DATOS SE REFLEJARÁN <br /> EN LA BITÁCORA DERECHA.
                 </p>
               </div>
             </div>
@@ -270,18 +277,31 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                                <Badge variant="outline" className="text-[7px] font-black border-primary/5 text-accent uppercase bg-accent/5 py-0 px-2 h-5">{v.purpose}</Badge>
                             </TableCell>
                             <TableCell className="text-center">
-                               <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[7px] font-black uppercase shadow-sm border", 
-                                  v.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                  v.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                  'bg-rose-50 text-rose-700 border-rose-100'
-                               )}>
-                                  <Circle className={cn("h-1.5 w-1.5 fill-current", 
-                                    v.status === 'atendido' ? 'text-emerald-500' : 
-                                    v.status === 'en proceso' ? 'text-amber-500' : 
-                                    'text-rose-500'
-                                  )} />
-                                  {v.status}
-                               </div>
+                               <Select 
+                                  defaultValue={v.status} 
+                                  onValueChange={(val: any) => handleUpdateStatus(v.id, val)}
+                               >
+                                  <SelectTrigger className={cn(
+                                    "h-7 w-32 text-[7px] font-black uppercase border-2 rounded-full mx-auto transition-all",
+                                    v.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-500/30' :
+                                    v.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-500/30' :
+                                    'bg-rose-50 text-rose-700 border-rose-500/30'
+                                  )}>
+                                    <div className="flex items-center gap-1">
+                                      <Circle className={cn("h-1.5 w-1.5 fill-current", 
+                                        v.status === 'atendido' ? 'text-emerald-500' : 
+                                        v.status === 'en proceso' ? 'text-amber-500' : 
+                                        'text-rose-500'
+                                      )} />
+                                      <SelectValue />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-xl border-slate-200">
+                                    <SelectItem value="pendiente" className="text-[8px] font-black text-rose-600">🔴 PENDIENTE</SelectItem>
+                                    <SelectItem value="en proceso" className="text-[8px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
+                                    <SelectItem value="atendido" className="text-[8px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
+                                  </SelectContent>
+                               </Select>
                             </TableCell>
                             <TableCell className="pr-4">
                                <Button variant="ghost" size="icon" className="h-6 w-6 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" onClick={() => handleDelete(v.id)}>
