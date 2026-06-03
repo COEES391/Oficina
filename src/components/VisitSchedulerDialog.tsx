@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -64,8 +63,8 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
   }
 
   const handleSave = () => {
-    if (!formData.cct || !formData.date) {
-      toast({ variant: "destructive", title: "Datos Incompletos", description: "CCT y Fecha son obligatorios." })
+    if (!formData.cct || !formData.date || !formData.purpose) {
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "CCT, Fecha y Propósito son obligatorios." })
       return
     }
 
@@ -149,12 +148,12 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                 <Select value={formData.purpose} onValueChange={val => setFormData({...formData, purpose: val})}>
                   <SelectTrigger className="h-11 border-primary/10 font-bold uppercase text-[10px]"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MANTENIMIENTO" className="text-[10px] font-bold">MANTENIMIENTO</SelectItem>
-                    <SelectItem value="AUDITORIA" className="text-[10px] font-bold">AUDITORÍA TÉCNICA</SelectItem>
-                    <SelectItem value="CAPACITACION" className="text-[10px] font-bold">CAPACITACIÓN</SelectItem>
-                    <SelectItem value="DIAGNOSTICO" className="text-[10px] font-bold">DIAGNÓSTICO</SelectItem>
-                    <SelectItem value="SUPERVISION" className="text-[10px] font-bold">SUPERVISIÓN</SelectItem>
-                    <SelectItem value="ENTREGA" className="text-[10px] font-bold">ENTREGA DE EQUIPO</SelectItem>
+                    <SelectItem value="Mantenimiento Equipo de Computo" className="text-[10px] font-bold">MANTENIMIENTO EQUIPO DE COMPUTO</SelectItem>
+                    <SelectItem value="Mantenimiento Red Local" className="text-[10px] font-bold">MANTENIMIENTO RED LOCAL</SelectItem>
+                    <SelectItem value="Mantenimiento Red Edusat" className="text-[10px] font-bold">MANTENIMIENTO RED EDUSAT</SelectItem>
+                    <SelectItem value="Teleplanteles" className="text-[10px] font-bold">TELEPLANTELES</SelectItem>
+                    <SelectItem value="Instalación Red Local" className="text-[10px] font-bold">INSTALACIÓN RED LOCAL</SelectItem>
+                    <SelectItem value="Instalación Equipo de Computo" className="text-[10px] font-bold">INSTALACIÓN EQUIPO DE COMPUTO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -224,7 +223,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                                </div>
                             </TableCell>
                             <TableCell>
-                               <Badge variant="outline" className="text-[8px] font-black border-primary/10 text-accent">{v.purpose}</Badge>
+                               <Badge variant="outline" className="text-[8px] font-black border-primary/10 text-accent uppercase">{v.purpose}</Badge>
                             </TableCell>
                             <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[120px]">{v.technicians}</TableCell>
                             <TableCell className="text-center">
