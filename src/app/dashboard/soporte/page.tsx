@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -139,6 +139,19 @@ export default function SupportPage() {
     }
     setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
   }, [])
+
+  const getNextFolio = (currentTickets: SupportTicket[]) => {
+    const numericIds = currentTickets
+      .map(t => {
+        const match = t.id.match(/\d+/);
+        return match ? parseInt(match[0], 10) : null;
+      })
+      .filter((id): id is number => id !== null);
+    
+    if (numericIds.length === 0) return "100";
+    const maxId = Math.max(...numericIds);
+    return (maxId + 1).toString();
+  };
 
   const handleSelectSchool = (cct: string, turno: string) => {
     const school = schoolsDirectory.find(s => s.cct === cct && s.turno === turno);
@@ -321,6 +334,23 @@ export default function SupportPage() {
           </p>
         </div>
         
+        <Button 
+          onClick={() => {
+            const nextId = getNextFolio(tickets);
+            setFormData({
+              ...initialFormState,
+              id: nextId,
+              fechaEntrada: format(new Date(), 'yyyy-MM-dd')
+            });
+            setEditingTicketId(null);
+            setIsDialogOpen(true);
+            setSearchTerm('');
+          }}
+          className="btn-institutional h-12 px-10 rounded-xl shadow-lg whitespace-nowrap"
+        >
+          <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
+        </Button>
+
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) {
@@ -329,11 +359,6 @@ export default function SupportPage() {
             setSearchTerm('');
           }
         }}>
-          <DialogTrigger asChild>
-            <Button className="btn-institutional h-12 px-10 rounded-xl shadow-lg whitespace-nowrap">
-              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
             <DialogHeader className="p-8 pb-4">
               <DialogTitle className="uppercase font-black text-primary text-2xl">
@@ -402,8 +427,8 @@ export default function SupportPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud</Label>
-                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="EJ: S-001" disabled={!!editingTicketId} />
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud (Folio)</Label>
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="FOLIO..." />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary pl-2">Tipo de Incidencia</Label>
