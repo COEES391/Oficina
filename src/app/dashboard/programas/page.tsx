@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -39,9 +38,11 @@ import {
   Network,
   Monitor,
   X,
-  School
+  School,
+  CalendarDays
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -72,6 +73,7 @@ export default function ProgramsPage() {
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
@@ -270,6 +272,12 @@ export default function ProgramsPage() {
           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
             <Activity className="h-4 w-4 text-accent" /> Control de Programas y Auditoría 2026
           </p>
+        </div>
+
+        <div className="flex items-center gap-4">
+           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
+             <CalendarDays className="h-4 w-4" /> Agenda de Visitas
+           </Button>
         </div>
       </div>
 
@@ -623,6 +631,14 @@ export default function ProgramsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Visitas Scheduler Modal */}
+      <VisitSchedulerDialog 
+        open={isSchedulerOpen} 
+        onOpenChange={setIsSchedulerOpen} 
+        areaId="programas" 
+        areaName="Programas" 
+      />
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">

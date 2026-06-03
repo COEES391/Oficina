@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,10 +11,11 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School, Search, MapPin, LayoutGrid, Info } from "lucide-react"
+import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School, Search, MapPin, LayoutGrid, Info, CalendarDays } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from '@/components/ui/badge'
+import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 
 type AssistantEntry = {
   paterno: string;
@@ -49,6 +49,7 @@ export default function TrainingPage() {
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<TrainingRecord[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedSedeInfo, setSelectedSedeInfo] = useState<SchoolInfo | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -304,7 +305,7 @@ export default function TrainingPage() {
         </div>
 
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative w-full md:w-96 group">
+          <div className="relative w-full md:w-80 group">
              <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
              <Input 
                 placeholder="FILTRAR POR CCT, INSTRUCTOR O CURSO..." 
@@ -313,6 +314,10 @@ export default function TrainingPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
              />
           </div>
+
+          <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
+            <CalendarDays className="h-4 w-4" /> Agenda de Visitas
+          </Button>
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
@@ -676,6 +681,14 @@ export default function TrainingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Visitas Scheduler Modal */}
+      <VisitSchedulerDialog 
+        open={isSchedulerOpen} 
+        onOpenChange={setIsSchedulerOpen} 
+        areaId="capacitacion" 
+        areaName="Capacitación" 
+      />
     </div>
   )
 }

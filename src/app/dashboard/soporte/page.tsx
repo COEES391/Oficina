@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -15,11 +14,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
@@ -49,6 +49,7 @@ export default function SupportPage() {
   const [mounted, setMounted] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('') // Buscador dentro del diálogo
   const [listSearchTerm, setListSearchTerm] = useState('') // Buscador principal de la lista
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
@@ -325,6 +326,10 @@ export default function SupportPage() {
                 onChange={(e) => setListSearchTerm(e.target.value)}
              />
           </div>
+
+          <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
+            <CalendarDays className="h-4 w-4" /> Agenda de Visitas
+          </Button>
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -966,6 +971,14 @@ export default function SupportPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Visitas Scheduler Modal */}
+      <VisitSchedulerDialog 
+        open={isSchedulerOpen} 
+        onOpenChange={setIsSchedulerOpen} 
+        areaId="soporte" 
+        areaName="Soporte Técnico" 
+      />
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
