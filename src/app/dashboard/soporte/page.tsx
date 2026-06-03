@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays, Building2 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -52,6 +52,7 @@ export default function SupportPage() {
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('') // Buscador dentro del diálogo
   const [listSearchTerm, setListSearchTerm] = useState('') // Buscador principal de la lista
+  const [officeFilter, setOfficeFilter] = useState('all') // Filtro por oficina
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
@@ -297,12 +298,16 @@ export default function SupportPage() {
     });
   }
 
-  const filteredTickets = tickets.filter(t => 
-    (t.cct || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
-    (t.schoolName || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
-    (t.id || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
-    (t.tecnicos || '').toUpperCase().includes(listSearchTerm.toUpperCase())
-  );
+  const filteredTickets = tickets.filter(t => {
+    const matchSearch = (t.cct || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
+      (t.schoolName || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
+      (t.id || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
+      (t.tecnicos || '').toUpperCase().includes(listSearchTerm.toUpperCase());
+    
+    const matchOffice = officeFilter === 'all' || t.oficinaRegionalAtencion === officeFilter;
+    
+    return matchSearch && matchOffice;
+  });
 
   if (!mounted) return null
 
@@ -316,8 +321,8 @@ export default function SupportPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative w-full md:w-96 group">
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          <div className="relative w-full md:w-80 group">
              <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
              <Input 
                 placeholder="FILTRAR POR CCT, PLANTEL, TÉCNICO O FOLIO..." 
@@ -325,6 +330,23 @@ export default function SupportPage() {
                 value={listSearchTerm}
                 onChange={(e) => setListSearchTerm(e.target.value)}
              />
+          </div>
+
+          <div className="w-full md:w-64">
+            <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <SelectTrigger className="h-10 rounded-2xl border-primary/10 bg-white/80 backdrop-blur-sm text-[10px] font-black uppercase shadow-sm focus:ring-2 focus:ring-primary/20 transition-all">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-primary" />
+                  <SelectValue placeholder="FILTRAR POR OFICINA..." />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-200">
+                <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
+                {REGIONAL_OFFICES.map(off => (
+                  <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5" onClick={() => setIsSchedulerOpen(true)}>
@@ -900,7 +922,14 @@ export default function SupportPage() {
                   <div className="flex flex-col">
                     <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
                     <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
-                    {t.tecnicos && <span className="text-[8px] text-accent font-black uppercase mt-1">TÉC: {t.tecnicos}</span>}
+                    <div className="flex items-center gap-2 mt-1">
+                      {t.oficinaRegionalAtencion && (
+                        <Badge variant="secondary" className="text-[7px] font-black uppercase bg-primary/5 text-primary border-primary/10">
+                          {t.oficinaRegionalAtencion.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}
+                        </Badge>
+                      )}
+                      {t.tecnicos && <span className="text-[8px] text-accent font-black uppercase">TÉC: {t.tecnicos}</span>}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className="capitalize text-[10px] font-black text-slate-500">
@@ -925,7 +954,8 @@ export default function SupportPage() {
                       <div className="flex items-center gap-2">
                         <Circle className={cn("h-2 w-2 fill-current", 
                           t.status === 'atendido' ? 'text-emerald-500' : 
-                          t.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'
+                          t.status === 'en proceso' ? 'text-amber-500' : 
+                          'text-rose-500'
                         )} />
                         <SelectValue />
                       </div>
