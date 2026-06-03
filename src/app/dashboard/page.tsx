@@ -364,58 +364,84 @@ export default function DashboardPage() {
         </Tabs>
       </div>
 
-      <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            <Filter className="h-4 w-4 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filtros Operativos:</span>
+      {/* Reorganized Filter Bar */}
+      <Card className="executive-card p-6 bg-white border-none shadow-xl">
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <Filter className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Filtros Operativos de Análisis</span>
           </div>
           
-          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-            <Calendar className="h-4 w-4 text-slate-400" />
-            <Input type="date" className="h-8 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateStart} onChange={e => setDateStart(e.target.value)} />
-            <span className="text-[9px] font-black text-slate-300">A</span>
-            <Input type="date" className="h-8 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
+          <div className="flex flex-wrap items-center gap-4 lg:gap-8">
+            <div className="flex flex-col gap-2">
+              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Periodo de Atención</Label>
+              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-inner">
+                <Calendar className="h-4 w-4 text-slate-400" />
+                <Input type="date" className="h-8 w-32 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateStart} onChange={e => setDateStart(e.target.value)} />
+                <span className="text-[9px] font-black text-slate-300">AL</span>
+                <Input type="date" className="h-8 w-32 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Localizador CCT</Label>
+              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-inner min-w-[200px]">
+                <Search className="h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="INGRESAR CCT..." 
+                  className="h-8 w-full text-[10px] font-black border-none focus-visible:ring-0 bg-transparent uppercase shadow-none" 
+                  value={cctFilter} 
+                  onChange={e => setCctFilter(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Zona Geográfica (Valle)</Label>
+              <Select value={valleFilter} onValueChange={setValleFilter}>
+                <SelectTrigger className="h-12 text-[10px] font-black w-[160px] rounded-2xl border-slate-100 bg-slate-50 shadow-inner">
+                  <SelectValue placeholder="VALLE" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todos los Valles</SelectItem>
+                  <SelectItem value="MEXICO" className="text-[10px] font-black uppercase">Valle de México</SelectItem>
+                  <SelectItem value="TOLUCA" className="text-[10px] font-black uppercase">Valle de Toluca</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Oficina Regional</Label>
+              <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
+                <SelectTrigger className="h-12 text-[10px] font-black w-[200px] rounded-2xl border-slate-100 bg-slate-50 shadow-inner">
+                   <div className="flex items-center gap-2">
+                     <Building2 className="h-3.5 w-3.5 text-primary" />
+                     <SelectValue placeholder="OFICINA REGIONAL" />
+                   </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
+                  <SelectItem value="Toluca" className="text-[10px] font-black uppercase">Toluca</SelectItem>
+                  <SelectItem value="Ecatepec" className="text-[10px] font-black uppercase">Ecatepec</SelectItem>
+                  <SelectItem value="Naucalpan" className="text-[10px] font-black uppercase">Naucalpan</SelectItem>
+                  <SelectItem value="Nezahualcóyotl" className="text-[10px] font-black uppercase">Nezahualcóyotl</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end h-full pt-6">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-12 px-6 text-[9px] font-black uppercase tracking-widest text-rose-600 border-rose-100 hover:bg-rose-50 rounded-2xl transition-all shadow-sm" 
+                onClick={() => {setValleFilter('all'); setOficinaFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}
+              >
+                <RefreshCcw className="h-3.5 w-3.5 mr-2" /> Reiniciar Tablero
+              </Button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 min-w-[150px]">
-            <Search className="h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="CCT..." 
-              className="h-8 w-full text-[10px] font-black border-none focus-visible:ring-0 bg-transparent uppercase shadow-none" 
-              value={cctFilter} 
-              onChange={e => setCctFilter(e.target.value)} 
-            />
-          </div>
-
-          <Select value={valleFilter} onValueChange={setValleFilter}>
-            <SelectTrigger className="h-10 text-[10px] font-black w-[150px] rounded-xl border-slate-200 bg-white">
-              <SelectValue placeholder="VALLE" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-[10px] font-black uppercase">Todos los Valles</SelectItem>
-              <SelectItem value="MEXICO" className="text-[10px] font-black uppercase">Valle de México</SelectItem>
-              <SelectItem value="TOLUCA" className="text-[10px] font-black uppercase">Valle de Toluca</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
-            <SelectTrigger className="h-10 text-[10px] font-black w-[180px] rounded-xl border-slate-200 bg-white">
-               <Building2 className="h-3.5 w-3.5 mr-2 text-primary" />
-               <SelectValue placeholder="OFICINA REGIONAL" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
-              <SelectItem value="Toluca" className="text-[10px] font-black uppercase">Toluca</SelectItem>
-              <SelectItem value="Ecatepec" className="text-[10px] font-black uppercase">Ecatepec</SelectItem>
-              <SelectItem value="Naucalpan" className="text-[10px] font-black uppercase">Naucalpan</SelectItem>
-              <SelectItem value="Nezahualcóyotl" className="text-[10px] font-black uppercase">Nezahualcóyotl</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button variant="ghost" size="sm" className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all" onClick={() => {setValleFilter('all'); setOficinaFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}>
-            <RefreshCcw className="h-4 w-4 mr-2" /> Reiniciar Tablero
-          </Button>
         </div>
       </Card>
 
