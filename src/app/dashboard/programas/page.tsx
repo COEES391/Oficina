@@ -38,7 +38,8 @@ import {
   QrCode,
   Copy,
   ExternalLink,
-  Circle
+  Circle,
+  Info
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -482,7 +483,7 @@ export default function ProgramsPage() {
                       )}
                       <TableCell className="text-right pr-12">
                          <div className="flex justify-end gap-3">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-10 w-10 text-slate-400 hover:text-primary bg-slate-50/50 hover:bg-primary/5 rounded-xl transition-all"><Pencil className="h-5 w-5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-10 w-10 text-slate-400 hover:text-primary bg-slate-50/50 hover:bg-primary/5 rounded-xl transition-all"><Pencil className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-10 w-10 text-rose-300 hover:text-rose-600 bg-slate-50/50 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="h-5 w-5" /></Button>
                          </div>
                       </TableCell>
