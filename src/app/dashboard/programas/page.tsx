@@ -263,7 +263,7 @@ export default function ProgramsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
@@ -271,63 +271,65 @@ export default function ProgramsPage() {
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           {activeTab === 'ATRES' && (
-            <Button onClick={() => setIsHelpDeskOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 px-8 rounded-xl shadow-lg font-black uppercase text-[10px] gap-2">
-              <Headset className="h-5 w-5" /> Mesa de Ayuda ATRES
+            <Button onClick={() => setIsHelpDeskOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white h-11 px-6 rounded-xl shadow-lg font-black uppercase text-[9px] gap-2 transition-all active:scale-95">
+              <Headset className="h-4 w-4" /> Mesa de Ayuda ATRES
             </Button>
           )}
-          <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional h-12 px-10 rounded-xl shadow-lg">
-            <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+          <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional h-11 px-8 rounded-xl shadow-lg text-[9px]">
+            <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-6">
-        <TabsList className="w-full h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm">
-          {PROGRAM_RUBROS.map(rubro => (
-            <TabsTrigger key={rubro} value={rubro} className="flex-1 h-full text-[10px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              {rubro}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="w-full overflow-x-auto pb-1">
+          <TabsList className="min-w-max h-12 bg-white border border-slate-100 p-1 rounded-xl shadow-sm">
+            {PROGRAM_RUBROS.map(rubro => (
+              <TabsTrigger key={rubro} value={rubro} className="h-full px-6 text-[10px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+                {rubro}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {activeTab === 'ATRES' && (
-          <Card className="executive-card p-8 bg-emerald-50/50 border-emerald-100 border-2 overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-10 opacity-5">
+          <Card className="executive-card p-6 lg:p-8 bg-emerald-50/50 border-emerald-100 border-2 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-10 opacity-5 hidden lg:block">
                <Share2 className="h-32 w-32 text-emerald-900" />
             </div>
-            <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-               <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl border-4 border-emerald-200">
-                  <div className="relative h-40 w-40 flex items-center justify-center bg-slate-50 rounded-3xl group cursor-pointer hover:bg-white transition-colors">
-                     <QrCode className="h-28 w-28 text-emerald-800" />
+            <div className="flex flex-col xl:flex-row items-center lg:items-start gap-8 lg:gap-10 relative z-10">
+               <div className="bg-white p-5 rounded-[2.5rem] shadow-2xl border-4 border-emerald-200 shrink-0">
+                  <div className="relative h-32 w-32 lg:h-40 lg:w-40 flex items-center justify-center bg-slate-50 rounded-3xl group cursor-pointer hover:bg-white transition-colors">
+                     <QrCode className="h-24 w-24 lg:h-28 lg:w-28 text-emerald-800" />
                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-sm rounded-3xl">
-                        <Badge className="bg-emerald-600 font-black">Link de Acceso Externo</Badge>
+                        <Badge className="bg-emerald-600 font-black text-[8px]">Link de Acceso Externo</Badge>
                      </div>
                   </div>
-                  <p className="text-[8px] font-black text-center text-emerald-700 uppercase mt-4 tracking-widest">Escanear para Asistencia</p>
+                  <p className="text-[7px] font-black text-center text-emerald-700 uppercase mt-4 tracking-widest">Escanear para Asistencia</p>
                </div>
                
-               <div className="flex-1 space-y-6">
-                  <div className="space-y-1">
-                    <Badge className="bg-emerald-600 text-white font-black uppercase text-[10px] px-4 py-1">Vínculo de Apoyo Externo</Badge>
-                    <h3 className="text-3xl font-black text-emerald-900 uppercase tracking-tighter">Acceso Directo para Docentes</h3>
-                    <p className="text-sm font-semibold text-emerald-700/80 leading-relaxed max-w-2xl">
-                      Comparta este link o código QR con los docentes y coordinadores de los planteles para que puedan interactuar directamente con la Mesa de Ayuda ATRES desde cualquier dispositivo sin necesidad de credenciales administrativas.
+               <div className="flex-1 space-y-5 text-center xl:text-left">
+                  <div className="space-y-2">
+                    <Badge className="bg-emerald-600 text-white font-black uppercase text-[9px] px-3 py-1">Vínculo de Apoyo Externo</Badge>
+                    <h3 className="text-2xl lg:text-3xl font-black text-emerald-900 uppercase tracking-tighter">Acceso Directo para Docentes</h3>
+                    <p className="text-xs lg:text-sm font-semibold text-emerald-700/80 leading-relaxed max-w-3xl">
+                      Comparta este link o código QR con los docentes y coordinadores para que puedan interactuar directamente con la Mesa de Ayuda ATRES desde cualquier dispositivo sin necesidad de credenciales administrativas.
                     </p>
                   </div>
                   
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div className="flex-1 min-w-[300px] h-14 bg-white rounded-2xl border-2 border-emerald-100 flex items-center px-6 gap-4 shadow-inner">
-                       <ExternalLink className="h-5 w-5 text-emerald-600" />
-                       <span className="font-mono text-xs font-bold text-emerald-800 flex-1 truncate">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center w-full">
+                    <div className="flex-1 w-full h-14 bg-white rounded-2xl border-2 border-emerald-100 flex items-center px-4 gap-3 shadow-inner overflow-hidden">
+                       <ExternalLink className="h-4 w-4 text-emerald-600 shrink-0" />
+                       <span className="font-mono text-[9px] lg:text-xs font-bold text-emerald-800 flex-1 truncate">
                          {mounted && `${window.location.origin}/helpdesk`}
                        </span>
-                       <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 gap-2">
-                          <Copy className="h-4 w-4" /> <span className="text-[10px] font-black">COPIAR</span>
+                       <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-8 px-3 rounded-xl text-emerald-600 hover:bg-emerald-50 gap-1 shrink-0">
+                          <Copy className="h-3.5 w-3.5" /> <span className="text-[9px] font-black">COPIAR</span>
                        </Button>
                     </div>
-                    <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-14 px-8 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-[10px] gap-2 shadow-xl shadow-emerald-900/10">
+                    <Button onClick={() => window.open('/helpdesk', '_blank')} className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-[9px] gap-2 shadow-xl shadow-emerald-900/10 shrink-0">
                        PROBAR PORTAL PÚBLICO <ExternalLink className="h-4 w-4" />
                     </Button>
                   </div>
@@ -337,13 +339,13 @@ export default function ProgramsPage() {
         )}
 
         <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-             <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-col md:flex-row items-center gap-4 lg:gap-6">
+             <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
                 <Search className="h-5 w-5 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador:</span>
              </div>
              
-             <div className="relative flex-1 w-full">
+             <div className="relative flex-1 w-full min-w-0">
                 <Input 
                   placeholder="FILTRAR POR CCT O PLANTEL..." 
                   className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
@@ -353,12 +355,12 @@ export default function ProgramsPage() {
                 <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
              </div>
 
-             <div className="flex items-center gap-4 w-full md:w-auto">
+             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
                 <Select value={officeFilter} onValueChange={setOfficeFilter}>
-                  <SelectTrigger className="h-12 w-full md:w-[240px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
+                  <SelectTrigger className="h-12 w-full sm:w-[220px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-primary" />
-                      <SelectValue placeholder="OFICINA DE ATENCIÓN..." />
+                      <SelectValue placeholder="OFICINA..." />
                     </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-200">
@@ -369,8 +371,8 @@ export default function ProgramsPage() {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="h-12 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
-                  <CalendarDays className="h-5 w-5" /> Agenda de Visitas
+                <Button variant="outline" className="h-12 w-full sm:w-auto px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
+                  <CalendarDays className="h-5 w-5" /> Agenda
                 </Button>
              </div>
           </div>
