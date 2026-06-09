@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
@@ -21,13 +21,10 @@ import {
   Pencil, 
   Activity,
   Target,
-  CheckCircle2,
   Plus,
   Search,
   Trash2,
   UserPlus,
-  GraduationCap,
-  Circle,
   FileText,
   ImageIcon,
   Eye,
@@ -36,7 +33,12 @@ import {
   School,
   CalendarDays,
   Building2,
-  Headset
+  Headset,
+  Share2,
+  QrCode,
+  Copy,
+  ExternalLink,
+  Circle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -217,6 +219,12 @@ export default function ProgramsPage() {
     toast({ title: "Registro eliminado" });
   }
 
+  const copyHelpDeskUrl = () => {
+    const url = `${window.location.origin}/helpdesk`
+    navigator.clipboard.writeText(url)
+    toast({ title: "Link copiado", description: "La URL ha sido copiada al portapapeles." })
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'photo') => {
     const files = e.target.files
     if (!files) return
@@ -283,6 +291,50 @@ export default function ProgramsPage() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {activeTab === 'ATRES' && (
+          <Card className="executive-card p-8 bg-emerald-50/50 border-emerald-100 border-2 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-10 opacity-5">
+               <Share2 className="h-32 w-32 text-emerald-900" />
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+               <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl border-4 border-emerald-200">
+                  <div className="relative h-40 w-40 flex items-center justify-center bg-slate-50 rounded-3xl group cursor-pointer hover:bg-white transition-colors">
+                     <QrCode className="h-28 w-28 text-emerald-800" />
+                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/40 backdrop-blur-sm rounded-3xl">
+                        <Badge className="bg-emerald-600 font-black">Link de Acceso Externo</Badge>
+                     </div>
+                  </div>
+                  <p className="text-[8px] font-black text-center text-emerald-700 uppercase mt-4 tracking-widest">Escanear para Asistencia</p>
+               </div>
+               
+               <div className="flex-1 space-y-6">
+                  <div className="space-y-1">
+                    <Badge className="bg-emerald-600 text-white font-black uppercase text-[10px] px-4 py-1">Vínculo de Apoyo Externo</Badge>
+                    <h3 className="text-3xl font-black text-emerald-900 uppercase tracking-tighter">Acceso Directo para Docentes</h3>
+                    <p className="text-sm font-semibold text-emerald-700/80 leading-relaxed max-w-2xl">
+                      Comparta este link o código QR con los docentes y coordinadores de los planteles para que puedan interactuar directamente con la Mesa de Ayuda ATRES desde cualquier dispositivo sin necesidad de credenciales administrativas.
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4 items-center">
+                    <div className="flex-1 min-w-[300px] h-14 bg-white rounded-2xl border-2 border-emerald-100 flex items-center px-6 gap-4 shadow-inner">
+                       <ExternalLink className="h-5 w-5 text-emerald-600" />
+                       <span className="font-mono text-xs font-bold text-emerald-800 flex-1 truncate">
+                         {mounted && `${window.location.origin}/helpdesk`}
+                       </span>
+                       <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 gap-2">
+                          <Copy className="h-4 w-4" /> <span className="text-[10px] font-black">COPIAR</span>
+                       </Button>
+                    </div>
+                    <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-14 px-8 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-[10px] gap-2 shadow-xl shadow-emerald-900/10">
+                       PROBAR PORTAL PÚBLICO <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+               </div>
+            </div>
+          </Card>
+        )}
 
         <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
           <div className="flex flex-col md:flex-row items-center gap-6">
