@@ -15,6 +15,7 @@ import {
 import { 
   LayoutDashboard, 
   LifeBuoy, 
+  Bot,
   GraduationCap, 
   Briefcase, 
   LogOut, 
@@ -129,18 +130,18 @@ export default function DashboardLayout({
            </p>
         </div>
       </Sidebar>
-      <SidebarInset className="bg-transparent">
-        <header className="flex h-16 items-center justify-between border-b border-slate-100 px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-6">
+      <SidebarInset className="bg-transparent overflow-x-hidden">
+        <header className="flex h-16 items-center justify-between border-b border-slate-100 px-4 md:px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+          <div className="flex items-center gap-3 md:gap-6">
             <SidebarTrigger className="lg:hidden text-primary" />
             <div className="flex items-center gap-3">
                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <h1 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema de Gestión Integral COEES</h1>
+               <h1 className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema Integral COEES</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100 shadow-inner group transition-all hover:bg-white">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="hidden sm:flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100 shadow-inner group transition-all hover:bg-white">
               <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shadow-sm">
                 <ShieldCheck className="h-4 w-4" />
               </div>
@@ -155,15 +156,15 @@ export default function DashboardLayout({
             <Button 
               variant="ghost" 
               onClick={handleLogout}
-              className="h-8 px-4 rounded-xl text-rose-600 font-black uppercase text-[8px] tracking-widest hover:bg-rose-50 flex items-center gap-2 transition-all active:scale-95"
+              className="h-8 px-2 md:px-4 rounded-xl text-rose-600 font-black uppercase text-[8px] tracking-widest hover:bg-rose-50 flex items-center gap-2 transition-all active:scale-95"
             >
               <LogOut className="h-3.5 w-3.5" /> 
-              Salir
+              <span className="hidden xs:inline">Salir</span>
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8 max-w-[1800px] mx-auto w-full">
+        <main className="flex-1">
+          <div className="p-4 md:p-8 max-w-full mx-auto w-full">
             {children}
           </div>
         </main>
