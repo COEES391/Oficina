@@ -35,7 +35,6 @@ import {
   Building2,
   Headset,
   Share2,
-  QrCode,
   Copy,
   ExternalLink,
   Circle,
@@ -220,9 +219,11 @@ export default function ProgramsPage() {
     toast({ title: "Registro eliminado" });
   }
 
+  const helpDeskUrl = mounted ? `${window.location.origin}/helpdesk` : '';
+  const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(helpDeskUrl)}`;
+
   const copyHelpDeskUrl = () => {
-    const url = `${window.location.origin}/helpdesk`
-    navigator.clipboard.writeText(url)
+    navigator.clipboard.writeText(helpDeskUrl)
     toast({ title: "Link copiado", description: "La URL ha sido copiada al portapapeles." })
   }
 
@@ -263,14 +264,14 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 max-w-full overflow-hidden">
+    <div className="space-y-3 animate-in fade-in duration-700 max-w-full overflow-hidden">
       {/* Header Institucional - Compacto */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 border-b border-primary/5 pb-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 border-b border-primary/5 pb-2">
+        <div className="space-y-0.5">
+          <h2 className="text-lg font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
           <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm px-2 py-0.5 rounded-full border border-primary/5 shadow-sm inline-flex">
-            <Activity className="h-3 w-3 text-accent" /> 
-            <p className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.15em]">Control de Programas y Auditoría 2026</p>
+            <Activity className="h-2.5 w-2.5 text-accent" /> 
+            <p className="text-[7px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p>
           </div>
         </div>
 
@@ -278,28 +279,28 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (
             <Button 
               onClick={() => setIsHelpDeskOpen(true)} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4 rounded-xl shadow-lg shadow-emerald-600/10 font-black uppercase text-[8px] gap-2 transition-all active:scale-95"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 px-3 rounded-lg shadow-lg shadow-emerald-600/10 font-black uppercase text-[7px] gap-1.5 transition-all active:scale-95"
             >
-              <Headset className="h-3.5 w-3.5" /> Mesa de Ayuda ATRES
+              <Headset className="h-3 w-3" /> Mesa de Ayuda ATRES
             </Button>
           )}
           <Button 
             onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} 
-            className="btn-institutional h-9 px-6 rounded-xl shadow-lg text-[8px] flex items-center justify-center"
+            className="btn-institutional h-8 px-4 rounded-lg shadow-lg text-[7px] flex items-center justify-center"
           >
-            <PlusCircle className="h-3.5 w-3.5 mr-2" /> Nuevo Registro
+            <PlusCircle className="h-3 w-3 mr-1.5" /> Nuevo Registro
           </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-3">
         <div className="w-full overflow-x-auto">
-          <TabsList className="min-w-max h-9 bg-white/50 backdrop-blur-md border border-slate-200 p-0.5 rounded-lg shadow-sm gap-1">
+          <TabsList className="min-w-max h-8 bg-white/50 backdrop-blur-md border border-slate-200 p-0.5 rounded-lg shadow-sm gap-0.5">
             {PROGRAM_RUBROS.map(rubro => (
               <TabsTrigger 
                 key={rubro} 
                 value={rubro} 
-                className="h-full px-4 text-[8px] font-black uppercase rounded-md data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300"
+                className="h-full px-3 text-[7px] font-black uppercase rounded-md data-[state=active]:bg-primary data-[state=active]:text-white transition-all duration-300"
               >
                 {rubro}
               </TabsTrigger>
@@ -308,41 +309,47 @@ export default function ProgramsPage() {
         </div>
 
         {activeTab === 'ATRES' && (
-          <Card className="executive-card p-4 lg:p-5 bg-emerald-50/30 border-emerald-100 border-2 overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-5 hidden lg:block">
-               <Share2 className="h-20 w-20 text-emerald-900" />
+          <Card className="executive-card p-3 lg:p-4 bg-emerald-50/30 border-emerald-100 border-2 overflow-hidden relative max-w-full">
+            <div className="absolute top-0 right-0 p-3 opacity-5 hidden lg:block">
+               <Share2 className="h-16 w-16 text-emerald-900" />
             </div>
-            <div className="flex flex-col lg:flex-row items-center gap-6 relative z-10">
-               <div className="bg-white p-3 rounded-2xl shadow-lg border border-emerald-100 shrink-0 transform transition-transform hover:scale-105 duration-500">
-                  <div className="relative h-20 w-20 flex items-center justify-center bg-slate-50 rounded-xl group cursor-pointer hover:bg-white transition-colors">
-                     <QrCode className="h-14 w-14 text-emerald-800" />
-                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/60 backdrop-blur-sm rounded-xl">
-                        <Badge className="bg-emerald-600 font-black text-[7px] py-0.5 px-2">Vínculo</Badge>
+            <div className="flex flex-col lg:flex-row items-center gap-4 relative z-10">
+               <div className="bg-white p-2 rounded-xl shadow-lg border border-emerald-100 shrink-0 transform transition-transform hover:scale-105 duration-500">
+                  <div className="relative h-16 w-16 flex items-center justify-center bg-slate-50 rounded-lg group cursor-pointer hover:bg-white transition-colors">
+                     {helpDeskUrl ? (
+                       <div className="relative h-12 w-12">
+                         <Image src={qrCodeApiUrl} alt="Acceso Docentes QR" fill className="object-contain" />
+                       </div>
+                     ) : (
+                       <Circle className="h-8 w-8 text-slate-200 animate-pulse" />
+                     )}
+                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/60 backdrop-blur-sm rounded-lg">
+                        <Badge className="bg-emerald-600 font-black text-[6px] py-0 px-1.5">Escanea</Badge>
                      </div>
                   </div>
                </div>
                
-               <div className="flex-1 space-y-3 text-center lg:text-left min-w-0">
-                  <div className="space-y-1">
-                    <Badge className="bg-emerald-600 text-white font-black uppercase text-[7px] px-2 py-0.5 rounded-full">Vínculo de Apoyo Externo</Badge>
-                    <h3 className="text-lg lg:text-xl font-black text-emerald-900 uppercase tracking-tighter leading-none">Acceso Directo para Docentes</h3>
-                    <p className="text-[10px] font-semibold text-emerald-700/80 leading-tight max-w-xl">
+               <div className="flex-1 space-y-2 text-center lg:text-left min-w-0">
+                  <div className="space-y-0.5">
+                    <Badge className="bg-emerald-600 text-white font-black uppercase text-[6px] px-1.5 py-0 rounded-full">Vinculación Institucional</Badge>
+                    <h3 className="text-sm lg:text-base font-black text-emerald-900 uppercase tracking-tighter leading-none">Acceso Directo para Docentes</h3>
+                    <p className="text-[8px] font-semibold text-emerald-700/80 leading-tight max-w-xl">
                       Comparta este link o código QR para soporte técnico remoto inmediato.
                     </p>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
-                    <div className="flex-1 w-full max-w-md h-9 bg-white rounded-lg border border-emerald-100 flex items-center px-3 gap-2 shadow-inner overflow-hidden">
-                       <ExternalLink className="h-3 w-3 text-emerald-600 shrink-0" />
-                       <span className="font-mono text-[9px] font-bold text-emerald-800 flex-1 truncate select-all">
-                         {mounted && `${window.location.origin}/helpdesk`}
+                  <div className="flex flex-col sm:flex-row gap-2 items-center w-full max-w-3xl">
+                    <div className="flex-1 w-full h-8 bg-white rounded-lg border border-emerald-100 flex items-center px-3 gap-2 shadow-inner overflow-hidden">
+                       <ExternalLink className="h-2.5 w-2.5 text-emerald-600 shrink-0" />
+                       <span className="font-mono text-[7px] font-bold text-emerald-800 flex-1 truncate select-all">
+                         {helpDeskUrl}
                        </span>
-                       <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-7 px-2 rounded-md text-emerald-600 hover:bg-emerald-50 gap-1 shrink-0 border border-emerald-50">
-                          <Copy className="h-3 w-3" /> <span className="text-[7px] font-black">COPIAR</span>
+                       <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-6 px-2 rounded-md text-emerald-600 hover:bg-emerald-50 gap-1 shrink-0 border border-emerald-50">
+                          <Copy className="h-2.5 w-2.5" /> <span className="text-[6px] font-black">COPIAR</span>
                        </Button>
                     </div>
-                    <Button onClick={() => window.open('/helpdesk', '_blank')} className="w-full sm:w-auto h-9 px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-[8px] gap-2 shadow-md transition-all active:scale-95 shrink-0">
-                       PORTAL PÚBLICO <ExternalLink className="h-3 w-3" />
+                    <Button onClick={() => window.open('/helpdesk', '_blank')} className="w-full sm:w-auto h-8 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-[7px] gap-1.5 shadow-md transition-all active:scale-95 shrink-0">
+                       PORTAL PÚBLICO <ExternalLink className="h-2.5 w-2.5" />
                     </Button>
                   </div>
                </div>
@@ -351,150 +358,150 @@ export default function ProgramsPage() {
         )}
 
         {/* Barra Operativa de Filtros - Compacta */}
-        <Card className="executive-card p-3 lg:p-4 bg-white/80 border-none shadow-xl border-t-4 border-t-primary">
-          <div className="flex flex-col xl:flex-row items-center gap-3 lg:gap-4">
-             <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 border-b xl:border-b-0 xl:border-r border-slate-100 pb-2 xl:pb-0 xl:pr-4">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                  <Search className="h-3.5 w-3.5" />
+        <Card className="executive-card p-2 lg:p-3 bg-white/80 border-none shadow-xl border-t-4 border-t-primary max-w-full overflow-hidden">
+          <div className="flex flex-col xl:flex-row items-center gap-2 lg:gap-3">
+             <div className="flex items-center gap-1.5 w-full xl:w-auto shrink-0 border-b xl:border-b-0 xl:border-r border-slate-100 pb-1.5 xl:pb-0 xl:pr-3">
+                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                  <Search className="h-3 w-3" />
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">Buscador:</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.1em] text-slate-500">Buscador:</span>
              </div>
              
              <div className="relative flex-1 w-full min-w-0">
                 <Input 
                   placeholder="CCT O NOMBRE DEL PLANTEL..." 
-                  className="h-9 rounded-lg bg-slate-50 border-primary/5 pl-10 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
+                  className="h-8 rounded-lg bg-slate-50 border-primary/5 pl-8 text-[8px] font-bold uppercase shadow-inner focus:bg-white transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-300" />
+                <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-slate-300" />
              </div>
 
              <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto shrink-0">
                 <Select value={officeFilter} onValueChange={setOfficeFilter}>
-                  <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-lg border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-3.5 w-3.5 text-primary opacity-60" />
+                  <SelectTrigger className="h-8 w-full sm:w-[150px] rounded-lg border-primary/5 bg-white text-[8px] font-black uppercase shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="h-3 w-3 text-primary opacity-60" />
                       <SelectValue placeholder="OFICINA..." />
                     </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-lg border-slate-200">
-                    <SelectItem value="all" className="text-[9px] font-black uppercase">Todas las Oficinas</SelectItem>
+                    <SelectItem value="all" className="text-[8px] font-black uppercase">Todas las Oficinas</SelectItem>
                     {REGIONAL_OFFICES.map(off => (
-                      <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}</SelectItem>
+                      <SelectItem key={off} value={off} className="text-[8px] font-black uppercase">{off.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="h-9 w-full sm:w-auto px-4 border-primary/10 text-primary font-black uppercase text-[8px] gap-2 rounded-lg hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
-                  <CalendarDays className="h-3.5 w-3.5" /> Agenda
+                <Button variant="outline" className="h-8 w-full sm:w-auto px-3 border-primary/10 text-primary font-black uppercase text-[7px] gap-1.5 rounded-lg hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
+                  <CalendarDays className="h-3 w-3" /> Agenda
                 </Button>
              </div>
           </div>
         </Card>
 
-        <TabsContent value={activeTab} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 outline-none">
-          <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
+        <TabsContent value={activeTab} className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500 outline-none max-w-full overflow-hidden">
+          <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white max-w-full">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50/80 backdrop-blur-sm border-b">
-                   <TableRow className="h-10">
-                      <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-primary/60">#</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest">
+                   <TableRow className="h-9">
+                      <TableHead className="w-8 text-[8px] font-black uppercase text-center pl-3 text-primary/60">#</TableHead>
+                      <TableHead className="text-[8px] font-black uppercase text-primary tracking-widest">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
+                      <TableHead className="text-[8px] font-black uppercase text-primary tracking-widest">
                         {activeTab === 'Geoposición' ? 'Longitud' : 'Plantel'}
                       </TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest">
+                      <TableHead className="text-[8px] font-black uppercase text-primary tracking-widest">
                         {activeTab === 'Geoposición' ? 'Latitud' : 
                          activeTab === 'ATRES' ? 'Incidencia' : 
                          'Estatus'}
                       </TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-center text-primary tracking-widest">
+                      <TableHead className="text-[8px] font-black uppercase text-center text-primary tracking-widest">
                         {activeTab === 'Geoposición' ? 'Estado' : 
                          activeTab === 'Biblioteca Digital' ? 'Equipos' : 
                          activeTab === 'ATRES' ? 'Estatus' : 
-                         'Email Institucional'}
+                         'Email'}
                       </TableHead>
                       {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
-                        <TableHead className="text-[9px] font-black uppercase text-center text-primary tracking-widest">Personal</TableHead>
+                        <TableHead className="text-[8px] font-black uppercase text-center text-primary tracking-widest">Personal</TableHead>
                       )}
                       {activeTab === 'ATRES' && (
-                        <TableHead className="text-[9px] font-black uppercase text-center text-primary tracking-widest">Evidencias</TableHead>
+                        <TableHead className="text-[8px] font-black uppercase text-center text-primary tracking-widest">Docs</TableHead>
                       )}
-                      <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-primary/60">Acciones</TableHead>
+                      <TableHead className="text-right text-[8px] font-black uppercase pr-4 text-primary/60">Acción</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
-                    <TableRow key={rec.id} className="hover:bg-primary/[0.01] transition-all duration-300 group border-b border-slate-50 last:border-0 h-12">
-                      <TableCell className="text-center font-black text-[9px] text-muted-foreground/60 pl-4">{idx + 1}.</TableCell>
-                      <TableCell className="font-black text-[10px] text-primary">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
+                    <TableRow key={rec.id} className="hover:bg-primary/[0.01] transition-all duration-300 group border-b border-slate-50 last:border-0 h-10">
+                      <TableCell className="text-center font-black text-[8px] text-muted-foreground/60 pl-3">{idx + 1}.</TableCell>
+                      <TableCell className="font-black text-[9px] text-primary">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
                       <TableCell className="py-1">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-slate-800 uppercase leading-tight truncate max-w-[160px]">
+                          <span className="text-[9px] font-bold text-slate-800 uppercase leading-tight truncate max-w-[120px]">
                             {activeTab === 'Geoposición' ? rec.longitud : rec.schoolName}
                           </span>
                           {activeTab !== 'Geoposición' && (
-                            <span className="text-[7px] font-black text-muted-foreground uppercase tracking-wider opacity-60">
+                            <span className="text-[6px] font-black text-muted-foreground uppercase tracking-wider opacity-60 truncate max-w-[120px]">
                               {rec.municipio}
                             </span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {activeTab === 'Geoposición' ? <span className="text-[9px] font-mono font-black text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">{rec.latitud}</span> : 
-                         activeTab === 'ATRES' ? <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/10 bg-primary/5 text-primary py-0 px-2 rounded-full">{rec.tipoIncidencia || 'mantenimiento'}</Badge> :
-                         <Badge variant="outline" className={cn("text-[7px] font-black uppercase py-0 px-2 rounded-full", rec.status === 'activo' || rec.status === 'pendiente' ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>
+                        {activeTab === 'Geoposición' ? <span className="text-[8px] font-mono font-black text-slate-600 bg-slate-100 px-1 py-0.5 rounded">{rec.latitud}</span> : 
+                         activeTab === 'ATRES' ? <Badge variant="outline" className="text-[6px] font-black uppercase border-primary/10 bg-primary/5 text-primary py-0 px-1.5 rounded-full">{rec.tipoIncidencia || 'mantenimiento'}</Badge> :
+                         <Badge variant="outline" className={cn("text-[6px] font-black uppercase py-0 px-1.5 rounded-full", rec.status === 'activo' || rec.status === 'pendiente' ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>
                            {rec.status?.toUpperCase() || 'ACTIVO'}
                          </Badge>}
                       </TableCell>
                       <TableCell className="text-center">
                         {activeTab === 'Geoposición' ? (
-                          <div className={cn("h-6 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-[8px] font-black uppercase border", rec.status === 'activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100')}>
+                          <div className={cn("h-5 inline-flex items-center justify-center gap-1 px-2 rounded-md text-[7px] font-black uppercase border", rec.status === 'activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100')}>
                             <Circle className={cn("h-1 w-1 fill-current", rec.status === 'activo' ? 'text-emerald-500' : 'text-rose-500')} />
                             {rec.status?.toUpperCase() || 'ACTIVO'}
                           </div>
                         ) : activeTab === 'Biblioteca Digital' ? (
-                          <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full">{rec.numeroEquipos || 0} EQ.</span>
+                          <span className="text-[8px] font-black text-primary bg-primary/5 px-1.5 py-0 rounded-full">{rec.numeroEquipos || 0} EQ.</span>
                         ) : activeTab === 'ATRES' ? (
-                          <div className={cn("h-6 inline-flex items-center justify-center gap-1.5 px-3 rounded-lg text-[8px] font-black uppercase border", rec.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : (rec.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-rose-50 text-rose-700 border-rose-100'))}>
+                          <div className={cn("h-5 inline-flex items-center justify-center gap-1 px-2 rounded-md text-[7px] font-black uppercase border", rec.status === 'atendido' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : (rec.status === 'en proceso' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-rose-50 text-rose-700 border-rose-100'))}>
                             <Circle className={cn("h-1 w-1 fill-current", rec.status === 'atendido' ? 'text-emerald-500' : (rec.status === 'en proceso' ? 'text-amber-500' : 'text-rose-500'))} />
                             {rec.status?.replace('activo', 'atendido') || 'PENDIENTE'}
                           </div>
                         ) : (
-                          <span className="text-[8px] font-mono lowercase bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate block max-w-[120px] mx-auto">{rec.email || 'S/D'}</span>
+                          <span className="text-[7px] font-mono lowercase bg-slate-50 px-1 py-0 rounded border border-slate-100 truncate block max-w-[100px] mx-auto">{rec.email || 'S/D'}</span>
                         )}
                       </TableCell>
                       {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales' || activeTab === 'Conoce mi Escuela') && (
                         <TableCell className="text-center">
-                          <Badge variant="outline" className="text-[8px] font-black bg-accent/5 border-accent/20 text-accent py-0 px-2 rounded-lg">
+                          <Badge variant="outline" className="text-[7px] font-black bg-accent/5 border-accent/20 text-accent py-0 px-1.5 rounded-lg">
                             {rec.asistentes?.length || 0} PERS.
                           </Badge>
                         </TableCell>
                       )}
                       {activeTab === 'ATRES' && (
                         <TableCell className="text-center">
-                          <div className="flex justify-center gap-1.5">
-                             {rec.reportPdf && <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 bg-blue-50/50 hover:bg-blue-100 rounded-md" onClick={() => setEvidenceToView({ type: 'pdf', data: rec.reportPdf!, title: `Doc ${rec.id}` })}><FileText className="h-3.5 w-3.5" /></Button>}
-                             {rec.evidencePhotos && rec.evidencePhotos.length > 0 && <Button variant="ghost" size="icon" className="h-7 w-7 text-pink-600 bg-pink-50/50 hover:bg-pink-100 rounded-md" onClick={() => setEvidenceToView({ type: 'gallery', data: rec.evidencePhotos!, title: `Fotos ${rec.id}` })}><ImageIcon className="h-3.5 w-3.5" /></Button>}
+                          <div className="flex justify-center gap-1">
+                             {rec.reportPdf && <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-600 bg-blue-50/50 hover:bg-blue-100 rounded-md" onClick={() => setEvidenceToView({ type: 'pdf', data: rec.reportPdf!, title: `Doc ${rec.id}` })}><FileText className="h-3 w-3" /></Button>}
+                             {rec.evidencePhotos && rec.evidencePhotos.length > 0 && <Button variant="ghost" size="icon" className="h-6 w-6 text-pink-600 bg-pink-50/50 hover:bg-pink-100 rounded-md" onClick={() => setEvidenceToView({ type: 'gallery', data: rec.evidencePhotos!, title: `Fotos ${rec.id}` })}><ImageIcon className="h-3 w-3" /></Button>}
                           </div>
                         </TableCell>
                       )}
-                      <TableCell className="text-right pr-6">
-                         <div className="flex justify-end gap-1.5">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-7 w-7 text-slate-400 hover:text-primary bg-slate-50/50 hover:bg-primary/5 rounded-md transition-all"><Pencil className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-7 w-7 text-rose-300 hover:text-rose-600 bg-slate-50/50 hover:bg-rose-50 rounded-md transition-all"><Trash2 className="h-3 w-3" /></Button>
+                      <TableCell className="text-right pr-4">
+                         <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-6 w-6 text-slate-400 hover:text-primary bg-slate-50/50 hover:bg-primary/5 rounded-md transition-all"><Pencil className="h-2.5 w-2.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-6 w-6 text-rose-300 hover:text-rose-600 bg-slate-50/50 hover:bg-rose-50 rounded-md transition-all"><Trash2 className="h-2.5 w-2.5" /></Button>
                          </div>
                       </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-16 bg-slate-50/20">
-                        <div className="flex flex-col items-center gap-2 opacity-40">
-                           <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
-                              <Search className="h-6 w-6 text-slate-400" />
+                      <TableCell colSpan={8} className="text-center py-12 bg-slate-50/20">
+                        <div className="flex flex-col items-center gap-1.5 opacity-40">
+                           <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                              <Search className="h-5 w-5 text-slate-400" />
                            </div>
-                           <p className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">Sin registros.</p>
+                           <p className="text-[8px] font-black uppercase tracking-[0.1em] text-slate-500">Sin registros.</p>
                         </div>
                       </TableCell>
                     </TableRow>
