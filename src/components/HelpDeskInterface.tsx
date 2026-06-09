@@ -83,6 +83,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleRequestRemote = () => {
     if (!remoteId) return
     setIsRemoteRequested(true)
+    
+    // Notificar al Dashboard vía localStorage
+    localStorage.setItem('atres_support_request', Date.now().toString())
+    
     setTimeout(() => {
       const botMsg: Message = { 
         role: 'bot', 
