@@ -247,8 +247,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             {[
               "Descargue AnyDesk en su equipo.",
               "Copie su ID personal de 9 dígitos.",
-              "Péguelo arriba y haga clic en enviar.",
-              "Acepte la conexión al solicitarse."
+              "Péguelo arriba y haga clic en Solicitar Soporte.",
+              "Esperar unos minutos a que un técnico le atienda"
             ].map((step, i) => (
               <li key={i} className="flex gap-2.5 text-[10px] font-bold text-slate-600 items-start">
                 <span className="h-5 w-5 rounded-full bg-white border border-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[9px] shadow-sm">{i+1}</span>
