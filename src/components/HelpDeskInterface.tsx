@@ -32,8 +32,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [isTyping, setIsTyping] = useState(false)
   const [remoteId, setRemoteId] = useState('')
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
+  const [mounted, setMounted] = useState(false)
   
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -178,7 +183,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       "text-[9px] mt-3 font-black uppercase tracking-widest",
                       msg.role === 'user' ? "text-white/60" : "text-slate-400"
                     )}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {mounted ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </p>
                   </div>
                 </div>
