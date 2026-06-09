@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -13,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
@@ -28,24 +26,21 @@ import {
   Search,
   Trash2,
   UserPlus,
-  UserCog,
   GraduationCap,
   Circle,
   FileText,
   ImageIcon,
   Eye,
-  Tv,
-  Radio,
-  Network,
   Monitor,
   X,
   School,
   CalendarDays,
-  Filter,
-  Building2
+  Building2,
+  Headset
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
+import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -70,6 +65,7 @@ export default function ProgramsPage() {
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
+  const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOfficeFilter] = useState('all')
@@ -267,9 +263,16 @@ export default function ProgramsPage() {
           </p>
         </div>
 
-        <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional h-12 px-10 rounded-xl shadow-lg">
-          <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
-        </Button>
+        <div className="flex gap-4">
+          {activeTab === 'ATRES' && (
+            <Button onClick={() => setIsHelpDeskOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 px-8 rounded-xl shadow-lg font-black uppercase text-[10px] gap-2">
+              <Headset className="h-5 w-5" /> Mesa de Ayuda ATRES
+            </Button>
+          )}
+          <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} className="btn-institutional h-12 px-10 rounded-xl shadow-lg">
+            <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-6">
@@ -330,7 +333,7 @@ export default function ProgramsPage() {
                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
-                        {activeTab === 'Geoposición' ? 'Longitud' : (activeTab === 'ATRES' ? 'Plantel' : 'Plantel')}
+                        {activeTab === 'Geoposición' ? 'Longitud' : 'Plantel'}
                       </TableHead>
                       <TableHead className="text-[10px] font-black uppercase">
                         {activeTab === 'Geoposición' ? 'Latitud' : 
@@ -422,6 +425,9 @@ export default function ProgramsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Mesa de Ayuda Dialog */}
+      <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[1400px] rounded-[2rem] h-[95vh] flex flex-col p-0 overflow-hidden">
@@ -708,7 +714,7 @@ export default function ProgramsPage() {
           <DialogHeader><DialogTitle className="uppercase font-black">Registro de Personal</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
             <Input placeholder="Nombres" value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} />
-            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} />
+            <Input placeholder="Ap. Paterno" value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, pathero: e.target.value.toUpperCase()})} />
             <Input placeholder="RFC" value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} maxLength={13} />
           </div>
           <DialogFooter><Button onClick={handleSaveAssistant} className="btn-institutional w-full">Actualizar Lista</Button></DialogFooter>
