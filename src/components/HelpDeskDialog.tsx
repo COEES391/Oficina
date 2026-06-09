@@ -1,8 +1,15 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow'
@@ -14,9 +21,7 @@ import {
   MonitorDot, 
   Headset, 
   Loader2, 
-  Wifi,
-  ExternalLink,
-  MessageSquare
+  Wifi
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -79,6 +84,11 @@ export function HelpDeskDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Mesa de Ayuda ATRES</DialogTitle>
+          <DialogDescription>Asistente virtual y soporte remoto para usuarios de ATRES.</DialogDescription>
+        </DialogHeader>
+
         <div className="flex h-full flex-col md:flex-row">
           {/* Sidebar de Soporte Remoto */}
           <div className="w-full md:w-[300px] bg-slate-50 border-r p-8 space-y-8 shrink-0">
@@ -229,5 +239,3 @@ export function HelpDeskDialog({ open, onOpenChange }: { open: boolean, onOpenCh
     </Dialog>
   )
 }
-
-import { Label } from './ui/label';
