@@ -150,10 +150,25 @@ export default function ProgramsPage() {
       setPublicBaseUrl(storedUrl || window.location.origin)
       
       checkSupportRequests()
-      window.addEventListener('storage', checkSupportRequests)
-      return () => window.removeEventListener('storage', checkSupportRequests)
+
+      // Escuchar cambios en otras pestañas (como cuando un docente envía la solicitud)
+      const handleStorageEvent = (e: StorageEvent) => {
+        if (e.key === 'atres_support_request' && e.newValue) {
+          setHasPendingRequest(true)
+          toast({
+            title: "SOLICITUD TÉCNICA RECIBIDA",
+            description: "Un docente requiere apoyo remoto inmediato vía AnyDesk.",
+            variant: "destructive",
+          })
+        } else if (e.key === 'atres_support_request' && !e.newValue) {
+          setHasPendingRequest(false)
+        }
+      }
+
+      window.addEventListener('storage', handleStorageEvent)
+      return () => window.removeEventListener('storage', handleStorageEvent)
     }
-  }, [checkSupportRequests])
+  }, [checkSupportRequests, toast])
 
   const helpDeskUrl = `${publicBaseUrl}/helpdesk`
   const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(helpDeskUrl)}`
@@ -276,8 +291,10 @@ export default function ProgramsPage() {
               <Button 
                 onClick={handleOpenHelpDesk} 
                 className={cn(
-                  "h-11 px-6 rounded-xl shadow-md font-black uppercase text-[10px] gap-2 w-full transition-all duration-500",
-                  hasPendingRequest ? "bg-rose-600 hover:bg-rose-700 ring-4 ring-rose-100 scale-105" : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  "h-11 px-6 rounded-xl shadow-md font-black uppercase text-[10px] gap-2 w-full transition-all duration-300",
+                  hasPendingRequest 
+                    ? "bg-rose-600 hover:bg-rose-700 ring-4 ring-rose-200 animate-pulse scale-105" 
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
                 )}
               >
                 <Headset className={cn("h-4 w-4", hasPendingRequest && "animate-bounce")} /> 
