@@ -1,11 +1,10 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow'
 import { 
   Send, 
   Bot, 
@@ -40,8 +39,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Sincronización de Mensajes vía LocalStorage
-  const syncChat = () => {
+  const syncChat = useCallback(() => {
     const history = localStorage.getItem('atres_chat_history')
     if (history) {
       setMessages(JSON.parse(history))
@@ -56,13 +54,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(initial)
       localStorage.setItem('atres_chat_history', JSON.stringify(initial))
     }
-  }
+  }, [])
 
   useEffect(() => {
     setMounted(true)
     syncChat()
 
-    // Buscar solicitudes si es analista
     if (!isPublic) {
       const pending = localStorage.getItem('atres_support_request_details')
       if (pending) {
@@ -70,14 +67,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         setPendingRemoteId(data.remoteId)
       }
     } else {
-      // Si es publico, ver si ya solicitó soporte anteriormente en esta sesion
       const isRequested = localStorage.getItem('atres_support_request')
       if (isRequested) setIsRemoteRequested(true)
     }
 
-    // Listener para cambios en tiempo real desde otras pestañas
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'atres_chat_history') {
+      if (e.key === 'atres_chat_history' || !e.key) {
         syncChat()
       }
       if (e.key === 'atres_support_request_details') {
@@ -93,13 +88,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [isPublic])
+  }, [isPublic, syncChat])
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages])
+
+  const saveAndSync = (newMessages: Message[]) => {
+    setMessages(newMessages)
+    localStorage.setItem('atres_chat_history', JSON.stringify(newMessages))
+    // Notificar a otras ventanas/tabs
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'atres_chat_history',
+      newValue: JSON.stringify(newMessages)
+    }))
+  }
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
@@ -111,36 +116,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       timestamp: Date.now() 
     }
 
-    // Actualizar local y compartido
     const updatedMessages = [...messages, newMessage]
-    setMessages(updatedMessages)
-    localStorage.setItem('atres_chat_history', JSON.stringify(updatedMessages))
-    
-    // Disparar evento para la misma pestaña (NextJS no lo hace por defecto para localStorage)
-    window.dispatchEvent(new Event('storage'))
-
+    saveAndSync(updatedMessages)
     setInput('')
 
-    // Si es el usuario y no hay técnico, responder con bot automático (GenAI)
-    if (isPublic && !messages.some(m => m.role === 'tech')) {
+    // Respuesta del BOT automática solo si es el usuario público
+    // Y solo si es la primera vez que escribe o no hay técnico aún
+    if (isPublic && !messages.some(m => m.role === 'tech') && !messages.some(m => m.content.includes('Instrucciones:'))) {
       setIsTyping(true)
-      try {
-        // Simulamos la instrucción solicitada
-        setTimeout(() => {
-          const botMsg: Message = { 
-            role: 'bot', 
-            content: 'Instrucciones: Por favor, sigue los pasos de la columna de Apoyo Remoto a mi izquierda para que un analista te asista.', 
-            timestamp: Date.now() 
-          }
-          const finalMessages = [...updatedMessages, botMsg]
-          setMessages(finalMessages)
-          localStorage.setItem('atres_chat_history', JSON.stringify(finalMessages))
-          window.dispatchEvent(new Event('storage'))
-          setIsTyping(false)
-        }, 1000)
-      } catch (error) {
+      setTimeout(() => {
+        const botMsg: Message = { 
+          role: 'bot', 
+          content: 'Instrucciones: Por favor, sigue los pasos de la columna de Apoyo Remoto a mi izquierda para que un analista te asista.', 
+          timestamp: Date.now() 
+        }
+        const withBot = [...updatedMessages, botMsg]
+        saveAndSync(withBot)
         setIsTyping(false)
-      }
+      }, 1000)
     }
   }
 
@@ -161,9 +154,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     
     const updated = [...messages, botMsg]
-    setMessages(updated)
-    localStorage.setItem('atres_chat_history', JSON.stringify(updated))
-    window.dispatchEvent(new Event('storage'))
+    saveAndSync(updated)
   }
 
   const copyPendingId = () => {
@@ -171,18 +162,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     navigator.clipboard.writeText(pendingRemoteId)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-    toast({ title: "ID Copiado", description: "El ID de soporte ha sido copiado al portapapeles." })
+    toast({ title: "ID Copiado" })
   }
 
   const clearPendingRequest = () => {
     localStorage.removeItem('atres_support_request')
     localStorage.removeItem('atres_support_request_details')
-    localStorage.removeItem('atres_chat_history') // Limpiar chat al finalizar
+    localStorage.removeItem('atres_chat_history')
     setPendingRemoteId(null)
     setMessages([])
+    
+    // Limpiar para todos
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_chat_history', newValue: null }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_request', newValue: null }))
+    
     syncChat()
-    window.dispatchEvent(new Event('storage'))
-    toast({ title: "Atención Finalizada", description: "El chat y la solicitud han sido cerrados." })
+    toast({ title: "Atención Finalizada" })
   }
 
   return (
@@ -262,13 +257,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             ))}
           </ul>
         </div>
-        
-        <div className="mt-auto pt-4 opacity-30">
-           <div className="flex items-center gap-2 text-primary">
-              <Wifi className="h-3 w-3" />
-              <span className="text-[6px] font-black uppercase tracking-[0.2em]">SERVIDOR CENTRAL COEES</span>
-           </div>
-        </div>
       </div>
 
       {/* Área de Chatbot */}
@@ -291,7 +279,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <ScrollArea className="flex-1 bg-slate-50/30">
           <div className="p-6 space-y-6 max-w-3xl mx-auto">
             {messages.map((msg, i) => {
-              // Lógica de alineación: Yo a la derecha, el otro a la izquierda
+              // Si soy público (user), mi rol es 'user'. Si soy admin (tech), mi rol es 'tech'.
               const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech')
               
               return (
@@ -305,14 +293,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   )}>
                     <div className={cn(
                       "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-md",
-                      msg.role === 'user' ? "bg-accent text-white" : "bg-primary text-white"
+                      msg.role === 'user' ? "bg-accent text-white" : msg.role === 'tech' ? "bg-primary text-white" : "bg-slate-500 text-white"
                     )}>
-                      {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                      {msg.role === 'user' ? <User className="h-4 w-4" /> : msg.role === 'tech' ? <Headset className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                     </div>
                     <div className={cn(
                       "p-4 rounded-[1.5rem] text-[12px] font-semibold shadow-sm border leading-relaxed",
                       isMe 
-                        ? "bg-accent text-white rounded-tr-none border-accent/20" 
+                        ? "bg-[#B38E5D] text-white rounded-tr-none border-[#B38E5D]/20" 
                         : "bg-white text-slate-700 rounded-tl-none border-slate-100"
                     )}>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
