@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -59,6 +60,14 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
+const WAREHOUSE_LOCATIONS = [
+  "TOLUCA",
+  "ECATEPEC",
+  "NEZAHUALCÓYOTL",
+  "TULTITLAN",
+  "NAUCALPAN"
+];
+
 const MAINTENANCE_CHECKLIST = [
   "SUSTITUCIÓN DE CONECTORES",
   "SUSTITUCIÓN DE CORDONES DE PARCHEO",
@@ -81,6 +90,7 @@ type InventoryItem = {
   unit: string;
   minStock: number;
   category: string;
+  location: string;
 };
 
 type WarehouseMovement = {
@@ -96,16 +106,16 @@ type WarehouseMovement = {
 };
 
 const INITIAL_INVENTORY: InventoryItem[] = [
-  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES' },
-  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES' },
-  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO' },
-  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO' },
-  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO' },
-  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES' },
-  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES' },
-  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES' },
-  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS' },
-  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA' },
+  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES', location: 'TOLUCA' },
+  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES', location: 'ECATEPEC' },
+  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO', location: 'TOLUCA' },
+  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO', location: 'NEZAHUALCÓYOTL' },
+  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO', location: 'NAUCALPAN' },
+  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES', location: 'TULTITLAN' },
+  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES', location: 'TOLUCA' },
+  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES', location: 'ECATEPEC' },
+  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS', location: 'TULTITLAN' },
+  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA', location: 'NAUCALPAN' },
 ];
 
 export default function SupportPage() {
@@ -120,6 +130,8 @@ export default function SupportPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
   const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen')
+  const [isEditItemOpen, setIsEditItemOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
   const [movementForm, setMovementForm] = useState({
     type: 'salida' as 'entrada' | 'salida',
     itemId: '',
@@ -222,7 +234,13 @@ export default function SupportPage() {
       setInventory(INITIAL_INVENTORY)
       localStorage.setItem('coees_inventory_v1', JSON.stringify(INITIAL_INVENTORY))
     } else {
-      setInventory(storedInv)
+      // Migrate if location is missing
+      const migrated = storedInv.map((item: any) => ({
+        ...item,
+        location: item.location || 'TOLUCA'
+      }));
+      setInventory(migrated)
+      localStorage.setItem('coees_inventory_v1', JSON.stringify(migrated))
     }
 
     const storedMovs = JSON.parse(localStorage.getItem('coees_movements_v1') || '[]')
@@ -455,6 +473,21 @@ export default function SupportPage() {
     toast({ title: "Movimiento registrado", description: `Se ha actualizado el stock de ${item.name}.` });
   }
 
+  const handleEditInventoryItem = (item: InventoryItem) => {
+    setEditingItem(item);
+    setIsEditItemOpen(true);
+  }
+
+  const handleSaveEditedItem = () => {
+    if (!editingItem) return;
+    const updatedInventory = inventory.map(i => i.id === editingItem.id ? editingItem : i);
+    setInventory(updatedInventory);
+    localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
+    setIsEditItemOpen(false);
+    setEditingItem(null);
+    toast({ title: "Insumo actualizado", description: `Se guardaron los cambios para ${editingItem.name}.` });
+  }
+
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
 
   if (!mounted) return null
@@ -498,7 +531,7 @@ export default function SupportPage() {
 
         {/* Modal de Almacén Integral */}
         <Dialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen}>
-          <DialogContent className="sm:max-w-[1100px] rounded-[2.5rem] h-[92vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          <DialogContent className="sm:max-w-[1200px] rounded-[2.5rem] h-[92vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
             <DialogHeader className="p-6 bg-primary text-white shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Archive className="h-40 w-40" />
@@ -587,13 +620,15 @@ export default function SupportPage() {
                             <TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Stock Actual</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Lugar</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Min. Sugerido</TableHead>
-                            <TableHead className="font-black uppercase text-[10px] text-right pr-6">Estado</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Estado</TableHead>
+                            <TableHead className="text-right pr-6"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {inventory.map(item => (
-                            <TableRow key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16">
+                            <TableRow key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
                               <TableCell className="font-black text-slate-700 text-xs uppercase pl-6 py-4">{item.name}</TableCell>
                               <TableCell className="text-center">
                                 <span className={cn(
@@ -604,14 +639,29 @@ export default function SupportPage() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200">
+                                   <MapPin className="h-2 w-2 mr-1 text-primary" /> {item.location}
+                                </Badge>
+                              </TableCell>
                               <TableCell className="text-center text-[10px] font-mono font-black text-slate-400">{item.minStock}</TableCell>
-                              <TableCell className="text-right pr-6">
+                              <TableCell className="text-center">
                                 <Badge className={cn(
                                   "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
                                   item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white'
                                 )}>
                                   {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-right pr-6">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                  onClick={() => handleEditInventoryItem(item)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -746,6 +796,60 @@ export default function SupportPage() {
                 Cerrar Panel Operativo
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Edición de Insumo */}
+        <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
+          <DialogContent className="sm:max-w-[500px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
+             <DialogHeader className="p-8 bg-slate-50 border-b">
+                <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
+                  <Pencil className="h-6 w-6 text-accent" /> Editar Insumo Técnico
+                </DialogTitle>
+             </DialogHeader>
+             <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Material</Label>
+                   <Input 
+                      className="h-12 bg-slate-50 font-bold uppercase" 
+                      value={editingItem?.name || ''} 
+                      onChange={e => setEditingItem(prev => prev ? {...prev, name: e.target.value.toUpperCase()} : null)}
+                   />
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Stock Actual</Label>
+                      <Input 
+                        type="number" 
+                        className="h-12 text-center font-black text-lg" 
+                        value={editingItem?.qty || 0} 
+                        onChange={e => setEditingItem(prev => prev ? {...prev, qty: parseInt(e.target.value) || 0} : null)}
+                      />
+                   </div>
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Mínimo Crítico</Label>
+                      <Input 
+                        type="number" 
+                        className="h-12 text-center font-black text-lg" 
+                        value={editingItem?.minStock || 0} 
+                        onChange={e => setEditingItem(prev => prev ? {...prev, minStock: parseInt(e.target.value) || 0} : null)}
+                      />
+                   </div>
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicación (Lugar)</Label>
+                   <Select value={editingItem?.location} onValueChange={(val) => setEditingItem(prev => prev ? {...prev, location: val} : null)}>
+                      <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE LUGAR..." /></SelectTrigger>
+                      <SelectContent>
+                         {WAREHOUSE_LOCATIONS.map(loc => <SelectItem key={loc} value={loc} className="text-[10px] font-bold uppercase">{loc}</SelectItem>)}
+                      </SelectContent>
+                   </Select>
+                </div>
+             </div>
+             <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
+                <Button variant="ghost" onClick={() => setIsEditItemOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
+                <Button onClick={handleSaveEditedItem} className="btn-institutional h-12 px-10 text-[10px]">Guardar Cambios</Button>
+             </DialogFooter>
           </DialogContent>
         </Dialog>
 
