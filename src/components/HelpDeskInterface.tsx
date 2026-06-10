@@ -39,7 +39,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [remoteId, setRemoteId] = useState('') // Mi ID (si soy publico) o el ID seleccionado (si soy tech)
+  const [remoteId, setRemoteId] = useState('') 
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -48,13 +48,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Cargar cola de solicitudes
   const syncQueue = useCallback(() => {
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     setQueue(currentQueue)
 
-    // Si soy público y ya solicité, recuperar mi estado
     if (isPublic) {
       const myId = localStorage.getItem('atres_my_id')
       if (myId) {
@@ -64,7 +62,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }, [isPublic])
 
-  // Cargar chat de la sesión seleccionada
   const syncChat = useCallback(() => {
     const activeId = isPublic ? remoteId : selectedId
     if (!activeId) {
@@ -114,7 +111,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     setMessages(newMessages)
     localStorage.setItem(`atres_chat_${activeId}`, JSON.stringify(newMessages))
-    // Notificar a otras pestañas
     window.dispatchEvent(new StorageEvent('storage', {
       key: `atres_chat_${activeId}`,
       newValue: JSON.stringify(newMessages)
@@ -135,7 +131,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     saveAndSyncChat(updatedMessages)
     setInput('')
 
-    // Respuesta del BOT automática solo si es el usuario público y es el primer contacto
     if (isPublic && !messages.some(m => m.role === 'tech') && !messages.some(m => m.content.includes('Instrucciones:'))) {
       setIsTyping(true)
       setTimeout(() => {
@@ -156,7 +151,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setIsRemoteRequested(true)
     localStorage.setItem('atres_my_id', remoteId)
     
-    // Añadir a la cola global
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     
