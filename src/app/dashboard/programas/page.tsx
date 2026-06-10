@@ -68,14 +68,10 @@ export default function ProgramsPage() {
   const [officeFilter, setOficinaFilter] = useState('all')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   
-  // Contador de Solicitudes Pendientes
   const [pendingCount, setPendingRequestsCount] = useState(0)
-
-  // Custom URL for QR
   const [publicBaseUrl, setPublicBaseUrl] = useState('')
   const [showUrlSettings, setShowUrlSettings] = useState(false)
 
-  // Assistant Sub-Dialog State
   const [isAssistantDialogOpen, setIsAssistantDialogOpen] = useState(false)
   const [assistantForm, setAssistantForm] = useState({
     nombres: '',
@@ -151,20 +147,13 @@ export default function ProgramsPage() {
         if (e.key === 'atres_support_queue') {
           const queue = e.newValue ? JSON.parse(e.newValue) : []
           setPendingRequestsCount(queue.length)
-          if (queue.length > pendingCount) {
-             toast({
-               title: "SOLICITUD TÉCNICA RECIBIDA",
-               description: `Hay ${queue.length} docentes requiriendo apoyo remoto.`,
-               variant: "destructive",
-             })
-          }
         }
       }
 
       window.addEventListener('storage', handleStorageEvent)
       return () => window.removeEventListener('storage', handleStorageEvent)
     }
-  }, [checkSupportRequests, toast, pendingCount])
+  }, [checkSupportRequests])
 
   const helpDeskUrl = `${publicBaseUrl}/helpdesk`
   const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(helpDeskUrl)}`
@@ -185,28 +174,20 @@ export default function ProgramsPage() {
     if (cleanVal.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
       if (school) {
-        populateWithSchool(school);
+        setFormData(prev => ({
+          ...prev,
+          cct: school.cct,
+          schoolName: school.nombre,
+          zonaEscolar: school.zonaEscolar,
+          sector: school.sector,
+          modalidad: school.modalidad,
+          municipio: school.municipio,
+          valle: school.valle,
+          region: school.region,
+          email: `${school.cct.toLowerCase()}@desysa.gob.mx`
+        }));
       }
     }
-  }
-
-  const populateWithSchool = (school: any) => {
-    setFormData(prev => ({
-      ...prev,
-      cct: school.cct,
-      schoolName: school.nombre,
-      zonaEscolar: school.zonaEscolar,
-      sector: school.sector,
-      modalidad: school.modalidad,
-      municipio: school.municipio,
-      valle: school.valle,
-      region: school.region,
-      email: `${school.cct.toLowerCase()}@desysa.gob.mx`
-    }));
-    toast({
-      title: "Plantel Identificado",
-      description: `${school.nombre} cargado correctamente.`,
-    });
   }
 
   const handleSave = () => {
@@ -228,54 +209,26 @@ export default function ProgramsPage() {
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
-    
     if (searchTerm) {
       const term = searchTerm.toUpperCase();
-      filtered = filtered.filter(r => 
-        (r.cct || '').toUpperCase().includes(term) || 
-        (r.schoolName || '').toUpperCase().includes(term)
-      );
+      filtered = filtered.filter(r => (r.cct || '').toUpperCase().includes(term) || (r.schoolName || '').toUpperCase().includes(term));
     }
-
     if (officeFilter !== 'all') {
       filtered = filtered.filter(r => r.oficinaRegionalAtencion === officeFilter);
     }
-
     return [...filtered].sort((a, b) => (a.cct || '').localeCompare(b.cct || ''));
   }, [records, activeTab, searchTerm, officeFilter]);
-
-  const handleEdit = (rec: ProgramStatus) => {
-    setFormData({
-      ...initialFormState,
-      ...rec,
-    });
-    setEditingId(rec.id);
-    setIsDialogOpen(true);
-  }
-
-  const handleDeleteRecord = (id: string) => {
-    const updated = records.filter(r => r.id !== id);
-    setRecords(updated);
-    localStorage.setItem('programs_full_v24', JSON.stringify(updated));
-    toast({ title: "Registro eliminado" });
-  }
-
-  const copyHelpDeskUrl = () => {
-    navigator.clipboard.writeText(helpDeskUrl)
-    toast({ title: "Link copiado", description: "La URL ha sido copiada al portapapeles." })
-  }
 
   if (!mounted) return null
 
   return (
     <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1400px] mx-auto overflow-x-hidden px-2 md:px-4">
-      {/* Header Institucional Compacto */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-accent" /> 
-            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas 2026</p>
           </div>
         </div>
 
@@ -294,12 +247,6 @@ export default function ProgramsPage() {
                 <Headset className={cn("h-4 w-4", pendingCount > 0 && "animate-bounce")} /> 
                 {pendingCount > 0 ? `${pendingCount} SOLICITUDES` : "Mesa de Ayuda ATRES"}
               </Button>
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
-                </span>
-              )}
             </div>
           )}
           <Button 
@@ -325,66 +272,39 @@ export default function ProgramsPage() {
         </TabsList>
 
         {activeTab === 'ATRES' && (
-          <div className="animate-in slide-in-from-top-3 duration-500 max-w-5xl">
-            <Card className="executive-card p-5 bg-white border border-primary/5 shadow-xl">
+          <div className="animate-in slide-in-from-top-3 duration-500">
+            <Card className="executive-card p-5 bg-white border border-primary/5 shadow-xl max-w-5xl">
               <div className="flex flex-col md:flex-row items-center gap-6">
                  <div className="bg-slate-50 p-3 rounded-2xl shadow-lg border-2 border-white shrink-0">
                     <div className="relative h-20 w-20 flex items-center justify-center bg-white rounded-xl overflow-hidden shadow-inner">
-                      {helpDeskUrl ? (
-                        <Image src={qrCodeApiUrl} alt="Acceso Docentes QR" width={80} height={80} className="object-contain" priority />
-                      ) : (
-                        <Circle className="h-8 w-8 text-slate-200 animate-pulse" />
-                      )}
+                      <Image src={qrCodeApiUrl} alt="Acceso Docentes QR" width={80} height={80} className="object-contain" priority />
                     </div>
                  </div>
                  
                  <div className="flex-1 space-y-3 w-full min-w-0">
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-emerald-600 text-white font-black uppercase text-[8px] px-2 py-0.5 rounded-full shadow-sm">ACCESO DIRECTO</Badge>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 border border-rose-100 rounded-full text-rose-600">
-                           <AlertTriangle className="h-2.5 w-2.5" />
-                           <span className="text-[7px] font-black uppercase">Seguridad Institucional</span>
-                        </div>
+                        <Badge className="bg-emerald-600 text-white font-black uppercase text-[8px] px-2 py-0.5 rounded-full shadow-sm">VÍNCULO PÚBLICO</Badge>
                       </div>
-                      <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Vínculo de Asistencia para Docentes</h3>
-                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">
-                        Comparta este link o código QR para soporte técnico remoto inmediato.
-                      </p>
+                      <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Acceso Rápido para Docentes</h3>
+                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">Proporcione este QR o URL para activar la asistencia técnica remota.</p>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
                       <div className="flex-1 h-9 bg-slate-50 rounded-lg border border-slate-200 flex items-center px-3 gap-2 shadow-inner overflow-hidden w-full">
                          <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
-                         <span className="font-mono text-[9px] font-black text-slate-600 flex-1 truncate">
-                           {helpDeskUrl}
-                         </span>
-                         <Button variant="ghost" size="sm" onClick={copyHelpDeskUrl} className="h-7 px-2 rounded-md text-primary hover:bg-primary/5 gap-1.5 shrink-0">
-                            <Copy className="h-3 w-3" /> <span className="text-[8px] font-black uppercase">Copiar</span>
-                         </Button>
+                         <span className="font-mono text-[9px] font-black text-slate-600 flex-1 truncate">{helpDeskUrl}</span>
                       </div>
-                      <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-                        <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-9 px-4 rounded-lg bg-primary text-white font-black text-[9px] gap-2 shadow-lg flex-1 sm:flex-none hover:scale-105 transition-transform">
-                           PROBAR PORTAL <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => setShowUrlSettings(!showUrlSettings)} className="h-9 w-9 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors">
-                           <Settings2 className={cn("h-4 w-4 text-slate-400 transition-transform duration-500", showUrlSettings && "rotate-90 text-primary")} />
-                        </Button>
+                      <div className="flex gap-2 shrink-0">
+                        <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-9 px-4 rounded-lg bg-primary text-white font-black text-[9px] gap-2 shadow-lg hover:scale-105 transition-transform">PORTAL <ExternalLink className="h-3.5 w-3.5" /></Button>
+                        <Button variant="outline" size="icon" onClick={() => setShowUrlSettings(!showUrlSettings)} className="h-9 w-9 rounded-lg border-slate-200 hover:bg-slate-50"><Settings2 className={cn("h-4 w-4 text-slate-400", showUrlSettings && "text-primary")} /></Button>
                       </div>
                     </div>
 
                     {showUrlSettings && (
-                      <div className="p-3 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 animate-in slide-in-from-top-2 duration-300">
-                         <Label className="text-[8px] font-black uppercase text-slate-500 mb-2 block pl-1">Configuración de URL Pública (Para el QR)</Label>
-                         <div className="flex gap-2">
-                            <Input 
-                              value={publicBaseUrl} 
-                              onChange={e => setPublicBaseUrl(e.target.value)} 
-                              placeholder="https://su-dominio-público.com"
-                              className="bg-white font-mono text-[10px] h-8 rounded-lg shadow-sm"
-                            />
-                            <Button onClick={handleSavePublicUrl} className="bg-primary text-white font-black uppercase text-[8px] h-8 px-4 rounded-lg shadow-md">Guardar</Button>
-                         </div>
+                      <div className="p-3 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 animate-in slide-in-from-top-2 duration-300 flex gap-2">
+                        <Input value={publicBaseUrl} onChange={e => setPublicBaseUrl(e.target.value)} placeholder="https://..." className="bg-white font-mono text-[10px] h-8 rounded-lg shadow-sm" />
+                        <Button onClick={handleSavePublicUrl} className="bg-primary text-white font-black uppercase text-[8px] h-8 px-4 rounded-lg">Guardar</Button>
                       </div>
                     )}
                  </div>
@@ -393,41 +313,28 @@ export default function ProgramsPage() {
           </div>
         )}
 
-        {/* Filtros Operativos */}
         <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
           <div className="flex flex-col md:flex-row items-end gap-4">
              <div className="relative flex-1 w-full min-0">
-                <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 ml-1 block">Localizador Operativo</Label>
+                <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
                 <div className="relative">
-                  <Input 
-                    placeholder="BUSCAR CCT O PLANTEL..." 
-                    className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full focus:bg-white transition-all"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                  <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full focus:bg-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 </div>
              </div>
 
              <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                 <div className="space-y-1 min-w-[200px]">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 ml-1 block">Oficina Regional</Label>
+                  <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
                   <Select value={officeFilter} onValueChange={setOficinaFilter}>
-                    <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm">
-                        <SelectValue placeholder="TODAS LAS OFICINAS" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200">
+                    <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
+                    <SelectContent>
                       <SelectItem value="all" className="text-[9px] font-black uppercase">Todas las Oficinas</SelectItem>
-                      {REGIONAL_OFFICES.map(off => (
-                        <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>
-                      ))}
+                      {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-
-                <Button variant="outline" className="h-10 px-4 border-primary/20 text-primary font-black uppercase text-[9px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm mt-auto transition-all active:scale-95" onClick={() => setIsSchedulerOpen(true)}>
-                  <CalendarDays className="h-3.5 w-3.5" /> Agenda
-                </Button>
+                <Button variant="outline" className="h-10 px-4 border-primary/20 text-primary font-black uppercase text-[9px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm mt-auto" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-3.5 w-3.5" /> Agenda</Button>
              </div>
           </div>
         </Card>
@@ -442,7 +349,7 @@ export default function ProgramsPage() {
                     <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[200px]">Identificación del Plantel</TableHead>
                     <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[120px]">Estatus / Dato</TableHead>
                     {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
-                      <TableHead className="text-[10px] font-black uppercase text-center text-primary tracking-widest w-24">Censo</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase text-center text-primary tracking-widest w-24">Personal</TableHead>
                     )}
                     <TableHead className="text-right text-[9px] font-black uppercase pr-10 text-slate-400">Acción</TableHead>
                   </TableRow>
@@ -454,44 +361,30 @@ export default function ProgramsPage() {
                     <TableCell className="font-black text-[10px] text-primary tracking-tight">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
                     <TableCell className="py-2">
                       <div className="flex flex-col min-w-0 max-w-[280px]">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate">
-                          {activeTab === 'Geoposición' ? `Longitud: ${rec.longitud}` : rec.schoolName}
-                        </span>
-                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate mt-0.5">
-                          {rec.municipio} • {rec.valle}
-                        </span>
+                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate">{activeTab === 'Geoposición' ? `Longitud: ${rec.longitud}` : rec.schoolName}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate mt-0.5">{rec.municipio} • {rec.valle}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       {activeTab === 'Geoposición' ? <span className="text-[9px] font-mono font-black text-slate-500">Lat: {rec.latitud}</span> : 
-                       activeTab === 'ATRES' ? <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/10 bg-primary/5 text-primary py-0.5 px-2 rounded-full">{rec.tipoIncidencia || 'Soporte'}</Badge> :
                        <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>
                          {rec.status?.toUpperCase() || 'ACTIVO'}
                        </Badge>}
                     </TableCell>
                     {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
                       <TableCell className="text-center">
-                        <span className="inline-flex items-center justify-center h-6 w-10 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">
-                          {rec.asistentes?.length || 0}
-                        </span>
+                        <span className="inline-flex items-center justify-center h-6 w-10 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">{rec.asistentes?.length || 0}</span>
                       </TableCell>
                     )}
                     <TableCell className="text-right pr-10">
                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteRecord(rec.id)} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><Pencil className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => { const updated = records.filter(r => r.id !== rec.id); setRecords(updated); localStorage.setItem('programs_full_v24', JSON.stringify(updated)); toast({ title: "Eliminado" }); }} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></Button>
                        </div>
                     </TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-24 bg-slate-50/20">
-                       <div className="flex flex-col items-center gap-3 opacity-30">
-                          <Monitor className="h-12 w-12 text-slate-400" />
-                          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Sin registros operativos disponibles</p>
-                       </div>
-                    </TableCell>
-                  </TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros para mostrar</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -499,61 +392,37 @@ export default function ProgramsPage() {
         </Card>
       </Tabs>
 
-      {/* Modals */}
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
 
-      {/* Dialogo de Gestión */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white flex flex-row items-center justify-between shrink-0">
-            <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-                <Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}
-              </DialogTitle>
-              <DialogDescription className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/60">Auditoría Operativa COEES 2026</DialogDescription>
-            </div>
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}</DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue="auditoria" className="flex-1 flex flex-col overflow-hidden">
              <div className="px-6 border-b bg-white">
                 <TabsList className="bg-transparent h-12 p-0 gap-8">
-                  <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-xs font-black uppercase tracking-wider transition-all">1. Auditoría Técnica</TabsTrigger>
+                  <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Auditoría Técnica</TabsTrigger>
                   {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
-                    <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-xs font-black uppercase tracking-wider transition-all">2. Censo Institucional</TabsTrigger>
+                    <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Censo de Personal</TabsTrigger>
                   )}
                 </TabsList>
              </div>
 
              <div className="flex-1 overflow-hidden">
-                <TabsContent value="auditoria" className="h-full m-0 p-6 overflow-hidden">
+                <TabsContent value="auditoria" className="h-full m-0 p-6">
                   <ScrollArea className="h-full">
                     <div className="space-y-6 pb-8">
                       <div className="p-6 bg-slate-50 rounded-2xl border-2 border-primary/5 space-y-4 shadow-inner relative">
-                        <Label className="text-[10px] font-black uppercase text-primary flex items-center gap-3 pl-1">
-                          <Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT
-                        </Label>
-                        <Input 
-                          placeholder="TECLEAR CCT O NOMBRE DEL PLANTEL..." 
-                          className="h-12 rounded-xl bg-white border-primary/10 text-xs font-black uppercase px-6 shadow-sm focus:ring-4 focus:ring-primary/10" 
-                          value={dialogSearchTerm} 
-                          onChange={(e) => {
-                            setDialogSearchTerm(e.target.value);
-                            if (e.target.value.length === 10) handleCctChange(e.target.value);
-                          }} 
-                        />
-                        
-                        {dialogSearchTerm && dialogSearchTerm.length > 2 && (
+                        <Label className="text-[10px] font-black uppercase text-primary flex items-center gap-3 pl-1"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label>
+                        <Input placeholder="TECLEAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 text-xs font-black uppercase px-6 shadow-sm" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); if (e.target.value.length === 10) handleCctChange(e.target.value); }} />
+                        {dialogSearchTerm.length > 2 && (
                           <div className="absolute left-6 right-6 top-24 max-h-56 overflow-auto bg-white border border-slate-100 rounded-xl shadow-2xl z-50 divide-y">
-                            {schoolsDirectory.filter(s => 
-                              (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || 
-                              (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())
-                            ).slice(0, 10).map(s => (
-                              <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { populateWithSchool(s); setDialogSearchTerm(''); }}>
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] font-black uppercase text-slate-800 group-hover:text-primary">{s.nombre}</span>
-                                  <span className="text-[9px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span>
-                                </div>
+                            {schoolsDirectory.filter(s => (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())).slice(0, 10).map(s => (
+                              <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFormData({...formData, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle, region: s.region}); setDialogSearchTerm(''); }}>
+                                <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[9px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
                                 <Badge variant="secondary" className="text-[8px] font-black uppercase bg-primary/10 text-primary">{s.modalidad}</Badge>
                               </div>
                             ))}
@@ -561,74 +430,38 @@ export default function ProgramsPage() {
                         )}
                       </div>
 
-                      {formData.cct && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-4">
-                           <div className="space-y-2">
-                              <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
-                              <Input className="h-11 rounded-lg bg-white border-slate-200 font-mono text-xs font-black uppercase shadow-sm" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Oficina Regional</Label>
-                              <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                                <SelectTrigger className="h-11 rounded-lg bg-white border-slate-200 text-[10px] font-black uppercase shadow-sm"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                                <SelectContent>
-                                  {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                           </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2">
-                           <Info className="h-4 w-4 text-primary" /> Diagnóstico y Observaciones
-                        </Label>
-                        <Textarea className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white transition-all" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle nítidamente los hallazgos técnicos..." />
+                      <div className="grid grid-cols-2 gap-6">
+                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label><Input className="h-11 rounded-lg bg-white border-slate-200 font-mono text-xs font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} /></div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Oficina Regional</Label>
+                            <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                              <SelectTrigger className="h-11 rounded-lg bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                              <SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
+                            </Select>
+                         </div>
                       </div>
+
+                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Diagnóstico y Observaciones</Label><Textarea className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico de la auditoría..." /></div>
                     </div>
                   </ScrollArea>
                 </TabsContent>
 
                 <TabsContent value="asistentes" className="h-full m-0 p-6 flex flex-col">
                   <div className="flex justify-between items-center gap-4 mb-4">
-                    <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center gap-3 flex-1">
-                      <div className="h-8 w-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
-                        <Info className="h-4 w-4" />
-                      </div>
-                      <p className="text-[10px] font-black text-blue-900 uppercase leading-relaxed">
-                        Censo Institucional: Registre al personal y las cuentas <br /> institucionales asignadas.
-                      </p>
-                    </div>
-                    <Button onClick={() => { setAssistantForm({nombres: '', paterno: '', materno: '', rfc: '', según: '', email: ''}); setIsAssistantDialogOpen(true); }} className="h-10 px-6 rounded-lg text-[9px] gap-2 font-black uppercase shadow-lg bg-primary text-white hover:scale-105 transition-all">
-                      <UserPlus className="h-4 w-4" /> Registrar Servidor
-                    </Button>
+                    <p className="text-[10px] font-black text-blue-900 uppercase">Censo Institucional: Registre al personal del plantel.</p>
+                    <Button onClick={() => { setAssistantForm({nombres: '', paterno: '', materno: '', rfc: '', funcion: '', email: ''}); setIsAssistantDialogOpen(true); }} className="h-10 px-6 rounded-lg text-[9px] font-black uppercase bg-primary text-white hover:scale-105 transition-all"><UserPlus className="h-4 w-4 mr-2" /> Registrar Servidor</Button>
                   </div>
                   <div className="flex-1 overflow-hidden border border-slate-100 rounded-xl bg-white shadow-inner">
                     <ScrollArea className="h-full">
                       <Table>
                         <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
-                          <TableRow className="h-12">
-                            <TableHead className="text-[10px] font-black uppercase pl-6">Servidor Público</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase text-center">RFC</TableHead>
-                            <TableHead className="text-right text-[9px] font-black uppercase pr-6">Acción</TableHead>
-                          </TableRow>
+                          <TableRow className="h-12"><TableHead className="text-[10px] font-black uppercase pl-6">Servidor Público</TableHead><TableHead className="text-[10px] font-black uppercase text-center">RFC</TableHead><TableHead className="text-right text-[9px] font-black uppercase pr-6">Acción</TableHead></TableRow>
                         </TableHeader>
                         <TableBody>
                           {formData.asistentes?.length === 0 ? (
                             <TableRow><TableCell colSpan={3} className="text-center py-16 text-xs font-black uppercase text-slate-300">Sin personal censado.</TableCell></TableRow>
                           ) : formData.asistentes?.map((ast: any, idx: number) => (
-                            <TableRow key={idx} className="h-14 hover:bg-slate-50/50 transition-colors">
-                              <TableCell className="pl-6">
-                                 <div className="flex flex-col">
-                                   <span className="text-[11px] font-black uppercase text-slate-700">{ast.nombres} {ast.paterno} {ast.materno}</span>
-                                   <span className="text-[8px] font-bold text-slate-400">{ast.email || 'SIN EMAIL'}</span>
-                                 </div>
-                              </TableCell>
-                              <TableCell className="font-mono text-[10px] font-black text-primary text-center">{ast.rfc}</TableCell>
-                              <TableCell className="text-right pr-6">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => { setFormData({...formData, asistentes: formData.asistentes?.filter((_, i) => i !== idx)}); }}><Trash2 className="h-3.5 w-3.5" /></Button>
-                              </TableCell>
-                            </TableRow>
+                            <TableRow key={idx} className="h-14 hover:bg-slate-50/50"><TableCell className="pl-6"><div className="flex flex-col"><span className="text-[11px] font-black uppercase text-slate-700">{ast.nombres} {ast.paterno}</span><span className="text-[8px] font-bold text-slate-400">{ast.rfc}</span></div></TableCell><TableCell className="font-mono text-[10px] font-black text-primary text-center">{ast.rfc}</TableCell><TableCell className="text-right pr-6"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 rounded-lg" onClick={() => { setFormData({...formData, asistentes: formData.asistentes?.filter((_, i) => i !== idx)}); }}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell></TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -637,31 +470,22 @@ export default function ProgramsPage() {
                 </TabsContent>
              </div>
           </Tabs>
-          
           <DialogFooter className="p-6 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0">
-              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase border-slate-300 hover:bg-white shadow-sm">Cancelar</Button>
-              <Button onClick={handleSave} className="btn-institutional h-11 px-10 text-[10px]">Guardar Registro</Button>
+              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">Cancelar</Button>
+              <Button onClick={handleSave} className="btn-institutional h-11 px-10 text-[10px]">Guardar Cambios</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isAssistantDialogOpen} onOpenChange={setIsAssistantDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-2xl p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white">
-            <DialogTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3"><UserPlus className="h-5 w-5 text-white/40" /> Alta de Servidor Público</DialogTitle>
-          </DialogHeader>
+          <DialogHeader className="p-6 bg-primary text-white"><DialogTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-3"><UserPlus className="h-5 w-5" /> Alta de Servidor</DialogTitle></DialogHeader>
           <div className="p-6 space-y-4 bg-white">
-            <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Nombre(s)</Label><Input value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 text-xs font-black shadow-inner" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Apellido Paterno</Label><Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 text-xs font-black shadow-inner" /></div>
-              <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Apellido Materno</Label><Input value={assistantForm.materno} onChange={e => setAssistantForm({...assistantForm, materno: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 text-xs font-black shadow-inner" /></div>
-            </div>
-            <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 ml-1">RFC Oficial (13 Dígitos)</Label><Input value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 font-mono font-black text-xs shadow-inner" maxLength={13} /></div>
+            <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400">Nombre(s)</Label><Input value={assistantForm.nombres} onChange={e => setAssistantForm({...assistantForm, nombres: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 text-xs font-black" /></div>
+            <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400">Apellido Paterno</Label><Input value={assistantForm.paterno} onChange={e => setAssistantForm({...assistantForm, paterno: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 text-xs font-black" /></div>
+            <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400">RFC Oficial</Label><Input value={assistantForm.rfc} onChange={e => setAssistantForm({...assistantForm, rfc: e.target.value.toUpperCase()})} className="h-10 rounded-lg bg-slate-50 font-mono font-black text-xs" maxLength={13} /></div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t gap-3">
-             <Button variant="ghost" onClick={() => setIsAssistantDialogOpen(false)} className="font-black uppercase text-[9px] h-10 px-4">Cancelar</Button>
-             <Button onClick={() => { if(assistantForm.nombres && assistantForm.rfc) { setFormData({...formData, asistentes: [...(formData.asistentes || []), assistantForm]}); setIsAssistantDialogOpen(false); } }} className="bg-primary text-white h-10 px-6 rounded-lg font-black uppercase text-[9px] shadow-lg">Añadir</Button>
-          </DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t gap-3"><Button variant="ghost" onClick={() => setIsAssistantDialogOpen(false)} className="font-black uppercase text-[9px] h-10 px-4">Cancelar</Button><Button onClick={() => { if(assistantForm.nombres && assistantForm.rfc) { setFormData({...formData, asistentes: [...(formData.asistentes || []), assistantForm]}); setIsAssistantDialogOpen(false); } }} className="bg-primary text-white h-10 px-6 rounded-lg font-black uppercase text-[9px]">Añadir</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
