@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays, Building2 } from "lucide-react"
+import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays, Building2, Archive, Package } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -44,11 +44,25 @@ const EDUSAT_DECO_ACCIONES = ['CONFIGURACIÓN', 'REUBICACIÓN', 'CAMBIO'];
 const EDUSAT_CABLEADO = ['CAMBIO DE CAMPANAS', 'CAMBIO DE DIVISOR', 'CAMBIO DE CABLE'];
 const EDUSAT_PREVENTIVO = ['REVISIÓN GENERAL', 'LIMPIEZA GENERAL', 'CUIDADO PREVENTIVO'];
 
+const INVENTORY_DATA = [
+  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', status: 'óptimo' },
+  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', status: 'bajo' },
+  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', status: 'óptimo' },
+  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', status: 'óptimo' },
+  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', status: 'óptimo' },
+  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', status: 'óptimo' },
+  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', status: 'óptimo' },
+  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', status: 'óptimo' },
+  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', status: 'bajo' },
+  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', status: 'óptimo' },
+];
+
 export default function SupportPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('') // Buscador dentro del diálogo
   const [listSearchTerm, setListSearchTerm] = useState('') // Buscador principal de la lista
@@ -334,22 +348,91 @@ export default function SupportPage() {
           </p>
         </div>
         
-        <Button 
-          onClick={() => {
-            const nextId = getNextFolio(tickets);
-            setFormData({
-              ...initialFormState,
-              id: nextId,
-              fechaEntrada: format(new Date(), 'yyyy-MM-dd')
-            });
-            setEditingTicketId(null);
-            setIsDialogOpen(true);
-            setSearchTerm('');
-          }}
-          className="btn-institutional h-12 px-10 rounded-xl shadow-lg whitespace-nowrap"
-        >
-          <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => setIsWarehouseOpen(true)}
+            variant="outline"
+            className="h-12 px-8 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2 hover:bg-primary/5 shadow-md transition-all active:scale-95"
+          >
+            <Archive className="h-5 w-5" /> Almacén
+          </Button>
+
+          <Button 
+            onClick={() => {
+              const nextId = getNextFolio(tickets);
+              setFormData({
+                ...initialFormState,
+                id: nextId,
+                fechaEntrada: format(new Date(), 'yyyy-MM-dd')
+              });
+              setEditingTicketId(null);
+              setIsDialogOpen(true);
+              setSearchTerm('');
+            }}
+            className="btn-institutional h-12 px-10 rounded-xl shadow-lg whitespace-nowrap"
+          >
+            <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Reporte
+          </Button>
+        </div>
+
+        {/* Modal de Almacén */}
+        <Dialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen}>
+          <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[80vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+            <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Archive className="h-40 w-40" />
+              </div>
+              <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10">
+                <Package className="h-8 w-8 text-accent" /> Control de Almacén Técnico
+              </DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-xs uppercase tracking-widest mt-2 relative z-10">
+                Inventario de materiales y suministros estratégicos de la brigada COEES.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden p-8 bg-slate-50/50">
+              <div className="border-2 border-slate-200 rounded-[2rem] bg-white overflow-hidden shadow-inner h-full flex flex-col">
+                <ScrollArea className="flex-1">
+                  <Table>
+                    <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
+                      <TableRow>
+                        <TableHead className="font-black uppercase text-[10px] pl-6 py-4">Material / Insumo</TableHead>
+                        <TableHead className="font-black uppercase text-[10px] text-center">Stock Disponible</TableHead>
+                        <TableHead className="font-black uppercase text-[10px] text-center">Unidad de Medida</TableHead>
+                        <TableHead className="font-black uppercase text-[10px] text-right pr-6">Estatus Operativo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {INVENTORY_DATA.map(item => (
+                        <TableRow key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                          <TableCell className="font-black text-slate-700 text-xs uppercase pl-6 py-4">{item.name}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="inline-flex items-center justify-center h-8 w-12 rounded-lg bg-primary/5 text-primary text-sm font-black border border-primary/10">
+                              {item.qty}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
+                          <TableCell className="text-right pr-6">
+                            <Badge className={cn(
+                              "text-[8px] font-black uppercase px-3 py-1 rounded-full",
+                              item.status === 'bajo' ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            )}>
+                              {item.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+            </div>
+            <DialogFooter className="p-6 bg-slate-100 border-t flex justify-end shrink-0">
+              <Button variant="outline" onClick={() => setIsWarehouseOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-300 hover:bg-white shadow-sm">
+                Cerrar Visor de Almacén
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
