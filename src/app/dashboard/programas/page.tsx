@@ -599,7 +599,7 @@ export default function ProgramsPage() {
                         Censo Institucional: Registre al personal y las cuentas <br /> institucionales asignadas.
                       </p>
                     </div>
-                    <Button onClick={() => { setAssistantForm({nombres: '', paterno: '', materno: '', rfc: '', funcion: '', email: ''}); setIsAssistantDialogOpen(true); }} className="h-10 px-6 rounded-lg text-[9px] gap-2 font-black uppercase shadow-lg bg-primary text-white hover:scale-105 transition-all">
+                    <Button onClick={() => { setAssistantForm({nombres: '', paterno: '', materno: '', rfc: '', según: '', email: ''}); setIsAssistantDialogOpen(true); }} className="h-10 px-6 rounded-lg text-[9px] gap-2 font-black uppercase shadow-lg bg-primary text-white hover:scale-105 transition-all">
                       <UserPlus className="h-4 w-4" /> Registrar Servidor
                     </Button>
                   </div>

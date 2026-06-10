@@ -63,13 +63,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [isPublic])
 
   const syncChat = useCallback(() => {
-    const activeId = isPublic ? remoteId : selectedId
-    if (!activeId) {
+    // Para el público, usamos un ID persistente si existe, o 'anonymous' para el saludo inicial
+    const activeId = isPublic ? (remoteId || 'docente_session') : selectedId
+    
+    if (!activeId && !isPublic) {
       setMessages([])
       return
     }
 
-    const history = localStorage.getItem(`atres_chat_${activeId}`)
+    const historyKey = `atres_chat_${activeId}`
+    const history = localStorage.getItem(historyKey)
+    
     if (history) {
       setMessages(JSON.parse(history))
     } else {
@@ -81,7 +85,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }
       ]
       setMessages(initial)
-      localStorage.setItem(`atres_chat_${activeId}`, JSON.stringify(initial))
+      localStorage.setItem(historyKey, JSON.stringify(initial))
     }
   }, [isPublic, remoteId, selectedId])
 
@@ -106,13 +110,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [messages])
 
   const saveAndSyncChat = (newMessages: Message[]) => {
-    const activeId = isPublic ? remoteId : selectedId
+    const activeId = isPublic ? (remoteId || 'docente_session') : selectedId
     if (!activeId) return
 
+    const historyKey = `atres_chat_${activeId}`
     setMessages(newMessages)
-    localStorage.setItem(`atres_chat_${activeId}`, JSON.stringify(newMessages))
+    localStorage.setItem(historyKey, JSON.stringify(newMessages))
+    
+    // Disparar evento para otras pestañas
     window.dispatchEvent(new StorageEvent('storage', {
-      key: `atres_chat_${activeId}`,
+      key: historyKey,
       newValue: JSON.stringify(newMessages)
     }))
   }
@@ -131,7 +138,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     saveAndSyncChat(updatedMessages)
     setInput('')
 
-    if (isPublic && !messages.some(m => m.role === 'tech') && !messages.some(m => m.content.includes('Instrucciones:'))) {
+    // Bot responde solo en la vista pública si no hay técnico y es el primer mensaje de duda
+    if (isPublic && !messages.some(m => m.role === 'tech')) {
       setIsTyping(true)
       setTimeout(() => {
         const botMsg: Message = { 
@@ -142,12 +150,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         const withBot = [...updatedMessages, botMsg]
         saveAndSyncChat(withBot)
         setIsTyping(false)
-      }, 1000)
+      }, 800);
     }
   }
 
   const handleRequestRemote = () => {
-    if (!remoteId) return
+    if (!remoteId || remoteId.length < 5) {
+      toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese un ID de AnyDesk válido." })
+      return
+    }
+    
     setIsRemoteRequested(true)
     localStorage.setItem('atres_my_id', remoteId)
     
@@ -158,6 +170,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const newQueue = [...currentQueue, { remoteId, timestamp: Date.now(), status: 'pending' as const }]
       localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+    }
+
+    // Migrar chat de docente_session a el ID real si el técnico aún no lo ha abierto
+    const oldHistory = localStorage.getItem('atres_chat_docente_session')
+    if (oldHistory) {
+      localStorage.setItem(`atres_chat_${remoteId}`, oldHistory)
     }
 
     const botMsg: Message = { 
@@ -185,8 +203,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     localStorage.removeItem(`atres_chat_${idToFinish}`)
     
-    if (idToFinish === remoteId) {
+    if (isPublic && idToFinish === remoteId) {
        localStorage.removeItem('atres_my_id')
+       setRemoteId('')
+       setIsRemoteRequested(false)
     }
 
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
@@ -194,6 +214,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     if (selectedId === idToFinish) setSelectedId(null)
     syncQueue()
+    syncChat()
     toast({ title: "Atención Finalizada" })
   }
 
@@ -251,7 +272,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="p-4 bg-white rounded-2xl border shadow-sm space-y-4 border-primary/5">
             <div className="flex items-center gap-2">
               <div className={cn("h-2 w-2 rounded-full animate-pulse", isRemoteRequested ? "bg-emerald-500" : "bg-amber-500")} />
-              <span className="text-[9px] font-black uppercase text-slate-700">{isRemoteRequested ? "Esperando Técnico" : "Sin Conexión"}</span>
+              <span className="text-[9px] font-black uppercase text-slate-700">{isRemoteRequested ? "Esperando Técnico" : "Sin Conexión Remota"}</span>
             </div>
             
             <div className="space-y-1.5">
@@ -336,9 +357,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Chat de Soporte Técnico</p>
                 </div>
               </div>
-              <Badge variant="outline" className="hidden sm:flex text-[8px] font-black uppercase border-primary/20 py-1.5 px-4 rounded-full bg-white shadow-sm">
-                ID: {isPublic ? remoteId : selectedId}
-              </Badge>
+              {(isPublic ? remoteId : selectedId) && (
+                <Badge variant="outline" className="hidden sm:flex text-[8px] font-black uppercase border-primary/20 py-1.5 px-4 rounded-full bg-white shadow-sm">
+                  ID: {isPublic ? remoteId : selectedId}
+                </Badge>
+              )}
             </header>
 
             <ScrollArea className="flex-1 bg-slate-50/30">
