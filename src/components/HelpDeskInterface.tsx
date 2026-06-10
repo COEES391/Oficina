@@ -47,34 +47,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [sessionKey, setSessionKey] = useState<string>('')
   
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Generar un ID de sesión único para esta pestaña/usuario público
+  useEffect(() => {
+    if (isPublic) {
+      let sKey = sessionStorage.getItem('atres_session_id')
+      if (!sKey) {
+        sKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        sessionStorage.setItem('atres_session_id', sKey)
+      }
+      setSessionKey(sKey)
+    }
+  }, [isPublic])
 
   const syncQueue = useCallback(() => {
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     setQueue(currentQueue)
 
-    // En modo público, solo marcamos como solicitado si el ID actual (el que el usuario acaba de escribir) está en la cola
-    // Pero si acabamos de entrar y remoteId está vacío, NO forzamos un estado anterior.
     if (isPublic && remoteId) {
       const isInQueue = currentQueue.some(r => r.remoteId === remoteId);
       setIsRemoteRequested(isInQueue);
       
-      // Si el ID que estábamos usando ya no está en la cola, significa que el técnico terminó la atención.
       if (!isInQueue && isRemoteRequested) {
         setRemoteId('');
         setIsRemoteRequested(false);
-        setSelectedId(null);
       }
     }
   }, [isPublic, remoteId, isRemoteRequested])
 
   const syncChat = useCallback(() => {
-    // Definimos el ID de la sesión actual
-    const activeId = isPublic ? (remoteId || 'docente_initial_session') : selectedId
+    // Si es público, usamos remoteId si existe, sino el sessionKey único de la pestaña
+    // Si es técnico, usamos el selectedId de la lista de espera
+    const activeId = isPublic ? (remoteId || sessionKey) : selectedId
     
-    if (!activeId && !isPublic) {
+    if (!activeId) {
       setMessages([])
       return
     }
@@ -95,7 +105,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(initial)
       localStorage.setItem(historyKey, JSON.stringify(initial))
     }
-  }, [isPublic, remoteId, selectedId])
+  }, [isPublic, remoteId, sessionKey, selectedId])
 
   useEffect(() => {
     setMounted(true)
@@ -118,14 +128,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [messages])
 
   const saveAndSyncChat = (newMessages: Message[]) => {
-    const activeId = isPublic ? (remoteId || 'docente_initial_session') : selectedId
+    const activeId = isPublic ? (remoteId || sessionKey) : selectedId
     if (!activeId) return
 
     const historyKey = `atres_chat_${activeId}`
     setMessages(newMessages)
     localStorage.setItem(historyKey, JSON.stringify(newMessages))
     
-    // Forzar evento manual para la misma ventana
     window.dispatchEvent(new StorageEvent('storage', {
       key: historyKey,
       newValue: JSON.stringify(newMessages)
@@ -146,7 +155,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     saveAndSyncChat(updatedMessages)
     setInput('')
 
-    // Respuesta del Bot para Instrucciones (Solo una vez por sesión para no ciclar)
+    // Respuesta del Bot para Instrucciones
     if (isPublic && !messages.some(m => m.role === 'tech')) {
       const alreadySentInst = messages.some(m => m.content.includes('Instrucciones'));
       if (!alreadySentInst) {
@@ -183,10 +192,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
-    // Vincular chat inicial con el ID específico
-    const initialHistory = localStorage.getItem('atres_chat_docente_initial_session')
-    if (initialHistory) {
-      localStorage.setItem(`atres_chat_${remoteId}`, initialHistory)
+    // Migrar historial de la sesión anónima al nuevo ID para que el técnico lo vea
+    const currentHistory = localStorage.getItem(`atres_chat_${sessionKey}`)
+    if (currentHistory) {
+      localStorage.setItem(`atres_chat_${remoteId}`, currentHistory)
     }
 
     const botMsg: Message = { 
@@ -203,7 +212,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const resetForNewRequest = () => {
     setRemoteId('')
     setIsRemoteRequested(false)
-    // Resetear a la sesión inicial limpia
+    // Generar nueva sesión limpia para una solicitud fresca
+    const newSKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    sessionStorage.setItem('atres_session_id', newSKey)
+    setSessionKey(newSKey)
+    
     const initial: Message[] = [
       { 
         role: 'bot', 
@@ -212,7 +225,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }
     ]
     setMessages(initial)
-    localStorage.setItem('atres_chat_docente_initial_session', JSON.stringify(initial))
+    localStorage.setItem(`atres_chat_${newSKey}`, JSON.stringify(initial))
   }
 
   const copyId = (idToCopy: string) => {
