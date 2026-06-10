@@ -68,8 +68,8 @@ export default function ProgramsPage() {
   const [officeFilter, setOficinaFilter] = useState('all')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   
-  // Alerta de Soporte Pendiente
-  const [hasPendingRequest, setHasPendingRequest] = useState(false)
+  // Contador de Solicitudes Pendientes
+  const [pendingCount, setPendingRequestsCount] = useState(0)
 
   // Custom URL for QR
   const [publicBaseUrl, setPublicBaseUrl] = useState('')
@@ -124,12 +124,9 @@ export default function ProgramsPage() {
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
 
   const checkSupportRequests = useCallback(() => {
-    const request = localStorage.getItem('atres_support_request')
-    if (request) {
-      setHasPendingRequest(true)
-    } else {
-      setHasPendingRequest(false)
-    }
+    const rawQueue = localStorage.getItem('atres_support_queue')
+    const queue = rawQueue ? JSON.parse(rawQueue) : []
+    setPendingRequestsCount(queue.length)
   }, [])
 
   useEffect(() => {
@@ -151,29 +148,29 @@ export default function ProgramsPage() {
       checkSupportRequests()
 
       const handleStorageEvent = (e: StorageEvent) => {
-        if (e.key === 'atres_support_request' && e.newValue) {
-          setHasPendingRequest(true)
-          toast({
-            title: "SOLICITUD TÉCNICA RECIBIDA",
-            description: "Un docente requiere apoyo remoto inmediato vía AnyDesk.",
-            variant: "destructive",
-          })
-        } else if (e.key === 'atres_support_request' && !e.newValue) {
-          setHasPendingRequest(false)
+        if (e.key === 'atres_support_queue') {
+          const queue = e.newValue ? JSON.parse(e.newValue) : []
+          setPendingRequestsCount(queue.length)
+          if (queue.length > pendingCount) {
+             toast({
+               title: "SOLICITUD TÉCNICA RECIBIDA",
+               description: `Hay ${queue.length} docentes requiriendo apoyo remoto.`,
+               variant: "destructive",
+             })
+          }
         }
       }
 
       window.addEventListener('storage', handleStorageEvent)
       return () => window.removeEventListener('storage', handleStorageEvent)
     }
-  }, [checkSupportRequests, toast])
+  }, [checkSupportRequests, toast, pendingCount])
 
   const helpDeskUrl = `${publicBaseUrl}/helpdesk`
   const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(helpDeskUrl)}`
 
   const handleOpenHelpDesk = () => {
     setIsHelpDeskOpen(true)
-    setHasPendingRequest(false)
   }
 
   const handleSavePublicUrl = () => {
@@ -289,15 +286,15 @@ export default function ProgramsPage() {
                 onClick={handleOpenHelpDesk} 
                 className={cn(
                   "h-10 px-6 rounded-xl shadow-md font-black uppercase text-[10px] gap-2 w-full transition-all duration-300",
-                  hasPendingRequest 
+                  pendingCount > 0 
                     ? "bg-rose-600 hover:bg-rose-700 ring-4 ring-rose-200 animate-pulse scale-105" 
                     : "bg-emerald-600 hover:bg-emerald-700 text-white"
                 )}
               >
-                <Headset className={cn("h-4 w-4", hasPendingRequest && "animate-bounce")} /> 
-                {hasPendingRequest ? "ATENDER SOLICITUD" : "Mesa de Ayuda ATRES"}
+                <Headset className={cn("h-4 w-4", pendingCount > 0 && "animate-bounce")} /> 
+                {pendingCount > 0 ? `${pendingCount} SOLICITUDES` : "Mesa de Ayuda ATRES"}
               </Button>
-              {hasPendingRequest && (
+              {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 border-2 border-white"></span>
@@ -399,7 +396,7 @@ export default function ProgramsPage() {
         {/* Filtros Operativos */}
         <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
           <div className="flex flex-col md:flex-row items-end gap-4">
-             <div className="relative flex-1 w-full min-w-0">
+             <div className="relative flex-1 w-full min-0">
                 <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 ml-1 block">Localizador Operativo</Label>
                 <div className="relative">
                   <Input 
