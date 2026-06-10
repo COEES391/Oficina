@@ -222,17 +222,17 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1400px] mx-auto overflow-x-hidden px-2 md:px-4">
+    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1400px] mx-auto overflow-hidden px-2 md:px-4">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-accent" /> 
-            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas 2026</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {activeTab === 'ATRES' && (
             <div className="relative flex-1 sm:flex-none">
               <Button 
@@ -296,7 +296,7 @@ export default function ProgramsPage() {
                          <span className="font-mono text-[9px] font-black text-slate-600 flex-1 truncate">{helpDeskUrl}</span>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-9 px-4 rounded-lg bg-primary text-white font-black text-[9px] gap-2 shadow-lg hover:scale-105 transition-transform">PORTAL <ExternalLink className="h-3.5 w-3.5" /></Button>
+                        <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-9 px-4 rounded-lg bg-primary text-white font-black text-[9px] gap-2 shadow-lg hover:scale-105 transition-transform uppercase">Probar Portal <ExternalLink className="h-3.5 w-3.5" /></Button>
                         <Button variant="outline" size="icon" onClick={() => setShowUrlSettings(!showUrlSettings)} className="h-9 w-9 rounded-lg border-slate-200 hover:bg-slate-50"><Settings2 className={cn("h-4 w-4 text-slate-400", showUrlSettings && "text-primary")} /></Button>
                       </div>
                     </div>
@@ -315,7 +315,7 @@ export default function ProgramsPage() {
 
         <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
           <div className="flex flex-col md:flex-row items-end gap-4">
-             <div className="relative flex-1 w-full min-0">
+             <div className="relative flex-1 w-full min-w-0">
                 <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
                 <div className="relative">
                   <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full focus:bg-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />

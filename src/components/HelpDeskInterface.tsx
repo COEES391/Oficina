@@ -18,7 +18,8 @@ import {
   Users,
   ChevronRight,
   MessageSquare,
-  X
+  X,
+  RefreshCcw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -54,17 +55,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     setQueue(currentQueue)
 
-    if (isPublic) {
-      const myId = localStorage.getItem('atres_active_session_id')
-      if (myId) {
-        setRemoteId(myId)
-        setIsRemoteRequested(currentQueue.some(r => r.remoteId === myId))
-      }
+    // En modo público, solo marcamos como solicitado si el ID actual está en la cola
+    if (isPublic && remoteId) {
+      setIsRemoteRequested(currentQueue.some(r => r.remoteId === remoteId))
     }
-  }, [isPublic])
+  }, [isPublic, remoteId])
 
   const syncChat = useCallback(() => {
-    const activeId = isPublic ? (remoteId || 'docente_pre_session') : selectedId
+    // El ID activo es el ID de AnyDesk si existe, o una sesión predeterminada para el saludo inicial
+    const activeId = isPublic ? (remoteId || 'docente_initial_session') : selectedId
     
     if (!activeId && !isPublic) {
       setMessages([])
@@ -110,7 +109,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [messages])
 
   const saveAndSyncChat = (newMessages: Message[]) => {
-    const activeId = isPublic ? (remoteId || 'docente_pre_session') : selectedId
+    const activeId = isPublic ? (remoteId || 'docente_initial_session') : selectedId
     if (!activeId) return
 
     const historyKey = `atres_chat_${activeId}`
@@ -137,9 +136,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     saveAndSyncChat(updatedMessages)
     setInput('')
 
-    // Bot responde instrucciones si es usuario público y no hay técnico atendiendo
+    // Bot responde instrucciones si el técnico no ha intervenido aún
     if (isPublic && !messages.some(m => m.role === 'tech')) {
-      // Solo enviamos instrucciones si no se han enviado recientemente
       const lastBotMsg = [...messages].reverse().find(m => m.role === 'bot');
       const shouldSendInstructions = !lastBotMsg || !lastBotMsg.content.includes('Instrucciones');
 
@@ -164,23 +162,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
     
-    setIsRemoteRequested(true)
-    localStorage.setItem('atres_active_session_id', remoteId)
-    
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     
-    if (!currentQueue.some(r => r.remoteId === remoteId)) {
-      const newQueue = [...currentQueue, { remoteId, timestamp: Date.now(), status: 'pending' as const }]
-      localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
-      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+    if (currentQueue.some(r => r.remoteId === remoteId)) {
+      toast({ title: "Solicitud ya enviada", description: "Este ID ya está en la lista de espera." })
+      return
     }
 
-    // Migrar chat previo si existe
-    const preHistory = localStorage.getItem('atres_chat_docente_pre_session')
-    if (preHistory) {
-      localStorage.setItem(`atres_chat_${remoteId}`, preHistory)
-      localStorage.removeItem('atres_chat_docente_pre_session')
+    const newQueue = [...currentQueue, { remoteId, timestamp: Date.now(), status: 'pending' as const }]
+    localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+
+    // Migrar chat de la sesión inicial al ID específico para que el técnico lo vea
+    const initialHistory = localStorage.getItem('atres_chat_docente_initial_session')
+    if (initialHistory) {
+      localStorage.setItem(`atres_chat_${remoteId}`, initialHistory)
     }
 
     const botMsg: Message = { 
@@ -190,6 +187,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     
     saveAndSyncChat([...messages, botMsg])
+    setIsRemoteRequested(true)
+    toast({ title: "Solicitud Técnica Enviada" })
+  }
+
+  const resetForNewRequest = () => {
+    setRemoteId('')
+    setIsRemoteRequested(false)
+    syncChat()
   }
 
   const copyId = (idToCopy: string) => {
@@ -205,14 +210,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const newQueue = currentQueue.filter(r => r.remoteId !== idToFinish)
     
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
-    localStorage.removeItem(`atres_chat_${idToFinish}`)
     
-    if (isPublic && idToFinish === remoteId) {
-       localStorage.removeItem('atres_active_session_id')
-       setRemoteId('')
-       setIsRemoteRequested(false)
-    }
-
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
     
     if (selectedId === idToFinish) setSelectedId(null)
@@ -224,10 +222,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   return (
     <div className={cn(
       "flex h-full flex-col md:flex-row bg-white overflow-hidden", 
-      isPublic && "rounded-[2rem] shadow-2xl border border-primary/10"
+      isPublic && "rounded-[2.5rem] shadow-2xl border border-primary/10"
     )}>
-      {/* Sidebar de Soporte Remoto */}
-      <div className="w-full md:w-[320px] bg-slate-50 border-r p-5 space-y-6 shrink-0 flex flex-col overflow-y-auto">
+      {/* Sidebar: Gestión de Soporte */}
+      <div className="w-full md:w-[300px] bg-slate-50 border-r p-5 space-y-6 shrink-0 flex flex-col overflow-y-auto">
         <div className="space-y-1">
           <Badge className="bg-primary text-white text-[8px] font-black uppercase px-2 py-0.5">MÓDULO OFICIAL</Badge>
           <h3 className="text-lg font-black text-primary uppercase leading-tight">Apoyo Remoto</h3>
@@ -244,7 +242,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              {queue.length === 0 ? (
                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
                   <MonitorOff className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight">Sin solicitudes activas en este momento</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase leading-tight">Sin solicitudes activas</p>
                </div>
              ) : (
                <div className="space-y-2">
@@ -262,7 +260,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className="flex flex-col">
                         <span className={cn("text-xs font-mono font-black", selectedId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
                         <span className={cn("text-[7px] font-black uppercase", selectedId === req.remoteId ? "text-white/60" : "text-slate-400")}>
-                          En espera: {Math.floor((Date.now() - req.timestamp) / 60000)} min
+                          Espera: {Math.floor((Date.now() - req.timestamp) / 60000)}m
                         </span>
                       </div>
                       <ChevronRight className={cn("h-4 w-4 transition-transform group-hover:translate-x-1", selectedId === req.remoteId ? "text-white" : "text-slate-300")} />
@@ -272,71 +270,82 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              )}
           </div>
         ) : (
-          <div className="p-4 bg-white rounded-2xl border shadow-sm space-y-4 border-primary/5">
-            <div className="flex items-center gap-2">
-              <div className={cn("h-2 w-2 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} />
-              <span className="text-[9px] font-black uppercase text-slate-700">{isRemoteRequested ? "Conexión Solicitada" : "Sin Vínculo Remoto"}</span>
-            </div>
-            
-            <div className="space-y-1.5">
-              <Label className="text-[7px] font-black uppercase text-slate-400 pl-1">ID ANYDESK / TEAMVIEWER</Label>
-              <Input 
-                placeholder="000 000 000" 
-                className="h-10 text-center font-mono font-black border-primary/10 text-base bg-slate-50 rounded-xl focus:ring-4 focus:ring-primary/5 shadow-inner" 
-                value={remoteId}
-                onChange={(e) => setRemoteId(e.target.value)}
-                disabled={isRemoteRequested}
-              />
+          <div className="space-y-4">
+            <div className="p-4 bg-white rounded-2xl border shadow-sm space-y-4 border-primary/5">
+              <div className="flex items-center gap-2">
+                <div className={cn("h-2 w-2 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} />
+                <span className="text-[9px] font-black uppercase text-slate-700">{isRemoteRequested ? "Conexión Solicitada" : "Nueva Solicitud"}</span>
+              </div>
+              
+              <div className="space-y-1.5">
+                <Label className="text-[7px] font-black uppercase text-slate-400 pl-1">ID ANYDESK / TEAMVIEWER</Label>
+                <Input 
+                  placeholder="000 000 000" 
+                  className="h-10 text-center font-mono font-black border-primary/10 text-base bg-slate-50 rounded-xl focus:ring-4 focus:ring-primary/5 shadow-inner" 
+                  value={remoteId}
+                  onChange={(e) => setRemoteId(e.target.value)}
+                  disabled={isRemoteRequested}
+                />
+              </div>
+
+              {!isRemoteRequested ? (
+                <Button 
+                  onClick={handleRequestRemote}
+                  disabled={!remoteId || remoteId.length < 5}
+                  className="w-full btn-institutional h-11 text-[9px] gap-2 rounded-xl"
+                >
+                  <MonitorOff className="h-4 w-4" /> SOLICITAR SOPORTE
+                </Button>
+              ) : (
+                <Button 
+                  onClick={resetForNewRequest}
+                  variant="outline"
+                  className="w-full h-11 text-[8px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5 gap-2 rounded-xl"
+                >
+                  <RefreshCcw className="h-4 w-4" /> ENVIAR OTRO ID
+                </Button>
+              )}
             </div>
 
-            <Button 
-              onClick={handleRequestRemote}
-              disabled={!remoteId || isRemoteRequested}
-              className="w-full btn-institutional h-11 text-[9px] gap-2 rounded-xl"
-            >
-              {isRemoteRequested ? <MonitorDot className="h-4 w-4" /> : <MonitorOff className="h-4 w-4" />}
-              {isRemoteRequested ? "SOLICITUD ENVIADA" : "SOLICITAR SOPORTE"}
-            </Button>
+            <div className="space-y-3 pt-2">
+              <h4 className="text-[8px] font-black uppercase text-accent tracking-[0.2em] border-b pb-1.5">PASOS A SEGUIR</h4>
+              <ul className="space-y-3">
+                {[
+                  "Descargue AnyDesk en su equipo.",
+                  "Copie su ID personal de 9 dígitos.",
+                  "Péguelo arriba y haga clic en Solicitar Soporte.",
+                  "Esperar unos minutos a que un técnico le atienda."
+                ].map((step, i) => (
+                  <li key={i} className="flex gap-2.5 text-[10px] font-bold text-slate-600 items-start">
+                    <span className="h-5 w-5 rounded-full bg-white border border-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[9px] shadow-sm">{i+1}</span>
+                    <span className="leading-tight pt-0.5 uppercase">{step}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
-
-        <div className="space-y-3 pt-2">
-          <h4 className="text-[8px] font-black uppercase text-accent tracking-[0.2em] border-b pb-1.5">PASOS A SEGUIR</h4>
-          <ul className="space-y-3">
-            {[
-              "Descargue AnyDesk en su equipo.",
-              "Copie su ID personal de 9 dígitos.",
-              "Péguelo arriba y haga clic en Solicitar Soporte.",
-              "Esperar unos minutos a que un técnico le atienda."
-            ].map((step, i) => (
-              <li key={i} className="flex gap-2.5 text-[10px] font-bold text-slate-600 items-start">
-                <span className="h-5 w-5 rounded-full bg-white border border-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[9px] shadow-sm">{i+1}</span>
-                <span className="leading-tight pt-0.5 uppercase">{step}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
 
         {!isPublic && selectedId && (
           <div className="mt-auto p-4 bg-white rounded-2xl border border-primary/10 space-y-3 shadow-xl">
              <div className="flex justify-between items-center">
                 <p className="text-[9px] font-black uppercase text-slate-400">Atendiendo a:</p>
-                <Badge variant="outline" className="text-[7px] font-black text-emerald-600 border-emerald-100 bg-emerald-50">SESIÓN ACTIVA</Badge>
+                <Badge variant="outline" className="text-[7px] font-black text-emerald-600 border-emerald-100 bg-emerald-50">ACTIVO</Badge>
              </div>
              <div className="flex items-center justify-between bg-slate-50 rounded-xl p-3 border">
-                <span className="text-base font-mono font-black text-primary">{selectedId}</span>
-                <Button variant="ghost" size="icon" onClick={() => copyId(selectedId)} className="h-8 w-8 hover:bg-white">
+                <span className="text-sm font-mono font-black text-primary truncate mr-2">{selectedId}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyId(selectedId)} className="h-8 w-8 hover:bg-white shrink-0">
                    {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-slate-400" />}
                 </Button>
              </div>
-             <Button onClick={() => finishAttention(selectedId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] uppercase h-10 rounded-xl shadow-lg flex items-center gap-2">
+             <Button onClick={() => finishAttention(selectedId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] uppercase h-10 rounded-xl shadow-lg flex items-center justify-center gap-2">
                 <X className="h-3.5 w-3.5" /> FINALIZAR ATENCIÓN
              </Button>
           </div>
         )}
       </div>
 
-      {/* Área de Chat */}
+      {/* Área de Mensajería */}
       <div className="flex-1 flex flex-col bg-white overflow-hidden min-w-0">
         {!isPublic && !selectedId ? (
           <div className="flex-1 flex flex-col items-center justify-center p-10 bg-slate-50/50 space-y-4">
@@ -345,7 +354,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
              <div className="text-center space-y-2">
                 <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Centro de Mensajería</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[320px] leading-relaxed">Seleccione un usuario de la lista lateral para iniciar la comunicación técnica privada.</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[320px] leading-relaxed">Seleccione un usuario de la lista lateral para iniciar la asistencia técnica.</p>
              </div>
           </div>
         ) : (
@@ -357,12 +366,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <div>
                   <h2 className="text-base font-black text-primary uppercase leading-none">Asistente Virtual ATRES</h2>
-                  <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Línea de Asistencia Activa</p>
+                  <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Soporte Técnico en Vivo</p>
                 </div>
               </div>
               {(isPublic ? remoteId : selectedId) && (
                 <Badge variant="outline" className="hidden sm:flex text-[8px] font-black uppercase border-primary/20 py-1.5 px-4 rounded-full bg-white shadow-sm font-mono">
-                  SESS: {isPublic ? remoteId : selectedId}
+                  SESS: {isPublic ? (remoteId || 'INIT') : selectedId}
                 </Badge>
               )}
             </header>
@@ -424,20 +433,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <footer className="p-4 bg-white border-t border-slate-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
               <div className="max-w-3xl mx-auto flex gap-3">
                 <Input 
-                  placeholder={isPublic ? "Describa su situación técnica aquí..." : "Escribir respuesta oficial..."}
+                  placeholder={isPublic ? "Describa su duda técnica aquí..." : "Escribir respuesta oficial..."}
                   className="h-12 rounded-xl bg-slate-50 border-primary/5 px-6 font-bold text-sm shadow-inner focus:ring-4 focus:ring-primary/5 transition-all focus:bg-white"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   disabled={isTyping}
                 />
-                <Button 
+                <button 
                   onClick={handleSendMessage}
                   disabled={!input.trim() || isTyping}
-                  className="h-12 w-12 rounded-xl btn-institutional shrink-0 shadow-lg"
+                  className="h-12 w-12 rounded-xl btn-institutional shrink-0 shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                 >
                   <Send className="h-5 w-5" />
-                </Button>
+                </button>
               </div>
             </footer>
           </>
