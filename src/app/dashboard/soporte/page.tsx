@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -44,8 +43,7 @@ import {
   TrendingUp,
   History,
   AlertTriangle,
-  ClipboardList,
-  UserPlus
+  ClipboardList
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -115,6 +113,7 @@ export default function SupportPage() {
   const [mounted, setMounted] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   
   // Almacén State
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
@@ -943,7 +942,7 @@ export default function SupportPage() {
 
                 {formData.tipoIncidencia === 'red local' && (
                   <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-3 border-b border-indigo-100 pb-3">
+                    <div className="flex items-center gap-3 border-indigo-100 pb-3">
                        <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
                           <Network className="h-6 w-6" />
                        </div>
