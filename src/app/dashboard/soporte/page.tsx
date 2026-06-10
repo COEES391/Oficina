@@ -90,7 +90,7 @@ type InventoryItem = {
   unit: string;
   minStock: number;
   category: string;
-  location: string;
+  locations: string[];
 };
 
 type WarehouseMovement = {
@@ -106,16 +106,16 @@ type WarehouseMovement = {
 };
 
 const INITIAL_INVENTORY: InventoryItem[] = [
-  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES', location: 'TOLUCA' },
-  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES', location: 'ECATEPEC' },
-  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO', location: 'TOLUCA' },
-  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO', location: 'NEZAHUALCÓYOTL' },
-  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO', location: 'NAUCALPAN' },
-  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES', location: 'TULTITLAN' },
-  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES', location: 'TOLUCA' },
-  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES', location: 'ECATEPEC' },
-  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS', location: 'TULTITLAN' },
-  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA', location: 'NAUCALPAN' },
+  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES', locations: ['TOLUCA'] },
+  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES', locations: ['ECATEPEC'] },
+  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['TOLUCA'] },
+  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO', locations: ['NEZAHUALCÓYOTL'] },
+  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['NAUCALPAN'] },
+  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES', locations: ['TULTITLAN'] },
+  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES', locations: ['TOLUCA'] },
+  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES', locations: ['ECATEPEC'] },
+  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS', locations: ['TULTITLAN'] },
+  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA', locations: ['NAUCALPAN'] },
 ];
 
 export default function SupportPage() {
@@ -234,10 +234,9 @@ export default function SupportPage() {
       setInventory(INITIAL_INVENTORY)
       localStorage.setItem('coees_inventory_v1', JSON.stringify(INITIAL_INVENTORY))
     } else {
-      // Migrate if location is missing
       const migrated = storedInv.map((item: any) => ({
         ...item,
-        location: item.location || 'TOLUCA'
+        locations: item.locations || (item.location ? [item.location] : ['TOLUCA'])
       }));
       setInventory(migrated)
       localStorage.setItem('coees_inventory_v1', JSON.stringify(migrated))
@@ -490,8 +489,6 @@ export default function SupportPage() {
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
 
-  if (!mounted) return null
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
@@ -620,7 +617,7 @@ export default function SupportPage() {
                             <TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Stock Actual</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead>
-                            <TableHead className="font-black uppercase text-[10px] text-center">Lugar</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Lugares de Resguardo</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Min. Sugerido</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Estado</TableHead>
                             <TableHead className="text-right pr-6"></TableHead>
@@ -640,9 +637,16 @@ export default function SupportPage() {
                               </TableCell>
                               <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
                               <TableCell className="text-center">
-                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200">
-                                   <MapPin className="h-2 w-2 mr-1 text-primary" /> {item.location}
-                                </Badge>
+                                <div className="flex flex-wrap justify-center gap-1">
+                                  {item.locations?.map(loc => (
+                                    <Badge key={loc} variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200">
+                                       <MapPin className="h-2 w-2 mr-1 text-primary" /> {loc}
+                                    </Badge>
+                                  ))}
+                                  {(!item.locations || item.locations.length === 0) && (
+                                    <span className="text-[8px] font-bold text-slate-400 italic">SIN ASIGNAR</span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="text-center text-[10px] font-mono font-black text-slate-400">{item.minStock}</TableCell>
                               <TableCell className="text-center">
@@ -799,7 +803,7 @@ export default function SupportPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal de Edición de Insumo */}
+        {/* Modal de Edición de Insumo (Soporta múltiples ubicaciones) */}
         <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
           <DialogContent className="sm:max-w-[500px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
              <DialogHeader className="p-8 bg-slate-50 border-b">
@@ -811,7 +815,7 @@ export default function SupportPage() {
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Material</Label>
                    <Input 
-                      className="h-12 bg-slate-50 font-bold uppercase" 
+                      className="h-12 bg-slate-50 font-bold uppercase shadow-inner" 
                       value={editingItem?.name || ''} 
                       onChange={e => setEditingItem(prev => prev ? {...prev, name: e.target.value.toUpperCase()} : null)}
                    />
@@ -821,7 +825,7 @@ export default function SupportPage() {
                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Stock Actual</Label>
                       <Input 
                         type="number" 
-                        className="h-12 text-center font-black text-lg" 
+                        className="h-12 text-center font-black text-lg bg-slate-50 shadow-inner" 
                         value={editingItem?.qty || 0} 
                         onChange={e => setEditingItem(prev => prev ? {...prev, qty: parseInt(e.target.value) || 0} : null)}
                       />
@@ -830,20 +834,37 @@ export default function SupportPage() {
                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Mínimo Crítico</Label>
                       <Input 
                         type="number" 
-                        className="h-12 text-center font-black text-lg" 
+                        className="h-12 text-center font-black text-lg bg-slate-50 shadow-inner" 
                         value={editingItem?.minStock || 0} 
                         onChange={e => setEditingItem(prev => prev ? {...prev, minStock: parseInt(e.target.value) || 0} : null)}
                       />
                    </div>
                 </div>
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicación (Lugar)</Label>
-                   <Select value={editingItem?.location} onValueChange={(val) => setEditingItem(prev => prev ? {...prev, location: val} : null)}>
-                      <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE LUGAR..." /></SelectTrigger>
-                      <SelectContent>
-                         {WAREHOUSE_LOCATIONS.map(loc => <SelectItem key={loc} value={loc} className="text-[10px] font-bold uppercase">{loc}</SelectItem>)}
-                      </SelectContent>
-                   </Select>
+                
+                <div className="space-y-3">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicaciones de Resguardo (Lugares)</Label>
+                   <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
+                      {WAREHOUSE_LOCATIONS.map(loc => (
+                         <div key={loc} className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-slate-50 shadow-sm group hover:border-primary/20 transition-all">
+                            <Checkbox 
+                              id={`edit-loc-${loc}`} 
+                              checked={editingItem?.locations?.includes(loc)}
+                              onCheckedChange={(checked) => {
+                                if (!editingItem) return;
+                                const currentLocs = editingItem.locations || [];
+                                const newLocs = checked 
+                                  ? [...currentLocs, loc]
+                                  : currentLocs.filter(l => l !== loc);
+                                setEditingItem({...editingItem, locations: newLocs});
+                              }}
+                            />
+                            <Label htmlFor={`edit-loc-${loc}`} className="text-[10px] font-black uppercase text-slate-600 cursor-pointer">
+                              {loc}
+                            </Label>
+                         </div>
+                      ))}
+                   </div>
+                   <p className="text-[8px] font-bold text-slate-400 uppercase italic px-2">Puede seleccionar una o varias sedes oficiales.</p>
                 </div>
              </div>
              <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
@@ -1450,7 +1471,7 @@ export default function SupportPage() {
           </TableHeader>
           <TableBody>
             {filteredTickets.map(t => (
-              <TableRow key={t.id} className="hover:bg-slate-50 transition-colors group">
+              <TableRow key={t.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
                 <TableCell className="font-black text-primary text-sm text-center">{t.id}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
