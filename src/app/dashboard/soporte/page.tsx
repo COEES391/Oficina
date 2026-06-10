@@ -1,5 +1,6 @@
+
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -12,9 +13,40 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { PlusCircle, LifeBuoy, FileText, ImageIcon, X, Circle, Search, Eye, Pencil, School, Tv, Radio, Activity, UserCog, Network, Info, MapPin, Zap, Monitor, CalendarDays, Building2, Archive, Package } from "lucide-react"
+import { 
+  PlusCircle, 
+  LifeBuoy, 
+  FileText, 
+  ImageIcon, 
+  X, 
+  Circle, 
+  Search, 
+  Eye, 
+  Pencil, 
+  School, 
+  Tv, 
+  Radio, 
+  Activity, 
+  UserCog, 
+  Network, 
+  Info, 
+  MapPin, 
+  Zap, 
+  Monitor, 
+  CalendarDays, 
+  Building2, 
+  Archive, 
+  Package,
+  TrendingDown,
+  TrendingUp,
+  History,
+  AlertTriangle,
+  ClipboardList,
+  UserPlus
+} from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
@@ -44,17 +76,38 @@ const EDUSAT_DECO_ACCIONES = ['CONFIGURACIÓN', 'REUBICACIÓN', 'CAMBIO'];
 const EDUSAT_CABLEADO = ['CAMBIO DE CAMPANAS', 'CAMBIO DE DIVISOR', 'CAMBIO DE CABLE'];
 const EDUSAT_PREVENTIVO = ['REVISIÓN GENERAL', 'LIMPIEZA GENERAL', 'CUIDADO PREVENTIVO'];
 
-const INVENTORY_DATA = [
-  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', status: 'óptimo' },
-  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', status: 'bajo' },
-  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', status: 'óptimo' },
-  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', status: 'óptimo' },
-  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', status: 'óptimo' },
-  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', status: 'óptimo' },
-  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', status: 'óptimo' },
-  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', status: 'óptimo' },
-  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', status: 'bajo' },
-  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', status: 'óptimo' },
+type InventoryItem = {
+  id: number;
+  name: string;
+  qty: number;
+  unit: string;
+  minStock: number;
+  category: string;
+};
+
+type WarehouseMovement = {
+  id: string;
+  type: 'entrada' | 'salida';
+  itemId: number;
+  itemName: string;
+  qty: number;
+  date: string;
+  recipient?: string;
+  folio?: string;
+  observations?: string;
+};
+
+const INITIAL_INVENTORY: InventoryItem[] = [
+  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES' },
+  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES' },
+  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO' },
+  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO' },
+  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO' },
+  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES' },
+  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES' },
+  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES' },
+  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS' },
+  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA' },
 ];
 
 export default function SupportPage() {
@@ -62,13 +115,25 @@ export default function SupportPage() {
   const [mounted, setMounted] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
-  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('') // Buscador dentro del diálogo
-  const [listSearchTerm, setListSearchTerm] = useState('') // Buscador principal de la lista
-  const [officeFilter, setOfficeFilter] = useState('all') // Filtro por oficina
-  const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   
+  // Almacén State
+  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [movements, setMovements] = useState<WarehouseMovement[]>([])
+  const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen')
+  const [movementForm, setMovementForm] = useState({
+    type: 'salida' as 'entrada' | 'salida',
+    itemId: '',
+    qty: 0,
+    recipient: '',
+    folio: '',
+    observations: ''
+  })
+
+  const [searchTerm, setSearchTerm] = useState('') 
+  const [listSearchTerm, setListSearchTerm] = useState('') 
+  const [officeFilter, setOfficeFilter] = useState('all') 
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
@@ -151,6 +216,19 @@ export default function SupportPage() {
     } else {
       setTickets(stored)
     }
+
+    // Load Warehouse
+    const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]')
+    if (storedInv.length === 0) {
+      setInventory(INITIAL_INVENTORY)
+      localStorage.setItem('coees_inventory_v1', JSON.stringify(INITIAL_INVENTORY))
+    } else {
+      setInventory(storedInv)
+    }
+
+    const storedMovs = JSON.parse(localStorage.getItem('coees_movements_v1') || '[]')
+    setMovements(storedMovs)
+
     setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
   }, [])
 
@@ -336,6 +414,50 @@ export default function SupportPage() {
     return matchSearch && matchOffice;
   });
 
+  // WAREHOUSE LOGIC
+  const handleRegisterMovement = () => {
+    const { itemId, qty, type, recipient, folio, observations } = movementForm;
+    if (!itemId || qty <= 0) {
+      toast({ variant: "destructive", title: "Datos incompletos", description: "Seleccione un material y cantidad válida." })
+      return;
+    }
+
+    const item = inventory.find(i => i.id === parseInt(itemId));
+    if (!item) return;
+
+    if (type === 'salida' && item.qty < qty) {
+      toast({ variant: "destructive", title: "Stock insuficiente", description: `Solo hay ${item.qty} ${item.unit} disponibles.` })
+      return;
+    }
+
+    const newQty = type === 'entrada' ? item.qty + qty : item.qty - qty;
+    const updatedInventory = inventory.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
+    
+    const newMovement: WarehouseMovement = {
+      id: `MOV-${Date.now()}`,
+      type,
+      itemId: item.id,
+      itemName: item.name,
+      qty,
+      date: format(new Date(), 'yyyy-MM-dd HH:mm'),
+      recipient,
+      folio,
+      observations
+    };
+
+    const updatedMovements = [newMovement, ...movements];
+
+    setInventory(updatedInventory);
+    setMovements(updatedMovements);
+    localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
+    localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
+
+    setMovementForm({ type: 'salida', itemId: '', qty: 0, recipient: '', folio: '', observations: '' });
+    toast({ title: "Movimiento registrado", description: `Se ha actualizado el stock de ${item.name}.` });
+  }
+
+  const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
+
   if (!mounted) return null
 
   return (
@@ -375,60 +497,254 @@ export default function SupportPage() {
           </Button>
         </div>
 
-        {/* Modal de Almacén */}
+        {/* Modal de Almacén Integral */}
         <Dialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen}>
-          <DialogContent className="sm:max-w-[850px] rounded-[2.5rem] h-[80vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-            <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
+          <DialogContent className="sm:max-w-[1100px] rounded-[2.5rem] h-[92vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+            <DialogHeader className="p-6 bg-primary text-white shrink-0 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
                 <Archive className="h-40 w-40" />
               </div>
               <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10">
-                <Package className="h-8 w-8 text-accent" /> Control de Almacén Técnico
+                <Package className="h-8 w-8 text-accent" /> Control de Almacén Técnico COEES
               </DialogTitle>
-              <DialogDescription className="text-white/60 font-bold text-xs uppercase tracking-widest mt-2 relative z-10">
-                Inventario de materiales y suministros estratégicos de la brigada COEES.
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-[0.3em] mt-2 relative z-10">
+                Sistema Integral de Entradas, Salidas y Stock Crítico
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden p-8 bg-slate-50/50">
-              <div className="border-2 border-slate-200 rounded-[2rem] bg-white overflow-hidden shadow-inner h-full flex flex-col">
-                <ScrollArea className="flex-1">
-                  <Table>
-                    <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
-                      <TableRow>
-                        <TableHead className="font-black uppercase text-[10px] pl-6 py-4">Material / Insumo</TableHead>
-                        <TableHead className="font-black uppercase text-[10px] text-center">Stock Disponible</TableHead>
-                        <TableHead className="font-black uppercase text-[10px] text-center">Unidad de Medida</TableHead>
-                        <TableHead className="font-black uppercase text-[10px] text-right pr-6">Estatus Operativo</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {INVENTORY_DATA.map(item => (
-                        <TableRow key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
-                          <TableCell className="font-black text-slate-700 text-xs uppercase pl-6 py-4">{item.name}</TableCell>
-                          <TableCell className="text-center">
-                            <span className="inline-flex items-center justify-center h-8 w-12 rounded-lg bg-primary/5 text-primary text-sm font-black border border-primary/10">
-                              {item.qty}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
-                          <TableCell className="text-right pr-6">
-                            <Badge className={cn(
-                              "text-[8px] font-black uppercase px-3 py-1 rounded-full",
-                              item.status === 'bajo' ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                            )}>
-                              {item.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+
+            <Tabs value={warehouseActiveTab} onValueChange={setWarehouseActiveTab} className="flex-1 flex flex-col overflow-hidden">
+              <div className="px-8 border-b bg-slate-50/50">
+                <TabsList className="bg-transparent h-14 p-0 gap-8">
+                  <TabsTrigger value="resumen" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Dashboard</TabsTrigger>
+                  <TabsTrigger value="inventario" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Inventario Actual</TabsTrigger>
+                  <TabsTrigger value="movimientos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Registro de Flujo</TabsTrigger>
+                  <TabsTrigger value="historial" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Bitácora Histórica</TabsTrigger>
+                </TabsList>
               </div>
-            </div>
-            <DialogFooter className="p-6 bg-slate-100 border-t flex justify-end shrink-0">
+
+              <div className="flex-1 overflow-hidden p-6 bg-white">
+                <TabsContent value="resumen" className="h-full m-0 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="executive-card p-6 bg-primary/5 border-primary/10 border-l-8 border-l-primary">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-primary/60 tracking-widest">Insumos Críticos</p>
+                          <h3 className="text-4xl font-black text-primary mt-1">{lowStockItems.length}</h3>
+                        </div>
+                        <AlertTriangle className="h-10 w-10 text-primary opacity-20" />
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Requieren reabastecimiento urgente</p>
+                    </Card>
+
+                    <Card className="executive-card p-6 bg-accent/5 border-accent/10 border-l-8 border-l-accent">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-accent/60 tracking-widest">Movimientos Mes</p>
+                          <h3 className="text-4xl font-black text-accent mt-1">{movements.length}</h3>
+                        </div>
+                        <TrendingUp className="h-10 w-10 text-accent opacity-20" />
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Registro de entradas y salidas</p>
+                    </Card>
+
+                    <Card className="executive-card p-6 bg-emerald-50 border-emerald-100 border-l-8 border-l-emerald-500">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-emerald-600/60 tracking-widest">Stock Operativo</p>
+                          <h3 className="text-4xl font-black text-emerald-600 mt-1">{inventory.length}</h3>
+                        </div>
+                        <ClipboardList className="h-10 w-10 text-emerald-500 opacity-20" />
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Tipos de materiales activos</p>
+                    </Card>
+                  </div>
+
+                  {lowStockItems.length > 0 && (
+                    <div className="p-6 bg-rose-50 rounded-2xl border-2 border-rose-100 animate-pulse">
+                      <h4 className="text-xs font-black text-rose-700 uppercase mb-4 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" /> Alerta de Inventario Crítico
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {lowStockItems.map(item => (
+                          <div key={item.id} className="bg-white p-3 rounded-xl shadow-sm border border-rose-100">
+                            <p className="text-[10px] font-black text-slate-700 uppercase leading-none mb-1">{item.name}</p>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-rose-600 font-black text-sm">{item.qty} {item.unit.split(' ')[0]}</span>
+                              <Badge className="bg-rose-100 text-rose-700 text-[8px]">BAJO</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="inventario" className="h-full m-0 overflow-hidden">
+                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner h-full flex flex-col">
+                    <ScrollArea className="flex-1">
+                      <Table>
+                        <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
+                          <TableRow>
+                            <TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Stock Actual</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-center">Min. Sugerido</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] text-right pr-6">Estado</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {inventory.map(item => (
+                            <TableRow key={item.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16">
+                              <TableCell className="font-black text-slate-700 text-xs uppercase pl-6 py-4">{item.name}</TableCell>
+                              <TableCell className="text-center">
+                                <span className={cn(
+                                  "inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black border transition-all shadow-sm",
+                                  item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-primary/5 text-primary border-primary/10"
+                                )}>
+                                  {item.qty}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
+                              <TableCell className="text-center text-[10px] font-mono font-black text-slate-400">{item.minStock}</TableCell>
+                              <TableCell className="text-right pr-6">
+                                <Badge className={cn(
+                                  "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
+                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white'
+                                )}>
+                                  {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="movimientos" className="h-full m-0 flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+                    <Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50">
+                      <h4 className="text-sm font-black uppercase text-accent mb-6 flex items-center gap-3">
+                         <TrendingDown className="h-5 w-5" /> Registro de Salida de Material
+                      </h4>
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Seleccionar Insumo</Label>
+                          <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'salida'})}>
+                            <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger>
+                            <SelectContent>
+                              {inventory.map(i => <SelectItem key={i.id} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} (Stock: {i.qty})</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad</Label>
+                            <Input type="number" className="h-12 bg-white rounded-xl text-center font-black text-lg" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio Servicio (Opcional)</Label>
+                            <Input className="h-12 bg-white rounded-xl uppercase font-mono text-xs" placeholder="FOL-XXX" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Técnico / Beneficiario</Label>
+                          <Input className="h-12 bg-white rounded-xl uppercase font-bold text-xs" placeholder="NOMBRE DEL RESPONSABLE..." value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                        </div>
+                        <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14 text-[11px]">Registrar Salida Oficial</Button>
+                      </div>
+                    </Card>
+
+                    <Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50">
+                      <h4 className="text-sm font-black uppercase text-primary mb-6 flex items-center gap-3">
+                         <TrendingUp className="h-5 w-5" /> Entrada por Reabastecimiento
+                      </h4>
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Seleccionar Insumo</Label>
+                          <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'entrada'})}>
+                            <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger>
+                            <SelectContent>
+                              {inventory.map(i => <SelectItem key={i.id} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad Entrante</Label>
+                          <Input type="number" className="h-12 bg-white rounded-xl text-center font-black text-lg" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Observaciones / Proveedor</Label>
+                          <Textarea className="h-24 bg-white rounded-xl uppercase font-bold text-xs p-4" placeholder="NOTAS DE LA ENTREGA..." value={movementForm.observations} onChange={e => setMovementForm({...movementForm, observations: e.target.value.toUpperCase()})} />
+                        </div>
+                        <Button onClick={handleRegisterMovement} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px] hover:bg-primary/95">Registrar Entrada al Almacén</Button>
+                      </div>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="historial" className="h-full m-0 overflow-hidden">
+                  <div className="border rounded-[2rem] bg-white overflow-hidden shadow-inner h-full">
+                    <ScrollArea className="h-full">
+                      <Table>
+                        <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
+                          <TableRow>
+                            <TableHead className="font-black uppercase text-[9px] pl-6 h-12">Fecha / Hora</TableHead>
+                            <TableHead className="font-black uppercase text-[9px] h-12">Tipo</TableHead>
+                            <TableHead className="font-black uppercase text-[9px] h-12">Material</TableHead>
+                            <TableHead className="font-black uppercase text-[9px] h-12 text-center">Qty</TableHead>
+                            <TableHead className="font-black uppercase text-[9px] h-12">Beneficiario / Técnico</TableHead>
+                            <TableHead className="font-black uppercase text-[9px] h-12 text-right pr-6">Referencia</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {movements.map(mov => (
+                            <TableRow key={mov.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                              <TableCell className="font-mono text-[10px] font-bold text-slate-400 pl-6 py-4">{mov.date}</TableCell>
+                              <TableCell>
+                                <Badge className={cn(
+                                  "text-[8px] font-black uppercase",
+                                  mov.type === 'entrada' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                                )}>
+                                  {mov.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-black text-slate-700 text-[10px] uppercase">{mov.itemName}</TableCell>
+                              <TableCell className="text-center font-black text-primary text-xs">{mov.qty}</TableCell>
+                              <TableCell className="text-[10px] font-bold text-slate-500 uppercase">{mov.recipient || '-'}</TableCell>
+                              <TableCell className="text-right pr-6 font-mono text-[9px] font-black text-accent">{mov.folio || 'N/A'}</TableCell>
+                            </TableRow>
+                          ))}
+                          {movements.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-24 opacity-30">
+                                <History className="h-10 w-10 mx-auto mb-4" />
+                                <p className="text-[10px] font-black uppercase">Sin registros de movimientos disponibles</p>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+
+            <DialogFooter className="p-6 bg-slate-100 border-t flex justify-between items-center shrink-0">
+              <div className="flex gap-4">
+                 <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-[9px] font-black uppercase text-slate-500">Stock Seguro</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="text-[9px] font-black uppercase text-slate-500">Alerta de Stock</span>
+                 </div>
+              </div>
               <Button variant="outline" onClick={() => setIsWarehouseOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-300 hover:bg-white shadow-sm">
-                Cerrar Visor de Almacén
+                Cerrar Panel Operativo
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -914,10 +1230,10 @@ export default function SupportPage() {
                 </div>
 
                 {formData.tipoIncidencia !== 'teleplanteles' && (
-                  <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
+                  <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local' || formData.tipoIncidencia === 'cuenta institucional') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && (
+                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && formData.tipoIncidencia !== 'cuenta institucional' && (
                       <>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
