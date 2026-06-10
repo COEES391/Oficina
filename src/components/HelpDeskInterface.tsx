@@ -19,7 +19,8 @@ import {
   ChevronRight,
   MessageSquare,
   X,
-  RefreshCcw
+  RefreshCcw,
+  UserCog
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -28,6 +29,7 @@ type Message = {
   role: 'user' | 'tech' | 'bot';
   content: string;
   timestamp: number;
+  senderName?: string;
 }
 
 type SupportRequest = {
@@ -45,6 +47,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [techName, setTechName] = useState('')
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
@@ -60,6 +63,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
+    } else {
+      // Cargar nombre del técnico guardado
+      const savedTechName = localStorage.getItem('atres_tech_name')
+      if (savedTechName) setTechName(savedTechName)
     }
   }, [isPublic])
 
@@ -80,8 +87,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [isPublic, remoteId, isRemoteRequested])
 
   const syncChat = useCallback(() => {
-    // Si es público, usamos remoteId si existe, sino el sessionKey único de la pestaña
-    // Si es técnico, usamos el selectedId de la lista de espera
     const activeId = isPublic ? (remoteId || sessionKey) : selectedId
     
     if (!activeId) {
@@ -127,6 +132,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }, [messages])
 
+  const handleTechNameChange = (val: string) => {
+    const upperVal = val.toUpperCase()
+    setTechName(upperVal)
+    localStorage.setItem('atres_tech_name', upperVal)
+  }
+
   const saveAndSyncChat = (newMessages: Message[]) => {
     const activeId = isPublic ? (remoteId || sessionKey) : selectedId
     if (!activeId) return
@@ -148,14 +159,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const newMessage: Message = { 
       role: myRole, 
       content: input, 
-      timestamp: Date.now() 
+      timestamp: Date.now(),
+      senderName: !isPublic ? techName : undefined
     }
 
     const updatedMessages = [...messages, newMessage]
     saveAndSyncChat(updatedMessages)
     setInput('')
 
-    // Respuesta del Bot para Instrucciones
     if (isPublic && !messages.some(m => m.role === 'tech')) {
       const alreadySentInst = messages.some(m => m.content.includes('Instrucciones'));
       if (!alreadySentInst) {
@@ -192,7 +203,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
-    // Migrar historial de la sesión anónima al nuevo ID para que el técnico lo vea
     const currentHistory = localStorage.getItem(`atres_chat_${sessionKey}`)
     if (currentHistory) {
       localStorage.setItem(`atres_chat_${remoteId}`, currentHistory)
@@ -212,7 +222,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const resetForNewRequest = () => {
     setRemoteId('')
     setIsRemoteRequested(false)
-    // Generar nueva sesión limpia para una solicitud fresca
     const newSKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
@@ -354,17 +363,31 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
 
         {!isPublic && selectedId && (
-          <div className="mt-auto p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl">
+          <div className="mt-auto p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
              <div className="flex justify-between items-center">
                 <p className="text-[10px] font-black uppercase text-slate-400">Atendiendo a:</p>
                 <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black animate-pulse">SESIÓN ACTIVA</Badge>
              </div>
+
+             <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary flex items-center gap-2 pl-1">
+                   <UserCog className="h-3 w-3" /> Analista Responsable
+                </Label>
+                <Input 
+                   placeholder="TU NOMBRE..." 
+                   className="h-10 text-[10px] font-black uppercase border-primary/10 bg-slate-50 rounded-xl shadow-inner focus:bg-white transition-all"
+                   value={techName}
+                   onChange={(e) => handleTechNameChange(e.target.value)}
+                />
+             </div>
+
              <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border shadow-inner">
                 <span className="text-base font-mono font-black text-primary truncate mr-2">{selectedId}</span>
                 <Button variant="ghost" size="icon" onClick={() => copyId(selectedId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
                    {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-slate-400" />}
                 </Button>
              </div>
+
              <Button onClick={() => finishAttention(selectedId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
                 <X className="h-4 w-4" /> FINALIZAR ATENCIÓN
              </Button>
@@ -413,6 +436,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <div className={cn("p-5 rounded-[2rem] text-[13px] font-semibold shadow-md border leading-relaxed",
                           isMe ? "bg-[#B38E5D] text-white rounded-tr-none border-[#B38E5D]/10" : "bg-white text-slate-700 rounded-tl-none border-slate-100"
                         )}>
+                          {msg.senderName && <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Analista: {msg.senderName}</p>}
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                           <p className={cn("text-[9px] mt-2 font-black uppercase tracking-widest", isMe ? "text-white/60" : "text-slate-300")}>
                             {mounted ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
