@@ -5,6 +5,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { 
   Send, 
   Bot, 
@@ -21,10 +30,16 @@ import {
   X,
   RefreshCcw,
   UserCog,
-  Ticket
+  Ticket,
+  Search,
+  CheckCircle2,
+  Save,
+  School
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { schoolsDirectory } from '@/lib/schools-directory'
+import { format } from 'date-fns'
 
 type Message = {
   role: 'user' | 'tech' | 'bot';
@@ -55,6 +70,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [copied, setCopied] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
   
+  // Finish Support State
+  const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
+  const [finishSearchTerm, setFinishSearchTerm] = useState('')
+  const [finishForm, setFinishForm] = useState({
+    cct: '',
+    schoolName: '',
+    servicio: '',
+    municipio: '',
+    valle: ''
+  })
+  
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -67,7 +93,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setSessionKey(sKey)
       
       const savedTicket = sessionStorage.getItem('atres_active_ticket')
-      if (savedTicket) setActiveTicketNumber(savedTicket)
+      if (savedTicket) {
+        setActiveTicketNumber(savedTicket)
+        setIsRemoteRequested(true)
+      }
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
@@ -190,19 +219,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const generateSequentialFolio = () => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth(); // 0-indexed, 7 is August
-    
-    // Determinar Ciclo Escolar (Agosto a Julio)
+    const month = now.getMonth();
     const cycle = month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
     const counterKey = `atres_folio_counter_${cycle}`;
-    
     const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
     const nextCounter = lastCounter + 1;
-    
-    // Guardar nuevo contador
     localStorage.setItem(counterKey, nextCounter.toString());
-    
-    // Formatear a 5 dígitos
     const formattedNum = nextCounter.toString().padStart(5, '0');
     return `ATRES-${formattedNum}`;
   }
@@ -222,9 +244,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
 
-    // Generar Folio Secuencial por Ciclo
     const newTicketNumber = generateSequentialFolio();
-
     const newRequest: SupportRequest = { 
       remoteId, 
       ticketNumber: newTicketNumber,
@@ -281,17 +301,60 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     toast({ title: "ID Copiado" })
   }
 
-  const finishAttention = (idToFinish: string) => {
+  const handleFinishConfirm = () => {
+    if (!finishForm.cct || !finishForm.servicio) {
+      toast({ variant: "destructive", title: "Campos Incompletos", description: "Debe seleccionar un plantel y describir el servicio." })
+      return
+    }
+
+    // 1. Create Program Record
+    const rawPrograms = localStorage.getItem('programs_full_v24')
+    const programs = rawPrograms ? JSON.parse(rawPrograms) : []
+    
+    const newAtresRecord = {
+      id: selectedRequest!.ticketNumber,
+      name: 'ATRES',
+      cct: finishForm.cct,
+      schoolName: finishForm.schoolName,
+      municipio: finishForm.municipio,
+      valle: finishForm.valle,
+      status: 'concluido',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      progress: 100,
+      asistentes: [],
+      observaciones: finishForm.servicio, // "Servicio Realizado" column uses observations
+      tecnicos: techName
+    }
+
+    const updatedPrograms = [newAtresRecord, ...programs]
+    localStorage.setItem('programs_full_v24', JSON.stringify(updatedPrograms))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify(updatedPrograms) }))
+
+    // 2. Remove from Queue
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
-    const newQueue = currentQueue.filter(r => r.remoteId !== idToFinish)
-    
+    const newQueue = currentQueue.filter(r => r.remoteId !== selectedRequest!.remoteId)
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
     
-    if (selectedRequest?.remoteId === idToFinish) setSelectedRequest(null)
+    // 3. Reset States
+    setIsFinishDialogOpen(false)
+    setSelectedRequest(null)
+    setFinishForm({ cct: '', schoolName: '', servicio: '', municipio: '', valle: '' })
+    setFinishSearchTerm('')
     syncQueue()
-    toast({ title: "Atención Finalizada" })
+    toast({ title: "Atención Finalizada", description: "El registro se guardó en la bitácora de ATRES." })
+  }
+
+  const handleSchoolSelect = (s: any) => {
+    setFinishForm({
+      ...finishForm,
+      cct: s.cct,
+      schoolName: s.nombre,
+      municipio: s.municipio,
+      valle: s.valle
+    })
+    setFinishSearchTerm('')
   }
 
   return (
@@ -437,7 +500,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </Button>
              </div>
 
-             <Button onClick={() => finishAttention(selectedRequest.remoteId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+             <Button onClick={() => setIsFinishDialogOpen(true)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
                 <X className="h-4 w-4" /> FINALIZAR ATENCIÓN
              </Button>
           </div>
@@ -535,6 +598,92 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </>
         )}
       </div>
+
+      {/* Finishing Dialog */}
+      <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-emerald-400" /> Resumen de Atención ATRES
+            </DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest">
+              Capture el plantel y el servicio realizado para el registro en bitácora.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-8 space-y-6 bg-white">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-1">
+                <Search className="h-4 w-4 text-accent" /> Localizador de Plantel (CCT)
+              </Label>
+              <div className="relative">
+                <Input 
+                  placeholder="TECLEAR CCT O NOMBRE..." 
+                  className="h-12 rounded-xl bg-slate-50 border-primary/10 text-xs font-black uppercase shadow-inner"
+                  value={finishSearchTerm}
+                  onChange={(e) => setFinishSearchTerm(e.target.value)}
+                />
+                {finishSearchTerm.length > 2 && (
+                   <div className="absolute left-0 right-0 top-14 max-h-48 overflow-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-50 divide-y">
+                     {schoolsDirectory.filter(s => 
+                        s.cct.includes(finishSearchTerm.toUpperCase()) || 
+                        s.nombre.includes(finishSearchTerm.toUpperCase())
+                     ).slice(0, 5).map(s => (
+                        <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => handleSchoolSelect(s)}>
+                          <div className="flex flex-col">
+                             <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
+                             <span className="text-[8px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">Elegir</Badge>
+                        </div>
+                     ))}
+                   </div>
+                )}
+              </div>
+
+              {finishForm.cct && (
+                 <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex items-center gap-4 animate-in zoom-in-95">
+                    <div className="h-10 w-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
+                       <School className="h-6 w-6" />
+                    </div>
+                    <div>
+                       <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Plantel Vinculado</p>
+                       <h4 className="text-xs font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
+                       <p className="text-[9px] font-mono font-bold text-slate-400 mt-1">{finishForm.cct}</p>
+                    </div>
+                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Servicio Realizado</Label>
+              <Textarea 
+                placeholder="DETALLE TÉCNICO DE LA SOLUCIÓN..." 
+                className="h-28 rounded-2xl bg-slate-50 border-primary/10 p-4 text-xs font-bold shadow-inner focus:bg-white transition-all"
+                value={finishForm.servicio}
+                onChange={(e) => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})}
+              />
+            </div>
+            
+            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <UserCog className="h-4 w-4" />
+               </div>
+               <div>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Analista que Atendió</p>
+                  <p className="text-[10px] font-black text-primary uppercase">{techName || 'SIN IDENTIFICAR'}</p>
+               </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+             <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-12 px-6 text-[10px] font-black uppercase">Cancelar</Button>
+             <Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2">
+                <Save className="h-4 w-4" /> Finalizar y Registrar
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

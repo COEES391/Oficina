@@ -119,17 +119,9 @@ export default function ProgramsPage() {
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
 
-  const checkSupportRequests = useCallback(() => {
-    const rawQueue = localStorage.getItem('atres_support_queue')
-    const queue = rawQueue ? JSON.parse(rawQueue) : []
-    setPendingRequestsCount(queue.length)
-  }, [])
-
-  useEffect(() => {
-    setMounted(true)
+  const syncData = useCallback(() => {
     const currentVersion = 'programs_full_v24'
     const storedV24 = localStorage.getItem(currentVersion)
-    
     if (storedV24) {
       setRecords(JSON.parse(storedV24))
     } else {
@@ -137,23 +129,29 @@ export default function ProgramsPage() {
       localStorage.setItem(currentVersion, JSON.stringify(programsData))
     }
 
+    const rawQueue = localStorage.getItem('atres_support_queue')
+    const queue = rawQueue ? JSON.parse(rawQueue) : []
+    setPendingRequestsCount(queue.length)
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+    syncData()
+
     if (typeof window !== 'undefined') {
       const storedUrl = localStorage.getItem('coees_public_url')
       setPublicBaseUrl(storedUrl || window.location.origin)
       
-      checkSupportRequests()
-
       const handleStorageEvent = (e: StorageEvent) => {
-        if (e.key === 'atres_support_queue') {
-          const queue = e.newValue ? JSON.parse(e.newValue) : []
-          setPendingRequestsCount(queue.length)
+        if (e.key === 'atres_support_queue' || e.key === 'programs_full_v24') {
+          syncData()
         }
       }
 
       window.addEventListener('storage', handleStorageEvent)
       return () => window.removeEventListener('storage', handleStorageEvent)
     }
-  }, [checkSupportRequests])
+  }, [syncData])
 
   const helpDeskUrl = `${publicBaseUrl}/helpdesk`
   const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(helpDeskUrl)}`
@@ -351,6 +349,9 @@ export default function ProgramsPage() {
                     {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
                       <TableHead className="text-[10px] font-black uppercase text-center text-primary tracking-widest w-24">Personal</TableHead>
                     )}
+                    {activeTab === 'ATRES' && (
+                       <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[150px]">Servicio Realizado</TableHead>
+                    )}
                     <TableHead className="text-right text-[9px] font-black uppercase pr-10 text-slate-400">Acción</TableHead>
                   </TableRow>
               </TableHeader>
@@ -376,6 +377,11 @@ export default function ProgramsPage() {
                         <span className="inline-flex items-center justify-center h-6 w-10 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">{rec.asistentes?.length || 0}</span>
                       </TableCell>
                     )}
+                    {activeTab === 'ATRES' && (
+                       <TableCell>
+                          <span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[200px]">{rec.observaciones || '-'}</span>
+                       </TableCell>
+                    )}
                     <TableCell className="text-right pr-10">
                        <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><Pencil className="h-3.5 w-3.5" /></Button>
@@ -384,7 +390,7 @@ export default function ProgramsPage() {
                     </TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={8} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros para mostrar</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={activeTab === 'ATRES' ? 9 : 8} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros para mostrar</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -441,7 +447,7 @@ export default function ProgramsPage() {
                          </div>
                       </div>
 
-                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Diagnóstico y Observaciones</Label><Textarea className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico de la auditoría..." /></div>
+                      <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> {activeTab === 'ATRES' ? 'Servicio Realizado' : 'Diagnóstico y Observaciones'}</Label><Textarea className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder={activeTab === 'ATRES' ? "Describa el soporte técnico brindado..." : "Detalle técnico de la auditoría..."} /></div>
                     </div>
                   </ScrollArea>
                 </TabsContent>
