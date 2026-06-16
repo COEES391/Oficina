@@ -42,7 +42,8 @@ import {
   CheckCircle2,
   Save,
   School,
-  Building2
+  Building2,
+  Download
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -479,7 +480,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3 text-[11px] font-bold text-slate-600 items-start">
                     <span className="h-6 w-6 rounded-full bg-white border-2 border-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[10px] shadow-sm">{i+1}</span>
-                    <span className="leading-tight pt-1 uppercase">{step}</span>
+                    <div className="flex flex-col gap-2">
+                      <span className="leading-tight pt-1 uppercase">{step}</span>
+                      {i === 0 && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 px-3 text-[8px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5 rounded-lg w-fit shadow-sm"
+                          onClick={() => window.open('https://anydesk.com/en/downloads/windows', '_blank')}
+                        >
+                          <Download className="h-3 w-3 mr-1.5" /> DESCARGAR AHORA
+                        </Button>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
