@@ -187,6 +187,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }
 
+  const generateSequentialFolio = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed, 7 is August
+    
+    // Determinar Ciclo Escolar (Agosto a Julio)
+    const cycle = month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+    const counterKey = `atres_folio_counter_${cycle}`;
+    
+    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
+    const nextCounter = lastCounter + 1;
+    
+    // Guardar nuevo contador
+    localStorage.setItem(counterKey, nextCounter.toString());
+    
+    // Formatear a 5 dígitos
+    const formattedNum = nextCounter.toString().padStart(5, '0');
+    return `ATRES-${formattedNum}`;
+  }
+
   const handleRequestRemote = () => {
     if (!remoteId || remoteId.length < 5) {
       toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese un ID de AnyDesk válido." })
@@ -202,7 +222,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
 
-    const newTicketNumber = `ATRES-${Math.floor(10000 + Math.random() * 90000)}`
+    // Generar Folio Secuencial por Ciclo
+    const newTicketNumber = generateSequentialFolio();
+
     const newRequest: SupportRequest = { 
       remoteId, 
       ticketNumber: newTicketNumber,
