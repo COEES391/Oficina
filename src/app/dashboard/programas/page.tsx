@@ -249,6 +249,15 @@ export default function ProgramsPage() {
               </Button>
             </div>
           )}
+          
+          <Button 
+            variant="outline" 
+            className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md flex-1 sm:flex-none" 
+            onClick={() => setIsSchedulerOpen(true)}
+          >
+            <CalendarDays className="h-4 w-4" /> Agenda
+          </Button>
+
           <Button 
             onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); setDialogSearchTerm(''); }} 
             className="btn-institutional h-10 px-8 rounded-xl shadow-md text-[10px] flex-1 sm:flex-none"
@@ -334,7 +343,6 @@ export default function ProgramsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button variant="outline" className="h-10 px-4 border-primary/20 text-primary font-black uppercase text-[9px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm mt-auto" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-3.5 w-3.5" /> Agenda</Button>
              </div>
           </div>
         </Card>
