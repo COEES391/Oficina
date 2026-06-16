@@ -20,7 +20,8 @@ import {
   MessageSquare,
   X,
   RefreshCcw,
-  UserCog
+  UserCog,
+  Ticket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -34,6 +35,7 @@ type Message = {
 
 type SupportRequest = {
   remoteId: string;
+  ticketNumber: string;
   timestamp: number;
   status: 'pending' | 'attending';
 }
@@ -44,9 +46,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [remoteId, setRemoteId] = useState('') 
+  const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
   const [techName, setTechName] = useState('')
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -54,7 +57,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Generar un ID de sesión único para esta pestaña/usuario público
   useEffect(() => {
     if (isPublic) {
       let sKey = sessionStorage.getItem('atres_session_id')
@@ -63,8 +65,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
+      
+      const savedTicket = sessionStorage.getItem('atres_active_ticket')
+      if (savedTicket) setActiveTicketNumber(savedTicket)
     } else {
-      // Cargar nombre del técnico guardado
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
     }
@@ -76,18 +80,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setQueue(currentQueue)
 
     if (isPublic && remoteId) {
-      const isInQueue = currentQueue.some(r => r.remoteId === remoteId);
-      setIsRemoteRequested(isInQueue);
-      
-      if (!isInQueue && isRemoteRequested) {
-        setRemoteId('');
-        setIsRemoteRequested(false);
+      const myReq = currentQueue.find(r => r.remoteId === remoteId);
+      setIsRemoteRequested(!!myReq);
+      if (myReq) {
+        setActiveTicketNumber(myReq.ticketNumber);
+        sessionStorage.setItem('atres_active_ticket', myReq.ticketNumber);
       }
     }
-  }, [isPublic, remoteId, isRemoteRequested])
+  }, [isPublic, remoteId])
 
   const syncChat = useCallback(() => {
-    const activeId = isPublic ? (remoteId || sessionKey) : selectedId
+    const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
     
     if (!activeId) {
       setMessages([])
@@ -110,7 +113,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(initial)
       localStorage.setItem(historyKey, JSON.stringify(initial))
     }
-  }, [isPublic, remoteId, sessionKey, selectedId])
+  }, [isPublic, remoteId, sessionKey, selectedRequest])
 
   useEffect(() => {
     setMounted(true)
@@ -139,7 +142,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const saveAndSyncChat = (newMessages: Message[]) => {
-    const activeId = isPublic ? (remoteId || sessionKey) : selectedId
+    const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
     if (!activeId) return
 
     const historyKey = `atres_chat_${activeId}`
@@ -199,7 +202,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
 
-    const newQueue = [...currentQueue, { remoteId, timestamp: Date.now(), status: 'pending' as const }]
+    const newTicketNumber = `ATRES-${Math.floor(10000 + Math.random() * 90000)}`
+    const newRequest: SupportRequest = { 
+      remoteId, 
+      ticketNumber: newTicketNumber,
+      timestamp: Date.now(), 
+      status: 'pending' as const 
+    }
+
+    const newQueue = [...currentQueue, newRequest]
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
@@ -210,18 +221,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const botMsg: Message = { 
       role: 'bot', 
-      content: `He recibido tu solicitud de soporte remoto para el ID: ${remoteId}. Nuestros técnicos han sido notificados. Por favor, mantén AnyDesk abierto.`, 
+      content: `He recibido tu solicitud de soporte remoto. \n\n# DE ATENCIÓN: ${newTicketNumber}\nID CONEXIÓN: ${remoteId}\n\nNuestros técnicos han sido notificados. Por favor, mantén AnyDesk abierto.`, 
       timestamp: Date.now() 
     }
     
     saveAndSyncChat([...messages, botMsg])
     setIsRemoteRequested(true)
-    toast({ title: "Soporte Solicitado" })
+    setActiveTicketNumber(newTicketNumber)
+    sessionStorage.setItem('atres_active_ticket', newTicketNumber)
+    toast({ title: "Soporte Solicitado", description: `Folio: ${newTicketNumber}` })
   }
 
   const resetForNewRequest = () => {
     setRemoteId('')
     setIsRemoteRequested(false)
+    setActiveTicketNumber(null)
+    sessionStorage.removeItem('atres_active_ticket')
     const newSKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
@@ -252,7 +267,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
     
-    if (selectedId === idToFinish) setSelectedId(null)
+    if (selectedRequest?.remoteId === idToFinish) setSelectedRequest(null)
     syncQueue()
     toast({ title: "Atención Finalizada" })
   }
@@ -286,19 +301,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   {queue.map((req) => (
                     <button 
                       key={req.remoteId}
-                      onClick={() => setSelectedId(req.remoteId)}
+                      onClick={() => setSelectedRequest(req)}
                       className={cn(
                         "w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between group",
-                        selectedId === req.remoteId ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
+                        selectedRequest?.remoteId === req.remoteId ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
                       )}
                     >
                       <div className="flex flex-col">
-                        <span className={cn("text-sm font-mono font-black", selectedId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
-                        <span className={cn("text-[8px] font-black uppercase", selectedId === req.remoteId ? "text-white/60" : "text-slate-400")}>
-                          {mounted ? new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.remoteId === req.remoteId ? "text-white/70" : "text-accent")}>
+                           <Ticket className="h-2.5 w-2.5" /> {req.ticketNumber}
                         </span>
+                        <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
                       </div>
-                      <ChevronRight className={cn("h-4 w-4", selectedId === req.remoteId ? "text-white" : "text-slate-300")} />
+                      <ChevronRight className={cn("h-4 w-4", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-slate-300")} />
                     </button>
                   ))}
                </div>
@@ -312,6 +327,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <span className="text-[10px] font-black uppercase text-slate-700">{isRemoteRequested ? "CONEXIÓN SOLICITADA" : "NUEVA SOLICITUD"}</span>
               </div>
               
+              {isRemoteRequested && activeTicketNumber && (
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center animate-in zoom-in-95">
+                   <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Folio de Atención</p>
+                   <p className="text-lg font-black text-emerald-700">{activeTicketNumber}</p>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID ANYDESK / TEAMVIEWER</Label>
                 <Input 
@@ -362,11 +384,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         )}
 
-        {!isPublic && selectedId && (
+        {!isPublic && selectedRequest && (
           <div className="mt-auto p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
              <div className="flex justify-between items-center">
                 <p className="text-[10px] font-black uppercase text-slate-400">Atendiendo a:</p>
                 <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black animate-pulse">SESIÓN ACTIVA</Badge>
+             </div>
+
+             <div className="bg-primary/5 p-2 rounded-lg border border-primary/10 flex items-center gap-2">
+                <Ticket className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[10px] font-black text-primary uppercase">FOLIO: {selectedRequest.ticketNumber}</span>
              </div>
 
              <div className="space-y-1.5">
@@ -382,13 +409,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
 
              <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border shadow-inner">
-                <span className="text-base font-mono font-black text-primary truncate mr-2">{selectedId}</span>
-                <Button variant="ghost" size="icon" onClick={() => copyId(selectedId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
+                <span className="text-base font-mono font-black text-primary truncate mr-2">{selectedRequest.remoteId}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyId(selectedRequest.remoteId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
                    {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-slate-400" />}
                 </Button>
              </div>
 
-             <Button onClick={() => finishAttention(selectedId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+             <Button onClick={() => finishAttention(selectedRequest.remoteId)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
                 <X className="h-4 w-4" /> FINALIZAR ATENCIÓN
              </Button>
           </div>
@@ -397,7 +424,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* Chat de Soporte */}
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
-        {!isPublic && !selectedId ? (
+        {!isPublic && !selectedRequest ? (
           <div className="flex-1 flex flex-col items-center justify-center p-10 bg-slate-50/50">
              <div className="h-28 w-28 rounded-full bg-white shadow-2xl flex items-center justify-center text-primary/10 border-8 border-white mb-6">
                 <MessageSquare className="h-14 w-12" />
@@ -416,7 +443,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-primary uppercase leading-none">Mesa de Ayuda ATRES</h2>
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Soporte Técnico en Vivo</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Soporte Técnico en Vivo</p>
+                    {(!isPublic && selectedRequest) && (
+                      <span className="text-[9px] font-black text-accent ml-2"># {selectedRequest.ticketNumber}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </header>
