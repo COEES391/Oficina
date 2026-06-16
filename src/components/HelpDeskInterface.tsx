@@ -15,6 +15,13 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select'
+import { 
   Send, 
   Bot, 
   User, 
@@ -34,7 +41,8 @@ import {
   Search,
   CheckCircle2,
   Save,
-  School
+  School,
+  Building2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -54,6 +62,14 @@ type SupportRequest = {
   timestamp: number;
   status: 'pending' | 'attending';
 }
+
+const REGIONAL_OFFICES = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
+];
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -78,7 +94,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     schoolName: '',
     servicio: '',
     municipio: '',
-    valle: ''
+    valle: '',
+    oficinaRegionalAtencion: ''
   })
   
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -302,8 +319,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const handleFinishConfirm = () => {
-    if (!finishForm.cct || !finishForm.servicio) {
-      toast({ variant: "destructive", title: "Campos Incompletos", description: "Debe seleccionar un plantel y describir el servicio." })
+    if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) {
+      toast({ variant: "destructive", title: "Campos Incompletos", description: "Debe seleccionar un plantel, la oficina y describir el servicio." })
       return
     }
 
@@ -322,8 +339,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       date: format(new Date(), 'yyyy-MM-dd'),
       progress: 100,
       asistentes: [],
-      observaciones: finishForm.servicio, // "Servicio Realizado" column uses observations
-      tecnicos: techName
+      observaciones: finishForm.servicio, 
+      tecnicos: techName,
+      oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion
     }
 
     const updatedPrograms = [newAtresRecord, ...programs]
@@ -340,7 +358,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     // 3. Reset States
     setIsFinishDialogOpen(false)
     setSelectedRequest(null)
-    setFinishForm({ cct: '', schoolName: '', servicio: '', municipio: '', valle: '' })
+    setFinishForm({ cct: '', schoolName: '', servicio: '', municipio: '', valle: '', oficinaRegionalAtencion: '' })
     setFinishSearchTerm('')
     syncQueue()
     toast({ title: "Atención Finalizada", description: "El registro se guardó en la bitácora de ATRES." })
@@ -601,80 +619,98 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* Finishing Dialog */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[650px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
           <DialogHeader className="p-6 bg-primary text-white shrink-0">
             <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-400" /> Resumen de Atención ATRES
             </DialogTitle>
             <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest">
-              Capture el plantel y el servicio realizado para el registro en bitácora.
+              Capture el plantel, oficina regional y el servicio realizado para el registro oficial.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="p-8 space-y-6 bg-white">
-            <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-1">
-                <Search className="h-4 w-4 text-accent" /> Localizador de Plantel (CCT)
-              </Label>
-              <div className="relative">
-                <Input 
-                  placeholder="TECLEAR CCT O NOMBRE..." 
-                  className="h-12 rounded-xl bg-slate-50 border-primary/10 text-xs font-black uppercase shadow-inner"
-                  value={finishSearchTerm}
-                  onChange={(e) => setFinishSearchTerm(e.target.value)}
-                />
-                {finishSearchTerm.length > 2 && (
-                   <div className="absolute left-0 right-0 top-14 max-h-48 overflow-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-50 divide-y">
-                     {schoolsDirectory.filter(s => 
-                        s.cct.includes(finishSearchTerm.toUpperCase()) || 
-                        s.nombre.includes(finishSearchTerm.toUpperCase())
-                     ).slice(0, 5).map(s => (
-                        <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => handleSchoolSelect(s)}>
-                          <div className="flex flex-col">
-                             <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
-                             <span className="text-[8px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="p-8 space-y-6 bg-white">
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-1">
+                  <Search className="h-4 w-4 text-accent" /> Localizador de Plantel (CCT)
+                </Label>
+                <div className="relative">
+                  <Input 
+                    placeholder="TECLEAR CCT O NOMBRE..." 
+                    className="h-12 rounded-xl bg-slate-50 border-primary/10 text-xs font-black uppercase shadow-inner"
+                    value={finishSearchTerm}
+                    onChange={(e) => setFinishSearchTerm(e.target.value)}
+                  />
+                  {finishSearchTerm.length > 2 && (
+                    <div className="absolute left-0 right-0 top-14 max-h-48 overflow-auto bg-white border border-slate-200 rounded-xl shadow-2xl z-50 divide-y">
+                      {schoolsDirectory.filter(s => 
+                          s.cct.includes(finishSearchTerm.toUpperCase()) || 
+                          s.nombre.includes(finishSearchTerm.toUpperCase())
+                      ).slice(0, 5).map(s => (
+                          <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => handleSchoolSelect(s)}>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
+                              <span className="text-[8px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">Elegir</Badge>
                           </div>
-                          <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">Elegir</Badge>
-                        </div>
-                     ))}
-                   </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {finishForm.cct && (
+                  <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex items-center gap-4 animate-in zoom-in-95">
+                      <div className="h-10 w-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
+                        <School className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Plantel Vinculado</p>
+                        <h4 className="text-xs font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
+                        <p className="text-[9px] font-mono font-bold text-slate-400 mt-1">{finishForm.cct}</p>
+                      </div>
+                  </div>
                 )}
               </div>
 
-              {finishForm.cct && (
-                 <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex items-center gap-4 animate-in zoom-in-95">
-                    <div className="h-10 w-10 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
-                       <School className="h-6 w-6" />
-                    </div>
-                    <div>
-                       <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Plantel Vinculado</p>
-                       <h4 className="text-xs font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
-                       <p className="text-[9px] font-mono font-bold text-slate-400 mt-1">{finishForm.cct}</p>
-                    </div>
-                 </div>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-1">
+                  <Building2 className="h-4 w-4 text-accent" /> Oficina que Atendió
+                </Label>
+                <Select value={finishForm.oficinaRegionalAtencion} onValueChange={(val) => setFinishForm({...finishForm, oficinaRegionalAtencion: val})}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-primary/10 rounded-xl text-xs font-black uppercase shadow-inner">
+                    <SelectValue placeholder="SELECCIONAR OFICINA..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIONAL_OFFICES.map(off => (
+                      <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Servicio Realizado</Label>
-              <Textarea 
-                placeholder="DETALLE TÉCNICO DE LA SOLUCIÓN..." 
-                className="h-28 rounded-2xl bg-slate-50 border-primary/10 p-4 text-xs font-bold shadow-inner focus:bg-white transition-all"
-                value={finishForm.servicio}
-                onChange={(e) => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})}
-              />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Servicio Realizado</Label>
+                <Textarea 
+                  placeholder="DETALLE TÉCNICO DE LA SOLUCIÓN..." 
+                  className="h-24 rounded-2xl bg-slate-50 border-primary/10 p-4 text-xs font-bold shadow-inner focus:bg-white transition-all"
+                  value={finishForm.servicio}
+                  onChange={(e) => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})}
+                />
+              </div>
+              
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <UserCog className="h-4 w-4" />
+                </div>
+                <div>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Analista Responsable</p>
+                    <p className="text-[10px] font-black text-primary uppercase">{techName || 'SIN IDENTIFICAR'}</p>
+                </div>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <UserCog className="h-4 w-4" />
-               </div>
-               <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Analista que Atendió</p>
-                  <p className="text-[10px] font-black text-primary uppercase">{techName || 'SIN IDENTIFICAR'}</p>
-               </div>
-            </div>
-          </div>
+          </ScrollArea>
 
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
              <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-12 px-6 text-[10px] font-black uppercase">Cancelar</Button>

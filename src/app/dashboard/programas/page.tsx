@@ -33,7 +33,9 @@ import {
   Info,
   Globe,
   AlertTriangle,
-  Settings2
+  Settings2,
+  UserCheck,
+  Building2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -220,7 +222,7 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1400px] mx-auto overflow-hidden px-2 md:px-4">
+    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1450px] mx-auto overflow-hidden px-2 md:px-4">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
@@ -350,7 +352,11 @@ export default function ProgramsPage() {
                       <TableHead className="text-[10px] font-black uppercase text-center text-primary tracking-widest w-24">Personal</TableHead>
                     )}
                     {activeTab === 'ATRES' && (
-                       <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[150px]">Servicio Realizado</TableHead>
+                       <>
+                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[180px]">Servicio Realizado</TableHead>
+                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[140px]">Técnico Atendió</TableHead>
+                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[140px]">Oficina Regional</TableHead>
+                       </>
                     )}
                     <TableHead className="text-right text-[9px] font-black uppercase pr-10 text-slate-400">Acción</TableHead>
                   </TableRow>
@@ -378,9 +384,20 @@ export default function ProgramsPage() {
                       </TableCell>
                     )}
                     {activeTab === 'ATRES' && (
-                       <TableCell>
-                          <span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[200px]">{rec.observaciones || '-'}</span>
-                       </TableCell>
+                       <>
+                         <TableCell>
+                            <span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[200px]">{rec.observaciones || '-'}</span>
+                         </TableCell>
+                         <TableCell>
+                            <span className="text-[9px] font-black text-slate-500 uppercase">{rec.tecnicos || '-'}</span>
+                         </TableCell>
+                         <TableCell>
+                            <div className="flex items-center gap-1.5">
+                               <Building2 className="h-3 w-3 text-accent" />
+                               <span className="text-[9px] font-black text-primary uppercase truncate max-w-[120px]">{rec.oficinaRegionalAtencion?.replace("Oficina de ", "") || '-'}</span>
+                            </div>
+                         </TableCell>
+                       </>
                     )}
                     <TableCell className="text-right pr-10">
                        <div className="flex justify-end gap-2">
@@ -390,7 +407,7 @@ export default function ProgramsPage() {
                     </TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={activeTab === 'ATRES' ? 9 : 8} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros para mostrar</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={activeTab === 'ATRES' ? 12 : 8} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros para mostrar</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
