@@ -222,7 +222,7 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1450px] mx-auto overflow-hidden px-2 md:px-4">
+    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1450px] mx-auto overflow-hidden px-2">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
@@ -282,7 +282,7 @@ export default function ProgramsPage() {
 
         {activeTab === 'ATRES' && (
           <div className="animate-in slide-in-from-top-3 duration-500">
-            <Card className="executive-card p-5 bg-white border border-primary/5 shadow-xl max-w-5xl">
+            <Card className="executive-card p-4 bg-white border border-primary/5 shadow-xl max-w-5xl">
               <div className="flex flex-col md:flex-row items-center gap-6">
                  <div className="bg-slate-50 p-3 rounded-2xl shadow-lg border-2 border-white shrink-0">
                     <div className="relative h-20 w-20 flex items-center justify-center bg-white rounded-xl overflow-hidden shadow-inner">
@@ -352,30 +352,30 @@ export default function ProgramsPage() {
             <Table className="w-full">
               <TableHeader className="bg-slate-50 border-b">
                  <TableRow className="h-12">
-                    <TableHead className="w-12 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[100px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[200px]">Identificación del Plantel</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[120px]">Estatus / Dato</TableHead>
+                    <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[80px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[160px]">Identificación del Plantel</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[100px]">Estatus / Dato</TableHead>
                     {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
-                      <TableHead className="text-[10px] font-black uppercase text-center text-primary tracking-widest w-24">Personal</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-center text-primary tracking-widest w-16">Pers.</TableHead>
                     )}
                     {activeTab === 'ATRES' && (
                        <>
-                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[180px]">Servicio Realizado</TableHead>
-                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[140px]">Técnico Atendió</TableHead>
-                         <TableHead className="text-[10px] font-black uppercase text-primary tracking-widest min-w-[140px]">Oficina Regional</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[140px]">Servicio Realizado</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[100px]">Técnico</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[110px]">Oficina Regional</TableHead>
                        </>
                     )}
-                    <TableHead className="text-right text-[9px] font-black uppercase pr-10 text-slate-400">Acción</TableHead>
+                    <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-slate-400 w-24">Acción</TableHead>
                   </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
                   <TableRow key={rec.id} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
-                    <TableCell className="text-center font-black text-xs text-slate-300 pl-4">{idx + 1}</TableCell>
+                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
                     <TableCell className="font-black text-[10px] text-primary tracking-tight">{activeTab === 'ATRES' ? rec.id : rec.cct}</TableCell>
                     <TableCell className="py-2">
-                      <div className="flex flex-col min-w-0 max-w-[280px]">
+                      <div className="flex flex-col min-w-0 max-w-[220px]">
                         <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate">{activeTab === 'Geoposición' ? `Longitud: ${rec.longitud}` : rec.schoolName}</span>
                         <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate mt-0.5">{rec.municipio} • {rec.valle}</span>
                       </div>
@@ -388,29 +388,29 @@ export default function ProgramsPage() {
                     </TableCell>
                     {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
                       <TableCell className="text-center">
-                        <span className="inline-flex items-center justify-center h-6 w-10 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">{rec.asistentes?.length || 0}</span>
+                        <span className="inline-flex items-center justify-center h-6 w-9 rounded-lg bg-primary/5 text-primary text-[10px] font-black border border-primary/10">{rec.asistentes?.length || 0}</span>
                       </TableCell>
                     )}
                     {activeTab === 'ATRES' && (
                        <>
                          <TableCell>
-                            <span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[200px]">{rec.observaciones || '-'}</span>
+                            <span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-1 max-w-[150px]">{rec.observaciones || '-'}</span>
                          </TableCell>
                          <TableCell>
-                            <span className="text-[9px] font-black text-slate-500 uppercase">{rec.tecnicos || '-'}</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase truncate max-w-[100px] block">{rec.tecnicos || '-'}</span>
                          </TableCell>
                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                               <Building2 className="h-3 w-3 text-accent" />
-                               <span className="text-[9px] font-black text-primary uppercase truncate max-w-[120px]">{rec.oficinaRegionalAtencion?.replace("Oficina de ", "") || '-'}</span>
+                            <div className="flex items-center gap-1">
+                               <Building2 className="h-2.5 w-2.5 text-accent shrink-0" />
+                               <span className="text-[9px] font-black text-primary uppercase truncate max-w-[110px]">{rec.oficinaRegionalAtencion?.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "") || '-'}</span>
                             </div>
                          </TableCell>
                        </>
                     )}
-                    <TableCell className="text-right pr-10">
-                       <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { const updated = records.filter(r => r.id !== rec.id); setRecords(updated); localStorage.setItem('programs_full_v24', JSON.stringify(updated)); toast({ title: "Eliminado" }); }} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <TableCell className="text-right pr-6">
+                       <div className="flex justify-end gap-1">
+                          <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"><Pencil className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => { const updated = records.filter(r => r.id !== rec.id); setRecords(updated); localStorage.setItem('programs_full_v24', JSON.stringify(updated)); toast({ title: "Eliminado" }); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                        </div>
                     </TableCell>
                   </TableRow>
