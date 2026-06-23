@@ -865,10 +865,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           s.cct.includes(finishSearchTerm.toUpperCase()) || 
                           s.nombre.includes(finishSearchTerm.toUpperCase())
                       ).slice(0, 5).map(s => (
-                          <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => handleSchoolSelect(s)}>
+                          <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => handleSchoolSelect(s)}>
                             <div className="flex flex-col">
                               <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
-                              <span className="text-[8px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
+                              <span className="text-[8px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span>
                             </div>
                             <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">Elegir</Badge>
                           </div>
