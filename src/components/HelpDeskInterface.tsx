@@ -43,7 +43,14 @@ import {
   Save,
   School,
   Building2,
-  Download
+  Download,
+  Paperclip,
+  FileText,
+  FileSpreadsheet,
+  FileCode,
+  Plus,
+  Trash2,
+  BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -55,6 +62,9 @@ type Message = {
   content: string;
   timestamp: number;
   senderName?: string;
+  fileData?: string; // Base64
+  fileName?: string;
+  fileType?: string;
 }
 
 type SupportRequest = {
@@ -62,6 +72,14 @@ type SupportRequest = {
   ticketNumber: string;
   timestamp: number;
   status: 'pending' | 'attending';
+}
+
+type TechFile = {
+  id: string;
+  name: string;
+  data: string;
+  type: string;
+  lastUpdated: number;
 }
 
 const REGIONAL_OFFICES = [
@@ -87,6 +105,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [copied, setCopied] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
   
+  // Library State for Tech
+  const [techLibrary, setTechLibrary] = useState<TechFile[]>([])
+  
   // Finish Support State
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [finishSearchTerm, setFinishSearchTerm] = useState('')
@@ -100,6 +121,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   })
   
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const libraryInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isPublic) {
@@ -118,6 +141,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
+      
+      const savedLibrary = localStorage.getItem('atres_tech_library')
+      if (savedLibrary) setTechLibrary(JSON.parse(savedLibrary))
     }
   }, [isPublic])
 
@@ -202,15 +228,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }))
   }
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return
+  const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
+    if (!input.trim() && !fileData) return
 
     const myRole = isPublic ? 'user' : 'tech'
     const newMessage: Message = { 
       role: myRole, 
       content: input, 
       timestamp: Date.now(),
-      senderName: !isPublic ? techName : undefined
+      senderName: !isPublic ? techName : undefined,
+      fileData: fileData?.data,
+      fileName: fileData?.name,
+      fileType: fileData?.type
     }
 
     const updatedMessages = [...messages, newMessage]
@@ -232,6 +261,86 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }, 1000);
       }
     }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string
+      handleSendMessage({ data: base64Data, name: file.name, type: file.type })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const handleLibraryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string
+      const newFile: TechFile = {
+        id: `FILE-${Date.now()}`,
+        name: file.name,
+        data: base64Data,
+        type: file.type,
+        lastUpdated: Date.now()
+      }
+      const updatedLib = [newFile, ...techLibrary]
+      setTechLibrary(updatedLib)
+      localStorage.setItem('atres_tech_library', JSON.stringify(updatedLib))
+      toast({ title: "Archivo añadido a biblioteca" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const replaceLibraryFile = (id: string) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64Data = event.target?.result as string
+        const updatedLib = techLibrary.map(f => f.id === id ? {
+          ...f,
+          name: file.name,
+          data: base64Data,
+          type: file.type,
+          lastUpdated: Date.now()
+        } : f)
+        setTechLibrary(updatedLib)
+        localStorage.setItem('atres_tech_library', JSON.stringify(updatedLib))
+        toast({ title: "Archivo actualizado correctamente" })
+      }
+      reader.readAsDataURL(file)
+    }
+    input.click()
+  }
+
+  const removeLibraryFile = (id: string) => {
+    const updatedLib = techLibrary.filter(f => f.id !== id)
+    setTechLibrary(updatedLib)
+    localStorage.setItem('atres_tech_library', JSON.stringify(updatedLib))
+    toast({ title: "Archivo eliminado" })
+  }
+
+  const sendLibraryFile = (file: TechFile) => {
+    handleSendMessage({ data: file.data, name: file.name, type: file.type })
+    toast({ title: "Archivo enviado al chat" })
+  }
+
+  const downloadFile = (data: string, name: string) => {
+    const link = document.createElement('a')
+    link.href = data
+    link.download = name
+    link.click()
   }
 
   const generateSequentialFolio = () => {
@@ -325,7 +434,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
 
-    // 1. Create Program Record
     const rawPrograms = localStorage.getItem('programs_full_v24')
     const programs = rawPrograms ? JSON.parse(rawPrograms) : []
     
@@ -349,14 +457,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('programs_full_v24', JSON.stringify(updatedPrograms))
     window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify(updatedPrograms) }))
 
-    // 2. Remove from Queue
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     const newQueue = currentQueue.filter(r => r.remoteId !== selectedRequest!.remoteId)
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
     
-    // 3. Reset States
     setIsFinishDialogOpen(false)
     setSelectedRequest(null)
     setFinishForm({ cct: '', schoolName: '', servicio: '', municipio: '', valle: '', oficinaRegionalAtencion: '' })
@@ -376,52 +482,120 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setFinishSearchTerm('')
   }
 
+  const getFileIcon = (type: string) => {
+    if (type.includes('word')) return <FileText className="h-6 w-6 text-blue-600" />
+    if (type.includes('excel') || type.includes('spreadsheet')) return <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
+    if (type.includes('pdf')) return <FileText className="h-6 w-6 text-rose-600" />
+    return <FileCode className="h-6 w-6 text-slate-400" />
+  }
+
   return (
     <div className={cn(
       "flex h-full flex-col md:flex-row bg-white overflow-hidden", 
       isPublic && "rounded-[2.5rem] shadow-2xl border border-primary/10"
     )}>
       {/* Sidebar de Gestión */}
-      <div className="w-full md:w-[320px] bg-slate-50 border-r p-6 space-y-6 shrink-0 flex flex-col overflow-y-auto">
+      <div className="w-full md:w-[340px] bg-slate-50 border-r p-6 space-y-6 shrink-0 flex flex-col overflow-y-auto">
         <div className="space-y-1">
           <Badge className="bg-primary text-white text-[9px] font-black uppercase px-2.5 py-1">CENTRO DE APOYO</Badge>
-          <h3 className="text-xl font-black text-primary uppercase leading-tight">Apoyo Remoto</h3>
+          <h3 className="text-xl font-black text-primary uppercase leading-tight">Mesa de Ayuda</h3>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">SOPORTE TÉCNICO COEES</p>
         </div>
 
         {!isPublic ? (
-          <div className="space-y-4">
-             <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Users className="h-4 w-4 text-accent" />
-                <span className="text-[10px] font-black uppercase text-slate-700">Cola de Espera ({queue.length})</span>
+          <div className="flex-1 space-y-6 flex flex-col min-h-0">
+             <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                   <Users className="h-4 w-4 text-accent" />
+                   <span className="text-[10px] font-black uppercase text-slate-700">Cola de Espera ({queue.length})</span>
+                </div>
+                {queue.length === 0 ? (
+                  <div className="p-8 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                     <MonitorOff className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                     <p className="text-[10px] font-bold text-slate-400 uppercase">Sin solicitudes</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                     {queue.map((req) => (
+                       <button 
+                         key={req.remoteId}
+                         onClick={() => setSelectedRequest(req)}
+                         className={cn(
+                           "w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between group",
+                           selectedRequest?.remoteId === req.remoteId ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
+                         )}
+                       >
+                         <div className="flex flex-col">
+                           <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.remoteId === req.remoteId ? "text-white/70" : "text-accent")}>
+                              <Ticket className="h-2.5 w-2.5" /> {req.ticketNumber}
+                           </span>
+                           <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
+                         </div>
+                         <ChevronRight className={cn("h-4 w-4", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-slate-300")} />
+                       </button>
+                     ))}
+                  </div>
+                )}
              </div>
-             {queue.length === 0 ? (
-               <div className="p-10 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                  <MonitorOff className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Sin solicitudes</p>
-               </div>
-             ) : (
-               <div className="space-y-2">
-                  {queue.map((req) => (
-                    <button 
-                      key={req.remoteId}
-                      onClick={() => setSelectedRequest(req)}
-                      className={cn(
-                        "w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between group",
-                        selectedRequest?.remoteId === req.remoteId ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.remoteId === req.remoteId ? "text-white/70" : "text-accent")}>
-                           <Ticket className="h-2.5 w-2.5" /> {req.ticketNumber}
-                        </span>
-                        <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
-                      </div>
-                      <ChevronRight className={cn("h-4 w-4", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-slate-300")} />
-                    </button>
-                  ))}
-               </div>
-             )}
+
+             {/* Biblioteca de Archivos para el Técnico */}
+             <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                   <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-accent" />
+                      <span className="text-[10px] font-black uppercase text-slate-700">Biblioteca de Archivos</span>
+                   </div>
+                   <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/10 rounded-full" onClick={() => libraryInputRef.current?.click()}>
+                      <Plus className="h-4 w-4" />
+                   </Button>
+                   <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
+                </div>
+                
+                <ScrollArea className="flex-1">
+                   <div className="space-y-2 pr-4">
+                      {techLibrary.length === 0 ? (
+                        <p className="text-[9px] font-bold text-slate-400 uppercase text-center py-4">Sin documentos en biblioteca</p>
+                      ) : techLibrary.map(file => (
+                        <div key={file.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm space-y-2 group">
+                           <div className="flex items-center gap-3">
+                              {getFileIcon(file.type)}
+                              <div className="flex-1 min-w-0">
+                                 <p className="text-[10px] font-black text-slate-700 truncate uppercase leading-none">{file.name}</p>
+                                 <p className="text-[8px] text-slate-400 font-bold mt-1">Act: {format(file.lastUpdated, 'dd/MM/yy')}</p>
+                              </div>
+                           </div>
+                           <div className="flex gap-1">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="flex-1 h-7 text-[8px] font-black uppercase border-primary/10 text-primary hover:bg-primary hover:text-white"
+                                onClick={() => sendLibraryFile(file)}
+                                disabled={!selectedRequest}
+                              >
+                                 <Send className="h-3 w-3 mr-1" /> Enviar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 w-7 text-slate-400 hover:text-accent p-0"
+                                onClick={() => replaceLibraryFile(file.id)}
+                              >
+                                 <RefreshCcw className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 w-7 text-slate-400 hover:text-rose-600 p-0"
+                                onClick={() => removeLibraryFile(file.id)}
+                              >
+                                 <Trash2 className="h-3 w-3" />
+                              </Button>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </ScrollArea>
+             </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -501,7 +675,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
 
         {!isPublic && selectedRequest && (
-          <div className="mt-auto p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
              <div className="flex justify-between items-center">
                 <p className="text-[10px] font-black uppercase text-slate-400">Atendiendo a:</p>
                 <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black animate-pulse">SESIÓN ACTIVA</Badge>
@@ -514,7 +688,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
              <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase text-primary flex items-center gap-2 pl-1">
-                   <UserCog className="h-3 w-3" /> Analista Responsable
+                   <UserCog className="h-3.5 w-3.5" /> Analista Responsable
                 </Label>
                 <Input 
                    placeholder="TU NOMBRE..." 
@@ -586,7 +760,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           isMe ? "bg-[#B38E5D] text-white rounded-tr-none border-[#B38E5D]/10" : "bg-white text-slate-700 rounded-tl-none border-slate-100"
                         )}>
                           {msg.senderName && <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Analista: {msg.senderName}</p>}
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
+                          
+                          {msg.fileData && (
+                            <div className={cn(
+                              "mt-3 p-4 rounded-2xl border flex items-center gap-4 group transition-all",
+                              isMe ? "bg-black/10 border-white/20 hover:bg-black/20" : "bg-slate-50 border-slate-200 hover:border-primary/20"
+                            )}>
+                               <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shadow-sm", isMe ? "bg-white/20" : "bg-white")}>
+                                  {getFileIcon(msg.fileType || '')}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                  <p className={cn("text-[10px] font-black uppercase truncate", isMe ? "text-white" : "text-slate-700")}>{msg.fileName}</p>
+                                  <button 
+                                    onClick={() => downloadFile(msg.fileData!, msg.fileName!)}
+                                    className={cn("text-[9px] font-black uppercase flex items-center gap-1 mt-1 hover:underline", isMe ? "text-white/80" : "text-primary")}
+                                  >
+                                    <Download className="h-3 w-3" /> Descargar Archivo
+                                  </button>
+                               </div>
+                            </div>
+                          )}
+
                           <p className={cn("text-[9px] mt-2 font-black uppercase tracking-widest", isMe ? "text-white/60" : "text-slate-300")}>
                             {mounted ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                           </p>
@@ -609,17 +804,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
             <footer className="p-6 bg-white border-t border-slate-100">
               <div className="max-w-4xl mx-auto flex gap-4">
-                <Input 
-                  placeholder={isPublic ? "Describa su duda técnica aquí..." : "Escribir respuesta oficial..."}
-                  className="h-14 rounded-2xl bg-slate-50 border-primary/5 px-8 font-bold text-sm shadow-inner focus:ring-4 focus:ring-primary/5 transition-all focus:bg-white"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  disabled={isTyping}
-                />
+                <div className="relative flex-1">
+                  <Input 
+                    placeholder={isPublic ? "Describa su duda técnica aquí..." : "Escribir respuesta oficial..."}
+                    className="h-14 rounded-2xl bg-slate-50 border-primary/5 px-8 pr-16 font-bold text-sm shadow-inner focus:ring-4 focus:ring-primary/5 transition-all focus:bg-white"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    disabled={isTyping}
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute right-4 top-3 h-8 w-8 text-slate-400 hover:text-primary transition-colors flex items-center justify-center"
+                  >
+                    <Paperclip className="h-5 w-5" />
+                  </button>
+                  <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                </div>
                 <button 
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || isTyping}
+                  onClick={() => handleSendMessage()}
+                  disabled={(!input.trim() && !messages.length) || isTyping}
                   className="h-14 w-14 rounded-2xl btn-institutional shrink-0 shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                 >
                   <Send className="h-6 w-6" />
