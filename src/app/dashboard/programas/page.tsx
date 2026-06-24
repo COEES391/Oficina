@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -22,24 +23,23 @@ import {
   Target,
   Search,
   Trash2,
-  UserPlus,
   Monitor,
   School,
   CalendarDays,
   Headset,
   Copy,
   ExternalLink,
-  Circle,
+  Check,
+  QrCode,
   Info,
   Globe,
-  AlertTriangle,
-  Settings2,
-  UserCheck,
-  Building2
+  Building2,
+  Share2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
+import { format } from 'date-fns'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -69,18 +69,8 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
-  
   const [pendingCount, setPendingRequestsCount] = useState(0)
-
-  const [isAssistantDialogOpen, setIsAssistantDialogOpen] = useState(false)
-  const [assistantForm, setAssistantForm] = useState({
-    nombres: '',
-    paterno: '',
-    materno: '',
-    rfc: '',
-    funcion: '',
-    email: ''
-  })
+  const [copied, setCopied] = useState(false)
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
@@ -146,6 +136,16 @@ export default function ProgramsPage() {
     return () => window.removeEventListener('storage', handleStorageEvent)
   }, [syncData])
 
+  const publicUrl = mounted ? `${window.location.origin}/helpdesk` : '';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`;
+
+  const copyPublicLink = () => {
+    navigator.clipboard.writeText(publicUrl)
+    setCopied(true)
+    toast({ title: "Enlace Copiado", description: "La liga de la Mesa de Ayuda está lista para compartir." })
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const handleCctChange = (val: string) => {
     const cleanVal = val.toUpperCase();
     setFormData(prev => ({ ...prev, cct: cleanVal }));
@@ -194,7 +194,11 @@ export default function ProgramsPage() {
     if (officeFilter !== 'all') {
       filtered = filtered.filter(r => r.oficinaRegionalAtencion === officeFilter);
     }
-    return [...filtered].sort((a, b) => (a.cct || '').localeCompare(b.cct || ''));
+    return [...filtered].sort((a, b) => {
+       const dateA = a.date || '';
+       const dateB = b.date || '';
+       return dateB.localeCompare(dateA);
+    });
   }, [records, activeTab, searchTerm, officeFilter]);
 
   if (!mounted) return null
@@ -225,17 +229,60 @@ export default function ProgramsPage() {
           {PROGRAM_RUBROS.map(rubro => (<TabsTrigger key={rubro} value={rubro} className="h-full px-5 text-[10px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all whitespace-nowrap">{rubro}</TabsTrigger>))}
         </TabsList>
 
-        <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
-          <div className="flex flex-col md:flex-row items-end gap-4">
-             <div className="relative flex-1 w-full min-w-0">
-                <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
-                <div className="relative"><Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /></div>
-             </div>
-             <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                <div className="space-y-1 min-w-[200px]"><Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label><Select value={officeFilter} onValueChange={setOficinaFilter}><SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger><SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
-             </div>
+        {activeTab === 'ATRES' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-top-4 duration-500">
+             <Card className="md:col-span-2 executive-card p-4 bg-white/80 border-none shadow-lg">
+                <div className="flex flex-col md:flex-row items-end gap-4 h-full">
+                   <div className="relative flex-1 w-full min-w-0">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo de Soporte</Label>
+                      <div className="relative"><Input placeholder="CCT, PLANTEL O TÉCNICO..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /></div>
+                   </div>
+                   <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                      <div className="space-y-1 min-w-[200px]"><Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label><Select value={officeFilter} onValueChange={setOficinaFilter}><SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger><SelectContent><SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
+                   </div>
+                </div>
+             </Card>
+
+             <Card className="executive-card p-4 bg-primary text-white border-none shadow-xl overflow-hidden relative group">
+                <div className="absolute -right-4 -top-4 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                   <QrCode className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-4 relative z-10">
+                   <div className="h-16 w-16 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-2xl shrink-0">
+                      <Image src={qrCodeUrl} alt="QR Acceso Público" width={100} height={100} className="object-contain" />
+                   </div>
+                   <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 leading-none mb-1">Acceso para Planteles</p>
+                        <h4 className="text-xs font-black uppercase truncate leading-none">Mesa de Ayuda ATRES</h4>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" size="sm" onClick={copyPublicLink} className="h-7 px-3 text-[8px] font-black uppercase gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white border-none">
+                           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} LIGA
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={() => window.open(publicUrl, '_blank')} className="h-7 px-3 text-[8px] font-black uppercase gap-1.5 rounded-lg bg-white text-primary border-none">
+                           <ExternalLink className="h-3 w-3" /> VER
+                        </Button>
+                      </div>
+                   </div>
+                </div>
+             </Card>
           </div>
-        </Card>
+        )}
+
+        {activeTab !== 'ATRES' && (
+          <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
+            <div className="flex flex-col md:flex-row items-end gap-4">
+               <div className="relative flex-1 w-full min-w-0">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
+                  <div className="relative"><Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /></div>
+               </div>
+               <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <div className="space-y-1 min-w-[200px]"><Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label><Select value={officeFilter} onValueChange={setOficinaFilter}><SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger><SelectContent><SelectItem value="all" className="text-[9px] font-black uppercase">TODAS</SelectItem>{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
+               </div>
+            </div>
+          </Card>
+        )}
 
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
           <div className="overflow-x-auto w-full">
@@ -245,12 +292,12 @@ export default function ProgramsPage() {
                     <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[150px]">Identificación del Plantel</TableHead>
-                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[100px]">Estatus</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Estatus</TableHead>
                     {activeTab === 'ATRES' && (
                        <>
-                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[160px]">Servicio Realizado</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[120px]">Técnico</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[130px]">Oficina Regional</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[140px]">Servicio Realizado</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">Técnico</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[120px]">Oficina Regional</TableHead>
                        </>
                     )}
                     <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-slate-400 w-24">Acción</TableHead>
@@ -263,18 +310,18 @@ export default function ProgramsPage() {
                     <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.id || rec.cct}</TableCell>
                     <TableCell className="py-2">
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[200px]">{activeTab === 'Geoposición' ? `Lat: ${rec.latitud}` : rec.schoolName}</span>
-                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[200px]">{rec.municipio} • {rec.valle}</span>
+                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{activeTab === 'Geoposición' ? `Lat: ${rec.latitud}` : rec.schoolName}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                       <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
+                       <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
                     </TableCell>
                     {activeTab === 'ATRES' && (
                        <>
-                         <TableCell><span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[180px] leading-tight">{rec.observaciones || '-'}</span></TableCell>
-                         <TableCell><span className="text-[9px] font-black text-slate-500 uppercase truncate max-w-[110px] block">{rec.tecnicos || '-'}</span></TableCell>
-                         <TableCell><div className="flex items-center gap-1"><Building2 className="h-2.5 w-2.5 text-accent shrink-0" /><span className="text-[9px] font-black text-primary uppercase truncate max-w-[120px]">{rec.oficinaRegionalAtencion?.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "") || '-'}</span></div></TableCell>
+                         <TableCell><span className="text-[9px] font-bold text-slate-600 uppercase line-clamp-2 max-w-[160px] leading-tight">{rec.observaciones || '-'}</span></TableCell>
+                         <TableCell><span className="text-[9px] font-black text-slate-500 uppercase truncate max-w-[100px] block">{rec.tecnicos || '-'}</span></TableCell>
+                         <TableCell><div className="flex items-center gap-1"><Building2 className="h-2.5 w-2.5 text-accent shrink-0" /><span className="text-[9px] font-black text-primary uppercase truncate max-w-[110px]">{rec.oficinaRegionalAtencion?.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "") || '-'}</span></div></TableCell>
                        </>
                     )}
                     <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button><button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button></div></TableCell>
