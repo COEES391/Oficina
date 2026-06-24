@@ -72,6 +72,7 @@ type SupportRequest = {
   ticketNumber: string;
   timestamp: number;
   status: 'pending' | 'attending';
+  requestType?: 'remote' | 'chat';
 }
 
 type TechFile = {
@@ -89,6 +90,9 @@ const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
 ];
+
+// Palabras clave técnicas que activan la columna de soporte remoto
+const TECH_KEYWORDS = ['OFFICE', 'ACTIVAR WINDOWS', 'IMPRESORA', 'WINDOWS', 'ACTIVACION'];
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -128,7 +132,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (isPublic) {
       let sKey = sessionStorage.getItem('atres_session_id')
       if (!sKey) {
-        sKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        sKey = `USER-${Date.now()}`
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
@@ -152,17 +156,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     setQueue(currentQueue)
 
-    if (isPublic && remoteId) {
-      const myReq = currentQueue.find(r => r.remoteId === remoteId);
+    if (isPublic) {
+      // Verificar si el usuario actual (ya sea por remoteId o sessionKey) está en la cola
+      const myReq = currentQueue.find(r => r.remoteId === remoteId || r.remoteId === sessionKey);
       setIsRemoteRequested(!!myReq);
       if (myReq) {
         setActiveTicketNumber(myReq.ticketNumber);
         sessionStorage.setItem('atres_active_ticket', myReq.ticketNumber);
       }
     }
-  }, [isPublic, remoteId])
+  }, [isPublic, remoteId, sessionKey])
 
   const syncChat = useCallback(() => {
+    // Si es público, el chat se identifica por el ID de conexión (remoto) o por el ID de sesión (chat)
     const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
     
     if (!activeId) {
@@ -228,6 +234,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }))
   }
 
+  const generateSequentialFolio = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const cycle = month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+    const counterKey = `atres_folio_counter_${cycle}`;
+    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
+    const nextCounter = lastCounter + 1;
+    localStorage.setItem(counterKey, nextCounter.toString());
+    const formattedNum = nextCounter.toString().padStart(5, '0');
+    return `ATRES-${formattedNum}`;
+  }
+
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
     if (!input.trim() && !fileData) return
 
@@ -244,21 +263,61 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const updatedMessages = [...messages, newMessage]
     saveAndSyncChat(updatedMessages)
+    const currentInput = input;
     setInput('')
 
-    if (isPublic && !messages.some(m => m.role === 'tech')) {
-      const alreadySentInst = messages.some(m => m.content.includes('Instrucciones'));
-      if (!alreadySentInst) {
+    // Lógica de filtrado inteligente para usuarios públicos
+    if (isPublic) {
+      const hasKeywords = TECH_KEYWORDS.some(kw => currentInput.toUpperCase().includes(kw));
+      
+      if (hasKeywords) {
+        // Instrucción para activar columna izquierda
         setIsTyping(true)
         setTimeout(() => {
           const botMsg: Message = { 
             role: 'bot', 
-            content: 'Instrucciones: Por favor, sigue los pasos de la columna de Apoyo Remoto a mi izquierda para que un analista te asista.', 
+            content: 'He detectado que tu duda técnica (Office, Windows o Impresora) requiere intervención remota. Por favor, sigue los pasos de la columna "Apoyo Remoto" a mi izquierda: ingresa tu ID de AnyDesk y presiona SOLICITAR SOPORTE para que un analista se conecte a tu equipo.', 
             timestamp: Date.now() 
           }
           saveAndSyncChat([...updatedMessages, botMsg])
           setIsTyping(false)
-        }, 1000);
+        }, 800);
+      } else {
+        // Solicitud de atención automática si no hay palabras clave técnicas
+        if (!isRemoteRequested) {
+          const ticketNum = generateSequentialFolio();
+          const newRequest: SupportRequest = { 
+            remoteId: sessionKey, 
+            ticketNumber: ticketNum,
+            timestamp: Date.now(), 
+            status: 'pending' as const,
+            requestType: 'chat'
+          }
+          
+          const rawQueue = localStorage.getItem('atres_support_queue')
+          const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
+          
+          if (!currentQueue.some((r: any) => r.remoteId === sessionKey)) {
+            const newQueue = [...currentQueue, newRequest]
+            localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
+            window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+          }
+          
+          setActiveTicketNumber(ticketNum);
+          setIsRemoteRequested(true);
+          sessionStorage.setItem('atres_active_ticket', ticketNum);
+
+          setIsTyping(true)
+          setTimeout(() => {
+            const botMsg: Message = { 
+              role: 'bot', 
+              content: `He enviado tu solicitud de atención a la mesa de ayuda. Un analista te responderá en breve por este chat. \n\n# DE ATENCIÓN: ${ticketNum}`, 
+              timestamp: Date.now() 
+            }
+            saveAndSyncChat([...updatedMessages, botMsg])
+            setIsTyping(false)
+          }, 1000);
+        }
       }
     }
   }
@@ -343,19 +402,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     link.click()
   }
 
-  const generateSequentialFolio = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const cycle = month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-    const counterKey = `atres_folio_counter_${cycle}`;
-    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
-    const nextCounter = lastCounter + 1;
-    localStorage.setItem(counterKey, nextCounter.toString());
-    const formattedNum = nextCounter.toString().padStart(5, '0');
-    return `ATRES-${formattedNum}`;
-  }
-
   const handleRequestRemote = () => {
     if (!remoteId || remoteId.length < 5) {
       toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese un ID de AnyDesk válido." })
@@ -365,6 +411,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     
+    // Si ya hay una solicitud de chat con sessionKey, la actualizamos con el remoteId real
+    const existingChatReqIdx = currentQueue.findIndex(r => r.remoteId === sessionKey);
+    
+    if (existingChatReqIdx !== -1) {
+      const updatedReq = { ...currentQueue[existingChatReqIdx], remoteId, requestType: 'remote' as const };
+      const newQueue = [...currentQueue];
+      newQueue[existingChatReqIdx] = updatedReq;
+      localStorage.setItem('atres_support_queue', JSON.stringify(newQueue));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }));
+      
+      // Mover historial de chat
+      const chatHistory = localStorage.getItem(`atres_chat_${sessionKey}`);
+      if (chatHistory) localStorage.setItem(`atres_chat_${remoteId}`, chatHistory);
+      
+      setIsRemoteRequested(true);
+      return;
+    }
+
     if (currentQueue.some(r => r.remoteId === remoteId)) {
       setIsRemoteRequested(true)
       toast({ title: "Solicitud ya en curso", description: "Ya estás en la lista de espera." })
@@ -376,7 +440,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       remoteId, 
       ticketNumber: newTicketNumber,
       timestamp: Date.now(), 
-      status: 'pending' as const 
+      status: 'pending' as const,
+      requestType: 'remote'
     }
 
     const newQueue = [...currentQueue, newRequest]
@@ -406,7 +471,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setIsRemoteRequested(false)
     setActiveTicketNumber(null)
     sessionStorage.removeItem('atres_active_ticket')
-    const newSKey = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const newSKey = `USER-${Date.now()}`
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
     
@@ -529,7 +594,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.remoteId === req.remoteId ? "text-white/70" : "text-accent")}>
                               <Ticket className="h-2.5 w-2.5" /> {req.ticketNumber}
                            </span>
-                           <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>{req.remoteId}</span>
+                           <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>
+                             {req.requestType === 'chat' ? 'Consulta Chat' : req.remoteId}
+                           </span>
                          </div>
                          <ChevronRight className={cn("h-4 w-4", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-slate-300")} />
                        </button>
@@ -613,14 +680,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               )}
 
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID ANYDESK / TEAMVIEWER</Label>
+                <div className="flex justify-between items-center px-1">
+                  <Label className="text-[9px] font-black uppercase text-slate-400">ID ANYDESK / TEAMVIEWER</Label>
+                  {isRemoteRequested && <Badge variant="outline" className="text-[7px] font-black text-primary border-primary/20">ACTIVO</Badge>}
+                </div>
                 <Input 
                   placeholder="000 000 000" 
                   className="h-12 text-center font-mono font-black border-primary/20 text-xl bg-slate-50 rounded-2xl focus:ring-4 focus:ring-primary/5 transition-all" 
                   value={remoteId}
                   onChange={(e) => setRemoteId(e.target.value)}
                   disabled={isRemoteRequested}
-                  autoFocus
                 />
               </div>
 
@@ -699,10 +768,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
 
              <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border shadow-inner">
-                <span className="text-base font-mono font-black text-primary truncate mr-2">{selectedRequest.remoteId}</span>
-                <Button variant="ghost" size="icon" onClick={() => copyId(selectedRequest.remoteId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
-                   {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-slate-400" />}
-                </Button>
+                <span className="text-base font-mono font-black text-primary truncate mr-2">
+                  {selectedRequest.requestType === 'chat' ? 'SOPORTE VÍA CHAT' : selectedRequest.remoteId}
+                </span>
+                {selectedRequest.requestType !== 'chat' && (
+                  <Button variant="ghost" size="icon" onClick={() => copyId(selectedRequest.remoteId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
+                    {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-slate-400" />}
+                  </Button>
+                )}
              </div>
 
              <Button onClick={() => setIsFinishDialogOpen(true)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
