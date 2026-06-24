@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -125,6 +125,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const libraryInputRef = useRef<HTMLInputElement>(null)
 
+  // Identificador estable para el chat
+  const activeChatId = useMemo(() => {
+    if (isPublic) {
+      if (activeTicketNumber) {
+        // Buscar en la cola qué ID (remoto o sesión) tiene este folio
+        const req = queue.find(r => r.ticketNumber === activeTicketNumber);
+        if (req) return req.remoteId;
+      }
+      return remoteId || sessionKey;
+    }
+    return selectedRequest?.remoteId;
+  }, [isPublic, activeTicketNumber, queue, remoteId, sessionKey, selectedRequest]);
+
   useEffect(() => {
     if (isPublic) {
       let sKey = sessionStorage.getItem('atres_session_id')
@@ -154,24 +167,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setQueue(currentQueue)
 
     if (isPublic) {
-      const myReq = currentQueue.find(r => r.remoteId === remoteId || r.remoteId === sessionKey);
+      const myReq = currentQueue.find(r => r.remoteId === remoteId || r.remoteId === sessionKey || (activeTicketNumber && r.ticketNumber === activeTicketNumber));
       setIsRemoteRequested(!!myReq);
       if (myReq) {
         setActiveTicketNumber(myReq.ticketNumber);
         sessionStorage.setItem('atres_active_ticket', myReq.ticketNumber);
       }
     }
-  }, [isPublic, remoteId, sessionKey])
+  }, [isPublic, remoteId, sessionKey, activeTicketNumber])
 
   const syncChat = useCallback(() => {
-    const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
-    
-    if (!activeId) {
+    if (!activeChatId) {
       setMessages([])
       return
     }
 
-    const historyKey = `atres_chat_${activeId}`
+    const historyKey = `atres_chat_${activeChatId}`
     const history = localStorage.getItem(historyKey)
     
     if (history) {
@@ -187,7 +198,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(initial)
       localStorage.setItem(historyKey, JSON.stringify(initial))
     }
-  }, [isPublic, remoteId, sessionKey, selectedRequest])
+  }, [activeChatId])
 
   useEffect(() => {
     setMounted(true)
@@ -195,13 +206,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     syncChat()
 
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'atres_support_queue') syncQueue()
-      if (e.key?.startsWith('atres_chat_')) syncChat()
+      if (e.key === 'atres_support_queue') {
+        syncQueue()
+      }
+      if (e.key === `atres_chat_${activeChatId}`) {
+        syncChat()
+      }
     }
 
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [syncQueue, syncChat])
+  }, [syncQueue, syncChat, activeChatId])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -216,16 +231,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const saveAndSyncChat = (newMessages: Message[]) => {
-    const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
-    if (!activeId) return
+    if (!activeChatId) return
 
-    const historyKey = `atres_chat_${activeId}`
+    const historyKey = `atres_chat_${activeChatId}`
     setMessages(newMessages)
     localStorage.setItem(historyKey, JSON.stringify(newMessages))
     
+    // Forzar el evento de almacenamiento para que la otra ventana lo detecte
     window.dispatchEvent(new StorageEvent('storage', {
       key: historyKey,
-      newValue: JSON.stringify(newMessages)
+      newValue: JSON.stringify(newMessages),
+      storageArea: localStorage
     }))
   }
 
@@ -289,7 +305,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
         const rawQueue = localStorage.getItem('atres_support_queue')
         const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
-        const newQueue = [...currentQueue, newRequest]
+        const newQueue = [newRequest, ...currentQueue]
         localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
         window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
@@ -416,7 +432,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       requestType: 'remote'
     }
 
-    const newQueue = [...currentQueue, newRequest]
+    const newQueue = [newRequest, ...currentQueue]
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
@@ -524,6 +540,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (type.includes('pdf')) return <FileText className="h-6 w-6 text-rose-600" />
     return <FileCode className="h-6 w-6 text-slate-400" />
   }
+
+  if (!mounted) return null
 
   return (
     <div className={cn(
