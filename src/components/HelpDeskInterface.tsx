@@ -68,11 +68,12 @@ type Message = {
 }
 
 type SupportRequest = {
-  remoteId: string;
-  ticketNumber: string;
+  remoteId: string; // AnyDesk ID o Session ID
+  ticketNumber: string; // Folio ATRES-XXXXX
   timestamp: number;
   status: 'pending' | 'attending';
   requestType?: 'remote' | 'chat';
+  chatKey: string; // Key compartida para el chat
 }
 
 type TechFile = {
@@ -126,17 +127,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const libraryInputRef = useRef<HTMLInputElement>(null)
 
   // Identificador estable para el chat
+  // Si soy público y tengo folio, uso el folio. Si no, mi sessionKey.
+  // Si soy técnico, uso el folio del request seleccionado.
   const activeChatId = useMemo(() => {
     if (isPublic) {
-      if (activeTicketNumber) {
-        // Buscar en la cola qué ID (remoto o sesión) tiene este folio
-        const req = queue.find(r => r.ticketNumber === activeTicketNumber);
-        if (req) return req.remoteId;
-      }
-      return remoteId || sessionKey;
+      return activeTicketNumber || sessionKey;
     }
-    return selectedRequest?.remoteId;
-  }, [isPublic, activeTicketNumber, queue, remoteId, sessionKey, selectedRequest]);
+    return selectedRequest?.ticketNumber || null;
+  }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
   useEffect(() => {
     if (isPublic) {
@@ -167,14 +165,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setQueue(currentQueue)
 
     if (isPublic) {
-      const myReq = currentQueue.find(r => r.remoteId === remoteId || r.remoteId === sessionKey || (activeTicketNumber && r.ticketNumber === activeTicketNumber));
-      setIsRemoteRequested(!!myReq);
+      const myReq = currentQueue.find(r => r.chatKey === sessionKey || r.ticketNumber === activeTicketNumber);
       if (myReq) {
         setActiveTicketNumber(myReq.ticketNumber);
         sessionStorage.setItem('atres_active_ticket', myReq.ticketNumber);
+        if (myReq.requestType === 'remote') setIsRemoteRequested(true);
       }
     }
-  }, [isPublic, remoteId, sessionKey, activeTicketNumber])
+  }, [isPublic, sessionKey, activeTicketNumber])
 
   const syncChat = useCallback(() => {
     if (!activeChatId) {
@@ -209,7 +207,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       if (e.key === 'atres_support_queue') {
         syncQueue()
       }
-      if (e.key === `atres_chat_${activeChatId}`) {
+      if (activeChatId && e.key === `atres_chat_${activeChatId}`) {
         syncChat()
       }
     }
@@ -234,8 +232,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!activeChatId) return
 
     const historyKey = `atres_chat_${activeChatId}`
-    setMessages(newMessages)
     localStorage.setItem(historyKey, JSON.stringify(newMessages))
+    setMessages(newMessages)
     
     // Forzar el evento de almacenamiento para que la otra ventana lo detecte
     window.dispatchEvent(new StorageEvent('storage', {
@@ -261,6 +259,38 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
     if (!input.trim() && !fileData) return
 
+    let currentFolio = activeTicketNumber;
+    let updatedActiveChatId = activeChatId;
+
+    // Si es público y no hay folio, generar uno al enviar el primer mensaje
+    if (isPublic && !currentFolio) {
+      currentFolio = generateSequentialFolio();
+      setActiveTicketNumber(currentFolio);
+      sessionStorage.setItem('atres_active_ticket', currentFolio);
+      
+      const newRequest: SupportRequest = { 
+        remoteId: sessionKey, 
+        ticketNumber: currentFolio,
+        timestamp: Date.now(), 
+        status: 'pending' as const,
+        requestType: 'chat',
+        chatKey: sessionKey
+      }
+
+      const rawQueue = localStorage.getItem('atres_support_queue')
+      const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
+      const newQueue = [newRequest, ...currentQueue]
+      localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+      
+      // Al generar folio, migramos los mensajes de sessionKey a folio
+      const oldHistory = localStorage.getItem(`atres_chat_${sessionKey}`);
+      if (oldHistory) {
+        localStorage.setItem(`atres_chat_${currentFolio}`, oldHistory);
+        updatedActiveChatId = currentFolio;
+      }
+    }
+
     const myRole = isPublic ? 'user' : 'tech'
     const newMessage: Message = { 
       role: myRole, 
@@ -272,54 +302,33 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       fileType: fileData?.type
     }
 
-    const updatedMessages = [...messages, newMessage]
-    saveAndSyncChat(updatedMessages)
+    const historyKey = `atres_chat_${updatedActiveChatId}`
+    const currentMessages = JSON.parse(localStorage.getItem(historyKey) || '[]')
+    const updatedMessages = [...currentMessages, newMessage]
+    
+    localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
+    setMessages(updatedMessages)
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: historyKey,
+      newValue: JSON.stringify(updatedMessages),
+      storageArea: localStorage
+    }))
 
-    // Lógica de palabras clave y auto-folio para usuarios públicos
+    // Lógica de bot para el usuario público
     if (isPublic && myRole === 'user' && !fileData) {
       const lowerInput = input.toLowerCase();
-      const keywords = ['office', 'windows', 'activar windows', 'impresora', 'anydesk', 'remoto'];
-      const hasKeywords = keywords.some(k => lowerInput.includes(k));
-
-      if (hasKeywords) {
+      if (lowerInput.includes('office') || lowerInput.includes('windows') || lowerInput.includes('impresora')) {
         setIsTyping(true);
         setTimeout(() => {
           const botReply: Message = {
             role: 'bot',
-            content: 'He detectado que tu problema requiere soporte remoto directo. Por favor, utiliza la columna izquierda ("APOYO REMOTO") para ingresar tu ID de AnyDesk y presiona "SOLICITAR SOPORTE" para que podamos conectarnos a tu equipo.',
+            content: 'He detectado que tu problema requiere soporte remoto. Por favor, ingresa tu ID de AnyDesk en la columna izquierda y presiona "SOLICITAR SOPORTE" para que podamos ayudarte.',
             timestamp: Date.now()
           };
-          saveAndSyncChat([...updatedMessages, botReply]);
-          setIsTyping(false);
-        }, 1000);
-      } else if (!activeTicketNumber) {
-        // Generar solicitud automática por chat si no hay folio activo
-        const newTicket = generateSequentialFolio();
-        const newRequest: SupportRequest = { 
-          remoteId: sessionKey, 
-          ticketNumber: newTicket,
-          timestamp: Date.now(), 
-          status: 'pending' as const,
-          requestType: 'chat'
-        }
-
-        const rawQueue = localStorage.getItem('atres_support_queue')
-        const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
-        const newQueue = [newRequest, ...currentQueue]
-        localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
-        window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
-
-        setActiveTicketNumber(newTicket);
-        sessionStorage.setItem('atres_active_ticket', newTicket);
-        
-        setIsTyping(true);
-        setTimeout(() => {
-          const botReply: Message = {
-            role: 'bot',
-            content: `He registrado tu consulta. Tu # DE ATENCIÓN es: ${newTicket}. Un analista te responderá por este chat en breve.`,
-            timestamp: Date.now()
-          };
-          saveAndSyncChat([...updatedMessages, botReply]);
+          const finalMessages = [...updatedMessages, botReply];
+          localStorage.setItem(historyKey, JSON.stringify(finalMessages));
+          setMessages(finalMessages);
+          window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(finalMessages), storageArea: localStorage }));
           setIsTyping(false);
         }, 1000);
       }
@@ -414,43 +423,51 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return
     }
     
+    let currentFolio = activeTicketNumber || generateSequentialFolio();
+    
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
 
-    if (currentQueue.some(r => r.remoteId === remoteId)) {
-      setIsRemoteRequested(true)
-      toast({ title: "Solicitud ya en curso", description: "Ya estás en la lista de espera." })
-      return
-    }
-
-    const newTicketNumber = generateSequentialFolio();
+    const existingIndex = currentQueue.findIndex(r => r.ticketNumber === currentFolio || r.chatKey === sessionKey);
+    
     const newRequest: SupportRequest = { 
       remoteId, 
-      ticketNumber: newTicketNumber,
+      ticketNumber: currentFolio,
       timestamp: Date.now(), 
       status: 'pending' as const,
-      requestType: 'remote'
+      requestType: 'remote',
+      chatKey: sessionKey
     }
 
-    const newQueue = [newRequest, ...currentQueue]
+    let newQueue;
+    if (existingIndex >= 0) {
+      newQueue = [...currentQueue];
+      newQueue[existingIndex] = newRequest;
+    } else {
+      newQueue = [newRequest, ...currentQueue]
+    }
+
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
-    const botMsg: Message[] = messages.length === 0 ? [{ 
+    const botMsg: Message = { 
       role: 'bot', 
-      content: `¡Hola! He recibido tu solicitud de soporte remoto. \n\n# DE ATENCIÓN: ${newTicketNumber}\nID CONEXIÓN: ${remoteId}\n\nUn analista te atenderá en breve. Por favor, mantén AnyDesk abierto.`, 
+      content: `He recibido tu solicitud de soporte remoto.\n\n# DE ATENCIÓN: ${currentFolio}\nID CONEXIÓN: ${remoteId}\n\nPor favor, mantén AnyDesk abierto.`, 
       timestamp: Date.now() 
-    }] : [...messages, { 
-      role: 'bot', 
-      content: `He recibido tu solicitud de soporte remoto. \n\n# DE ATENCIÓN: ${newTicketNumber}\nID CONEXIÓN: ${remoteId}\n\nNuestros técnicos han sido notificados. Por favor, mantén AnyDesk abierto.`, 
-      timestamp: Date.now() 
-    }];
+    };
     
-    saveAndSyncChat(botMsg)
-    setIsRemoteRequested(true)
-    setActiveTicketNumber(newTicketNumber)
-    sessionStorage.setItem('atres_active_ticket', newTicketNumber)
-    toast({ title: "Soporte Solicitado", description: `Folio: ${newTicketNumber}` })
+    const historyKey = `atres_chat_${currentFolio}`
+    const oldMsgs = JSON.parse(localStorage.getItem(`atres_chat_${sessionKey}`) || '[]');
+    const finalMsgs = [...oldMsgs, botMsg];
+    
+    localStorage.setItem(historyKey, JSON.stringify(finalMsgs));
+    setMessages(finalMsgs);
+    setActiveTicketNumber(currentFolio);
+    sessionStorage.setItem('atres_active_ticket', currentFolio);
+    setIsRemoteRequested(true);
+    
+    window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(finalMsgs), storageArea: localStorage }));
+    toast({ title: "Soporte Solicitado", description: `Folio: ${currentFolio}` })
   }
 
   const resetForNewRequest = () => {
@@ -461,16 +478,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const newSKey = `USER-${Date.now()}`
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
-    
-    const initial: Message[] = [
-      { 
-        role: 'bot', 
-        content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte con el sistema ATRES o soporte técnico hoy?', 
-        timestamp: Date.now() 
-      }
-    ]
-    setMessages(initial)
-    localStorage.setItem(`atres_chat_${newSKey}`, JSON.stringify(initial))
+    setMessages([])
+    syncChat()
   }
 
   const copyId = (idToCopy: string) => {
@@ -511,7 +520,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
-    const newQueue = currentQueue.filter(r => r.remoteId !== selectedRequest!.remoteId)
+    const newQueue = currentQueue.filter(r => r.ticketNumber !== selectedRequest!.ticketNumber)
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
     
@@ -572,22 +581,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="space-y-2">
                      {queue.map((req) => (
                        <button 
-                         key={req.remoteId}
+                         key={req.ticketNumber}
                          onClick={() => setSelectedRequest(req)}
                          className={cn(
                            "w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between group",
-                           selectedRequest?.remoteId === req.remoteId ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
+                           selectedRequest?.ticketNumber === req.ticketNumber ? "bg-primary border-primary shadow-lg" : "bg-white hover:bg-slate-100 border-slate-100"
                          )}
                        >
                          <div className="flex flex-col">
-                           <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.remoteId === req.remoteId ? "text-white/70" : "text-accent")}>
+                           <span className={cn("text-[9px] font-black uppercase flex items-center gap-1 mb-1", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/70" : "text-accent")}>
                               <Ticket className="h-2.5 w-2.5" /> {req.ticketNumber}
                            </span>
-                           <span className={cn("text-sm font-mono font-black", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-primary")}>
+                           <span className={cn("text-sm font-mono font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-primary")}>
                              {req.requestType === 'chat' ? 'Consulta Chat' : req.remoteId}
                            </span>
                          </div>
-                         <ChevronRight className={cn("h-4 w-4", selectedRequest?.remoteId === req.remoteId ? "text-white" : "text-slate-300")} />
+                         <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
                        </button>
                      ))}
                   </div>
@@ -660,7 +669,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <span className="text-[10px] font-black uppercase text-slate-700">{isRemoteRequested ? "CONEXIÓN SOLICITADA" : "NUEVA SOLICITUD"}</span>
               </div>
               
-              {isRemoteRequested && activeTicketNumber && (
+              {activeTicketNumber && (
                 <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center animate-in zoom-in-95">
                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Folio de Atención</p>
                    <p className="text-lg font-black text-emerald-700">{activeTicketNumber}</p>
@@ -734,41 +743,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         {!isPublic && selectedRequest && (
           <div className="p-5 bg-white rounded-[2rem] border-2 border-primary/10 space-y-4 shadow-2xl animate-in zoom-in-95 duration-300">
              <div className="flex justify-between items-center">
-                <p className="text-[10px] font-black uppercase text-slate-400">Atendiendo a:</p>
+                <p className="text-[10px] font-black uppercase text-slate-400">Analista Responsable:</p>
                 <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black animate-pulse">SESIÓN ACTIVA</Badge>
              </div>
 
-             <div className="bg-primary/5 p-2 rounded-lg border border-primary/10 flex items-center gap-2">
-                <Ticket className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[10px] font-black text-primary uppercase">FOLIO: {selectedRequest.ticketNumber}</span>
-             </div>
+             <Input 
+                placeholder="TU NOMBRE..." 
+                className="h-10 text-[10px] font-black uppercase border-primary/10 bg-slate-50 rounded-xl shadow-inner focus:bg-white transition-all"
+                value={techName}
+                onChange={(e) => handleTechNameChange(e.target.value)}
+             />
 
-             <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase text-primary flex items-center gap-2 pl-1">
-                   <UserCog className="h-3.5 w-3.5" /> Analista Responsable
-                </Label>
-                <Input 
-                   placeholder="TU NOMBRE..." 
-                   className="h-10 text-[10px] font-black uppercase border-primary/10 bg-slate-50 rounded-xl shadow-inner focus:bg-white transition-all"
-                   value={techName}
-                   onChange={(e) => handleTechNameChange(e.target.value)}
-                />
-             </div>
-
-             <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border shadow-inner">
-                <span className="text-base font-mono font-black text-primary truncate mr-2">
-                  {selectedRequest.requestType === 'chat' ? 'SOPORTE VÍA CHAT' : selectedRequest.remoteId}
-                </span>
-                {selectedRequest.requestType !== 'chat' && (
+             {selectedRequest.requestType !== 'chat' && (
+               <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border shadow-inner">
+                  <span className="text-base font-mono font-black text-primary truncate mr-2">
+                    {selectedRequest.remoteId}
+                  </span>
                   <Button variant="ghost" size="icon" onClick={() => copyId(selectedRequest.remoteId)} className="h-10 w-10 hover:bg-white shrink-0 shadow-sm rounded-xl">
                     {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-slate-400" />}
                   </Button>
-                )}
-             </div>
-
-             <Button onClick={() => setIsFinishDialogOpen(true)} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-12 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
-                <X className="h-4 w-4" /> FINALIZAR ATENCIÓN
-             </Button>
+               </div>
+             )}
           </div>
         )}
       </div>
@@ -782,7 +777,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
              <div className="text-center space-y-3">
                 <h3 className="text-2xl font-black text-slate-800 uppercase">Centro de Operaciones</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[350px] leading-relaxed">Seleccione un usuario de la lista lateral para iniciar el protocolo de asistencia.</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[350px] leading-relaxed">Seleccione un usuario de la lista lateral para iniciar el protocolo de asistencia técnica.</p>
              </div>
           </div>
         ) : (
@@ -796,13 +791,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h2 className="text-lg font-black text-primary uppercase leading-none">Mesa de Ayuda ATRES</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Soporte Técnico en Vivo</p>
-                    {(!isPublic && selectedRequest) && (
-                      <span className="text-[9px] font-black text-accent ml-2"># {selectedRequest.ticketNumber}</span>
-                    )}
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Atención en Tiempo Real</p>
+                    {activeChatId && <span className="text-[10px] font-black text-accent ml-2"># {activeChatId}</span>}
                   </div>
                 </div>
               </div>
+
+              {!isPublic && selectedRequest && (
+                <Button 
+                  onClick={() => setIsFinishDialogOpen(true)}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] uppercase h-9 px-6 rounded-xl shadow-lg flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> FINALIZAR ATENCIÓN
+                </Button>
+              )}
             </header>
 
             <ScrollArea className="flex-1 bg-slate-50/20">
@@ -837,7 +839,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                     onClick={() => downloadFile(msg.fileData!, msg.fileName!)}
                                     className={cn("text-[9px] font-black uppercase flex items-center gap-1 mt-1 hover:underline", isMe ? "text-white/80" : "text-primary")}
                                   >
-                                    <Download className="h-3 w-3" /> Descargar Archivo
+                                    <Download className="h-3 w-3" /> Descargar
                                   </button>
                                </div>
                             </div>
@@ -855,7 +857,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="flex justify-start animate-pulse">
                     <div className="bg-white border border-slate-100 p-4 rounded-[1.5rem] rounded-tl-none shadow-sm flex items-center gap-3">
                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Analista escribiendo...</span>
+                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Procesando...</span>
                     </div>
                   </div>
                 )}
@@ -872,7 +874,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    disabled={isTyping}
                   />
                   <button 
                     onClick={() => fileInputRef.current?.click()}
@@ -884,7 +885,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <button 
                   onClick={() => handleSendMessage()}
-                  disabled={(!input.trim() && !messages.length) || isTyping}
+                  disabled={!input.trim() && !messages.length}
                   className="h-14 w-14 rounded-2xl btn-institutional shrink-0 shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                 >
                   <Send className="h-6 w-6" />
@@ -976,16 +977,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   value={finishForm.servicio}
                   onChange={(e) => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})}
                 />
-              </div>
-              
-              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <UserCog className="h-4 w-4" />
-                </div>
-                <div>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Analista Responsable</p>
-                    <p className="text-[10px] font-black text-primary uppercase">{techName || 'SIN IDENTIFICAR'}</p>
-                </div>
               </div>
             </div>
           </ScrollArea>

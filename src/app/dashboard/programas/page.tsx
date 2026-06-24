@@ -280,48 +280,6 @@ export default function ProgramsPage() {
           ))}
         </TabsList>
 
-        {activeTab === 'ATRES' && (
-          <div className="animate-in slide-in-from-top-3 duration-500">
-            <Card className="executive-card p-4 bg-white border border-primary/5 shadow-xl max-w-5xl">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                 <div className="bg-slate-50 p-3 rounded-2xl shadow-lg border-2 border-white shrink-0">
-                    <div className="relative h-20 w-20 flex items-center justify-center bg-white rounded-xl overflow-hidden shadow-inner">
-                      <Image src={qrCodeApiUrl} alt="Acceso Docentes QR" width={80} height={80} className="object-contain" priority />
-                    </div>
-                 </div>
-                 
-                 <div className="flex-1 space-y-3 w-full min-w-0">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <Badge className="bg-emerald-600 text-white font-black uppercase text-[8px] px-2 py-0.5 rounded-full shadow-sm">VÍNCULO PÚBLICO</Badge>
-                      </div>
-                      <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Acceso Rápido para Docentes</h3>
-                      <p className="text-[10px] font-semibold text-slate-500 leading-tight">Proporcione este QR o URL para activar la asistencia técnica remota.</p>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
-                      <div className="flex-1 h-9 bg-slate-50 rounded-lg border border-slate-200 flex items-center px-3 gap-2 shadow-inner overflow-hidden w-full">
-                         <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
-                         <span className="font-mono text-[9px] font-black text-slate-600 flex-1 truncate">{helpDeskUrl}</span>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button onClick={() => window.open('/helpdesk', '_blank')} className="h-9 px-4 rounded-lg bg-primary text-white font-black text-[9px] gap-2 shadow-lg hover:scale-105 transition-transform uppercase">Probar Portal <ExternalLink className="h-3.5 w-3.5" /></Button>
-                        <Button variant="outline" size="icon" onClick={() => setShowUrlSettings(!showUrlSettings)} className="h-9 w-9 rounded-lg border-slate-200 hover:bg-slate-50"><Settings2 className={cn("h-4 w-4 text-slate-400", showUrlSettings && "text-primary")} /></Button>
-                      </div>
-                    </div>
-
-                    {showUrlSettings && (
-                      <div className="p-3 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 animate-in slide-in-from-top-2 duration-300 flex gap-2">
-                        <Input value={publicBaseUrl} onChange={e => setPublicBaseUrl(e.target.value)} placeholder="https://..." className="bg-white font-mono text-[10px] h-8 rounded-lg shadow-sm" />
-                        <Button onClick={handleSavePublicUrl} className="bg-primary text-white font-black uppercase text-[8px] h-8 px-4 rounded-lg">Guardar</Button>
-                      </div>
-                    )}
-                 </div>
-              </div>
-            </Card>
-          </div>
-        )}
-
         <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
           <div className="flex flex-col md:flex-row items-end gap-4">
              <div className="relative flex-1 w-full min-w-0">
@@ -356,9 +314,6 @@ export default function ProgramsPage() {
                     <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[80px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[160px]">Identificación del Plantel</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[100px]">Estatus / Dato</TableHead>
-                    {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
-                      <TableHead className="text-[9px] font-black uppercase text-center text-primary tracking-widest w-16">Pers.</TableHead>
-                    )}
                     {activeTab === 'ATRES' && (
                        <>
                          <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[140px]">Servicio Realizado</TableHead>
@@ -386,11 +341,6 @@ export default function ProgramsPage() {
                          {rec.status?.toUpperCase() || 'ACTIVO'}
                        </Badge>}
                     </TableCell>
-                    {(activeTab === 'Biblioteca Digital' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
-                      <TableCell className="text-center">
-                        <span className="inline-flex items-center justify-center h-6 w-9 rounded-lg bg-primary/5 text-primary text-[10px] font-black border border-primary/10">{rec.asistentes?.length || 0}</span>
-                      </TableCell>
-                    )}
                     {activeTab === 'ATRES' && (
                        <>
                          <TableCell>

@@ -488,6 +488,8 @@ export default function SupportPage() {
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
 
+  if (!mounted) return null;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
@@ -651,7 +653,7 @@ export default function SupportPage() {
                               <TableCell className="text-center">
                                 <Badge className={cn(
                                   "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
-                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white'
+                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-50 text-white'
                                 )}>
                                   {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
                                 </Badge>
@@ -802,7 +804,7 @@ export default function SupportPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal de Edición de Insumo (Soporta múltiples ubicaciones) */}
+        {/* Modal de Edición de Insumo */}
         <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
           <DialogContent className="sm:max-w-[500px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
              <DialogHeader className="p-8 bg-slate-50 border-b">
@@ -841,10 +843,10 @@ export default function SupportPage() {
                 </div>
                 
                 <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicaciones de Resguardo (Lugares)</Label>
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicaciones de Resguardo</Label>
                    <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
                       {WAREHOUSE_LOCATIONS.map(loc => (
-                         <div key={loc} className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-slate-50 shadow-sm group hover:border-primary/20 transition-all">
+                         <div key={loc} className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-slate-50 shadow-sm">
                             <Checkbox 
                               id={`edit-loc-${loc}`} 
                               checked={editingItem?.locations?.includes(loc)}
@@ -863,7 +865,6 @@ export default function SupportPage() {
                          </div>
                       ))}
                    </div>
-                   <p className="text-[8px] font-bold text-slate-400 uppercase italic px-2">Puede seleccionar una o varias sedes oficiales.</p>
                 </div>
              </div>
              <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
@@ -1352,50 +1353,33 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                {formData.tipoIncidencia !== 'teleplanteles' && (
-                  <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local' || formData.tipoIncidencia === 'cuenta institucional') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && formData.tipoIncidencia === 'mantenimiento' && (
-                      <>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                      </>
-                    )}
-                  </div>
-                )}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                </div>
 
                 <div className="space-y-6 pt-6 border-t border-slate-100">
                   <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50">
                       <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
                         <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
                           <FileText className="h-4 w-4" />
                         </div>
-                        Reporte Oficial (Formato PDF)
+                        Reporte Oficial (PDF)
                       </Label>
                       <Input type="file" accept=".pdf" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'pdf')} />
-                      {formData.reportPdf && <p className="text-[9px] text-emerald-600 font-black flex items-center gap-1 mt-2">✓ ARCHIVO CONFIGURADO</p>}
                     </div>
-                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50 hover:bg-white transition-colors duration-300">
+                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50">
                       <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
                         <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shadow-sm">
                           <ImageIcon className="h-4 w-4" />
                         </div>
-                        Evidencias de Sitio (Máx 5)
+                        Evidencias de Sitio
                       </Label>
-                      <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} disabled={(formData.evidencePhotos?.length || 0) >= 5} />
-                      <div className="flex gap-3 flex-wrap mt-3">
-                        {formData.evidencePhotos?.map((p, i) => (
-                          <div key={i} className="relative h-14 w-14 border-4 border-white rounded-xl shadow-md overflow-hidden group">
-                            <Image src={p} alt="ev" fill className="object-cover" />
-                            <button className="absolute inset-0 bg-rose-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" onClick={() => setFormData(prev => ({ ...prev, evidencePhotos: prev.evidencePhotos?.filter((_, idx) => idx !== i) }))}>
-                               <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} />
                     </div>
                   </div>
                 </div>
@@ -1491,7 +1475,6 @@ export default function SupportPage() {
                     t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : 
                     t.tipoIncidencia === 'red edusat' ? "border-blue-300 text-blue-600 bg-blue-50" :
                     t.tipoIncidencia === 'red local' ? "border-indigo-300 text-indigo-600 bg-indigo-50" :
-                    t.tipoIncidencia === 'cuenta institucional' ? "border-emerald-300 text-emerald-600 bg-emerald-50" :
                     "border-primary/20 text-primary"
                   )}>
                     {t.tipoIncidencia}
@@ -1547,7 +1530,7 @@ export default function SupportPage() {
                 <TableCell colSpan={6} className="text-center py-20 opacity-30">
                   <div className="flex flex-col items-center gap-2">
                     <Search className="h-8 w-8" />
-                    <p className="text-[10px] font-black uppercase">No se encontraron reportes con los criterios de búsqueda.</p>
+                    <p className="text-[10px] font-black uppercase">No se encontraron reportes.</p>
                   </div>
                 </TableCell>
               </TableRow>
