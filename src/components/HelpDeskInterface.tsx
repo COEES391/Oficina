@@ -258,6 +258,57 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const updatedMessages = [...messages, newMessage]
     saveAndSyncChat(updatedMessages)
+
+    // Lógica de palabras clave y auto-folio para usuarios públicos
+    if (isPublic && myRole === 'user' && !fileData) {
+      const lowerInput = input.toLowerCase();
+      const keywords = ['office', 'windows', 'activar windows', 'impresora', 'anydesk', 'remoto'];
+      const hasKeywords = keywords.some(k => lowerInput.includes(k));
+
+      if (hasKeywords) {
+        setIsTyping(true);
+        setTimeout(() => {
+          const botReply: Message = {
+            role: 'bot',
+            content: 'He detectado que tu problema requiere soporte remoto directo. Por favor, utiliza la columna izquierda ("APOYO REMOTO") para ingresar tu ID de AnyDesk y presiona "SOLICITAR SOPORTE" para que podamos conectarnos a tu equipo.',
+            timestamp: Date.now()
+          };
+          saveAndSyncChat([...updatedMessages, botReply]);
+          setIsTyping(false);
+        }, 1000);
+      } else if (!activeTicketNumber) {
+        // Generar solicitud automática por chat si no hay folio activo
+        const newTicket = generateSequentialFolio();
+        const newRequest: SupportRequest = { 
+          remoteId: sessionKey, 
+          ticketNumber: newTicket,
+          timestamp: Date.now(), 
+          status: 'pending' as const,
+          requestType: 'chat'
+        }
+
+        const rawQueue = localStorage.getItem('atres_support_queue')
+        const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
+        const newQueue = [...currentQueue, newRequest]
+        localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
+        window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
+
+        setActiveTicketNumber(newTicket);
+        sessionStorage.setItem('atres_active_ticket', newTicket);
+        
+        setIsTyping(true);
+        setTimeout(() => {
+          const botReply: Message = {
+            role: 'bot',
+            content: `He registrado tu consulta. Tu # DE ATENCIÓN es: ${newTicket}. Un analista te responderá por este chat en breve.`,
+            timestamp: Date.now()
+          };
+          saveAndSyncChat([...updatedMessages, botReply]);
+          setIsTyping(false);
+        }, 1000);
+      }
+    }
+
     setInput('')
   }
 
