@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -1357,7 +1356,7 @@ export default function SupportPage() {
                   <div className={cn("grid gap-6", (formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local' || formData.tipoIncidencia === 'cuenta institucional') ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4")}>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && formData.tipoIncidencia !== 'cuenta institucional' && (
+                    {formData.tipoIncidencia !== 'red edusat' && formData.tipoIncidencia !== 'red local' && formData.tipoIncidencia === 'mantenimiento' && (
                       <>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
