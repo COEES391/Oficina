@@ -91,9 +91,6 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-// Palabras clave técnicas que activan la columna de soporte remoto
-const TECH_KEYWORDS = ['OFFICE', 'ACTIVAR WINDOWS', 'IMPRESORA', 'WINDOWS', 'ACTIVACION'];
-
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
   const [messages, setMessages] = useState<Message[]>([])
@@ -157,7 +154,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setQueue(currentQueue)
 
     if (isPublic) {
-      // Verificar si el usuario actual (ya sea por remoteId o sessionKey) está en la cola
       const myReq = currentQueue.find(r => r.remoteId === remoteId || r.remoteId === sessionKey);
       setIsRemoteRequested(!!myReq);
       if (myReq) {
@@ -168,7 +164,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [isPublic, remoteId, sessionKey])
 
   const syncChat = useCallback(() => {
-    // Si es público, el chat se identifica por el ID de conexión (remoto) o por el ID de sesión (chat)
     const activeId = isPublic ? (remoteId || sessionKey) : selectedRequest?.remoteId
     
     if (!activeId) {
@@ -263,63 +258,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const updatedMessages = [...messages, newMessage]
     saveAndSyncChat(updatedMessages)
-    const currentInput = input;
     setInput('')
-
-    // Lógica de filtrado inteligente para usuarios públicos
-    if (isPublic) {
-      const hasKeywords = TECH_KEYWORDS.some(kw => currentInput.toUpperCase().includes(kw));
-      
-      if (hasKeywords) {
-        // Instrucción para activar columna izquierda
-        setIsTyping(true)
-        setTimeout(() => {
-          const botMsg: Message = { 
-            role: 'bot', 
-            content: 'He detectado que tu duda técnica (Office, Windows o Impresora) requiere intervención remota. Por favor, sigue los pasos de la columna "Apoyo Remoto" a mi izquierda: ingresa tu ID de AnyDesk y presiona SOLICITAR SOPORTE para que un analista se conecte a tu equipo.', 
-            timestamp: Date.now() 
-          }
-          saveAndSyncChat([...updatedMessages, botMsg])
-          setIsTyping(false)
-        }, 800);
-      } else {
-        // Solicitud de atención automática si no hay palabras clave técnicas
-        if (!isRemoteRequested) {
-          const ticketNum = generateSequentialFolio();
-          const newRequest: SupportRequest = { 
-            remoteId: sessionKey, 
-            ticketNumber: ticketNum,
-            timestamp: Date.now(), 
-            status: 'pending' as const,
-            requestType: 'chat'
-          }
-          
-          const rawQueue = localStorage.getItem('atres_support_queue')
-          const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
-          
-          if (!currentQueue.some((r: any) => r.remoteId === sessionKey)) {
-            const newQueue = [...currentQueue, newRequest]
-            localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
-            window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
-          }
-          
-          setActiveTicketNumber(ticketNum);
-          setIsRemoteRequested(true);
-          sessionStorage.setItem('atres_active_ticket', ticketNum);
-
-          setIsTyping(true)
-          setTimeout(() => {
-            const botMsg: Message = { 
-              role: 'bot', 
-              content: `He enviado tu solicitud de atención a la mesa de ayuda. Un analista te responderá en breve por este chat. \n\n# DE ATENCIÓN: ${ticketNum}`, 
-              timestamp: Date.now() 
-            }
-            saveAndSyncChat([...updatedMessages, botMsg])
-            setIsTyping(false)
-          }, 1000);
-        }
-      }
-    }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,24 +349,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
-    
-    // Si ya hay una solicitud de chat con sessionKey, la actualizamos con el remoteId real
-    const existingChatReqIdx = currentQueue.findIndex(r => r.remoteId === sessionKey);
-    
-    if (existingChatReqIdx !== -1) {
-      const updatedReq = { ...currentQueue[existingChatReqIdx], remoteId, requestType: 'remote' as const };
-      const newQueue = [...currentQueue];
-      newQueue[existingChatReqIdx] = updatedReq;
-      localStorage.setItem('atres_support_queue', JSON.stringify(newQueue));
-      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }));
-      
-      // Mover historial de chat
-      const chatHistory = localStorage.getItem(`atres_chat_${sessionKey}`);
-      if (chatHistory) localStorage.setItem(`atres_chat_${remoteId}`, chatHistory);
-      
-      setIsRemoteRequested(true);
-      return;
-    }
 
     if (currentQueue.some(r => r.remoteId === remoteId)) {
       setIsRemoteRequested(true)
@@ -448,18 +369,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('atres_support_queue', JSON.stringify(newQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(newQueue) }))
 
-    const currentHistory = localStorage.getItem(`atres_chat_${sessionKey}`)
-    if (currentHistory) {
-      localStorage.setItem(`atres_chat_${remoteId}`, currentHistory)
-    }
-
-    const botMsg: Message = { 
+    const botMsg: Message[] = messages.length === 0 ? [{ 
+      role: 'bot', 
+      content: `¡Hola! He recibido tu solicitud de soporte remoto. \n\n# DE ATENCIÓN: ${newTicketNumber}\nID CONEXIÓN: ${remoteId}\n\nUn analista te atenderá en breve. Por favor, mantén AnyDesk abierto.`, 
+      timestamp: Date.now() 
+    }] : [...messages, { 
       role: 'bot', 
       content: `He recibido tu solicitud de soporte remoto. \n\n# DE ATENCIÓN: ${newTicketNumber}\nID CONEXIÓN: ${remoteId}\n\nNuestros técnicos han sido notificados. Por favor, mantén AnyDesk abierto.`, 
       timestamp: Date.now() 
-    }
+    }];
     
-    saveAndSyncChat([...messages, botMsg])
+    saveAndSyncChat(botMsg)
     setIsRemoteRequested(true)
     setActiveTicketNumber(newTicketNumber)
     sessionStorage.setItem('atres_active_ticket', newTicketNumber)
@@ -605,7 +525,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 )}
              </div>
 
-             {/* Biblioteca de Archivos para el Técnico */}
              <div className="space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                    <div className="flex items-center gap-2">
