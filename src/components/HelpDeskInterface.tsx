@@ -44,7 +44,8 @@ import {
   ShieldCheck,
   Circle,
   School,
-  X
+  X,
+  Target
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -101,6 +102,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [techName, setTechName] = useState('')
   const [mounted, setMounted] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
+  const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
   const [techLibrary, setTechLibrary] = useState<TechFile[]>([])
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
@@ -125,16 +127,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
-  // Generador de ID de sesión tipo turno bancario (DDMM-XXXX)
-  const generateTurnSessionId = () => {
+  // Generador de Turno Bancario USER-XXXXXX con reinicio diario
+  const generateTurnSessionId = useCallback(() => {
     const now = new Date();
-    const dateStr = format(now, 'ddMM');
-    const counterKey = `atres_session_counter_${dateStr}`;
+    const dateStr = format(now, 'yyyyMMdd');
+    const counterKey = `atres_user_counter_${dateStr}`;
     const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
     const nextCounter = lastCounter + 1;
     localStorage.setItem(counterKey, nextCounter.toString());
-    return `USER-${dateStr}-${nextCounter.toString().padStart(4, '0')}`;
-  }
+    return `USER-${nextCounter.toString().padStart(6, '0')}`;
+  }, []);
+
+  const updateAttendedCount = useCallback(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
+    const count = progs.filter((p: any) => p.name === 'ATRES' && p.date === today).length;
+    setAttendedTodayCount(count);
+  }, []);
 
   useEffect(() => {
     if (isPublic) {
@@ -155,8 +164,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       if (savedTechName) setTechName(savedTechName)
       const savedLibrary = localStorage.getItem('atres_tech_library')
       if (savedLibrary) setTechLibrary(JSON.parse(savedLibrary))
+      updateAttendedCount();
     }
-  }, [isPublic])
+  }, [isPublic, generateTurnSessionId, updateAttendedCount])
 
   const resetForNewRequest = useCallback(() => {
     setRemoteId('')
@@ -170,7 +180,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
     setMessages([])
-  }, [])
+  }, [generateTurnSessionId])
 
   useEffect(() => {
     if (!isPublic || !activeTicketNumber) return;
@@ -224,10 +234,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'atres_support_queue') syncQueue()
       if (activeChatId && e.key === `atres_chat_${activeChatId}`) syncChat()
+      if (e.key === 'programs_full_v24' && !isPublic) updateAttendedCount()
     };
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [syncQueue, syncChat, activeChatId])
+  }, [syncQueue, syncChat, activeChatId, isPublic, updateAttendedCount])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
@@ -344,13 +355,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const folio = selectedRequest!.ticketNumber;
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { id: folio, name: 'ATRES', cct: finishForm.cct, schoolName: finishForm.schoolName, municipio: finishForm.municipio, valle: finishForm.valle, status: 'concluido', date: format(new Date(), 'yyyy-MM-dd'), progress: 100, asistentes: [], observaciones: finishForm.servicio, tecnicos: techName, oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion }
-    localStorage.setItem('programs_full_v24', JSON.stringify([newRec, ...progs]))
+    const updatedProgs = [newRec, ...progs];
+    localStorage.setItem('programs_full_v24', JSON.stringify(updatedProgs))
     localStorage.setItem(`atres_session_status_${folio}`, 'closed');
     window.dispatchEvent(new StorageEvent('storage', { key: `atres_session_status_${folio}`, newValue: 'closed' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify(updatedProgs) }));
+    
     const rawQueue = localStorage.getItem('atres_support_queue')
-    localStorage.setItem('atres_support_queue', JSON.stringify(JSON.parse(rawQueue || '[]').filter((r: any) => r.ticketNumber !== folio)))
-    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: '[]' }))
-    setIsFinishDialogOpen(false); setSelectedRequest(null); syncQueue();
+    const updatedQueue = JSON.parse(rawQueue || '[]').filter((r: any) => r.ticketNumber !== folio);
+    localStorage.setItem('atres_support_queue', JSON.stringify(updatedQueue))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(updatedQueue) }))
+    
+    setIsFinishDialogOpen(false); 
+    setSelectedRequest(null); 
+    syncQueue();
+    updateAttendedCount();
+    toast({ title: "Atención Registrada", description: "El folio ha sido movido a la bitácora de ATRES." });
   }
 
   const getFileIcon = (type: string) => {
@@ -371,10 +391,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* Columna Izquierda (Usuario Final - Zero Scroll) */}
+      {/* Columna Izquierda (Usuario Final o Panel de Control Técnico) */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
-          "w-full md:w-[340px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
+          "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
           isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
         )}>
           {isPublic ? (
@@ -411,7 +431,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                </div>
 
-               {/* Protocolo de Atención - Compacto Lineal */}
+               {/* Protocolo de Atención - Compacto */}
                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                   <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
                      <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center">
@@ -425,7 +445,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         { 
                           n: "1", 
                           t: "Descargue software AnyDesk.", 
-                          c: <Button variant="outline" size="sm" className="h-8 px-5 text-[9px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
+                          c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR</Button> 
                         },
                         { n: "2", t: "Localice su ID personal." },
                         { n: "3", t: "Péguelo arriba y solicite soporte." },
@@ -433,13 +453,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      ].map((step, i) => (
                         <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
                            <div className="flex flex-col items-center shrink-0">
-                              <div className="h-6 w-6 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                              <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">
                                  {step.n}
                               </div>
                               {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
                            </div>
                            <div className="pt-0.5 flex-1 min-w-0">
-                              <p className="text-[11px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
                               {step.c}
                            </div>
                         </div>
@@ -449,24 +469,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               <div className="space-y-1">
-                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">SISTEMA ATRES</p>
-                  <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter leading-none">MESA DE CONTROL</h3>
+               <div className="space-y-4">
+                  <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
+                     <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
+                     <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
+                     <div className="flex items-end gap-2 mt-1">
+                        <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
+                        <Target className="h-4 w-4 mb-1 text-accent" />
+                     </div>
+                  </div>
                </div>
 
                <div className="space-y-4 shrink-0">
-                  <Label className="text-[11px] font-black uppercase text-slate-400 border-b pb-3 flex items-center justify-between w-full">
+                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">
                     Cola de Atención <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
                   </Label>
                   <ScrollArea className="h-48">
-                    <div className="space-y-3 pr-4">
+                    <div className="space-y-2 pr-4">
                       {queue.map(req => (
-                        <button key={req.ticketNumber} onClick={() => setSelectedRequest(req)} className={cn("w-full p-4 rounded-[1.75rem] border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-primary border-primary shadow-2xl scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50")}>
+                        <button key={req.ticketNumber} onClick={() => setSelectedRequest(req)} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50")}>
                           <div className="flex flex-col">
-                            <span className={cn("text-[9px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                            <span className={cn("text-[12px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'SOPORTE REMOTO'}</span>
+                            <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                            <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
                           </div>
-                          <ChevronRight className={cn("h-5 w-5", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                          <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
                         </button>
                       ))}
                     </div>
@@ -474,22 +500,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                </div>
 
                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <Label className="text-[11px] font-black uppercase text-slate-400 border-b pb-3 flex items-center justify-between w-full">
-                    Biblioteca de Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary transition-colors" onClick={() => libraryInputRef.current?.click()} />
+                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">
+                    Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} />
                   </Label>
                   <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
                   <ScrollArea className="flex-1">
-                    <div className="space-y-3 pr-4">
+                    <div className="space-y-2 pr-4">
                       {techLibrary.map(f => (
-                        <div key={f.id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-primary/20 transition-all">
-                           <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+                        <div key={f.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 group hover:border-primary/20 transition-all">
+                           <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
                               {getFileIcon(f.type)}
                            </div>
                            <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                              <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity mt-1.5">
-                                <button className="text-[9px] font-black text-primary uppercase hover:underline" onClick={() => sendLibraryFile(f)}>Enviar</button>
-                                <button className="text-[9px] font-black text-rose-500 uppercase hover:underline" onClick={() => removeLibraryFile(f.id)}>Borrar</button>
+                              <p className="text-[9px] font-black text-slate-600 truncate uppercase">{f.name}</p>
+                              <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+                                <button className="text-[8px] font-black text-primary uppercase" onClick={() => sendLibraryFile(f)}>Enviar</button>
+                                <button className="text-[8px] font-black text-rose-500 uppercase" onClick={() => removeLibraryFile(f.id)}>Borrar</button>
                               </div>
                            </div>
                         </div>
@@ -640,54 +666,59 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Registro Final del Analista - ULTRA COMPACTO para visibilidad total */}
+      {/* Registro Final del Analista - ULTRA COMPACTO PARA VISUALIZACIÓN TOTAL */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[450px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-12 w-12" /></div>
-            <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-3 relative z-10 leading-none">
-              <ShieldCheck className="h-5 w-5 text-[#B38E5D]" /> CONCLUIR SERVICIO
+            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-10 w-10" /></div>
+            <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none">
+              <ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO
             </DialogTitle>
             <DialogDescription className="text-white/60 font-bold text-[7px] uppercase tracking-[0.2em] mt-0.5 relative z-10">REGISTRO OFICIAL ATRES</DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-4">
+              {/* Buscador de Plantel */}
               <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
                    <School className="h-3 w-3 text-accent" /> Plantel Atendido
                 </Label>
-                <Input 
-                  placeholder="BUSCAR CCT..." 
-                  className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" 
-                  value={finishSearchTerm} 
-                  onChange={e => setFinishSearchTerm(e.target.value)} 
-                />
-                {finishSearchTerm.length > 2 && (
-                  <div className="max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y animate-in fade-in zoom-in-95 duration-200">
-                    {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                      <div key={`${s.cct}-${s.turno}`} className="p-1.5 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
-                          <span className="text-[7px] font-mono text-slate-400">{s.cct}</span>
+                <div className="relative">
+                   <Input 
+                    placeholder="BUSCAR CCT O NOMBRE..." 
+                    className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" 
+                    value={finishSearchTerm} 
+                    onChange={e => setFinishSearchTerm(e.target.value)} 
+                   />
+                   {finishSearchTerm.length > 2 && (
+                    <div className="absolute left-0 right-0 top-9 max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50 animate-in fade-in zoom-in-95 duration-200">
+                      {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
+                        <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-black uppercase text-slate-800">{s.nombre}</span>
+                            <span className="text-[7px] font-mono text-slate-400">{s.cct}</span>
+                          </div>
+                          <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
                         </div>
-                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                   )}
+                </div>
                 {finishForm.cct && (
                   <div className="p-2 bg-emerald-50/50 border border-emerald-100 rounded-lg animate-in zoom-in-95 duration-500 flex items-center gap-2">
                      <div className="h-6 w-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div>
-                     <div>
-                        <p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">PLANTEL:</p>
-                        <h4 className="text-[11px] font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">SELECCIONADO:</p>
+                        <h4 className="text-[10px] font-black text-slate-800 uppercase leading-none truncate mt-0.5">{finishForm.schoolName}</h4>
                      </div>
+                     <button onClick={() => setFinishForm({...finishForm, cct: '', schoolName: ''})} className="text-slate-400 hover:text-rose-500"><X className="h-3 w-3" /></button>
                   </div>
                 )}
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              {/* Oficina y Folio */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
                   <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
@@ -698,18 +729,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO</Label>
+                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID DE TURNO</Label>
                   <div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div>
                 </div>
               </div>
 
+              {/* Resumen Técnico */}
               <div className="space-y-1">
-                <Label className="text-[10px] font-black uppercase text-primary pl-1 flex items-center gap-2">
-                  <Sparkles className="h-3 w-3 text-accent" /> Resumen Técnico
+                <Label className="text-[9px] font-black uppercase text-primary pl-1 flex items-center gap-2">
+                  <Sparkles className="h-3 w-3 text-accent" /> Resumen de Atención Técnica
                 </Label>
                 <Textarea 
-                  placeholder="HALLAZGOS Y ACUERDOS..." 
-                  className="h-20 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all" 
+                  placeholder="ACUERDOS Y HALLAZGOS..." 
+                  className="h-16 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all resize-none" 
                   value={finishForm.servicio} 
                   onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} 
                 />
@@ -717,10 +749,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-2 bg-slate-50 border-t flex justify-end gap-2 shrink-0">
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0">
             <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button>
-            <Button onClick={handleFinishConfirm} className="btn-institutional h-8 px-6 text-[9px] gap-2 shadow-xl">
-              <Save className="h-3 w-3" /> REGISTRAR
+            <Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl">
+              <Save className="h-4 w-4" /> REGISTRAR ATENCIÓN
             </Button>
           </DialogFooter>
         </DialogContent>
