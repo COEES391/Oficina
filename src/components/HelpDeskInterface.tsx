@@ -107,10 +107,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [copied, setCopied] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
   
-  // Library State for Tech
   const [techLibrary, setTechLibrary] = useState<TechFile[]>([])
-  
-  // Finish Support State
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [finishSearchTerm, setFinishSearchTerm] = useState('')
   const [finishForm, setFinishForm] = useState({
@@ -167,7 +164,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setMessages([])
   }, [])
 
-  // Listener para el cierre de sesión remoto (Usuario detecta que el técnico finalizó)
   useEffect(() => {
     if (!isPublic || !activeTicketNumber) return;
 
@@ -488,7 +484,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem('programs_full_v24', JSON.stringify(updatedPrograms))
     window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify(updatedPrograms) }))
 
-    // SEÑAL DE CIERRE AL USUARIO
     localStorage.setItem(`atres_session_status_${folio}`, 'closed');
     window.dispatchEvent(new StorageEvent('storage', { key: `atres_session_status_${folio}`, newValue: 'closed' }));
 
@@ -573,7 +568,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         ) : (
           <div className="space-y-6">
             <div className="p-5 bg-white rounded-[2rem] border-2 border-primary/5 shadow-xl space-y-5">
-              <div className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} /><span className="text-[10px] font-black uppercase text-slate-700">{isRemoteRequested ? "CONEXIÓN SOLICITADA" : "NUEVA SOLICITUD"}</span></div>
+              <div className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} /><span className="text-[10px] font-black uppercase text-slate-700">{isRemoteRequested ? "CONEXIÓN SOLICITADA" : "Solicitud Cuenta institucional/Windows"}</span></div>
               {activeTicketNumber && <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center"><p className="text-[8px] font-black text-emerald-600 uppercase mb-1">Folio de Atención</p><p className="text-lg font-black text-emerald-700">{activeTicketNumber}</p></div>}
               <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400">ID ANYDESK / TEAMVIEWER</Label><Input placeholder="000 000 000" className="h-12 text-center font-mono font-black border-primary/20 text-xl bg-slate-50 rounded-2xl" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} /></div>
               {!isRemoteRequested ? <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-2xl"><MonitorOff className="h-5 w-5 mr-2" /> SOLICITAR SOPORTE</Button> : <Button onClick={resetForNewRequest} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-2xl"><RefreshCcw className="h-5 w-5 mr-2" /> ENVIAR OTRO ID</Button>}
