@@ -43,7 +43,8 @@ import {
   ShieldCheck,
   Circle,
   School,
-  ArrowRight
+  ArrowRight,
+  Wrench
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -362,8 +363,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   return (
     <div className={cn(
-      "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700 h-full", 
-      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40" : "bg-[#f8f5f0]"
+      "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
+      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
       {/* Columna Izquierda Institucional (Cero Scroll) */}
       {(!isPublic || showRemotePanel) && (
@@ -516,7 +517,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             )}>
               <div className="flex items-center gap-5">
                 <div className="h-12 w-12 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
-                  <Bot className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-500" />
+                  <UserCog className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
                 <div>
