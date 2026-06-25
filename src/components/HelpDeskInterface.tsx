@@ -42,7 +42,9 @@ import {
   Sparkles,
   Monitor,
   ShieldCheck,
-  Circle
+  Circle,
+  School,
+  ArrowRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -361,90 +363,90 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   return (
     <div className={cn(
-      "flex flex-1 w-full flex-col md:flex-row bg-[#f8f5f0] border border-white/40 overflow-hidden transition-all duration-700", 
-      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] h-full" : "h-full"
+      "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700 h-full", 
+      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40" : "bg-[#f8f5f0]"
     )}>
-      {/* Columna Izquierda Premium (Docente) o Panel Técnico (Analista) */}
+      {/* Columna Izquierda Institucional (Zero-Scroll para el usuario) */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
-          "w-full md:w-[340px] border-r border-slate-200/60 bg-white/80 backdrop-blur-3xl flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
-          highlightRemote && "ring-8 ring-primary/5",
-          !isPublic && "bg-slate-50/50"
+          "w-full md:w-[340px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
+          isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
         )}>
           {isPublic ? (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               {/* Header Columna Docente */}
-               <div className="space-y-1 animate-in fade-in slide-in-from-left-4 duration-700">
+            <div className="flex-1 flex flex-col gap-5 overflow-hidden">
+               {/* Identidad Institucional Compacta */}
+               <div className="space-y-0.5 animate-in fade-in slide-in-from-left-4 duration-700">
                   <div className="flex items-center gap-2">
-                     <span className="h-1 w-1 rounded-full bg-[#B38E5D] animate-ping" />
+                     <span className="h-1.5 w-1.5 rounded-full bg-[#B38E5D] animate-pulse" />
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">CÉLULA COEES</p>
                   </div>
-                  <h3 className="text-3xl font-black text-[#9f2241] uppercase tracking-tighter leading-none">APOYO TÉCNICO</h3>
-                  <p className="text-[10px] font-bold text-[#B38E5D] uppercase tracking-widest flex items-center gap-2">
-                    <Activity className="h-3 w-3" /> ESTATUS CONEXIÓN
-                  </p>
+                  <h3 className="text-2xl font-black text-[#9f2241] uppercase tracking-tighter leading-none">APOYO TÉCNICO</h3>
+                  <div className="flex items-center gap-2 text-[10px] font-black text-[#B38E5D] uppercase tracking-widest mt-1">
+                    <div className="h-1 w-4 bg-[#B38E5D]/20 rounded-full" />
+                    ESTATUS CONEXIÓN
+                  </div>
                </div>
 
-               {/* Consola AnyDesk Premium */}
-               <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-[0_15px_40px_rgba(0,0,0,0.04)] space-y-4 relative overflow-hidden shrink-0 group hover:shadow-xl transition-all duration-500">
+               {/* Consola Digital de ID */}
+               <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                   <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                     <Monitor className="h-24 w-24 text-primary" />
                   </div>
-                  <div className="relative z-10">
-                     <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3 block">Solicitud de Conexión Remota</Label>
-                     <div className="space-y-4">
-                        <div className="space-y-1.5">
-                           <span className="text-[8px] font-black text-primary uppercase ml-1">ID DE CONEXIÓN</span>
+                  <div className="relative z-10 space-y-4">
+                     <div className="space-y-1">
+                        <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
+                        <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
+                           <span className="text-[8px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
                            <Input 
                              placeholder="000 000 000" 
-                             className="h-12 text-center font-mono font-black border-none text-2xl bg-slate-50 rounded-2xl focus:bg-white focus:ring-4 focus:ring-primary/5 shadow-inner transition-all" 
+                             className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" 
                              value={remoteId} 
                              onChange={(e) => setRemoteId(e.target.value)} 
                              disabled={isRemoteRequested} 
                            />
                         </div>
-                        
-                        {!isRemoteRequested ? (
-                          <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-11 text-[10px] rounded-xl shadow-xl shadow-primary/10">
-                            SOLICITAR SOPORTE
-                          </Button>
-                        ) : (
-                          <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-11 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5 transition-all">
-                            ENVIAR OTRO ID
-                          </Button>
-                        )}
                      </div>
+                     
+                     {!isRemoteRequested ? (
+                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-11 text-[10px] rounded-xl shadow-xl shadow-primary/20">
+                         SOLICITAR SOPORTE
+                       </Button>
+                     ) : (
+                       <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-11 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5 transition-all">
+                         ENVIAR OTRO ID
+                       </Button>
+                     )}
                   </div>
                </div>
 
-               {/* Protocolo de Atención Sin Scroll */}
-               <div className="flex-1 flex flex-col gap-4 overflow-hidden pt-2">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3 shrink-0">
+               {/* Protocolo de Atención (Optimizado para visibilidad total) */}
+               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                  <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
                      <div className="h-6 w-6 rounded-lg bg-[#B38E5D]/10 flex items-center justify-center">
                         <ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" />
                      </div>
-                     <span className="text-[11px] font-black uppercase text-slate-700 tracking-widest">Protocolo de Atención</span>
+                     <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
                   </div>
                   
-                  <div className="flex-1 flex flex-col justify-between py-2 overflow-hidden">
+                  <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
                      {[
                         { 
                           n: "1", 
-                          t: "Descargue software AnyDesk.", 
+                          t: "Descargue AnyDesk en su equipo.", 
                           c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1.5 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
                         },
                         { n: "2", t: "Localice su ID personal de 9 dígitos." },
                         { n: "3", t: "Péguelo arriba y solicite soporte." },
                         { n: "4", t: "Espere conexión del analista." }
                      ].map((step, i) => (
-                        <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 200}ms` }}>
+                        <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 150}ms` }}>
                            <div className="flex flex-col items-center shrink-0">
-                              <div className="h-7 w-7 rounded-xl bg-[#B38E5D] text-white flex items-center justify-center text-[11px] font-black shadow-lg">
+                              <div className="h-6 w-6 rounded-lg bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shadow-lg">
                                  {step.n}
                               </div>
-                              {i < 3 && <div className="w-0.5 h-6 bg-[#B38E5D]/10 my-1" />}
+                              {i < 3 && <div className="w-0.5 h-4 bg-[#B38E5D]/20 my-0.5" />}
                            </div>
-                           <div className="pt-1 flex-1">
+                           <div className="pt-0.5 flex-1 min-w-0">
                               <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
                               {step.c}
                            </div>
@@ -455,7 +457,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               {/* Cabecera Analista */}
+               {/* Panel Analista */}
                <div className="space-y-1">
                   <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">SISTEMA ATRES</p>
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">MESA DE CONTROL</h3>
@@ -465,7 +467,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">
                     Cola de Atención <Badge className="bg-primary text-white text-[8px] px-2 rounded-full">{queue.length}</Badge>
                   </Label>
-                  <ScrollArea className="h-48">
+                  <ScrollArea className="h-40">
                     <div className="space-y-2 pr-3">
                       {queue.map(req => (
                         <button key={req.ticketNumber} onClick={() => setSelectedRequest(req)} className={cn("w-full p-3.5 rounded-[1.5rem] border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-primary border-primary shadow-xl scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50")}>
@@ -509,23 +511,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       )}
 
-      {/* Área de Chat Premium */}
-      <div className="flex-1 flex flex-col overflow-hidden relative bg-white/40">
+      {/* Área de Chat Ejecutiva */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6">
-            <div className="h-24 w-24 rounded-[2rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse">
+          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
+            <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse">
                <MessageSquare className="h-12 w-12" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">PANEL OPERATIVO</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una solicitud de la lista lateral para iniciar la asistencia.</p>
+              <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">MESA OPERATIVA</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una solicitud para iniciar la sesión de ayuda.</p>
             </div>
           </div>
         ) : (
           <>
-            <header className="px-8 py-5 border-b border-slate-200/60 bg-white/70 backdrop-blur-2xl flex justify-between items-center z-10 shrink-0 shadow-sm">
+            <header className={cn(
+              "px-8 py-5 flex justify-between items-center z-10 shrink-0 shadow-sm border-b",
+              isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60"
+            )}>
               <div className="flex items-center gap-5">
-                <div className="h-12 w-12 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-[0_15px_35px_rgba(159,34,65,0.25)] relative overflow-hidden group">
+                <div className="h-12 w-12 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
                   <Bot className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
@@ -534,25 +539,25 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="flex items-center gap-2.5 mt-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">SISTEMA EN LÍNEA</p>
-                    {activeChatId && <Badge variant="outline" className="text-[8px] font-mono border-slate-200 text-slate-400 px-3 h-5 rounded-lg bg-white/50">{activeChatId}</Badge>}
+                    {activeChatId && <Badge className="text-[8px] font-mono bg-[#B38E5D] text-white px-3 h-5 rounded-lg border-none">{activeChatId}</Badge>}
                   </div>
                 </div>
               </div>
               {!isPublic && selectedRequest && (
-                <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] uppercase h-10 px-8 rounded-xl shadow-xl shadow-rose-200 transition-all active:scale-95 gap-3 border-none">
+                <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[10px] uppercase h-10 px-8 rounded-xl shadow-xl transition-all active:scale-95 gap-3">
                   <CheckCircle2 className="h-4 w-4" /> FINALIZAR ATENCIÓN
                 </Button>
               )}
             </header>
 
             <ScrollArea className="flex-1 px-4 py-8">
-              <div className="max-w-4xl mx-auto space-y-6 min-h-full flex flex-col justify-end pb-8">
+              <div className="max-w-4xl mx-auto space-y-6 min-h-full flex flex-col justify-end pb-12">
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
                   const isBot = msg.role === 'bot';
                   return (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", isMe ? "justify-end" : "justify-start")}>
-                      <div className={cn("flex gap-4 max-w-[80%]", isMe ? "flex-row-reverse" : "flex-row")}>
+                      <div className={cn("flex gap-4 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
                         <div className={cn(
                           "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-2 border-white", 
                           msg.role === 'user' ? "bg-[#B38E5D] text-white" : 
@@ -564,10 +569,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <div className="space-y-1">
                           {msg.senderName && <span className={cn("text-[7px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
                           <div className={cn(
-                            "p-4 rounded-[1.75rem] text-[12px] font-semibold shadow-xl border leading-relaxed relative overflow-hidden", 
+                            "p-4 rounded-[1.75rem] text-[12px] font-semibold shadow-2xl border leading-relaxed relative", 
                             isMe ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : 
                             isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : 
-                            "bg-white text-slate-700 rounded-tl-none border-slate-100/60"
+                            "bg-white text-slate-700 rounded-tl-none border-slate-100"
                           )}>
                             {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                             {msg.fileData && (
@@ -601,12 +606,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </div>
             </ScrollArea>
 
-            <footer className="p-6 bg-white/60 backdrop-blur-2xl border-t border-slate-200/60 shrink-0 relative z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
+            <footer className="p-6 bg-white/40 backdrop-blur-2xl border-t border-white/40 shrink-0 relative z-10">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
                   <Input 
                     placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} 
-                    className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-6 pr-14 font-semibold shadow-inner focus:ring-4 focus:ring-primary/5 focus:border-primary/20 text-sm transition-all" 
+                    className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-6 pr-14 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" 
                     value={input} 
                     onChange={e => setInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
@@ -622,7 +627,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <button 
                   onClick={() => handleSendMessage()} 
                   disabled={!input.trim()} 
-                  className="h-14 w-14 rounded-2xl btn-institutional shrink-0 flex items-center justify-center shadow-2xl active:scale-90 transition-all disabled:opacity-50 disabled:grayscale"
+                  className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"
                 >
                   <Send className="h-6 w-6" />
                 </button>
