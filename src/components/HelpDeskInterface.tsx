@@ -111,7 +111,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
-  // Seguimiento de Folios y Solicitud Técnica
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [newTicketFiles, setNewTicketFiles] = useState<File[]>([])
   const [requesterName, setRequesterName] = useState('')
@@ -663,8 +662,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           <SelectValue placeholder="ELEGIR..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta Institucional</SelectItem>
-                          <SelectItem value="contrasena" className="text-[10px] font-bold uppercase">Restablecer/Contraseña</SelectItem>
+                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
                           <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
                           <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
                           <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
