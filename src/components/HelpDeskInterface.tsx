@@ -162,7 +162,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const generateSequentialFolio = () => {
     const now = new Date();
     const year = now.getFullYear();
-    // Inicio ciclo escolar: Agosto (mes 7 index)
     const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
     const counterKey = `atres_folio_counter_${cycle}`;
     const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
@@ -846,7 +845,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* Modal Concluir Servicio Técnico (Analista) */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-10 w-10" /></div>
             <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
