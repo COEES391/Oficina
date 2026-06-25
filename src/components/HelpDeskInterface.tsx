@@ -758,58 +758,61 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* Modal Carta Responsiva */}
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><ShieldCheck className="h-20 w-20" /></div>
              <DialogTitle className="uppercase font-black text-white text-lg leading-tight relative z-10">CARTA RESPONSIVA SOBRE EL USO DEL CORREO ELECTRÓNICO INSTITUCIONAL</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 p-8 bg-[#fdfaf5]">
-            <div className="space-y-6 text-[11.5px] leading-relaxed text-slate-700 text-justify font-medium">
-               <p className="font-bold text-[#9f2241] border-b-2 border-[#9f2241]/10 pb-4">
-                La presente carta tiene como objetivo la definición de las reglas de operación de las cuentas y contraseñas del correo electrónico institucional de la estructura de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA). Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx, creada por el Departamento de Computación Electrónica en la Educación Secundaria (COEES). El cumplimiento de estas reglas es responsabilidad del signatario.
-               </p>
-               
-               <div className="space-y-4 pr-2">
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">1</div>
-                     <p>El servicio de correo electrónico deberá usarse exclusivamente para asuntos relacionados con el organismo y sus instituciones.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">2</div>
-                     <p>Las cuentas de correo son personales. Por lo cual, los titulares de las cuentas son responsables directos del buen uso de las mismas.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">3</div>
-                     <p>Las claves de acceso son para uso exclusivo de la persona usuaria titular y su custodia y correcta utilización son de su responsabilidad. Queda prohibido permitir su utilización a personas no autorizadas.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">4</div>
-                     <p>Los usuarios de este servicio deberán realizar el cambio de contraseña al recibir por primera vez su cuenta, cuando sea requerido por el sistema o cuando considere que la cuenta esté en riesgo por mal uso.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">5</div>
-                     <p>Queda prohibido enviar correo electrónico no solicitado o cadenas (spamming), con fines comerciales, informativos, publicitarios, políticos y religiosos entre otros; así mismo se deberá respetar la privacidad de otros usuarios.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">6</div>
-                     <p>Queda prohibido el uso de cuentas de correo electrónico por parte de personas distintas al titular de la misma, por lo que las cuentas y contraseñas son intransferibles.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">7</div>
-                     <p>Es responsabilidad de los titulares de las cuentas de correo electrónico, respaldar la información (mensajes) en medios magnéticos u ópticos, para su restauración en caso de pérdida o destrucción parcial o total.</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                     <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">8</div>
-                     <p>Estas cuentas son un medio de comunicación de la estructura de la DESySA, por lo que el titular está obligado a consultarla y realizar revisiones periódicas al buzón con la finalidad de depurarlo y asegurar la buena recepción de mensajes.</p>
-                  </div>
-               </div>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-8 space-y-6 text-[11.5px] leading-relaxed text-slate-700 text-justify font-medium bg-[#fdfaf5]">
+                <p className="font-bold text-[#9f2241] border-b-2 border-[#9f2241]/10 pb-4">
+                  La presente carta tiene como objetivo la definición de las reglas de operación de las cuentas y contraseñas del correo electrónico institucional de la estructura de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA). Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx, creada por el Departamento de Computación Electrónica en la Educación Secundaria (COEES). El cumplimiento de estas reglas es responsabilidad del signatario.
+                </p>
+                
+                <div className="space-y-4 pr-2">
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">1</div>
+                      <p>El servicio de correo electrónico deberá usarse exclusivamente para asuntos relacionados con el organismo y sus instituciones.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">2</div>
+                      <p>Las cuentas de correo son personales. Por lo cual, los titulares de las cuentas son responsables directos del buen uso de las mismas.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">3</div>
+                      <p>Las claves de acceso son para uso exclusivo de la persona usuaria titular y su custodia y correcta utilización son de su responsabilidad. Queda prohibido permitir su utilización a personas no autorizadas.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">4</div>
+                      <p>Los usuarios de este servicio deberán realizar el cambio de contraseña al recibir por primera vez su cuenta, cuando sea requerido por el sistema o cuando considere que la cuenta esté en riesgo por mal uso.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">5</div>
+                      <p>Queda prohibido enviar correo electrónico no solicitado o cadenas (spamming), con fines comerciales, informativos, publicitarios, políticos y religiosos entre otros; así mismo se deberá respetar la privacidad de otros usuarios.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">6</div>
+                      <p>Queda prohibido el uso de cuentas de correo electrónico por parte de personas distintas al titular de la misma, por lo que las cuentas y contraseñas son intransferibles.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">7</div>
+                      <p>Es responsabilidad de los titulares de las cuentas de correo electrónico, respaldar la información (mensajes) en medios magnéticos u ópticos, para su restauración en caso de pérdida o destrucción parcial o total.</p>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">8</div>
+                      <p>Estas cuentas son un medio de comunicación de la estructura de la DESySA, por lo que el titular está obligado a consultarla y realizar revisiones periódicas al buzón con la finalidad de depurarlo y asegurar la buena recepción de mensajes.</p>
+                    </div>
+                </div>
 
-               <p className="font-black pt-6 border-t border-[#9f2241]/20 mt-6 text-slate-800 uppercase tracking-tighter">
-                Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.
-               </p>
-            </div>
-          </ScrollArea>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-center">
+                <p className="font-black pt-6 border-t border-[#9f2241]/20 mt-6 text-slate-800 uppercase tracking-tighter">
+                  Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.
+                </p>
+                <div className="h-4" />
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-center shrink-0">
             <Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-14 text-[11px] shadow-2xl hover:scale-[1.02] transition-transform">
                ACEPTO Y CONTINUAR CON LA SOLICITUD
             </Button>
