@@ -45,7 +45,10 @@ import {
   Circle,
   School,
   X,
-  Target
+  Target,
+  FilePlus,
+  Search,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -104,6 +107,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
+  // Seguimiento de Folios
+  const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
+  const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
+  const [trackFolioInput, setTrackFolioInput] = useState('')
+  const [trackedTicket, setTrackedTicket] = useState<any>(null)
+  
   const [techLibrary, setTechLibrary] = useState<TechFile[]>([])
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [finishSearchTerm, setFinishSearchTerm] = useState('')
@@ -127,7 +136,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
-  // Generador de Turno Bancario USER-XXXXXX con reinicio diario
+  // Generador de Turno Bancario USER-000001 con reinicio diario
   const generateTurnSessionId = useCallback(() => {
     const now = new Date();
     const dateStr = format(now, 'yyyyMMdd');
@@ -137,6 +146,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem(counterKey, nextCounter.toString());
     return `USER-${nextCounter.toString().padStart(6, '0')}`;
   }, []);
+
+  // Generador de Folio por Ciclo Escolar ATRES-00001
+  const generateSequentialFolio = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    // El ciclo escolar reinicia en Agosto (mes 7 indexado en 0)
+    const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+    const counterKey = `atres_folio_counter_${cycle}`;
+    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
+    const nextCounter = lastCounter + 1;
+    localStorage.setItem(counterKey, nextCounter.toString());
+    return `ATRES-${nextCounter.toString().padStart(5, '0')}`;
+  }
 
   const updateAttendedCount = useCallback(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -244,17 +266,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const generateSequentialFolio = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-    const counterKey = `atres_folio_counter_${cycle}`;
-    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
-    const nextCounter = lastCounter + 1;
-    localStorage.setItem(counterKey, nextCounter.toString());
-    return `ATRES-${nextCounter.toString().padStart(5, '0')}`;
-  }
-
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
     if (!input.trim() && !fileData) return
     let currentFolio = activeTicketNumber;
@@ -350,6 +361,29 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(final), storageArea: localStorage }));
   }
 
+  const handleTrackFolio = () => {
+    if (!trackFolioInput) return;
+    const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
+    const liveQueue = JSON.parse(localStorage.getItem('atres_support_queue') || '[]');
+    
+    // Buscar en concluidos
+    const concluded = progs.find((p: any) => p.id === trackFolioInput.toUpperCase());
+    if (concluded) {
+      setTrackedTicket({ ...concluded, displayStatus: 'Atendida' });
+      return;
+    }
+    
+    // Buscar en cola activa
+    const inQueue = liveQueue.find((r: any) => r.ticketNumber === trackFolioInput.toUpperCase());
+    if (inQueue) {
+      setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'No Atendida' });
+      return;
+    }
+
+    toast({ variant: "destructive", title: "Folio no encontrado", description: "Verifique que el número de seguimiento sea correcto." });
+    setTrackedTicket(null);
+  }
+
   const handleFinishConfirm = () => {
     if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) { toast({ variant: "destructive", title: "Faltan datos obligatorios" }); return; }
     const folio = selectedRequest!.ticketNumber;
@@ -391,7 +425,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* Columna Izquierda (Usuario Final o Panel de Control Técnico) */}
+      {/* Columna Izquierda (Consola AnyDesk y Protocolo) */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
           "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
@@ -469,6 +503,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+               {/* Marcador de Productividad Técnico */}
                <div className="space-y-4">
                   <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
                      <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
@@ -559,10 +594,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">
                     {isPublic ? "ASISTENTE COEES" : "ATENCIÓN AL DOCENTE"}
                   </h2>
-                  <div className="flex items-center gap-3 mt-2.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO EN LÍNEA</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-2.5">
+                    <div className="flex items-center gap-2">
+                       <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                       <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO EN LÍNEA</p>
+                    </div>
                     {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
+                    
+                    {/* Botones de Solicitud y Seguimiento (Solo Public) */}
+                    {isPublic && (
+                      <div className="flex gap-2 ml-2">
+                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio">
+                            <FilePlus className="h-4 w-4" />
+                         </button>
+                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus">
+                            <Search className="h-4 w-4" />
+                         </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -666,7 +715,96 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Registro Final del Analista - ULTRA COMPACTO PARA VISUALIZACIÓN TOTAL */}
+      {/* DIÁLOGO: NUEVA SOLICITUD DE FOLIO (PÚBLICO) */}
+      <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-3 bg-[#9f2241] text-white relative">
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2">
+              <FilePlus className="h-4 w-4 text-accent" /> SOLICITUD TÉCNICA
+            </DialogTitle>
+            <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
+          </DialogHeader>
+          <div className="p-4 space-y-4">
+             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-primary" />
+                <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Su solicitud será enviada al correo del departamento y se le asignará un folio de ciclo escolar.</p>
+             </div>
+             <div className="space-y-3">
+                <div className="space-y-1">
+                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
+                   <Input placeholder="15DES0000X" className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase" />
+                </div>
+                <div className="space-y-1">
+                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Descripción del Problema</Label>
+                   <Textarea placeholder="DETALLE TÉCNICO..." className="h-20 bg-slate-50 border-none rounded-lg text-[10px] font-semibold resize-none" />
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
+            <Button onClick={() => { 
+               const folio = generateSequentialFolio();
+               toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` });
+               setIsNewTicketDialogOpen(false);
+            }} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIÁLOGO: SEGUIMIENTO DE FOLIO (PÚBLICO) */}
+      <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-3 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2">
+              <Search className="h-4 w-4 text-white" /> CONSULTAR ESTATUS
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 space-y-4">
+             <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Número de Seguimiento</Label>
+                <div className="flex gap-2">
+                   <Input 
+                    placeholder="ATRES-00000" 
+                    className="h-9 bg-slate-50 border-none rounded-lg text-[11px] font-mono font-black uppercase flex-1 shadow-inner" 
+                    value={trackFolioInput}
+                    onChange={e => setTrackFolioInput(e.target.value.toUpperCase())}
+                   />
+                   <Button onClick={handleTrackFolio} className="h-9 w-9 p-0 rounded-lg bg-primary hover:bg-primary/90 text-white shadow-lg">
+                      <Search className="h-4 w-4" />
+                   </Button>
+                </div>
+             </div>
+
+             {trackedTicket && (
+               <div className="p-4 bg-slate-50 rounded-2xl border-2 border-accent/20 animate-in zoom-in-95 duration-500">
+                  <div className="flex justify-between items-start border-b border-accent/10 pb-2 mb-3">
+                     <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">FOLIO IDENTIFICADO:</p>
+                        <h4 className="text-lg font-black text-primary leading-none">{trackedTicket.id || trackedTicket.ticketNumber}</h4>
+                     </div>
+                     <Badge className={cn(
+                        "text-[9px] font-black uppercase py-1 px-3 rounded-full shadow-sm",
+                        trackedTicket.displayStatus === 'Atendida' ? "bg-emerald-500" :
+                        trackedTicket.displayStatus === 'En Proceso' ? "bg-amber-500" : "bg-rose-500"
+                     )}>
+                        {trackedTicket.displayStatus}
+                     </Badge>
+                  </div>
+                  <div className="space-y-2">
+                     <p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Plantel:</span> {trackedTicket.schoolName || 'En Proceso'}</p>
+                     <p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Oficina:</span> {trackedTicket.oficinaRegionalAtencion || 'Pendiente'}</p>
+                     {trackedTicket.observaciones && <p className="text-[9px] font-semibold text-slate-500 italic mt-2 border-t pt-2">{trackedTicket.observaciones}</p>}
+                  </div>
+               </div>
+             )}
+          </div>
+          <DialogFooter className="p-3 bg-slate-50 border-t">
+            <Button variant="ghost" onClick={() => { setIsTrackTicketDialogOpen(false); setTrackedTicket(null); setTrackFolioInput(''); }} className="w-full h-8 text-[9px] font-black uppercase text-slate-400">CERRAR CONSULTA</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registro Final del Analista (TÉCNICO) - ULTRA COMPACTO */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
