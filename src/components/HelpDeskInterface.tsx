@@ -170,6 +170,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setMessages([])
   }, [])
 
+  // Nueva función para permitir re-ingresar el ID sin ocultar la columna
+  const handleEditRemoteId = () => {
+    setIsRemoteRequested(false)
+    setHighlightRemote(true)
+    toast({ title: "Modo Edición", description: "Ahora puede ingresar un nuevo ID." })
+  }
+
   useEffect(() => {
     if (!isPublic || !activeTicketNumber) return;
 
@@ -604,8 +611,25 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               )}>
                 <div className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} /><span className="text-[10px] font-black uppercase text-slate-700">Solicitud Cuenta institucional/Windows</span></div>
                 {activeTicketNumber && <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center"><p className="text-[8px] font-black text-emerald-600 uppercase mb-1">Folio de Atención</p><p className="text-lg font-black text-emerald-700">{activeTicketNumber}</p></div>}
-                <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400">ID ANYDESK / TEAMVIEWER</Label><Input placeholder="000 000 000" className="h-12 text-center font-mono font-black border-primary/20 text-xl bg-slate-50 rounded-2xl" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} /></div>
-                {!isRemoteRequested ? <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-2xl"><MonitorOff className="h-5 w-5 mr-2" /> SOLICITAR SOPORTE</Button> : <Button onClick={resetForNewRequest} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-2xl"><RefreshCcw className="h-5 w-5 mr-2" /> ENVIAR OTRO ID</Button>}
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase text-slate-400">ID ANYDESK / TEAMVIEWER</Label>
+                  <Input 
+                    placeholder="000 000 000" 
+                    className="h-12 text-center font-mono font-black border-primary/20 text-xl bg-slate-50 rounded-2xl focus:bg-white transition-colors" 
+                    value={remoteId} 
+                    onChange={(e) => setRemoteId(e.target.value)} 
+                    disabled={isRemoteRequested} 
+                  />
+                </div>
+                {!isRemoteRequested ? (
+                  <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-2xl">
+                    <MonitorOff className="h-5 w-5 mr-2" /> SOLICITAR SOPORTE
+                  </Button>
+                ) : (
+                  <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-2xl group">
+                    <RefreshCcw className="h-5 w-5 mr-2 group-hover:rotate-180 transition-transform duration-500" /> ENVIAR OTRO ID
+                  </Button>
+                )}
               </div>
               <div className="space-y-4 pt-2"><h4 className="text-[10px] font-black uppercase text-accent border-b pb-2">PASOS A SEGUIR</h4><ul className="space-y-4">{["Descargue AnyDesk en su equipo.","Copie su ID personal de 9 dígitos.","Péguelo arriba y haga clic en Solicitar Soporte.","Esperar unos minutos a que un técnico le atienda."].map((step, i) => (<li key={i} className="flex gap-3 text-[11px] font-bold text-slate-600 items-start"><span className="h-6 w-6 rounded-full bg-white border-2 border-primary/10 flex items-center justify-center text-primary shrink-0 font-black text-[10px]">{i+1}</span><div className="flex flex-col gap-2"><span className="leading-tight pt-1 uppercase">{step}</span>{i === 0 && <Button variant="outline" size="sm" className="h-7 px-3 text-[8px] font-black border-primary/20 text-primary" onClick={() => window.open('https://anydesk.com/en/downloads/windows', '_blank')}><Download className="h-3 w-3 mr-1.5" /> DESCARGAR AHORA</Button>}</div></li>))}</ul></div>
             </div>
