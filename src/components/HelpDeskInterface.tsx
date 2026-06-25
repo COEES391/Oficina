@@ -53,7 +53,9 @@ import {
   HelpCircle,
   Sparkles,
   Clock,
-  Laptop
+  Laptop,
+  Activity,
+  Cpu
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -366,91 +368,114 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return <FileCode className="h-5 w-5 text-slate-400" />
   }
 
+  const sendLibraryFile = (file: TechFile) => {
+     handleSendMessage({ data: file.data, name: file.name, type: file.type })
+  }
+
+  const removeLibraryFile = (id: string) => {
+     const updated = techLibrary.filter(f => f.id !== id)
+     setTechLibrary(updated)
+     localStorage.setItem('atres_tech_library', JSON.stringify(updated))
+  }
+
+  const downloadFile = (data: string, name: string) => {
+     const link = document.createElement('a');
+     link.href = data;
+     link.download = name;
+     link.click();
+  }
+
   if (!mounted) return null
 
   return (
     <div className={cn(
       "flex flex-1 w-full flex-col md:flex-row bg-white/40 backdrop-blur-xl border border-white/50 overflow-hidden transition-all duration-700", 
-      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.12)]" : "h-full"
+      isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.12)] h-full" : "h-full"
     )}>
-      {/* Columna Lateral Dinámica */}
+      {/* Columna Izquierda - Estilo Institucional */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
-          "w-full md:w-[350px] border-r bg-white/60 backdrop-blur-3xl p-6 flex flex-col gap-6 shrink-0 overflow-y-auto animate-in slide-in-from-left duration-700 no-scrollbar",
+          "w-full md:w-[360px] border-r bg-white/70 p-6 flex flex-col gap-6 shrink-0 transition-all duration-700 relative z-20 overflow-hidden",
           highlightRemote && "ring-8 ring-primary/5"
         )}>
+          {/* Header de Columna */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-1">
-               <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(159,34,65,0.6)]" />
-               <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">Célula COEES</span>
-            </div>
-            <h3 className="text-3xl font-black text-slate-800 uppercase leading-[0.9] tracking-tighter">Apoyo <br /> Técnico</h3>
+             <div className="flex items-center gap-2 mb-1">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(159,34,65,0.8)]" />
+                <span className="text-[10px] font-black uppercase text-primary tracking-[0.25em]">Célula COEES</span>
+             </div>
+             <h3 className="text-3xl font-black text-[#9f2241] uppercase leading-none tracking-tighter">Apoyo <br /> Técnico</h3>
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
+                <Activity className="h-3 w-3" /> Estatus Conexión
+             </p>
           </div>
 
           {isPublic ? (
-            <div className="space-y-6 animate-in slide-in-from-top-4 duration-1000">
-               <div className={cn(
-                 "p-6 bg-white rounded-[2.5rem] border-2 shadow-2xl space-y-6 transition-all duration-700 relative overflow-hidden group",
-                 highlightRemote ? "border-primary scale-[1.03]" : "border-slate-100"
-               )}>
-                 <div className="absolute -top-6 -right-6 p-10 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000">
-                    <Laptop className="h-32 w-32" />
-                 </div>
-                 
-                 <div className="relative z-10">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Estatus Conexión</p>
-                    <h4 className="text-xs font-black uppercase text-primary flex items-center gap-2">
-                       <Monitor className="h-4 w-4" /> Solicitud AnyDesk
-                    </h4>
-                 </div>
-
-                 <div className="space-y-3 relative z-10">
-                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">ID DE CONEXIÓN</Label>
-                    <Input 
-                      placeholder="000 000 000" 
-                      className="h-14 text-center font-mono font-black border-slate-100 text-2xl bg-slate-50 rounded-2xl focus:bg-white focus:ring-4 focus:ring-primary/5 shadow-inner tracking-[0.2em]" 
-                      value={remoteId} 
-                      onChange={(e) => setRemoteId(e.target.value)} 
-                      disabled={isRemoteRequested} 
-                    />
-                 </div>
-
-                 {!isRemoteRequested ? (
-                   <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-2xl shadow-xl">
-                     SOLICITAR SOPORTE
-                   </Button>
-                 ) : (
-                   <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-12 text-[10px] font-black uppercase border-primary/20 text-primary rounded-2xl hover:bg-primary/5">
-                     ENVIAR OTRO ID
-                   </Button>
-                 )}
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+               {/* Sección Solicitud AnyDesk */}
+               <div className="bg-white rounded-[2rem] border-2 border-slate-100 p-6 shadow-xl space-y-4 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                     <Laptop className="h-24 w-24" />
+                  </div>
+                  
+                  <div className="relative z-10">
+                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 tracking-widest">Solicitud AnyDesk / TeamViewer</Label>
+                     <div className="mt-2 space-y-4">
+                        <div className="space-y-1">
+                           <span className="text-[8px] font-black text-primary uppercase ml-1">ID de Conexión</span>
+                           <Input 
+                             placeholder="000 000 000" 
+                             className="h-12 text-center font-mono font-black border-slate-100 text-xl bg-slate-50 rounded-xl focus:bg-white focus:ring-4 focus:ring-primary/5 shadow-inner tracking-[0.1em]" 
+                             value={remoteId} 
+                             onChange={(e) => setRemoteId(e.target.value)} 
+                             disabled={isRemoteRequested} 
+                           />
+                        </div>
+                        
+                        {!isRemoteRequested ? (
+                          <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-11 text-[9px] rounded-xl shadow-lg">
+                            SOLICITAR SOPORTE
+                          </Button>
+                        ) : (
+                          <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-11 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">
+                            ENVIAR OTRO ID
+                          </Button>
+                        )}
+                     </div>
+                  </div>
                </div>
 
-               <div className="space-y-4 px-2">
+               {/* Protocolo de Atención */}
+               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                      <ArrowRightCircle className="h-4 w-4 text-accent" />
-                     <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">PROTOCOLO DE ATENCIÓN</span>
+                     <span className="text-[10px] font-black uppercase text-slate-600 tracking-[0.2em]">Protocolo de Atención</span>
                   </div>
-                  <div className="space-y-4">
-                    {[
-                      { t: "Descargue software AnyDesk.", c: <Button variant="outline" size="sm" className="h-8 px-4 text-[8px] font-black border-primary/20 text-primary rounded-xl mt-2 hover:bg-primary hover:text-white transition-all shadow-md" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3.5 w-3.5 mr-2" /> DESCARGAR AHORA</Button> },
-                      { t: "Localice su ID personal." },
-                      { t: "Péguelo arriba y solicite soporte." },
-                      { t: "Espere conexión del analista." }
-                    ].map((step, i) => (
-                      <div key={i} className="flex gap-4 group">
-                        <div className="flex flex-col items-center shrink-0">
-                          <div className="h-7 w-7 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[10px] font-black text-primary group-hover:scale-110 transition-transform">
-                            {i+1}
-                          </div>
-                          {i < 3 && <div className="w-px flex-1 bg-slate-100 my-1" />}
+                  
+                  <div className="space-y-3 flex-1 overflow-hidden">
+                     {[
+                        { 
+                          n: "1", 
+                          t: "Descargue software AnyDesk.", 
+                          c: <Button variant="outline" size="sm" className="h-7 px-3 text-[8px] font-black border-primary/30 text-primary rounded-lg mt-1.5 hover:bg-primary hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
+                        },
+                        { n: "2", t: "Localice su ID personal de 9 dígitos." },
+                        { n: "3", t: "Péguelo arriba y solicite soporte." },
+                        { n: "4", t: "Espere conexión del analista." }
+                     ].map((step, i) => (
+                        <div key={i} className="flex gap-4 items-start group">
+                           <div className="flex flex-col items-center">
+                              <div className="h-6 w-6 rounded-lg bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shadow-lg group-hover:scale-110 transition-transform">
+                                 {step.n}
+                              </div>
+                              {i < 3 && <div className="w-0.5 flex-1 bg-slate-100 my-1" />}
+                           </div>
+                           <div className="pt-0.5">
+                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-snug">{step.t}</p>
+                              {step.c}
+                           </div>
                         </div>
-                        <div className="pt-1.5 pb-2">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase leading-snug">{step.t}</p>
-                          {step.c}
-                        </div>
-                      </div>
-                    ))}
+                     ))}
                   </div>
                </div>
             </div>
@@ -501,8 +526,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       )}
 
-      {/* Área Central del Chat */}
-      <div className="flex-1 flex flex-col overflow-hidden relative bg-white/20">
+      {/* Área de Chat */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest ? (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6">
             <div className="relative">
@@ -541,19 +566,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </header>
 
             <ScrollArea className="flex-1 bg-slate-50/20">
-              <div className="p-8 space-y-8 max-w-4xl mx-auto min-h-full flex flex-col justify-end">
+              <div className="p-8 space-y-6 max-w-4xl mx-auto min-h-full flex flex-col justify-end">
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
                   const isBot = msg.role === 'bot';
                   return (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-3 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
-                        <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-2 border-white", msg.role === 'user' ? "bg-accent text-white" : msg.role === 'tech' ? "bg-primary text-white" : "bg-slate-800 text-white")}>
+                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-lg border-2 border-white", msg.role === 'user' ? "bg-accent text-white" : msg.role === 'tech' ? "bg-primary text-white" : "bg-slate-800 text-white")}>
                           {msg.role === 'user' ? <User className="h-4 w-4" /> : msg.role === 'tech' ? <Headset className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                         </div>
                         <div className="space-y-1">
                           {msg.senderName && <span className={cn("text-[7px] font-black uppercase tracking-widest block", isMe ? "text-right text-accent" : "text-left text-slate-400")}>{msg.senderName} • BRIGADA TÉCNICA</span>}
-                          <div className={cn("p-4 rounded-[1.8rem] text-[12px] font-semibold shadow-xl border leading-relaxed", isMe ? "bg-accent text-white rounded-tr-none border-transparent" : isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-50")}>
+                          <div className={cn("p-4 rounded-[1.5rem] text-[12px] font-semibold shadow-lg border leading-relaxed", isMe ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                             {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                             {msg.fileData && (
                               <div className={cn("mt-3 p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all hover:scale-[1.02]", isMe ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100")} onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
@@ -582,7 +607,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </div>
             </ScrollArea>
 
-            <footer className="p-6 bg-white/80 backdrop-blur-xl border-t shrink-0">
+            <footer className="p-6 bg-white/80 backdrop-blur-xl border-t shrink-0 relative z-10">
               <div className="max-w-4xl mx-auto flex gap-3">
                 <div className="relative flex-1">
                   <Input placeholder={isPublic ? "Escriba su duda detalladamente..." : "Escriba la respuesta oficial..."} className="h-12 rounded-2xl bg-slate-50 border-none px-6 pr-12 font-semibold shadow-inner focus:ring-4 focus:ring-primary/5 text-sm" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
@@ -630,7 +655,3 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     </div>
   )
 }
-
-function sendLibraryFile(file: TechFile) { /* Logic handled in main component via sendLibraryFile state or function passed to library sub-ui */ }
-function removeLibraryFile(id: string) { /* Logic handled in main component */ }
-function downloadFile(data: string, name: string) { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
