@@ -51,7 +51,8 @@ import {
   Monitor,
   ArrowRightCircle,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Clock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -631,7 +632,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className={cn("h-3 w-3 rounded-full", isRemoteRequested ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)] animate-pulse" : "bg-slate-300")} />
                       <span className="text-[11px] font-black uppercase text-slate-800 tracking-widest">Enlace Remoto Activo</span>
                    </div>
-                   <h4 className="text-sm font-black uppercase text-primary leading-tight">Acceso AnyDesk / Windows</h4>
+                   <h4 className="text-sm font-black uppercase text-primary leading-tight">Solicitud Cuenta institucional/Windows</h4>
                 </div>
 
                 {activeTicketNumber && (
@@ -645,7 +646,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 )}
 
                 <div className="space-y-4 relative z-10">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2">ID DE CONEXIÓN (9 DÍGITOS)</Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2">ID ANYDESK / TEAMVIEWER</Label>
                   <div className="relative">
                     <Input 
                       placeholder="000 000 000" 
@@ -664,7 +665,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </Button>
                 ) : (
                   <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-16 text-[11px] font-black uppercase border-primary/20 text-primary rounded-[2rem] hover:bg-primary/5 shadow-xl group">
-                    <RefreshCcw className="h-5 w-5 mr-4 group-hover:rotate-180 transition-transform duration-1000" /> MODIFICAR ID
+                    <RefreshCcw className="h-5 w-5 mr-4 group-hover:rotate-180 transition-transform duration-1000" /> ENVIAR OTRO ID
                   </Button>
                 )}
               </div>
@@ -674,15 +675,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <div className="h-10 w-10 rounded-2xl bg-accent/10 flex items-center justify-center text-accent shadow-sm">
                       <HelpCircle className="h-6 w-6" />
                    </div>
-                   <h4 className="text-[12px] font-black uppercase text-slate-700 tracking-[0.2em]">Protocolo de Inicio</h4>
+                   <h4 className="text-[12px] font-black uppercase text-slate-700 tracking-[0.2em]">PASOS A SEGUIR</h4>
                 </div>
                 
                 <div className="space-y-8">
                   {[
                     { title: "Descargue AnyDesk en su equipo.", content: <Button variant="outline" size="sm" className="h-10 px-6 text-[10px] font-black border-primary/20 text-primary rounded-2xl mt-3 hover:bg-primary hover:text-white transition-all shadow-md group" onClick={() => window.open('https://anydesk.com/en/downloads/windows', '_blank')}><Download className="h-4 w-4 mr-3 group-hover:translate-y-0.5 transition-transform" /> DESCARGAR AHORA</Button> },
-                    { title: "Localice y copie su ID personal de 9 dígitos." },
-                    { title: "Péguelo arriba y haga clic en 'Solicitar Soporte'." },
-                    { title: "Mantenga su equipo encendido mientras le atendemos." }
+                    { title: "Copie su ID personal de 9 dígitos." },
+                    { title: "Péguelo arriba y haga clic en Solicitar Soporte." },
+                    { title: "Esperar unos minutos a que un técnico le atienda." }
                   ].map((step, i) => (
                     <div key={i} className="flex gap-6 items-start group">
                       <div className="flex flex-col items-center shrink-0">
