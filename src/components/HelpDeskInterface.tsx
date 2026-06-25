@@ -49,7 +49,10 @@ import {
   FilePlus,
   Search,
   AlertCircle,
-  ImageIcon
+  ImageIcon,
+  User,
+  Mail,
+  Tag
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -108,9 +111,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
-  // Seguimiento de Folios
+  // Seguimiento de Folios y Solicitud Técnica
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [newTicketFiles, setNewTicketFiles] = useState<File[]>([])
+  const [requesterName, setRequesterName] = useState('')
+  const [requesterEmail, setRequesterEmail] = useState('')
+  const [helpTopic, setHelpTopic] = useState('')
+  const [ticketCct, setTicketCct] = useState('')
+  const [ticketDetail, setTicketDetail] = useState('')
+
   const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
   const [trackFolioInput, setTrackFolioInput] = useState('')
   const [trackedTicket, setTrackedTicket] = useState<any>(null)
@@ -376,6 +385,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setTrackedTicket(null);
   }
 
+  const handleSendNewTicketRequest = () => {
+    if (!requesterName || !requesterEmail || !helpTopic || !ticketCct || !ticketDetail) {
+      toast({ variant: "destructive", title: "Datos Incompletos", description: "Todos los campos son obligatorios para enviar la solicitud." });
+      return;
+    }
+    const folio = generateSequentialFolio();
+    toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` });
+    setIsNewTicketDialogOpen(false);
+    setNewTicketFiles([]);
+    setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
+  }
+
   const handleFinishConfirm = () => {
     if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) { toast({ variant: "destructive", title: "Faltan datos obligatorios" }); return; }
     const folio = selectedRequest!.ticketNumber;
@@ -599,27 +620,80 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </>
         )}
       </div>
+
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
             <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
             <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1 relative z-10">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1">
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-3">
                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center gap-3 shadow-inner">
                   <AlertCircle className="h-6 w-6 text-primary shrink-0" />
-                  <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Asignación de folio de ciclo escolar oficial para seguimiento institucional.</p>
+                  <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Complete la información para generar su folio de seguimiento oficial del ciclo escolar.</p>
                </div>
-               <div className="space-y-4">
+
+               <div className="space-y-3 pt-1">
+                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1 flex items-center gap-2"><User className="h-3 w-3" /> Información del Solicitante</h4>
+                  <div className="space-y-1.5">
+                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
+                    <Input 
+                      placeholder="PATERNO MATERNO NOMBRES..." 
+                      className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all"
+                      value={requesterName}
+                      onChange={e => setRequesterName(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
+                      <Input 
+                        placeholder="ejemplo@desysa.edu.mx" 
+                        className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner focus:bg-white transition-all"
+                        value={requesterEmail}
+                        onChange={e => setRequesterEmail(e.target.value.toLowerCase())}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
+                      <Select value={helpTopic} onValueChange={setHelpTopic}>
+                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[9px] font-black uppercase shadow-inner">
+                          <SelectValue placeholder="ELEGIR..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta Institucional</SelectItem>
+                          <SelectItem value="contrasena" className="text-[10px] font-bold uppercase">Restablecer/Contraseña</SelectItem>
+                          <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
+                          <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
+                          <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="space-y-3 pt-2">
+                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1 flex items-center gap-2"><Monitor className="h-3 w-3" /> Datos del Servicio</h4>
                   <div className="space-y-1.5">
                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><School className="h-3 w-3 text-primary" /> CCT del Plantel</Label>
-                     <Input placeholder="15DES0000X" className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all" />
+                     <Input 
+                        placeholder="15DES0000X" 
+                        className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all"
+                        value={ticketCct}
+                        onChange={e => setTicketCct(e.target.value.toUpperCase())}
+                        maxLength={10}
+                     />
                   </div>
                   <div className="space-y-1.5">
                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><MessageSquare className="h-3 w-3 text-primary" /> Detalle Técnico</Label>
-                     <Textarea placeholder="DESCRIBA LA FALLA..." className="h-24 bg-slate-50 border-none rounded-xl text-[11px] font-semibold resize-none shadow-inner focus:bg-white transition-all p-3" />
+                     <Textarea 
+                        placeholder="DESCRIBA SU REQUERIMIENTO O FALLA..." 
+                        className="h-20 bg-slate-50 border-none rounded-xl text-[11px] font-semibold resize-none shadow-inner focus:bg-white transition-all p-3"
+                        value={ticketDetail}
+                        onChange={e => setTicketDetail(e.target.value.toUpperCase())}
+                     />
                   </div>
                   <div className="space-y-2">
                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex justify-between items-center">
@@ -654,21 +728,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         </div>
                      </div>
                      
-                     <div className="space-y-1.5 pt-1">
+                     <div className="flex flex-wrap gap-1.5 pt-1">
                         {newTicketFiles.map((file, idx) => (
-                           <div key={idx} className="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-2 shadow-sm animate-in slide-in-from-left-2 duration-300">
-                              <div className="flex items-center gap-3 min-w-0">
-                                 <div className="shrink-0">
-                                    {file.type.includes('pdf') ? <FileText className="h-4 w-4 text-rose-500" /> : file.type.includes('excel') || file.type.includes('spreadsheet') ? <FileSpreadsheet className="h-4 w-4 text-emerald-500" /> : <ImageIcon className="h-4 w-4 text-blue-500" />}
-                                 </div>
-                                 <p className="text-[9px] font-bold text-slate-600 truncate max-w-[200px] uppercase">{file.name}</p>
-                              </div>
-                              <button 
-                                 onClick={() => setNewTicketFiles(newTicketFiles.filter((_, i) => i !== idx))}
-                                 className="text-slate-300 hover:text-rose-600 transition-colors p-1"
-                              >
-                                 <X className="h-3.5 w-3.5" />
-                              </button>
+                           <div key={idx} className="flex items-center gap-2 bg-white border border-slate-100 rounded-full py-1 px-3 shadow-sm animate-in zoom-in-95 duration-300">
+                              {file.type.includes('pdf') ? <FileText className="h-3 w-3 text-rose-500" /> : file.type.includes('excel') || file.type.includes('spreadsheet') ? <FileSpreadsheet className="h-3 w-3 text-emerald-500" /> : <ImageIcon className="h-3 w-3 text-blue-500" />}
+                              <p className="text-[8px] font-bold text-slate-600 truncate max-w-[80px] uppercase">{file.name}</p>
+                              <button onClick={() => setNewTicketFiles(newTicketFiles.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-rose-600 transition-colors"><X className="h-3 w-3" /></button>
                            </div>
                         ))}
                      </div>
@@ -678,10 +743,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </ScrollArea>
           <DialogFooter className="p-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
             <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setNewTicketFiles([]); }} className="h-10 px-6 text-[10px] font-black uppercase text-slate-400">CANCELAR</Button>
-            <Button onClick={() => { const folio = generateSequentialFolio(); toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` }); setIsNewTicketDialogOpen(false); setNewTicketFiles([]); }} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR SOLICITUD</Button>
+            <Button onClick={handleSendNewTicketRequest} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR SOLICITUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-3 bg-[#B38E5D] text-white"><DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4 text-white" /> CONSULTAR ESTATUS</DialogTitle></DialogHeader>
@@ -706,15 +772,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => { setIsTrackTicketDialogOpen(false); setTrackedTicket(null); setTrackFolioInput(''); }} className="w-full h-8 text-[9px] font-black uppercase text-slate-400">CERRAR CONSULTA</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[420px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-10 w-10" /></div>
             <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
             <DialogDescription className="text-white/60 font-bold text-[7px] uppercase tracking-[0.2em] mt-0.5 relative z-10">REGISTRO OFICIAL ATRES</DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2"><School className="h-3 w-3 text-accent" /> Plantel Atendido</Label>
                 <div className="relative">
