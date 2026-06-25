@@ -24,7 +24,6 @@ import {
 import { 
   Send, 
   Bot, 
-  User, 
   UserCog,
   GraduationCap,
   ChevronRight,
@@ -45,8 +44,6 @@ import {
   ShieldCheck,
   Circle,
   School,
-  ArrowRight,
-  Wrench,
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -370,7 +367,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
         )}>
           {isPublic ? (
-            <div className="flex-1 flex flex-col gap-8 overflow-hidden">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
                {/* Consola AnyDesk */}
                <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                   <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
@@ -379,7 +376,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="relative z-10 space-y-4">
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
-                        <div className="bg-[#f8f5f0] p-5 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
+                        <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
                            <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
                            <Input 
                              placeholder="000 000 000" 
@@ -404,34 +401,34 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                </div>
 
                {/* Protocolo de Atención - Compacto Lineal */}
-               <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                   <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
-                     <div className="h-8 w-8 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center">
-                        <ArrowRightCircle className="h-5 w-5 text-[#B38E5D]" />
+                     <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center">
+                        <ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" />
                      </div>
-                     <span className="text-[12px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
+                     <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
                   </div>
                   
-                  <div className="flex-1 flex flex-col justify-between py-2 overflow-hidden">
+                  <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
                      {[
                         { 
                           n: "1", 
                           t: "Descargue software AnyDesk.", 
-                          c: <Button variant="outline" size="sm" className="h-8 px-5 text-[9px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-2 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-4 w-4 mr-2" /> DESCARGAR AHORA</Button> 
+                          c: <Button variant="outline" size="sm" className="h-8 px-5 text-[9px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
                         },
-                        { n: "2", t: "Localice su ID personal de 9 dígitos." },
-                        { n: "3", t: "Péguelo arriba y solicite soporte remoto." },
-                        { n: "4", t: "Espere unos minutos a que un analista le atienda." }
+                        { n: "2", t: "Localice su ID personal." },
+                        { n: "3", t: "Péguelo arriba y solicite soporte." },
+                        { n: "4", t: "Espere conexión del analista." }
                      ].map((step, i) => (
-                        <div key={i} className="flex gap-5 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 150}ms` }}>
+                        <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
                            <div className="flex flex-col items-center shrink-0">
-                              <div className="h-7 w-7 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[11px] font-black shadow-lg">
+                              <div className="h-6 w-6 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shadow-lg">
                                  {step.n}
                               </div>
-                              {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-1" />}
+                              {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
                            </div>
                            <div className="pt-0.5 flex-1 min-w-0">
-                              <p className="text-[12px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
+                              <p className="text-[11px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
                               {step.c}
                            </div>
                         </div>
@@ -632,76 +629,76 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Registro Final del Analista - Optimizado para visibilidad total */}
+      {/* Registro Final del Analista - ULTRA COMPACTO para visibilidad total */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-[#f8f5f0] max-h-[95vh] flex flex-col">
-          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12"><CheckCircle2 className="h-32 w-32" /></div>
-            <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10 leading-none">
-              <ShieldCheck className="h-8 w-8 text-[#B38E5D]" /> CONCLUIR SERVICIO
+        <DialogContent className="sm:max-w-[600px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-16 w-16" /></div>
+            <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3 relative z-10 leading-none">
+              <ShieldCheck className="h-6 w-6 text-[#B38E5D]" /> CONCLUIR SERVICIO
             </DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-[0.3em] mt-2 relative z-10">REGISTRO OFICIAL DE ATENCIÓN ATRES</DialogDescription>
+            <DialogDescription className="text-white/60 font-bold text-[8px] uppercase tracking-[0.2em] mt-1 relative z-10">REGISTRO OFICIAL DE ATENCIÓN ATRES</DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="flex-1">
-            <div className="p-6 space-y-6 bg-white/80 backdrop-blur-2xl">
-              <div className="space-y-3">
+            <div className="p-4 space-y-4">
+              <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
-                   <School className="h-4 w-4 text-accent" /> Plantel Atendido
+                   <School className="h-3.5 w-3.5 text-accent" /> Plantel Atendido
                 </Label>
                 <Input 
                   placeholder="BUSCAR POR CCT O NOMBRE..." 
-                  className="h-11 bg-slate-50 border-none rounded-xl text-sm font-black uppercase px-6 shadow-inner focus:bg-white transition-all" 
+                  className="h-9 bg-slate-50 border-none rounded-lg text-xs font-black uppercase px-4 shadow-inner focus:bg-white transition-all" 
                   value={finishSearchTerm} 
                   onChange={e => setFinishSearchTerm(e.target.value)} 
                 />
                 {finishSearchTerm.length > 2 && (
-                  <div className="max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl divide-y animate-in fade-in zoom-in-95 duration-200">
+                  <div className="max-h-32 overflow-y-auto bg-white border border-slate-100 rounded-xl shadow-xl divide-y animate-in fade-in zoom-in-95 duration-200">
                     {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                      <div key={`${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
+                      <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
                         <div className="flex flex-col">
-                          <span className="text-xs font-black uppercase text-slate-800">{s.nombre}</span>
-                          <span className="text-[9px] font-mono text-slate-400 mt-0.5">{s.cct} • {s.municipio}</span>
+                          <span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span>
+                          <span className="text-[8px] font-mono text-slate-400">{s.cct} • {s.municipio}</span>
                         </div>
-                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[8px] font-black px-2 rounded-full">{s.modalidad}</Badge>
+                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[7px] font-black px-1.5 rounded-full">{s.modalidad}</Badge>
                       </div>
                     ))}
                   </div>
                 )}
                 {finishForm.cct && (
-                  <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl animate-in zoom-in-95 duration-500 flex items-center gap-4">
-                     <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-5 w-5" /></div>
+                  <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl animate-in zoom-in-95 duration-500 flex items-center gap-3">
+                     <div className="h-7 w-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-4 w-4" /></div>
                      <div>
-                        <p className="text-[9px] font-black text-emerald-700 uppercase tracking-widest leading-none mb-1">PLANTEL SELECCIONADO:</p>
-                        <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
+                        <p className="text-[8px] font-black text-emerald-700 uppercase tracking-widest leading-none mb-0.5">PLANTEL SELECCIONADO:</p>
+                        <h4 className="text-[12px] font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
                      </div>
                   </div>
                 )}
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
                   <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
-                    <SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                    <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">FOLIO DE ATENCIÓN</Label>
-                  <div className="h-11 bg-slate-100 rounded-xl flex items-center px-6 font-mono font-black text-primary shadow-inner text-sm">{selectedRequest?.ticketNumber}</div>
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO ATENCIÓN</Label>
+                  <div className="h-9 bg-slate-100 rounded-lg flex items-center px-4 font-mono font-black text-primary shadow-inner text-xs">{selectedRequest?.ticketNumber}</div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase text-primary pl-1 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-accent" /> Resumen Técnico del Servicio
+                  <Sparkles className="h-3.5 w-3.5 text-accent" /> Resumen Técnico del Servicio
                 </Label>
                 <Textarea 
-                  placeholder="DETALLE LOS TRABAJOS REALIZADOS, HALLAZGOS Y ACUERDOS..." 
-                  className="h-32 bg-slate-50 border-none rounded-2xl p-4 text-xs font-semibold shadow-inner focus:bg-white transition-all" 
+                  placeholder="DETALLE TRABAJOS, HALLAZGOS Y ACUERDOS..." 
+                  className="h-24 bg-slate-50 border-none rounded-xl p-3 text-[11px] font-semibold shadow-inner focus:bg-white transition-all" 
                   value={finishForm.servicio} 
                   onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} 
                 />
@@ -709,10 +706,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-4 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
-            <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">CANCELAR</Button>
-            <Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-12 text-[10px] gap-3 shadow-xl">
-              <Save className="h-4 w-4" /> CONCLUIR REGISTRO
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
+            <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-10 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">CANCELAR</Button>
+            <Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-10 text-[10px] gap-2 shadow-xl">
+              <Save className="h-4 w-4" /> REGISTRAR ATENCIÓN
             </Button>
           </DialogFooter>
         </DialogContent>
