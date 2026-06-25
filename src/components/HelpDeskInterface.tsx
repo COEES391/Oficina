@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -48,7 +49,8 @@ import {
   Target,
   FilePlus,
   Search,
-  AlertCircle
+  AlertCircle,
+  ImageIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -109,6 +111,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   // Seguimiento de Folios
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
+  const [newTicketFile, setNewTicketFile] = useState<File | null>(null)
   const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
   const [trackFolioInput, setTrackFolioInput] = useState('')
   const [trackedTicket, setTrackedTicket] = useState<any>(null)
@@ -136,7 +139,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
-  // Generador de Turno Bancario USER-000001 con reinicio diario
   const generateTurnSessionId = useCallback(() => {
     const now = new Date();
     const dateStr = format(now, 'yyyyMMdd');
@@ -147,11 +149,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${nextCounter.toString().padStart(6, '0')}`;
   }, []);
 
-  // Generador de Folio por Ciclo Escolar ATRES-00001
   const generateSequentialFolio = () => {
     const now = new Date();
     const year = now.getFullYear();
-    // El ciclo escolar reinicia en Agosto (mes 7 indexado en 0)
     const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
     const counterKey = `atres_folio_counter_${cycle}`;
     const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
@@ -175,10 +175,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
-      
       const savedTicket = sessionStorage.getItem('atres_active_ticket')
       if (savedTicket) setActiveTicketNumber(savedTicket)
-
       const savedShow = sessionStorage.getItem('atres_show_remote_panel')
       if (savedShow === 'true') setShowRemotePanel(true)
     } else {
@@ -365,22 +363,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!trackFolioInput) return;
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const liveQueue = JSON.parse(localStorage.getItem('atres_support_queue') || '[]');
-    
-    // Buscar en concluidos
     const concluded = progs.find((p: any) => p.id === trackFolioInput.toUpperCase());
     if (concluded) {
       setTrackedTicket({ ...concluded, displayStatus: 'Atendida' });
       return;
     }
-    
-    // Buscar en cola activa
     const inQueue = liveQueue.find((r: any) => r.ticketNumber === trackFolioInput.toUpperCase());
     if (inQueue) {
       setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'No Atendida' });
       return;
     }
-
-    toast({ variant: "destructive", title: "Folio no encontrado", description: "Verifique que el número de seguimiento sea correcto." });
+    toast({ variant: "destructive", title: "Folio no encontrado" });
     setTrackedTicket(null);
   }
 
@@ -394,17 +387,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     localStorage.setItem(`atres_session_status_${folio}`, 'closed');
     window.dispatchEvent(new StorageEvent('storage', { key: `atres_session_status_${folio}`, newValue: 'closed' }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify(updatedProgs) }));
-    
     const rawQueue = localStorage.getItem('atres_support_queue')
     const updatedQueue = JSON.parse(rawQueue || '[]').filter((r: any) => r.ticketNumber !== folio);
     localStorage.setItem('atres_support_queue', JSON.stringify(updatedQueue))
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(updatedQueue) }))
-    
-    setIsFinishDialogOpen(false); 
-    setSelectedRequest(null); 
-    syncQueue();
-    updateAttendedCount();
-    toast({ title: "Atención Registrada", description: "El folio ha sido movido a la bitácora de ATRES." });
+    setIsFinishDialogOpen(false); setSelectedRequest(null); syncQueue(); updateAttendedCount();
+    toast({ title: "Atención Registrada" });
   }
 
   const getFileIcon = (type: string) => {
@@ -425,7 +413,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* Columna Izquierda (Consola AnyDesk y Protocolo) */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
           "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
@@ -433,7 +420,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}>
           {isPublic ? (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               {/* Consola AnyDesk */}
                <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                   <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                     <Monitor className="h-24 w-24 text-[#9f2241]" />
@@ -443,59 +429,34 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
                         <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
                            <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
-                           <Input 
-                             placeholder="000 000 000" 
-                             className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" 
-                             value={remoteId} 
-                             onChange={(e) => setRemoteId(e.target.value)} 
-                             disabled={isRemoteRequested} 
-                           />
+                           <Input placeholder="000 000 000" className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} />
                         </div>
                      </div>
-                     
                      {!isRemoteRequested ? (
-                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-xl shadow-xl">
-                         SOLICITAR SOPORTE
-                       </Button>
+                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-xl shadow-xl">SOLICITAR SOPORTE</Button>
                      ) : (
-                       <Button onClick={() => setIsRemoteRequested(false)} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">
-                         ENVIAR OTRO ID
-                       </Button>
+                       <Button onClick={() => setIsRemoteRequested(false)} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">ENVIAR OTRO ID</Button>
                      )}
                   </div>
                </div>
-
-               {/* Protocolo de Atención - Compacto */}
                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                   <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
-                     <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center">
-                        <ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" />
-                     </div>
+                     <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /></div>
                      <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
                   </div>
-                  
                   <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
                      {[
-                        { 
-                          n: "1", 
-                          t: "Descargue software AnyDesk.", 
-                          c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR</Button> 
-                        },
+                        { n: "1", t: "Descargue software AnyDesk.", c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR</Button> },
                         { n: "2", t: "Localice su ID personal." },
                         { n: "3", t: "Péguelo arriba y solicite soporte." },
                         { n: "4", t: "Espere conexión del analista." }
                      ].map((step, i) => (
                         <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
                            <div className="flex flex-col items-center shrink-0">
-                              <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">
-                                 {step.n}
-                              </div>
+                              <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">{step.n}</div>
                               {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
                            </div>
-                           <div className="pt-0.5 flex-1 min-w-0">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
-                              {step.c}
-                           </div>
+                           <div className="pt-0.5 flex-1 min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>{step.c}</div>
                         </div>
                      ))}
                   </div>
@@ -503,7 +464,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               {/* Marcador de Productividad Técnico */}
                <div className="space-y-4">
                   <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
                      <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
@@ -514,11 +474,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
                   </div>
                </div>
-
                <div className="space-y-4 shrink-0">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">
-                    Cola de Atención <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
-                  </Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Cola de Atención <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{queue.length}</Badge></Label>
                   <ScrollArea className="h-48">
                     <div className="space-y-2 pr-4">
                       {queue.map(req => (
@@ -533,19 +490,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </div>
                   </ScrollArea>
                </div>
-
                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">
-                    Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} />
-                  </Label>
+                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
                   <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
                   <ScrollArea className="flex-1">
                     <div className="space-y-2 pr-4">
                       {techLibrary.map(f => (
                         <div key={f.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 group hover:border-primary/20 transition-all">
-                           <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                              {getFileIcon(f.type)}
-                           </div>
+                           <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
                            <div className="flex-1 min-w-0">
                               <p className="text-[9px] font-black text-slate-600 truncate uppercase">{f.name}</p>
                               <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
@@ -562,14 +514,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           )}
         </div>
       )}
-
-      {/* Área de Chat Principal */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
-            <div className="h-28 w-28 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse">
-               <MessageSquare className="h-14 w-14" />
-            </div>
+            <div className="h-28 w-28 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-14 w-14" /></div>
             <div className="space-y-3">
               <h3 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">MESA OPERATIVA</h3>
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una solicitud para iniciar la sesión de ayuda.</p>
@@ -577,51 +525,31 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         ) : (
           <>
-            <header className={cn(
-              "px-10 py-6 flex justify-between items-center z-10 shrink-0 shadow-sm border-b",
-              isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60"
-            )}>
+            <header className={cn("px-10 py-6 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
               <div className="flex items-center gap-6">
                 <div className="h-14 w-14 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
-                  {isPublic ? (
-                    <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <GraduationCap className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />
-                  )}
+                  {isPublic ? <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <GraduationCap className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">
-                    {isPublic ? "ASISTENTE COEES" : "ATENCIÓN AL DOCENTE"}
-                  </h2>
+                  <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">{isPublic ? "ASISTENTE COEES" : "ATENCIÓN AL DOCENTE"}</h2>
                   <div className="flex flex-wrap items-center gap-3 mt-2.5">
                     <div className="flex items-center gap-2">
                        <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO EN LÍNEA</p>
                     </div>
                     {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
-                    
-                    {/* Botones de Solicitud y Seguimiento (Solo Public) */}
                     {isPublic && (
                       <div className="flex gap-2 ml-2">
-                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio">
-                            <FilePlus className="h-4 w-4" />
-                         </button>
-                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus">
-                            <Search className="h-4 w-4" />
-                         </button>
+                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
+                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus"><Search className="h-4 w-4" /></button>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              {!isPublic && selectedRequest && (
-                <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[11px] uppercase h-12 px-10 rounded-2xl shadow-2xl transition-all active:scale-95 gap-3">
-                  <CheckCircle2 className="h-5 w-5" /> FINALIZAR ATENCIÓN
-                </Button>
-              )}
+              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[11px] uppercase h-12 px-10 rounded-2xl shadow-2xl transition-all active:scale-95 gap-3"><CheckCircle2 className="h-5 w-5" /> FINALIZAR ATENCIÓN</Button>}
             </header>
-
             <ScrollArea className="flex-1 px-6 py-10">
               <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-12">
                 {messages.map((msg, i) => {
@@ -629,28 +557,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   const isBot = msg.role === 'bot';
                   const isTech = msg.role === 'tech';
                   const isUser = msg.role === 'user';
-
                   return (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-5 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
-                        <div className={cn(
-                          "h-10 w-10 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-xl border-2 border-white", 
-                          isUser ? "bg-[#B38E5D] text-white" : 
-                          isTech ? "bg-[#9f2241] text-white" : 
-                          "bg-slate-800 text-white"
-                        )}>
-                          {isUser ? <GraduationCap className="h-5 w-5" /> : 
-                           isTech ? <UserCog className="h-5 w-5" /> : 
-                           <Bot className="h-5 w-5" />}
+                        <div className={cn("h-10 w-10 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-xl border-2 border-white", isUser ? "bg-[#B38E5D] text-white" : isTech ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
+                          {isUser ? <GraduationCap className="h-5 w-5" /> : isTech ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                         </div>
                         <div className="space-y-1.5">
                           {msg.senderName && <span className={cn("text-[8px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
-                          <div className={cn(
-                            "p-5 rounded-[2.25rem] text-[13px] font-semibold shadow-2xl border leading-relaxed relative", 
-                            isMe ? (isUser ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : 
-                            isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : 
-                            "bg-white text-slate-700 rounded-tl-none border-slate-100"
-                          )}>
+                          <div className={cn("p-5 rounded-[2.25rem] text-[13px] font-semibold shadow-2xl border leading-relaxed relative", isMe ? (isUser ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                             {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                             {msg.fileData && (
                               <div className={cn("mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer transition-all hover:brightness-95", isMe ? "bg-white/15 border-white/20" : "bg-slate-50 border-slate-100")} onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
@@ -668,60 +583,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </div>
                   )
                 })}
-                {isTyping && (
-                  <div className="flex justify-start animate-pulse">
-                    <div className="bg-white p-4 rounded-3xl rounded-tl-none shadow-xl flex items-center gap-4 border border-slate-100">
-                       <div className="flex gap-1.5">
-                         <div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.3s]" />
-                         <div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.15s]" />
-                         <div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce" />
-                       </div>
-                       <span className="text-[9px] font-black uppercase text-slate-400">ANALISTA ESCRIBIENDO...</span>
-                    </div>
-                  </div>
-                )}
+                {isTyping && <div className="flex justify-start animate-pulse"><div className="bg-white p-4 rounded-3xl rounded-tl-none shadow-xl flex items-center gap-4 border border-slate-100"><div className="flex gap-1.5"><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.3s]" /><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.15s]" /><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce" /></div><span className="text-[9px] font-black uppercase text-slate-400">ANALISTA ESCRIBIENDO...</span></div></div>}
                 <div ref={scrollRef} />
               </div>
             </ScrollArea>
-
             <footer className="p-8 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0 relative z-10">
               <div className="max-w-4xl mx-auto flex gap-5">
                 <div className="relative flex-1 group">
-                  <Input 
-                    placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} 
-                    className="h-16 rounded-[1.5rem] bg-white border-2 border-slate-100 px-8 pr-16 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" 
-                    value={input} 
-                    onChange={e => setInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()} 
-                    className="absolute right-6 top-4 h-8 w-8 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50"
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </button>
+                  <Input placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} className="h-16 rounded-[1.5rem] bg-white border-2 border-slate-100 px-8 pr-16 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+                  <button onClick={() => fileInputRef.current?.click()} className="absolute right-6 top-4 h-8 w-8 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50"><Paperclip className="h-5 w-5" /></button>
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 </div>
-                <button 
-                  onClick={() => handleSendMessage()} 
-                  disabled={!input.trim()} 
-                  className="h-16 w-16 rounded-[1.5rem] bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center group"
-                >
-                  <Send className="h-7 w-7 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </button>
+                <button onClick={() => handleSendMessage()} disabled={!input.trim()} className="h-16 w-16 rounded-[1.5rem] bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center group"><Send className="h-7 w-7 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></button>
               </div>
             </footer>
           </>
         )}
       </div>
-
-      {/* DIÁLOGO: NUEVA SOLICITUD DE FOLIO (PÚBLICO) */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-3 bg-[#9f2241] text-white relative">
-            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2">
-              <FilePlus className="h-4 w-4 text-accent" /> SOLICITUD TÉCNICA
-            </DialogTitle>
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><FilePlus className="h-4 w-4 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
             <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
           </DialogHeader>
           <div className="p-4 space-y-4">
@@ -732,111 +614,93 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="space-y-3">
                 <div className="space-y-1">
                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
-                   <Input placeholder="15DES0000X" className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase" />
+                   <Input placeholder="15DES0000X" className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner" />
                 </div>
                 <div className="space-y-1">
                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Descripción del Problema</Label>
-                   <Textarea placeholder="DETALLE TÉCNICO..." className="h-20 bg-slate-50 border-none rounded-lg text-[10px] font-semibold resize-none" />
+                   <Textarea placeholder="DETALLE TÉCNICO..." className="h-20 bg-slate-50 border-none rounded-lg text-[10px] font-semibold resize-none shadow-inner" />
+                </div>
+                <div className="space-y-1">
+                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex justify-between items-center">
+                      <span>Adjuntar Evidencia</span>
+                      <span className="text-[7px] text-primary/50">(PDF, EXCEL, IMG)</span>
+                   </Label>
+                   <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-1.5 border border-dashed border-slate-200 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden group">
+                      <div className="h-6 w-6 rounded-md bg-white flex items-center justify-center text-slate-400 shrink-0 shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                         <Paperclip className="h-3 w-3" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <p className="text-[8px] font-black uppercase text-slate-500 truncate">
+                            {newTicketFile ? newTicketFile.name : "Elegir archivo..."}
+                         </p>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept=".pdf, .xlsx, .xls, .jpg, .jpeg, .png" 
+                        className="absolute inset-0 opacity-0 cursor-pointer" 
+                        onChange={(e) => setNewTicketFile(e.target.files?.[0] || null)}
+                      />
+                      {newTicketFile && (
+                        <button onClick={(e) => { e.preventDefault(); setNewTicketFile(null); }} className="text-rose-500 hover:text-rose-700 p-1 relative z-10"><X className="h-3 w-3" /></button>
+                      )}
+                   </div>
+                   {newTicketFile && (
+                      <div className="flex items-center gap-2 pl-1 animate-in slide-in-from-left-2 duration-300">
+                         {newTicketFile.type.includes('pdf') ? <FileText className="h-3 w-3 text-rose-500" /> : newTicketFile.type.includes('excel') || newTicketFile.type.includes('spreadsheet') ? <FileSpreadsheet className="h-3 w-3 text-emerald-500" /> : <ImageIcon className="h-3 w-3 text-blue-500" />}
+                         <p className="text-[7px] font-bold text-emerald-600 uppercase">Listo para enviar</p>
+                      </div>
+                   )}
                 </div>
              </div>
           </div>
           <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
-            <Button onClick={() => { 
-               const folio = generateSequentialFolio();
-               toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` });
-               setIsNewTicketDialogOpen(false);
-            }} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
+            <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setNewTicketFile(null); }} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
+            <Button onClick={() => { const folio = generateSequentialFolio(); toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` }); setIsNewTicketDialogOpen(false); setNewTicketFile(null); }} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* DIÁLOGO: SEGUIMIENTO DE FOLIO (PÚBLICO) */}
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-3 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2">
-              <Search className="h-4 w-4 text-white" /> CONSULTAR ESTATUS
-            </DialogTitle>
-          </DialogHeader>
+          <DialogHeader className="p-3 bg-[#B38E5D] text-white"><DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4 text-white" /> CONSULTAR ESTATUS</DialogTitle></DialogHeader>
           <div className="p-4 space-y-4">
              <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Número de Seguimiento</Label>
                 <div className="flex gap-2">
-                   <Input 
-                    placeholder="ATRES-00000" 
-                    className="h-9 bg-slate-50 border-none rounded-lg text-[11px] font-mono font-black uppercase flex-1 shadow-inner" 
-                    value={trackFolioInput}
-                    onChange={e => setTrackFolioInput(e.target.value.toUpperCase())}
-                   />
-                   <Button onClick={handleTrackFolio} className="h-9 w-9 p-0 rounded-lg bg-primary hover:bg-primary/90 text-white shadow-lg">
-                      <Search className="h-4 w-4" />
-                   </Button>
+                   <Input placeholder="ATRES-00000" className="h-9 bg-slate-50 border-none rounded-lg text-[11px] font-mono font-black uppercase flex-1 shadow-inner" value={trackFolioInput} onChange={e => setTrackFolioInput(e.target.value.toUpperCase())} />
+                   <Button onClick={handleTrackFolio} className="h-9 w-9 p-0 rounded-lg bg-primary hover:bg-primary/90 text-white shadow-lg"><Search className="h-4 w-4" /></Button>
                 </div>
              </div>
-
              {trackedTicket && (
                <div className="p-4 bg-slate-50 rounded-2xl border-2 border-accent/20 animate-in zoom-in-95 duration-500">
                   <div className="flex justify-between items-start border-b border-accent/10 pb-2 mb-3">
-                     <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">FOLIO IDENTIFICADO:</p>
-                        <h4 className="text-lg font-black text-primary leading-none">{trackedTicket.id || trackedTicket.ticketNumber}</h4>
-                     </div>
-                     <Badge className={cn(
-                        "text-[9px] font-black uppercase py-1 px-3 rounded-full shadow-sm",
-                        trackedTicket.displayStatus === 'Atendida' ? "bg-emerald-500" :
-                        trackedTicket.displayStatus === 'En Proceso' ? "bg-amber-500" : "bg-rose-500"
-                     )}>
-                        {trackedTicket.displayStatus}
-                     </Badge>
+                     <div><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">FOLIO IDENTIFICADO:</p><h4 className="text-lg font-black text-primary leading-none">{trackedTicket.id || trackedTicket.ticketNumber}</h4></div>
+                     <Badge className={cn("text-[9px] font-black uppercase py-1 px-3 rounded-full shadow-sm", trackedTicket.displayStatus === 'Atendida' ? "bg-emerald-500" : trackedTicket.displayStatus === 'En Proceso' ? "bg-amber-500" : "bg-rose-500")}>{trackedTicket.displayStatus}</Badge>
                   </div>
-                  <div className="space-y-2">
-                     <p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Plantel:</span> {trackedTicket.schoolName || 'En Proceso'}</p>
-                     <p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Oficina:</span> {trackedTicket.oficinaRegionalAtencion || 'Pendiente'}</p>
-                     {trackedTicket.observaciones && <p className="text-[9px] font-semibold text-slate-500 italic mt-2 border-t pt-2">{trackedTicket.observaciones}</p>}
-                  </div>
+                  <div className="space-y-2"><p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Plantel:</span> {trackedTicket.schoolName || 'En Proceso'}</p><p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Oficina:</span> {trackedTicket.oficinaRegionalAtencion || 'Pendiente'}</p>{trackedTicket.observaciones && <p className="text-[9px] font-semibold text-slate-500 italic mt-2 border-t pt-2">{trackedTicket.observaciones}</p>}</div>
                </div>
              )}
           </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t">
-            <Button variant="ghost" onClick={() => { setIsTrackTicketDialogOpen(false); setTrackedTicket(null); setTrackFolioInput(''); }} className="w-full h-8 text-[9px] font-black uppercase text-slate-400">CERRAR CONSULTA</Button>
-          </DialogFooter>
+          <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => { setIsTrackTicketDialogOpen(false); setTrackedTicket(null); setTrackFolioInput(''); }} className="w-full h-8 text-[9px] font-black uppercase text-slate-400">CERRAR CONSULTA</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Registro Final del Analista (TÉCNICO) - ULTRA COMPACTO */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-10 w-10" /></div>
-            <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none">
-              <ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO
-            </DialogTitle>
+            <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
             <DialogDescription className="text-white/60 font-bold text-[7px] uppercase tracking-[0.2em] mt-0.5 relative z-10">REGISTRO OFICIAL ATRES</DialogDescription>
           </DialogHeader>
-          
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
-              {/* Buscador de Plantel */}
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
-                   <School className="h-3 w-3 text-accent" /> Plantel Atendido
-                </Label>
+                <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2"><School className="h-3 w-3 text-accent" /> Plantel Atendido</Label>
                 <div className="relative">
-                   <Input 
-                    placeholder="BUSCAR CCT O NOMBRE..." 
-                    className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" 
-                    value={finishSearchTerm} 
-                    onChange={e => setFinishSearchTerm(e.target.value)} 
-                   />
+                   <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
                    {finishSearchTerm.length > 2 && (
                     <div className="absolute left-0 right-0 top-9 max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50 animate-in fade-in zoom-in-95 duration-200">
                       {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
                         <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase text-slate-800">{s.nombre}</span>
-                            <span className="text-[7px] font-mono text-slate-400">{s.cct}</span>
-                          </div>
+                          <div className="flex flex-col"><span className="text-[9px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[7px] font-mono text-slate-400">{s.cct}</span></div>
                           <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
                         </div>
                       ))}
@@ -846,53 +710,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 {finishForm.cct && (
                   <div className="p-2 bg-emerald-50/50 border border-emerald-100 rounded-lg animate-in zoom-in-95 duration-500 flex items-center gap-2">
                      <div className="h-6 w-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div>
-                     <div className="flex-1 min-w-0">
-                        <p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">SELECCIONADO:</p>
-                        <h4 className="text-[10px] font-black text-slate-800 uppercase leading-none truncate mt-0.5">{finishForm.schoolName}</h4>
-                     </div>
+                     <div className="flex-1 min-w-0"><p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">SELECCIONADO:</p><h4 className="text-[10px] font-black text-slate-800 uppercase leading-none truncate mt-0.5">{finishForm.schoolName}</h4></div>
                      <button onClick={() => setFinishForm({...finishForm, cct: '', schoolName: ''})} className="text-slate-400 hover:text-rose-500"><X className="h-3 w-3" /></button>
                   </div>
                 )}
               </div>
-              
-              {/* Oficina y Folio */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
                   <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
                     <SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
-                    <SelectContent className="rounded-lg">
-                      {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
-                    </SelectContent>
+                    <SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID DE TURNO</Label>
-                  <div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div>
-                </div>
+                <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID DE TURNO</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div></div>
               </div>
-
-              {/* Resumen Técnico */}
               <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary pl-1 flex items-center gap-2">
-                  <Sparkles className="h-3 w-3 text-accent" /> Resumen de Atención Técnica
-                </Label>
-                <Textarea 
-                  placeholder="ACUERDOS Y HALLAZGOS..." 
-                  className="h-16 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all resize-none" 
-                  value={finishForm.servicio} 
-                  onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} 
-                />
+                <Label className="text-[9px] font-black uppercase text-primary pl-1 flex items-center gap-2"><Sparkles className="h-3 w-3 text-accent" /> Resumen de Atención Técnica</Label>
+                <Textarea placeholder="ACUERDOS Y HALLAZGOS..." className="h-16 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
               </div>
             </div>
           </ScrollArea>
-
-          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0">
-            <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button>
-            <Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl">
-              <Save className="h-4 w-4" /> REGISTRAR ATENCIÓN
-            </Button>
-          </DialogFooter>
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl"><Save className="h-4 w-4" /> REGISTRAR ATENCIÓN</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
