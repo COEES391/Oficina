@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -111,7 +110,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   // Seguimiento de Folios
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
-  const [newTicketFile, setNewTicketFile] = useState<File | null>(null)
+  const [newTicketFiles, setNewTicketFiles] = useState<File[]>([])
   const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
   const [trackFolioInput, setTrackFolioInput] = useState('')
   const [trackedTicket, setTrackedTicket] = useState<any>(null)
@@ -541,7 +540,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
                     {isPublic && (
                       <div className="flex gap-2 ml-2">
-                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
+                         <button onClick={() => { setIsNewTicketDialogOpen(true); setNewTicketFiles([]); }} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
                          <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus"><Search className="h-4 w-4" /></button>
                       </div>
                     )}
@@ -601,61 +600,85 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-3 bg-[#9f2241] text-white relative">
-            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><FilePlus className="h-4 w-4 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
-            <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
+        <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+          <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
+            <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
+            <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1 relative z-10">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
           </DialogHeader>
-          <div className="p-4 space-y-4">
-             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-primary" />
-                <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Su solicitud será enviada al correo del departamento y se le asignará un folio de ciclo escolar.</p>
-             </div>
-             <div className="space-y-3">
-                <div className="space-y-1">
-                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
-                   <Input placeholder="15DES0000X" className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner" />
-                </div>
-                <div className="space-y-1">
-                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Descripción del Problema</Label>
-                   <Textarea placeholder="DETALLE TÉCNICO..." className="h-20 bg-slate-50 border-none rounded-lg text-[10px] font-semibold resize-none shadow-inner" />
-                </div>
-                <div className="space-y-1">
-                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex justify-between items-center">
-                      <span>Adjuntar Evidencia</span>
-                      <span className="text-[7px] text-primary/50">(PDF, EXCEL, IMG)</span>
-                   </Label>
-                   <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-1.5 border border-dashed border-slate-200 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden group">
-                      <div className="h-6 w-6 rounded-md bg-white flex items-center justify-center text-slate-400 shrink-0 shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
-                         <Paperclip className="h-3 w-3" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                         <p className="text-[8px] font-black uppercase text-slate-500 truncate">
-                            {newTicketFile ? newTicketFile.name : "Elegir archivo..."}
-                         </p>
-                      </div>
-                      <input 
-                        type="file" 
-                        accept=".pdf, .xlsx, .xls, .jpg, .jpeg, .png" 
-                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                        onChange={(e) => setNewTicketFile(e.target.files?.[0] || null)}
-                      />
-                      {newTicketFile && (
-                        <button onClick={(e) => { e.preventDefault(); setNewTicketFile(null); }} className="text-rose-500 hover:text-rose-700 p-1 relative z-10"><X className="h-3 w-3" /></button>
-                      )}
-                   </div>
-                   {newTicketFile && (
-                      <div className="flex items-center gap-2 pl-1 animate-in slide-in-from-left-2 duration-300">
-                         {newTicketFile.type.includes('pdf') ? <FileText className="h-3 w-3 text-rose-500" /> : newTicketFile.type.includes('excel') || newTicketFile.type.includes('spreadsheet') ? <FileSpreadsheet className="h-3 w-3 text-emerald-500" /> : <ImageIcon className="h-3 w-3 text-blue-500" />}
-                         <p className="text-[7px] font-bold text-emerald-600 uppercase">Listo para enviar</p>
-                      </div>
-                   )}
-                </div>
-             </div>
-          </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setNewTicketFile(null); }} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
-            <Button onClick={() => { const folio = generateSequentialFolio(); toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` }); setIsNewTicketDialogOpen(false); setNewTicketFile(null); }} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
+          <ScrollArea className="flex-1">
+            <div className="p-5 space-y-4">
+               <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center gap-3 shadow-inner">
+                  <AlertCircle className="h-6 w-6 text-primary shrink-0" />
+                  <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Asignación de folio de ciclo escolar oficial para seguimiento institucional.</p>
+               </div>
+               <div className="space-y-4">
+                  <div className="space-y-1.5">
+                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><School className="h-3 w-3 text-primary" /> CCT del Plantel</Label>
+                     <Input placeholder="15DES0000X" className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all" />
+                  </div>
+                  <div className="space-y-1.5">
+                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><MessageSquare className="h-3 w-3 text-primary" /> Detalle Técnico</Label>
+                     <Textarea placeholder="DESCRIBA LA FALLA..." className="h-24 bg-slate-50 border-none rounded-xl text-[11px] font-semibold resize-none shadow-inner focus:bg-white transition-all p-3" />
+                  </div>
+                  <div className="space-y-2">
+                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex justify-between items-center">
+                        <span className="flex items-center gap-2"><Paperclip className="h-3 w-3 text-primary" /> Adjuntar Evidencias (Máx. 5)</span>
+                        <span className="text-[7px] text-primary/50">(PDF, EXCEL, IMG)</span>
+                     </Label>
+                     <div className="relative group">
+                        <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-2 border-2 border-dashed border-slate-200 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden group shadow-inner">
+                           <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-slate-400 shrink-0 shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                              <Plus className="h-4 w-4" />
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <p className="text-[9px] font-black uppercase text-slate-500">
+                                 {newTicketFiles.length === 0 ? "Elegir archivos..." : `${newTicketFiles.length} / 5 ARCHIVOS`}
+                              </p>
+                           </div>
+                           <input 
+                              type="file" 
+                              multiple
+                              accept=".pdf, .xlsx, .xls, .jpg, .jpeg, .png" 
+                              className="absolute inset-0 opacity-0 cursor-pointer" 
+                              onChange={(e) => {
+                                 const files = Array.from(e.target.files || []);
+                                 if (newTicketFiles.length + files.length > 5) {
+                                    toast({ variant: "destructive", title: "Límite Excedido", description: "Solo se permiten hasta 5 archivos." });
+                                    return;
+                                 }
+                                 setNewTicketFiles([...newTicketFiles, ...files]);
+                                 e.target.value = '';
+                              }}
+                           />
+                        </div>
+                     </div>
+                     
+                     <div className="space-y-1.5 pt-1">
+                        {newTicketFiles.map((file, idx) => (
+                           <div key={idx} className="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-2 shadow-sm animate-in slide-in-from-left-2 duration-300">
+                              <div className="flex items-center gap-3 min-w-0">
+                                 <div className="shrink-0">
+                                    {file.type.includes('pdf') ? <FileText className="h-4 w-4 text-rose-500" /> : file.type.includes('excel') || file.type.includes('spreadsheet') ? <FileSpreadsheet className="h-4 w-4 text-emerald-500" /> : <ImageIcon className="h-4 w-4 text-blue-500" />}
+                                 </div>
+                                 <p className="text-[9px] font-bold text-slate-600 truncate max-w-[200px] uppercase">{file.name}</p>
+                              </div>
+                              <button 
+                                 onClick={() => setNewTicketFiles(newTicketFiles.filter((_, i) => i !== idx))}
+                                 className="text-slate-300 hover:text-rose-600 transition-colors p-1"
+                              >
+                                 <X className="h-3.5 w-3.5" />
+                              </button>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="p-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
+            <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setNewTicketFiles([]); }} className="h-10 px-6 text-[10px] font-black uppercase text-slate-400">CANCELAR</Button>
+            <Button onClick={() => { const folio = generateSequentialFolio(); toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` }); setIsNewTicketDialogOpen(false); setNewTicketFiles([]); }} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR SOLICITUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
