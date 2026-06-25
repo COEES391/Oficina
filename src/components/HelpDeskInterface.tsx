@@ -86,7 +86,7 @@ type TechFile = {
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa NaucalPAN",
   "Oficina de Tecnóloga Educativa Nezahualcóyotl",
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
@@ -100,6 +100,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [remoteId, setRemoteId] = useState('') 
   const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
+  const [highlightRemote, setHighlightRemote] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
   const [techName, setTechName] = useState('')
@@ -157,6 +158,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setRemoteId('')
     setIsRemoteRequested(false)
     setActiveTicketNumber(null)
+    setHighlightRemote(false)
     sessionStorage.removeItem('atres_active_ticket')
     const newSKey = `USER-${Date.now()}`
     sessionStorage.setItem('atres_session_id', newSKey)
@@ -267,6 +269,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     let currentFolio = activeTicketNumber;
     let updatedActiveChatId = activeChatId;
 
+    // Detection logic
+    const lowerInput = input.toLowerCase();
+    const isRemoteIssue = lowerInput.includes('office') || lowerInput.includes('windows');
+
     if (isPublic && !currentFolio) {
       currentFolio = generateSequentialFolio();
       setActiveTicketNumber(currentFolio);
@@ -277,7 +283,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         ticketNumber: currentFolio,
         timestamp: Date.now(), 
         status: 'pending' as const,
-        requestType: 'chat',
+        requestType: isRemoteIssue ? 'remote' : 'chat',
         chatKey: sessionKey
       }
 
@@ -318,13 +324,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }))
 
     if (isPublic && myRole === 'user' && !fileData) {
-      const lowerInput = input.toLowerCase();
-      if (lowerInput.includes('office') || lowerInput.includes('windows') || lowerInput.includes('impresora')) {
+      if (isRemoteIssue) {
+        setHighlightRemote(true);
         setIsTyping(true);
         setTimeout(() => {
           const botReply: Message = {
             role: 'bot',
-            content: 'He detectado que tu problema requiere soporte remoto. Por favor, ingresa tu ID de AnyDesk en la columna izquierda y presiona "SOLICITAR SOPORTE" para que podamos ayudarte.',
+            content: 'He detectado que tu problema requiere soporte remoto (Office/Windows). Por favor, ingresa tu ID de AnyDesk en la columna izquierda ("Solicitud Cuenta institucional/Windows") para que podamos conectarnos.',
+            timestamp: Date.now()
+          };
+          const finalMessages = [...updatedMessages, botReply];
+          localStorage.setItem(historyKey, JSON.stringify(finalMessages));
+          setMessages(finalMessages);
+          window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(finalMessages), storageArea: localStorage }));
+          setIsTyping(false);
+        }, 1000);
+      } else if (currentMessages.length === 1) { // First user message
+        setIsTyping(true);
+        setTimeout(() => {
+          const botReply: Message = {
+            role: 'bot',
+            content: `He recibido tu duda y generado el folio ${currentFolio}. Un técnico se pondrá en contacto contigo en breve a través de este chat.`,
             timestamp: Date.now()
           };
           const finalMessages = [...updatedMessages, botReply];
@@ -447,6 +467,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setActiveTicketNumber(currentFolio);
     sessionStorage.setItem('atres_active_ticket', currentFolio);
     setIsRemoteRequested(true);
+    setHighlightRemote(false);
     window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(finalMsgs), storageArea: localStorage }));
   }
 
@@ -567,8 +588,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="p-5 bg-white rounded-[2rem] border-2 border-primary/5 shadow-xl space-y-5">
-              <div className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} /><span className="text-[10px] font-black uppercase text-slate-700">{isRemoteRequested ? "CONEXIÓN SOLICITADA" : "Solicitud Cuenta institucional/Windows"}</span></div>
+            <div className={cn(
+              "p-5 bg-white rounded-[2rem] border-2 shadow-xl space-y-5 transition-all duration-500",
+              highlightRemote ? "border-primary ring-4 ring-primary/10 animate-pulse" : "border-primary/5"
+            )}>
+              <div className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full", isRemoteRequested ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} /><span className="text-[10px] font-black uppercase text-slate-700">SOLICITUD CUENTA INSTITUCIONAL/WINDOWS</span></div>
               {activeTicketNumber && <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center"><p className="text-[8px] font-black text-emerald-600 uppercase mb-1">Folio de Atención</p><p className="text-lg font-black text-emerald-700">{activeTicketNumber}</p></div>}
               <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400">ID ANYDESK / TEAMVIEWER</Label><Input placeholder="000 000 000" className="h-12 text-center font-mono font-black border-primary/20 text-xl bg-slate-50 rounded-2xl" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} /></div>
               {!isRemoteRequested ? <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-2xl"><MonitorOff className="h-5 w-5 mr-2" /> SOLICITAR SOPORTE</Button> : <Button onClick={resetForNewRequest} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-2xl"><RefreshCcw className="h-5 w-5 mr-2" /> ENVIAR OTRO ID</Button>}
