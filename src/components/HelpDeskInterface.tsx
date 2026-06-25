@@ -373,20 +373,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
         )}>
           {isPublic ? (
-            <div className="flex-1 flex flex-col gap-5 overflow-hidden">
-               {/* Identidad Institucional Compacta */}
-               <div className="space-y-0.5 animate-in fade-in slide-in-from-left-4 duration-700">
-                  <div className="flex items-center gap-2">
-                     <span className="h-1.5 w-1.5 rounded-full bg-[#B38E5D] animate-pulse" />
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">CÉLULA COEES</p>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#9f2241] uppercase tracking-tighter leading-none">APOYO TÉCNICO</h3>
-                  <div className="flex items-center gap-2 text-[10px] font-black text-[#B38E5D] uppercase tracking-widest mt-1">
-                    <div className="h-1 w-4 bg-[#B38E5D]/20 rounded-full" />
-                    ESTATUS CONEXIÓN
-                  </div>
-               </div>
-
+            <div className="flex-1 flex flex-col gap-8 overflow-hidden pt-4">
                {/* Consola Digital de ID */}
                <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                   <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
@@ -420,7 +407,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                </div>
 
                {/* Protocolo de Atención (Optimizado para visibilidad total) */}
-               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+               <div className="flex-1 flex flex-col gap-6 overflow-hidden">
                   <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
                      <div className="h-6 w-6 rounded-lg bg-[#B38E5D]/10 flex items-center justify-center">
                         <ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" />
@@ -428,14 +415,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
                   </div>
                   
-                  <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                  <div className="flex-1 flex flex-col justify-between py-2 overflow-hidden">
                      {[
                         { 
                           n: "1", 
-                          t: "Descargue AnyDesk en su equipo.", 
+                          t: "Descargue software AnyDesk.", 
                           c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1.5 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
                         },
-                        { n: "2", t: "Localice su ID personal de 9 dígitos." },
+                        { n: "2", t: "Localice su ID personal." },
                         { n: "3", t: "Péguelo arriba y solicite soporte." },
                         { n: "4", t: "Espere conexión del analista." }
                      ].map((step, i) => (
@@ -444,10 +431,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               <div className="h-6 w-6 rounded-lg bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shadow-lg">
                                  {step.n}
                               </div>
-                              {i < 3 && <div className="w-0.5 h-4 bg-[#B38E5D]/20 my-0.5" />}
+                              {i < 3 && <div className="w-0.5 h-6 bg-[#B38E5D]/20 my-0.5" />}
                            </div>
                            <div className="pt-0.5 flex-1 min-w-0">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
+                              <p className="text-[11px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p>
                               {step.c}
                            </div>
                         </div>
