@@ -125,11 +125,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
+  // Generador de ID de sesión tipo turno bancario (DDMM-XXXX)
+  const generateTurnSessionId = () => {
+    const now = new Date();
+    const dateStr = format(now, 'ddMM');
+    const counterKey = `atres_session_counter_${dateStr}`;
+    const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
+    const nextCounter = lastCounter + 1;
+    localStorage.setItem(counterKey, nextCounter.toString());
+    return `USER-${dateStr}-${nextCounter.toString().padStart(4, '0')}`;
+  }
+
   useEffect(() => {
     if (isPublic) {
       let sKey = sessionStorage.getItem('atres_session_id')
       if (!sKey) {
-        sKey = `USER-${Date.now()}`
+        sKey = generateTurnSessionId()
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
@@ -155,7 +166,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setShowRemotePanel(false)
     sessionStorage.removeItem('atres_active_ticket')
     sessionStorage.removeItem('atres_show_remote_panel')
-    const newSKey = `USER-${Date.now()}`
+    const newSKey = generateTurnSessionId()
     sessionStorage.setItem('atres_session_id', newSKey)
     setSessionKey(newSKey)
     setMessages([])
@@ -631,74 +642,74 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* Registro Final del Analista - ULTRA COMPACTO para visibilidad total */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
-          <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-16 w-16" /></div>
-            <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3 relative z-10 leading-none">
-              <ShieldCheck className="h-6 w-6 text-[#B38E5D]" /> CONCLUIR SERVICIO
+        <DialogContent className="sm:max-w-[500px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-3 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><CheckCircle2 className="h-12 w-12" /></div>
+            <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-3 relative z-10 leading-none">
+              <ShieldCheck className="h-5 w-5 text-[#B38E5D]" /> CONCLUIR SERVICIO
             </DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[8px] uppercase tracking-[0.2em] mt-1 relative z-10">REGISTRO OFICIAL DE ATENCIÓN ATRES</DialogDescription>
+            <DialogDescription className="text-white/60 font-bold text-[7px] uppercase tracking-[0.2em] mt-0.5 relative z-10">REGISTRO OFICIAL ATRES</DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
-                   <School className="h-3.5 w-3.5 text-accent" /> Plantel Atendido
+            <div className="p-4 space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
+                   <School className="h-3 w-3 text-accent" /> Plantel Atendido
                 </Label>
                 <Input 
-                  placeholder="BUSCAR POR CCT O NOMBRE..." 
-                  className="h-9 bg-slate-50 border-none rounded-lg text-xs font-black uppercase px-4 shadow-inner focus:bg-white transition-all" 
+                  placeholder="BUSCAR CCT..." 
+                  className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" 
                   value={finishSearchTerm} 
                   onChange={e => setFinishSearchTerm(e.target.value)} 
                 />
                 {finishSearchTerm.length > 2 && (
-                  <div className="max-h-32 overflow-y-auto bg-white border border-slate-100 rounded-xl shadow-xl divide-y animate-in fade-in zoom-in-95 duration-200">
+                  <div className="max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y animate-in fade-in zoom-in-95 duration-200">
                     {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                      <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
+                      <div key={`${s.cct}-${s.turno}`} className="p-1.5 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
                         <div className="flex flex-col">
-                          <span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span>
-                          <span className="text-[8px] font-mono text-slate-400">{s.cct} • {s.municipio}</span>
+                          <span className="text-[10px] font-black uppercase text-slate-800">{s.nombre}</span>
+                          <span className="text-[7px] font-mono text-slate-400">{s.cct}</span>
                         </div>
-                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[7px] font-black px-1.5 rounded-full">{s.modalidad}</Badge>
+                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
                       </div>
                     ))}
                   </div>
                 )}
                 {finishForm.cct && (
-                  <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl animate-in zoom-in-95 duration-500 flex items-center gap-3">
-                     <div className="h-7 w-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-4 w-4" /></div>
+                  <div className="p-2 bg-emerald-50/50 border border-emerald-100 rounded-lg animate-in zoom-in-95 duration-500 flex items-center gap-2">
+                     <div className="h-6 w-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div>
                      <div>
-                        <p className="text-[8px] font-black text-emerald-700 uppercase tracking-widest leading-none mb-0.5">PLANTEL SELECCIONADO:</p>
-                        <h4 className="text-[12px] font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
+                        <p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">PLANTEL:</p>
+                        <h4 className="text-[11px] font-black text-slate-800 uppercase leading-none">{finishForm.schoolName}</h4>
                      </div>
                   </div>
                 )}
               </div>
               
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
                   <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
-                    <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
+                    <SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
+                    <SelectContent className="rounded-lg">
+                      {REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO ATENCIÓN</Label>
-                  <div className="h-9 bg-slate-100 rounded-lg flex items-center px-4 font-mono font-black text-primary shadow-inner text-xs">{selectedRequest?.ticketNumber}</div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO</Label>
+                  <div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className="text-[10px] font-black uppercase text-primary pl-1 flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-accent" /> Resumen Técnico del Servicio
+                  <Sparkles className="h-3 w-3 text-accent" /> Resumen Técnico
                 </Label>
                 <Textarea 
-                  placeholder="DETALLE TRABAJOS, HALLAZGOS Y ACUERDOS..." 
-                  className="h-24 bg-slate-50 border-none rounded-xl p-3 text-[11px] font-semibold shadow-inner focus:bg-white transition-all" 
+                  placeholder="HALLAZGOS Y ACUERDOS..." 
+                  className="h-20 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all" 
                   value={finishForm.servicio} 
                   onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} 
                 />
@@ -706,10 +717,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
-            <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-10 px-6 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-all">CANCELAR</Button>
-            <Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-10 text-[10px] gap-2 shadow-xl">
-              <Save className="h-4 w-4" /> REGISTRAR ATENCIÓN
+          <DialogFooter className="p-2 bg-slate-50 border-t flex justify-end gap-2 shrink-0">
+            <Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button>
+            <Button onClick={handleFinishConfirm} className="btn-institutional h-8 px-6 text-[9px] gap-2 shadow-xl">
+              <Save className="h-3 w-3" /> REGISTRAR
             </Button>
           </DialogFooter>
         </DialogContent>
