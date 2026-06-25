@@ -24,7 +24,7 @@ import {
   Send, 
   Bot, 
   User, 
-  Headset,
+  UserCog,
   ChevronRight,
   MessageSquare,
   CheckCircle2,
@@ -37,7 +37,6 @@ import {
   Plus,
   ArrowRightCircle,
   Clock,
-  Laptop,
   Activity,
   Sparkles,
   Monitor,
@@ -366,20 +365,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700 h-full", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40" : "bg-[#f8f5f0]"
     )}>
-      {/* Columna Izquierda Institucional (Zero-Scroll para el usuario) */}
+      {/* Columna Izquierda Institucional (Cero Scroll) */}
       {(!isPublic || showRemotePanel) && (
         <div className={cn(
-          "w-full md:w-[340px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
+          "w-full md:w-[340px] flex flex-col p-5 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
           isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
         )}>
           {isPublic ? (
-            <div className="flex-1 flex flex-col gap-8 overflow-hidden pt-4">
-               {/* Consola Digital de ID */}
-               <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
+            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+               {/* Consola AnyDesk - Diseño Ejecutivo */}
+               <div className="bg-white/80 rounded-[2.5rem] border border-white p-5 shadow-2xl space-y-3 relative overflow-hidden shrink-0 group">
                   <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                     <Monitor className="h-24 w-24 text-primary" />
                   </div>
-                  <div className="relative z-10 space-y-4">
+                  <div className="relative z-10 space-y-3">
                      <div className="space-y-1">
                         <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
                         <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
@@ -395,32 +394,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
                      
                      {!isRemoteRequested ? (
-                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-11 text-[10px] rounded-xl shadow-xl shadow-primary/20">
+                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-11 text-[10px] rounded-xl shadow-xl">
                          SOLICITAR SOPORTE
                        </Button>
                      ) : (
-                       <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-11 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5 transition-all">
+                       <Button onClick={handleEditRemoteId} variant="outline" className="w-full h-11 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">
                          ENVIAR OTRO ID
                        </Button>
                      )}
                   </div>
                </div>
 
-               {/* Protocolo de Atención (Optimizado para visibilidad total) */}
-               <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                  <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
+               {/* Protocolo de Atención - Ultra Compacto */}
+               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                  <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-2 shrink-0">
                      <div className="h-6 w-6 rounded-lg bg-[#B38E5D]/10 flex items-center justify-center">
                         <ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" />
                      </div>
                      <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
                   </div>
                   
-                  <div className="flex-1 flex flex-col justify-between py-2 overflow-hidden">
+                  <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
                      {[
                         { 
                           n: "1", 
                           t: "Descargue software AnyDesk.", 
-                          c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1.5 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
+                          c: <Button variant="outline" size="sm" className="h-7 px-4 text-[8px] font-black border-[#9f2241]/20 text-[#9f2241] rounded-xl mt-1 hover:bg-[#9f2241] hover:text-white transition-all shadow-sm" onClick={() => window.open('https://anydesk.com', '_blank')}><Download className="h-3 w-3 mr-2" /> DESCARGAR AHORA</Button> 
                         },
                         { n: "2", t: "Localice su ID personal." },
                         { n: "3", t: "Péguelo arriba y solicite soporte." },
@@ -444,7 +443,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               {/* Panel Analista */}
                <div className="space-y-1">
                   <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">SISTEMA ATRES</p>
                   <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">MESA DE CONTROL</h3>
@@ -551,7 +549,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           msg.role === 'tech' ? "bg-[#9f2241] text-white" : 
                           "bg-slate-800 text-white"
                         )}>
-                          {msg.role === 'user' ? <User className="h-4 w-4" /> : msg.role === 'tech' ? <Headset className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                          {msg.role === 'user' ? <User className="h-4 w-4" /> : msg.role === 'tech' ? <UserCog className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                         </div>
                         <div className="space-y-1">
                           {msg.senderName && <span className={cn("text-[7px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
