@@ -114,7 +114,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // Solicitud Ticket State
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [isResponsivaOpen, setIsResponsivaOpen] = useState(false)
-  const [newTicketFiles, setNewTicketFiles] = useState<File[]>([])
+  
+  // File states for the 2 specific slots
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [excelFile, setExcelFile] = useState<File | null>(null)
+  
   const [requesterName, setRequesterName] = useState('')
   const [requesterEmail, setRequesterEmail] = useState('')
   const [helpTopic, setHelpTopic] = useState('')
@@ -395,7 +399,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const folio = generateSequentialFolio();
     toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` });
     setIsNewTicketDialogOpen(false);
-    setNewTicketFiles([]);
+    setPdfFile(null);
+    setExcelFile(null);
     setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
   }
 
@@ -550,7 +555,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <header className={cn("px-10 py-6 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
               <div className="flex items-center gap-6">
                 <div className="h-14 w-14 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
-                  {isPublic ? <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <GraduationCap className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
+                  {isPublic ? <Bot className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
                 <div>
@@ -563,7 +568,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
                     {isPublic && (
                       <div className="flex gap-2 ml-2">
-                         <button onClick={() => { setIsNewTicketDialogOpen(true); setNewTicketFiles([]); }} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
+                         <button onClick={() => { setIsNewTicketDialogOpen(true); setPdfFile(null); setExcelFile(null); }} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
                          <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus"><Search className="h-4 w-4" /></button>
                       </div>
                     )}
@@ -623,140 +628,167 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Modal Nueva Solicitud Técnica */}
+      {/* Modal Nueva Solicitud Técnica - COMPACTED FOR ZERO-SCROLL */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
             <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
             <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1 relative z-10">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1">
-            <div className="p-5 space-y-3">
-               <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center gap-3 shadow-inner">
-                  <AlertCircle className="h-6 w-6 text-primary shrink-0" />
-                  <p className="text-[9px] font-bold text-slate-600 uppercase leading-tight">Complete la información para generar su folio de seguimiento oficial del ciclo escolar.</p>
-               </div>
+          <div className="flex-1 overflow-hidden p-4 space-y-2">
+             <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center gap-3 shadow-inner">
+                <AlertCircle className="h-5 w-5 text-primary shrink-0" />
+                <p className="text-[8px] font-bold text-slate-600 uppercase leading-tight">Complete la información para generar su folio de seguimiento oficial.</p>
+             </div>
 
-               <div className="space-y-3 pt-1">
-                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1 flex items-center gap-2"><User className="h-3 w-3" /> Información del Solicitante</h4>
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
+             <div className="space-y-2 pt-1">
+                <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5 flex items-center gap-2"><User className="h-3 w-3" /> Información del Solicitante</h4>
+                <div className="space-y-1">
+                  <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
+                  <Input 
+                    placeholder="PATERNO MATERNO NOMBRES..." 
+                    className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner focus:bg-white transition-all"
+                    value={requesterName}
+                    onChange={e => setRequesterName(e.target.value.toUpperCase())}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
                     <Input 
-                      placeholder="PATERNO MATERNO NOMBRES..." 
-                      className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all"
-                      value={requesterName}
-                      onChange={e => setRequesterName(e.target.value.toUpperCase())}
+                      placeholder="ejemplo@desysa.edu.mx" 
+                      className="h-9 bg-slate-50 border-none rounded-xl text-[9px] font-bold shadow-inner focus:bg-white transition-all"
+                      value={requesterEmail}
+                      onChange={e => setRequesterEmail(e.target.value.toLowerCase())}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
-                      <Input 
-                        placeholder="ejemplo@desysa.edu.mx" 
-                        className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner focus:bg-white transition-all"
-                        value={requesterEmail}
-                        onChange={e => setRequesterEmail(e.target.value.toLowerCase())}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
-                      <Select 
-                        value={helpTopic} 
-                        onValueChange={val => {
-                          setHelpTopic(val);
-                          if (val === 'cuenta') setIsResponsivaOpen(true);
-                        }}
-                      >
-                        <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[9px] font-black uppercase shadow-inner">
-                          <SelectValue placeholder="ELEGIR..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
-                          <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
-                          <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
-                          <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-1">
+                    <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
+                    <Select 
+                      value={helpTopic} 
+                      onValueChange={val => {
+                        setHelpTopic(val);
+                        if (val === 'cuenta') setIsResponsivaOpen(true);
+                      }}
+                    >
+                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-xl text-[8px] font-black uppercase shadow-inner">
+                        <SelectValue placeholder="ELEGIR..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cuenta" className="text-[9px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
+                        <SelectItem value="transmision" className="text-[9px] font-bold uppercase">Transmisión</SelectItem>
+                        <SelectItem value="soporte" className="text-[9px] font-bold uppercase">Soporte Técnico</SelectItem>
+                        <SelectItem value="capacitacion" className="text-[9px] font-bold uppercase">Capacitación</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-               </div>
+                </div>
+             </div>
 
-               <div className="space-y-3 pt-2">
-                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1 flex items-center gap-2"><Monitor className="h-3 w-3" /> Datos del Servicio</h4>
-                  <div className="space-y-1.5">
-                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><School className="h-3 w-3 text-primary" /> CCT del Plantel</Label>
-                     <Input 
-                        placeholder="15DES0000X" 
-                        className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase shadow-inner focus:bg-white transition-all"
-                        value={ticketCct}
-                        onChange={e => setTicketCct(e.target.value.toUpperCase())}
-                        maxLength={10}
-                     />
-                  </div>
-                  <div className="space-y-1.5">
-                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><MessageSquare className="h-3 w-3 text-primary" /> Detalle Técnico</Label>
-                     <Textarea 
-                        placeholder="DESCRIBA SU REQUERIMIENTO O FALLA..." 
-                        className="h-20 bg-slate-50 border-none rounded-xl text-[11px] font-semibold resize-none shadow-inner focus:bg-white transition-all p-3"
-                        value={ticketDetail}
-                        onChange={e => setTicketDetail(e.target.value.toUpperCase())}
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 flex justify-between items-center">
-                        <span className="flex items-center gap-2"><Paperclip className="h-3 w-3 text-primary" /> Adjuntar Evidencias (Máx. 5)</span>
-                        <span className="text-[7px] text-primary/50">(PDF, EXCEL, IMG)</span>
-                     </Label>
-                     <div className="relative group">
-                        <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-2 border-2 border-dashed border-slate-200 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden group shadow-inner">
-                           <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center text-slate-400 shrink-0 shadow-sm group-hover:bg-primary group-hover:text-white transition-colors">
-                              <Plus className="h-4 w-4" />
-                           </div>
-                           <div className="flex-1 min-w-0">
-                              <p className="text-[9px] font-black uppercase text-slate-500">
-                                 {newTicketFiles.length === 0 ? "Elegir archivos..." : `${newTicketFiles.length} / 5 ARCHIVOS`}
-                              </p>
-                           </div>
-                           <input 
-                              type="file" 
-                              multiple
-                              accept=".pdf, .xlsx, .xls, .jpg, .jpeg, .png" 
-                              className="absolute inset-0 opacity-0 cursor-pointer" 
-                              onChange={(e) => {
-                                 const files = Array.from(e.target.files || []);
-                                 if (newTicketFiles.length + files.length > 5) {
-                                    toast({ variant: "destructive", title: "Límite Excedido", description: "Solo se permiten hasta 5 archivos." });
-                                    return;
-                                 }
-                                 setNewTicketFiles([...newTicketFiles, ...files]);
-                                 e.target.value = '';
-                              }}
-                           />
-                        </div>
-                     </div>
-                     
-                     <div className="flex flex-wrap gap-1.5 pt-1">
-                        {newTicketFiles.map((file, idx) => (
-                           <div key={idx} className="flex items-center gap-2 bg-white border border-slate-100 rounded-full py-1 px-3 shadow-sm animate-in zoom-in-95 duration-300">
-                              {file.type.includes('pdf') ? <FileText className="h-3 w-3 text-rose-500" /> : file.type.includes('excel') || file.type.includes('spreadsheet') ? <FileSpreadsheet className="h-3 w-3 text-emerald-500" /> : <ImageIcon className="h-3 w-3 text-blue-500" />}
-                              <p className="text-[8px] font-bold text-slate-600 truncate max-w-[80px] uppercase">{file.name}</p>
-                              <button onClick={() => setNewTicketFiles(newTicketFiles.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-rose-600 transition-colors"><X className="h-3 w-3" /></button>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               </div>
-            </div>
-          </ScrollArea>
-          <DialogFooter className="p-4 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
-            <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setNewTicketFiles([]); }} className="h-10 px-6 text-[10px] font-black uppercase text-slate-400">CANCELAR</Button>
-            <Button onClick={handleSendNewTicketRequest} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR SOLICITUD</Button>
+             <div className="space-y-2 pt-1">
+                <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5 flex items-center gap-2"><Monitor className="h-3 w-3" /> Datos del Servicio</h4>
+                <div className="grid grid-cols-2 gap-2">
+                   <div className="space-y-1">
+                      <Label className="text-[8px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><School className="h-3 w-3 text-primary" /> CCT del Plantel</Label>
+                      <Input 
+                         placeholder="15DES0000X" 
+                         className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner focus:bg-white transition-all"
+                         value={ticketCct}
+                         onChange={e => setTicketCct(e.target.value.toUpperCase())}
+                         maxLength={10}
+                      />
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[8px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><MessageSquare className="h-3 w-3 text-primary" /> Detalle Técnico</Label>
+                      <Input 
+                         placeholder="BREVE DESCRIPCIÓN..." 
+                         className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-semibold shadow-inner focus:bg-white transition-all"
+                         value={ticketDetail}
+                         onChange={e => setTicketDetail(e.target.value.toUpperCase())}
+                      />
+                   </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                   <Label className="text-[8px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2">
+                      <Paperclip className="h-3 w-3 text-primary" /> Adjuntos Oficiales (Requeridos)
+                   </Label>
+                   
+                   <div className="grid grid-cols-2 gap-3">
+                      {/* PDF Upload Slot */}
+                      <div className="relative group">
+                         <div className={cn(
+                            "flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed transition-all cursor-pointer relative shadow-inner h-12",
+                            pdfFile ? "border-rose-300 bg-rose-50/50" : "border-slate-200 hover:border-primary/30"
+                         )}>
+                            <div className={cn(
+                               "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                               pdfFile ? "bg-rose-500 text-white" : "bg-white text-slate-400"
+                            )}>
+                               <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                               <p className="text-[8px] font-black uppercase text-slate-500 truncate">
+                                  {pdfFile ? pdfFile.name : "1. SOLICITUD PDF"}
+                               </p>
+                            </div>
+                            {pdfFile && <button onClick={(e) => { e.preventDefault(); setPdfFile(null); }} className="text-rose-400 hover:text-rose-600"><X className="h-3 w-3" /></button>}
+                            <input 
+                               type="file" 
+                               accept=".pdf" 
+                               className="absolute inset-0 opacity-0 cursor-pointer" 
+                               onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) setPdfFile(file);
+                                  e.target.value = '';
+                               }}
+                            />
+                         </div>
+                      </div>
+
+                      {/* Excel Upload Slot */}
+                      <div className="relative group">
+                         <div className={cn(
+                            "flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed transition-all cursor-pointer relative shadow-inner h-12",
+                            excelFile ? "border-emerald-300 bg-emerald-50/50" : "border-slate-200 hover:border-primary/30"
+                         )}>
+                            <div className={cn(
+                               "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                               excelFile ? "bg-emerald-500 text-white" : "bg-white text-slate-400"
+                            )}>
+                               <FileSpreadsheet className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                               <p className="text-[8px] font-black uppercase text-slate-500 truncate">
+                                  {excelFile ? excelFile.name : "2. EXCEL"}
+                               </p>
+                            </div>
+                            {excelFile && <button onClick={(e) => { e.preventDefault(); setExcelFile(null); }} className="text-emerald-400 hover:text-emerald-600"><X className="h-3 w-3" /></button>}
+                            <input 
+                               type="file" 
+                               accept=".xlsx, .xls" 
+                               className="absolute inset-0 opacity-0 cursor-pointer" 
+                               onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) setExcelFile(file);
+                                  e.target.value = '';
+                               }}
+                            />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
+            <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setPdfFile(null); setExcelFile(null); }} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
+            <Button onClick={handleSendNewTicketRequest} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Carta Responsiva con ScrollArea de visibilidad garantizada */}
+      {/* Modal Carta Responsiva */}
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
         <DialogContent className="sm:max-w-[620px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
@@ -856,47 +888,45 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <DialogTitle className="uppercase font-black text-white text-base flex items-center gap-2 relative z-10 leading-none"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
             <DialogDescription className="text-white/60 font-bold text-[7px] uppercase tracking-[0.2em] mt-0.5 relative z-10">REGISTRO OFICIAL ATRES</DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2"><School className="h-3 w-3 text-accent" /> Plantel Atendido</Label>
-                <div className="relative">
-                   <Input placeholder="BUSCAR POR CCT O NOMBRE..." className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
-                   {finishSearchTerm.length > 2 && (
-                    <div className="absolute left-0 right-0 top-9 max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50 animate-in fade-in zoom-in-95 duration-200">
-                      {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                        <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
-                          <div className="flex flex-col"><span className="text-[9px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[7px] font-mono text-slate-400">{s.cct}</span></div>
-                          <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                   )}
-                </div>
-                {finishForm.cct && (
-                  <div className="p-2 bg-emerald-50/50 border border-emerald-100 rounded-lg animate-in zoom-in-95 duration-500 flex items-center gap-2">
-                     <div className="h-6 w-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div>
-                     <div className="flex-1 min-w-0"><p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">SELECCIONADO:</p><h4 className="text-[10px] font-black text-slate-800 uppercase leading-none truncate mt-0.5">{finishForm.schoolName}</h4></div>
-                     <button onClick={() => setFinishForm({...finishForm, cct: '', schoolName: ''})} className="text-slate-400 hover:text-rose-500"><X className="h-3 w-3" /></button>
+          <div className="p-4 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2"><School className="h-3 w-3 text-accent" /> Plantel Atendido</Label>
+              <div className="relative">
+                 <Input placeholder="BUSCAR POR CCT O NOMBRE..." className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-3 shadow-inner focus:bg-white transition-all" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
+                 {finishSearchTerm.length > 2 && (
+                  <div className="absolute left-0 right-0 top-9 max-h-24 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50 animate-in fade-in zoom-in-95 duration-200">
+                    {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
+                      <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
+                        <div className="flex flex-col"><span className="text-[9px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[7px] font-mono text-slate-400">{s.cct}</span></div>
+                        <Badge variant="secondary" className="bg-primary/5 text-primary text-[6px] font-black px-1 rounded-full">{s.modalidad}</Badge>
+                      </div>
+                    ))}
                   </div>
-                )}
+                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
-                  <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
-                    <SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
-                    <SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
-                  </Select>
+              {finishForm.cct && (
+                <div className="p-2 bg-emerald-50/50 border border-emerald-100 rounded-lg animate-in zoom-in-95 duration-500 flex items-center gap-2">
+                   <div className="h-6 w-6 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div>
+                   <div className="flex-1 min-w-0"><p className="text-[7px] font-black text-emerald-700 uppercase tracking-widest leading-none">SELECCIONADO:</p><h4 className="text-[10px] font-black text-slate-800 uppercase leading-none truncate mt-0.5">{finishForm.schoolName}</h4></div>
+                   <button onClick={() => setFinishForm({...finishForm, cct: '', schoolName: ''})} className="text-slate-400 hover:text-rose-500"><X className="h-3 w-3" /></button>
                 </div>
-                <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID DE TURNO</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div></div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[9px] font-black uppercase text-primary pl-1 flex items-center gap-2"><Sparkles className="h-3 w-3 text-accent" /> Resumen de Atención Técnica</Label>
-                <Textarea placeholder="ACUERDOS Y HALLAZGOS..." className="h-16 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
-              </div>
+              )}
             </div>
-          </ScrollArea>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA REGIONAL</Label>
+                <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}>
+                  <SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
+                  <SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">ID DE TURNO</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber}</div></div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[9px] font-black uppercase text-primary pl-1 flex items-center gap-2"><Sparkles className="h-3 w-3 text-accent" /> Resumen de Atención Técnica</Label>
+              <Textarea placeholder="ACUERDOS Y HALLAZGOS..." className="h-16 bg-slate-50 border-none rounded-lg p-2 text-[10px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
+            </div>
+          </div>
           <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl"><Save className="h-4 w-4" /> REGISTRAR ATENCIÓN</Button></DialogFooter>
         </DialogContent>
       </Dialog>
