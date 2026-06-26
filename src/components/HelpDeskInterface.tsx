@@ -672,7 +672,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           <SelectValue placeholder="ELEGIR..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
+                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, registrar, eliminar)</SelectItem>
                           <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
                           <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
                           <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
