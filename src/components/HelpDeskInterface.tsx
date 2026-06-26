@@ -672,7 +672,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           <SelectValue placeholder="ELEGIR..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, registrar, eliminar)</SelectItem>
+                          <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
                           <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
                           <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
                           <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
@@ -756,13 +756,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      {/* Modal Carta Responsiva */}
+      {/* Modal Carta Responsiva con ScrollArea de visibilidad garantizada */}
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[620px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><ShieldCheck className="h-20 w-20" /></div>
              <DialogTitle className="uppercase font-black text-white text-lg leading-tight relative z-10">CARTA RESPONSIVA SOBRE EL USO DEL CORREO ELECTRÓNICO INSTITUCIONAL</DialogTitle>
           </DialogHeader>
+          
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="p-8 space-y-6 text-[11.5px] leading-relaxed text-slate-700 text-justify font-medium bg-[#fdfaf5]">
@@ -770,7 +771,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   La presente carta tiene como objetivo la definición de las reglas de operación de las cuentas y contraseñas del correo electrónico institucional de la estructura de la Dirección de Educación Secundaria y Servicios de Apoyo (DESySA). Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx, creada por el Departamento de Computación Electrónica en la Educación Secundaria (COEES). El cumplimiento de estas reglas es responsabilidad del signatario.
                 </p>
                 
-                <div className="space-y-4 pr-2">
+                <div className="space-y-5 pr-2">
                     <div className="flex gap-4 items-start">
                       <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">1</div>
                       <p>El servicio de correo electrónico deberá usarse exclusivamente para asuntos relacionados con el organismo y sus instituciones.</p>
@@ -808,10 +809,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <p className="font-black pt-6 border-t border-[#9f2241]/20 mt-6 text-slate-800 uppercase tracking-tighter">
                   Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.
                 </p>
-                <div className="h-4" />
+                <div className="h-10" />
               </div>
             </ScrollArea>
           </div>
+          
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-center shrink-0">
             <Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-14 text-[11px] shadow-2xl hover:scale-[1.02] transition-transform">
                ACEPTO Y CONTINUAR CON LA SOLICITUD
