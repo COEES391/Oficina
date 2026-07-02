@@ -576,8 +576,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               <FilePlus className="h-5 w-5" />
                            </div>
                            <div className="flex flex-col text-left">
-                              <span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud Técnica</span>
-                              <span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu servicio</span>
+                              <span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span>
+                              <span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu atención de servicio</span>
                            </div>
                          </button>
                          <button 
@@ -645,12 +645,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Modal Nueva Solicitud Técnica */}
+      {/* Modal Nueva Solicitud de Servicio */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
-            <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD TÉCNICA</DialogTitle>
+            <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
             <DialogDescription className="text-white/60 text-[8px] uppercase font-bold mt-1 relative z-10">DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-4 space-y-2">
