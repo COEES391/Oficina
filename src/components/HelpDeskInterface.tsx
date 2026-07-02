@@ -567,9 +567,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </div>
                     {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
                     {isPublic && (
-                      <div className="flex gap-2 ml-2">
-                         <button onClick={() => { setIsNewTicketDialogOpen(true); setPdfFile(null); setExcelFile(null); }} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group" title="Nueva Solicitud de Folio"><FilePlus className="h-4 w-4" /></button>
-                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-7 w-7 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Seguimiento de Estatus"><Search className="h-4 w-4" /></button>
+                      <div className="flex gap-4 ml-4 items-center">
+                         <button 
+                          onClick={() => { setIsNewTicketDialogOpen(true); setPdfFile(null); setExcelFile(null); }} 
+                          className="h-11 w-11 rounded-2xl bg-white shadow-xl border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group animate-pulse hover:animate-none" 
+                          title="Iniciar Solicitud Técnica (Folio)"
+                         >
+                           <FilePlus className="h-7 w-7 group-hover:scale-110 transition-transform" />
+                         </button>
+                         <button 
+                          onClick={() => setIsTrackTicketDialogOpen(true)} 
+                          className="h-9 w-9 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" 
+                          title="Seguimiento de Estatus"
+                         >
+                           <Search className="h-5 w-5" />
+                         </button>
                       </div>
                     )}
                   </div>
