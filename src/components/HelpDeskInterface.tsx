@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,8 @@ import {
   ImageIcon,
   User,
   Mail,
-  Tag
+  Tag,
+  Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -114,6 +116,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // Solicitud Ticket State
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [isResponsivaOpen, setIsResponsivaOpen] = useState(false)
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
+  const [lastGeneratedFolio, setLastGeneratedFolio] = useState('')
   
   // File states for the 2 specific slots
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -384,7 +388,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     const inQueue = liveQueue.find((r: any) => r.ticketNumber === trackFolioInput.toUpperCase());
     if (inQueue) {
-      setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'No Atendida' });
+      setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'Recibida / Pendiente' });
       return;
     }
     toast({ variant: "destructive", title: "Folio no encontrado" });
@@ -397,8 +401,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return;
     }
     const folio = generateSequentialFolio();
-    toast({ title: "Solicitud Enviada", description: `Su folio de seguimiento es: ${folio}` });
+    
+    // Save to queue for tracking
+    const rawQueue = localStorage.getItem('atres_support_queue')
+    const currentQueue = rawQueue ? JSON.parse(rawQueue) : []
+    const newRequest: SupportRequest = {
+      remoteId: '',
+      ticketNumber: folio,
+      timestamp: Date.now(),
+      status: 'pending',
+      requestType: 'chat',
+      chatKey: `REQ-${folio}` 
+    }
+    const updatedQueue = [newRequest, ...currentQueue]
+    localStorage.setItem('atres_support_queue', JSON.stringify(updatedQueue))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(updatedQueue) }))
+
+    setLastGeneratedFolio(folio);
+    setIsConfirmationOpen(true);
     setIsNewTicketDialogOpen(false);
+    
+    // Reset form
     setPdfFile(null);
     setExcelFile(null);
     setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
@@ -733,7 +756,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    </Label>
                    
                    <div className="grid grid-cols-2 gap-3">
-                      {/* PDF Upload Slot */}
                       <div className="relative group">
                          <div className={cn(
                             "flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed transition-all cursor-pointer relative shadow-inner h-12",
@@ -764,7 +786,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          </div>
                       </div>
 
-                      {/* Excel Upload Slot */}
                       <div className="relative group">
                          <div className={cn(
                             "flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed transition-all cursor-pointer relative shadow-inner h-12",
@@ -802,6 +823,36 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <Button variant="ghost" onClick={() => { setIsNewTicketDialogOpen(false); setPdfFile(null); setExcelFile(null); }} className="h-8 px-4 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button>
             <Button onClick={handleSendNewTicketRequest} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmación de Solicitud (Folio) */}
+      <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white text-center">
+          <div className="p-10 space-y-6">
+            <div className="mx-auto h-20 w-20 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-inner">
+               <CheckCircle2 className="h-10 w-10" />
+            </div>
+            <div className="space-y-2">
+               <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-4">
+                  Su solicitud ha sido recibida correctamente. <br /> Use el siguiente número para consultar el estatus.
+               </p>
+            </div>
+            
+            <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner">
+               <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-2">FOLIO DE SEGUIMIENTO</p>
+               <h4 className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
+            </div>
+
+            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-14 rounded-2xl shadow-xl">
+               ENTENDIDO
+            </Button>
+          </div>
+          <div className="p-4 bg-slate-50 border-t flex items-center justify-center gap-2">
+             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+             <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SISTEMA INTEGRAL COEES • 2026</span>
+          </div>
         </DialogContent>
       </Dialog>
 
