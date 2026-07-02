@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -374,9 +373,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     const folio = generateSequentialFolio();
 
-    let pdfData, excelData;
-    if (pdfFile) pdfData = await readFileAsDataURL(pdfFile);
-    if (excelFile) excelData = await readFileAsDataURL(excelFile);
+    let pdfContent, excelContent;
+    if (pdfFile) pdfContent = await readFileAsDataURL(pdfFile);
+    if (excelFile) excelContent = await readFileAsDataURL(excelFile);
     
     const newFormalReq: FormalRequest = {
       id: folio, 
@@ -387,9 +386,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       detail: ticketDetail, 
       timestamp: Date.now(), 
       status: 'recibida',
-      pdfData,
+      pdfData: pdfContent,
       pdfName: pdfFile?.name,
-      excelData,
+      excelData: excelContent,
       excelName: excelFile?.name
     }
 
@@ -458,26 +457,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
       {showLeftColumn && (
-        <div className="w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60 animate-in slide-in-from-left duration-500">
+        <div className="w-full md:w-[300px] flex flex-col p-4 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60 animate-in slide-in-from-left duration-500">
            {isPublic ? (
              <div className="flex-1 flex flex-col gap-4">
                 <div className="space-y-4">
-                  <div className="bg-[#9f2241] p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Monitor className="h-20 w-20" /></div>
+                  <div className="bg-[#9f2241] p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Monitor className="h-16 w-16" /></div>
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Soporte Remoto</Label>
-                    <h3 className="text-xl font-black uppercase mt-1 leading-none">AnyDesk / TeamViewer</h3>
-                    <div className="mt-6 space-y-4">
+                    <h3 className="text-lg font-black uppercase mt-1 leading-none">AnyDesk / TeamViewer</h3>
+                    <div className="mt-4 space-y-4">
                       <div className="space-y-1.5">
                         <Label className="text-[9px] font-black uppercase text-white/60 pl-1">ID de Conexión</Label>
-                        <Input placeholder="000 000 000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 font-mono text-center text-lg h-12 rounded-2xl shadow-inner" value={remoteId} onChange={e => setRemoteId(e.target.value.replace(/\D/g,''))} maxLength={9} />
+                        <Input placeholder="000 000 000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 font-mono text-center text-lg h-10 rounded-xl shadow-inner" value={remoteId} onChange={e => setRemoteId(e.target.value.replace(/\D/g,''))} maxLength={9} />
                       </div>
-                      <Button onClick={handleRequestRemoteSupport} className="w-full bg-white text-[#9f2241] hover:bg-[#f8f8f8] font-black uppercase text-[10px] tracking-widest h-14 rounded-2xl shadow-xl active:scale-95 transition-all">Solicitar Soporte</Button>
+                      <Button onClick={handleRequestRemoteSupport} className="w-full bg-white text-[#9f2241] hover:bg-[#f8f8f8] font-black uppercase text-[10px] tracking-widest h-12 rounded-xl shadow-xl active:scale-95 transition-all">Solicitar Soporte</Button>
                     </div>
                   </div>
 
-                  <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-5">
+                  <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200 shadow-xl space-y-4">
                     <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /> Apoyo Remoto</p>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {[
                         { step: "1", text: "Descargue software AnyDesk." },
                         { step: "2", text: "Localice su ID personal." },
@@ -485,8 +484,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         { step: "4", text: "Espere conexión del analista." }
                       ].map((item, idx) => (
                         <div key={idx} className="flex gap-4 items-start group">
-                          <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-[#9f2241] shrink-0 shadow-sm group-hover:bg-[#9f2241] group-hover:text-white transition-colors">{item.step}</div>
-                          <p className="text-[11px] font-semibold text-slate-600 leading-tight uppercase pt-1">{item.text}</p>
+                          <div className="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-black text-[#9f2241] shrink-0 shadow-sm group-hover:bg-[#9f2241] group-hover:text-white transition-colors">{item.step}</div>
+                          <p className="text-[10px] font-semibold text-slate-600 leading-tight uppercase pt-0.5">{item.text}</p>
                         </div>
                       ))}
                     </div>
@@ -495,32 +494,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <Button variant="ghost" onClick={() => setIsRemoteHelpRequested(false)} className="mt-auto text-[9px] font-black uppercase text-slate-400 gap-2"><X className="h-3 w-3" /> Ocultar Panel</Button>
              </div>
            ) : (
-             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                <div className="space-y-4 shrink-0">
-                   <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
-                      <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
-                      <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
-                      <div className="flex items-end gap-2 mt-1">
-                         <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
-                         <Target className="h-4 w-4 mb-1 text-accent" />
-                      </div>
-                   </div>
+             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                <div className="bg-primary p-3 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
+                  <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-12 w-12" /></div>
+                  <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
+                  <div className="flex items-end gap-2 mt-1">
+                      <span className="text-3xl font-black leading-none">{attendedTodayCount}</span>
+                      <Target className="h-3.5 w-3.5 mb-1 text-accent" />
+                  </div>
                 </div>
 
-                <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                    <div className="flex flex-col gap-4 overflow-hidden h-full">
-                     <div className="space-y-3 flex flex-col h-1/2">
-                       <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full shrink-0">
+                     <div className="space-y-2 flex flex-col h-1/2">
+                       <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
                          Solicitudes de Servicio 
-                         <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
+                         <Badge className="bg-primary text-white text-[9px] px-2 h-4 rounded-full">{formalRequests.length}</Badge>
                        </Label>
                        <ScrollArea className="flex-1">
-                         <div className="space-y-2 pr-4 pb-4">
+                         <div className="space-y-1.5 pr-2 pb-4">
                            {formalRequests.map(req => (
-                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                                <div className="flex flex-col">
                                  <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
-                                 <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
+                                 <span className={cn("text-[10px] font-black truncate max-w-[130px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
                                </div>
                                <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
                              </button>
@@ -529,15 +526,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        </ScrollArea>
                      </div>
 
-                     <div className="space-y-3 flex flex-col h-1/2">
-                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full shrink-0">
+                     <div className="space-y-2 flex flex-col h-1/2">
+                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-1 flex items-center justify-between w-full shrink-0">
                          Mesa Operativa (Live) 
-                         <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
+                         <Badge className="bg-accent text-white text-[9px] px-2 h-4 rounded-full">{queue.length}</Badge>
                        </Label>
                        <ScrollArea className="flex-1">
-                         <div className="space-y-2 pr-4 pb-4">
+                         <div className="space-y-1.5 pr-2 pb-4">
                            {queue.map(req => (
-                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                                <div className="flex flex-col">
                                  <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                  <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA LIVE' : 'ACCESO REMOTO'}</span>
@@ -552,18 +549,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
 
                 <div className="space-y-2 shrink-0 pt-2 border-t">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
+                   <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-1 flex items-center justify-between w-full">Biblioteca <Plus className="h-3 w-3 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
                    <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                   <ScrollArea className="h-24">
-                     <div className="space-y-2 pr-4">
+                   <ScrollArea className="h-20">
+                     <div className="space-y-1.5 pr-2">
                        {techLibrary.map(f => (
-                         <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
-                            <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
+                         <div key={f.id} className="p-1.5 bg-white rounded-lg border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
+                            <div className="h-6 w-6 rounded bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
                             <div className="flex-1 min-w-0">
                                <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                  <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
-                                 <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
                                </div>
                             </div>
                          </div>
@@ -579,114 +575,114 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
-            <div className="h-28 w-28 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-14 w-14" /></div>
-            <div className="space-y-3">
-              <h3 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">CENTRO OPERATIVO</h3>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud de Servicio o un turno de Mesa Operativa en la columna izquierda para iniciar la atención.</p>
+            <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-12 w-12" /></div>
+            <div className="space-y-2">
+              <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">CENTRO OPERATIVO</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud de Servicio o un turno de Mesa Operativa en la columna izquierda para iniciar la atención.</p>
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
-          <div className="flex-1 flex flex-col p-6 md:p-8 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
+          <div className="flex-1 flex flex-col p-6 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
              <ScrollArea className="flex-1">
-               <div className="max-w-6xl mx-auto w-full space-y-6 pb-12">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-4 border-primary pb-6 gap-4">
-                     <div className="space-y-2">
+               <div className="max-w-6xl mx-auto w-full space-y-4 pb-12">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-4 border-primary pb-4 gap-4">
+                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
-                           <div className="bg-primary text-white font-mono text-xl px-4 py-1.5 rounded-xl shadow-lg border-2 border-white/20">{selectedFormal.id}</div>
-                           <Badge variant="outline" className="border-accent text-accent font-black uppercase text-[9px] px-4 h-6 tracking-widest bg-white shadow-sm">SOLICITUD FORMAL</Badge>
+                           <div className="bg-primary text-white font-mono text-lg px-3 py-1 rounded-xl shadow-lg border-2 border-white/20">{selectedFormal.id}</div>
+                           <Badge variant="outline" className="border-accent text-accent font-black uppercase text-[8px] px-3 h-5 tracking-widest bg-white">SOLICITUD FORMAL</Badge>
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight leading-none">{selectedFormal.requesterName}</h2>
+                        <h2 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">{selectedFormal.requesterName}</h2>
                         <div className="flex items-center gap-2">
                            <Clock className="h-3 w-3 text-slate-400" />
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RECIBIDO: {format(selectedFormal.timestamp, "dd/MM/yyyy HH:mm")}</span>
                         </div>
                      </div>
-                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-12 px-10 text-[10px] gap-3 shadow-xl hover:scale-105 transition-all">
-                        <CheckCircle2 className="h-5 w-5" /> REGISTRAR ATENCIÓN FINAL
+                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-10 px-6 text-[9px] gap-2 shadow-xl hover:scale-105 transition-all">
+                        <CheckCircle2 className="h-4 w-4" /> REGISTRAR ATENCIÓN FINAL
                      </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                     <div className="lg:col-span-3 space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                     <div className="lg:col-span-3 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all">
-                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Mail className="h-16 w-16" /></div>
-                              <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Contacto Institucional</Label>
-                              <p className="text-sm font-black text-slate-700 break-all">{selectedFormal.requesterEmail}</p>
+                           <div className="bg-white p-4 rounded-[1.5rem] shadow-lg border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all">
+                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Mail className="h-12 w-12" /></div>
+                              <Label className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1 block">Contacto Institucional</Label>
+                              <p className="text-xs font-black text-slate-700 break-all">{selectedFormal.requesterEmail}</p>
                            </div>
-                           <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:border-accent/20 transition-all">
-                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Tag className="h-16 w-16" /></div>
-                              <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Tema del Requerimiento</Label>
-                              <p className="text-sm font-black text-primary uppercase leading-tight">{selectedFormal.helpTopic}</p>
+                           <div className="bg-white p-4 rounded-[1.5rem] shadow-lg border border-slate-100 relative overflow-hidden group hover:border-accent/20 transition-all">
+                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Tag className="h-12 w-12" /></div>
+                              <Label className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1 block">Tema del Requerimiento</Label>
+                              <p className="text-xs font-black text-primary uppercase leading-tight">{selectedFormal.helpTopic}</p>
                            </div>
                         </div>
 
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-4 relative overflow-hidden">
-                           <div className="absolute top-0 right-0 p-8 opacity-5"><MessageSquare className="h-32 w-32" /></div>
-                           <Label className="text-[10px] font-black uppercase text-accent tracking-widest flex items-center gap-3 relative z-10">
-                             <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent"><MessageSquare className="h-5 w-5" /></div>
+                        <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 space-y-3 relative overflow-hidden">
+                           <div className="absolute top-0 right-0 p-8 opacity-5"><MessageSquare className="h-24 w-24" /></div>
+                           <Label className="text-[9px] font-black uppercase text-accent tracking-widest flex items-center gap-3 relative z-10">
+                             <div className="h-7 w-7 rounded-lg bg-accent/10 flex items-center justify-center text-accent"><MessageSquare className="h-4 w-4" /></div>
                              Detalle Técnico del Reporte
                            </Label>
-                           <div className="p-6 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 relative z-10">
-                              <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
+                           <div className="p-4 bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200 relative z-10">
+                              <p className="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
                            </div>
                         </div>
                      </div>
 
-                     <div className="space-y-6">
-                        <div className="bg-primary p-6 rounded-[2.5rem] shadow-xl border-4 border-white flex flex-col gap-4 relative overflow-hidden group transition-all">
-                           <div className="absolute -top-4 -right-4 opacity-10 group-hover:rotate-12 transition-transform duration-700"><School className="h-32 w-32" /></div>
-                           <Label className="text-[9px] font-black uppercase text-white/60 tracking-widest flex items-center gap-2">
-                             <School className="h-4 w-4" /> Plantel (CCT)
+                     <div className="space-y-4">
+                        <div className="bg-primary p-4 rounded-[2rem] shadow-xl border-4 border-white flex flex-col gap-2 relative overflow-hidden group">
+                           <div className="absolute -top-4 -right-4 opacity-10 group-hover:rotate-12 transition-transform duration-700"><School className="h-24 w-24" /></div>
+                           <Label className="text-[8px] font-black uppercase text-white/60 tracking-widest flex items-center gap-2">
+                             <School className="h-3 w-3" /> Plantel (CCT)
                            </Label>
-                           <h4 className="text-3xl font-black text-white font-mono tracking-tighter drop-shadow-md">{selectedFormal.cct}</h4>
+                           <h4 className="text-2xl font-black text-white font-mono tracking-tighter">{selectedFormal.cct}</h4>
                         </div>
 
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-primary/5 space-y-6">
-                           <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-3">
-                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><FileBox className="h-5 w-5" /></div>
+                        <div className="bg-white p-5 rounded-[2rem] shadow-xl border border-primary/5 space-y-4">
+                           <Label className="text-[9px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><FileBox className="h-4 w-4" /></div>
                              Expediente Digital
                            </Label>
-                           <div className="space-y-4">
+                           <div className="space-y-3">
                               {selectedFormal.pdfData ? (
-                                <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex flex-col gap-4 group transition-all hover:bg-rose-100/30">
-                                   <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-rose-600 border border-rose-50"><FileText className="h-6 w-6" /></div>
+                                <div className="p-3 bg-rose-50 rounded-xl border border-rose-100 flex flex-col gap-3 group transition-all hover:bg-rose-100/30">
+                                   <div className="flex items-center gap-2">
+                                      <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-md text-rose-600 border border-rose-50"><FileText className="h-5 w-5" /></div>
                                       <div className="flex-1 min-w-0">
-                                         <p className="text-[9px] font-black text-slate-800 uppercase truncate">Solicitud (PDF)</p>
+                                         <p className="text-[8px] font-black text-slate-800 uppercase truncate">Solicitud (PDF)</p>
                                          <p className="text-[7px] font-bold text-rose-400 truncate">{selectedFormal.pdfName}</p>
                                       </div>
                                    </div>
-                                   <div className="flex flex-col gap-2">
-                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-9 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/90 transition-all gap-2 shadow-lg"><Eye className="h-4 w-4" /> VISTA PREVIA</Button>
+                                   <div className="flex flex-col gap-1.5">
+                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-8 rounded-lg text-[8px] font-black uppercase bg-primary text-white hover:bg-primary/90 transition-all gap-2 shadow-lg"><Eye className="h-3.5 w-3.5" /> VISTA PREVIA</Button>
                                       <div className="grid grid-cols-2 gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-8 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Download className="h-3.5 w-3.5" /></Button>
-                                        <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-8 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Printer className="h-3.5 w-3.5" /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-7 rounded-lg text-[7px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Download className="h-3 w-3" /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-7 rounded-lg text-[7px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Printer className="h-3 w-3" /></Button>
                                       </div>
                                    </div>
                                 </div>
                               ) : (
-                                <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
-                                  <FileText className="h-5 w-5 text-slate-300" />
-                                  <p className="text-[8px] font-black uppercase">SIN PDF ADJUNTO</p>
+                                <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-1">
+                                  <FileText className="h-4 w-4 text-slate-300" />
+                                  <p className="text-[7px] font-black uppercase">SIN PDF ADJUNTO</p>
                                 </div>
                               )}
 
                               {selectedFormal.excelData ? (
-                                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col gap-4 group transition-all hover:bg-emerald-100/30">
-                                   <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
+                                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col gap-3 group transition-all hover:bg-emerald-100/30">
+                                   <div className="flex items-center gap-2">
+                                      <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-md text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-5 w-5" /></div>
                                       <div className="flex-1 min-w-0">
-                                         <p className="text-[9px] font-black text-slate-800 uppercase truncate">Base Datos (EXCEL)</p>
+                                         <p className="text-[8px] font-black text-slate-800 uppercase truncate">Base Datos (EXCEL)</p>
                                          <p className="text-[7px] font-bold text-emerald-400 truncate">{selectedFormal.excelName}</p>
                                       </div>
                                    </div>
-                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName!)} className="w-full h-9 rounded-xl text-[8px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-2"><Download className="h-4 w-4" /> BAJAR EXCEL</Button>
+                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName!)} className="w-full h-8 rounded-lg text-[8px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-2"><Download className="h-3.5 w-3.5" /> BAJAR EXCEL</Button>
                                 </div>
                               ) : (
-                                <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
-                                  <FileSpreadsheet className="h-5 w-5 text-slate-300" />
-                                  <p className="text-[8px] font-black uppercase">SIN EXCEL ADJUNTO</p>
+                                <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-1">
+                                  <FileSpreadsheet className="h-4 w-4 text-slate-300" />
+                                  <p className="text-[7px] font-black uppercase">SIN EXCEL ADJUNTO</p>
                                 </div>
                               )}
                            </div>
@@ -698,57 +694,57 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         ) : (
           <>
-            <header className={cn("px-6 md:px-10 py-4 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
-              <div className="flex items-center gap-6">
-                <div className="hidden xs:flex h-14 w-14 rounded-2xl bg-[#9f2241] text-white items-center justify-center shadow-2xl relative overflow-hidden group">
-                  {isPublic ? <Bot className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
+            <header className={cn("px-6 py-3 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
+              <div className="flex items-center gap-4">
+                <div className="xs:flex h-12 w-12 rounded-xl bg-[#9f2241] text-white items-center justify-center shadow-2xl relative overflow-hidden group">
+                  {isPublic ? <Bot className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <UserCog className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg md:text-xl font-black text-slate-800 uppercase leading-none tracking-tight truncate">{isPublic ? "ASISTENTE COEES" : "MESA OPERATIVA LIVE"}</h2>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <h2 className="text-base md:text-lg font-black text-slate-800 uppercase leading-none tracking-tight truncate">{isPublic ? "ASISTENTE COEES" : "MESA OPERATIVA LIVE"}</h2>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <div className="flex items-center gap-1.5 shrink-0">
-                       <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                       <p className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO</p>
+                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                       <p className="text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO</p>
                     </div>
-                    {activeChatId && <Badge className="text-[8px] md:text-[9px] font-mono bg-[#B38E5D] text-white px-3 h-5 rounded-xl border-none">{activeChatId}</Badge>}
+                    {activeChatId && <Badge className="text-[7px] md:text-[8px] font-mono bg-[#B38E5D] text-white px-2 h-4 rounded-lg border-none">{activeChatId}</Badge>}
                     {isPublic && (
                       <div className="flex gap-2 items-center ml-1">
-                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-white hover:bg-primary pl-3 pr-4 h-10 rounded-xl shadow-xl border-2 border-primary/20 transition-all group animate-pulse hover:animate-none">
-                           <div className="h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors"><FilePlus className="h-5 w-5" /></div>
-                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu atención de servicio</span></div>
+                         <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-white hover:bg-primary px-3 h-8 rounded-lg shadow-lg border border-primary/20 transition-all group">
+                           <div className="h-5 w-5 rounded bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors"><FilePlus className="h-3.5 w-3.5" /></div>
+                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span></div>
                          </button>
-                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Seguimiento de Folio"><Search className="h-4 w-4" /></button>
+                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-8 w-8 rounded-lg bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Seguimiento de Folio"><Search className="h-3.5 w-3.5" /></button>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} size="sm" className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[9px] uppercase h-10 px-4 md:px-8 rounded-xl shadow-2xl transition-all active:scale-95 gap-2"><CheckCircle2 className="h-4 w-4" /> FINALIZAR</Button>}
+              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} size="sm" className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[9px] uppercase h-9 px-6 rounded-xl shadow-2xl transition-all active:scale-95 gap-2"><CheckCircle2 className="h-3.5 w-3.5" /> FINALIZAR</Button>}
             </header>
-            <ScrollArea className="flex-1 px-6 py-10">
-              <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-12">
+            <ScrollArea className="flex-1 px-6 py-8">
+              <div className="max-w-4xl mx-auto space-y-6 min-h-full flex flex-col justify-end pb-8">
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
                   return (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", isMe ? "justify-end" : "justify-start")}>
-                      <div className={cn("flex gap-5 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
-                        <div className={cn("h-10 w-10 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-xl border-2 border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
-                          {msg.role === 'user' ? <GraduationCap className="h-5 w-5" /> : msg.role === 'tech' ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                      <div className={cn("flex gap-3 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
+                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg border border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
+                          {msg.role === 'user' ? <GraduationCap className="h-4 w-4" /> : msg.role === 'tech' ? <UserCog className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                         </div>
-                        <div className="space-y-1.5">
-                          {msg.senderName && <span className={cn("text-[8px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
-                          <div className={cn("p-5 rounded-[2.25rem] text-[13px] font-semibold shadow-2xl border leading-relaxed relative", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
+                        <div className="space-y-1">
+                          {msg.senderName && <span className={cn("text-[7px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
+                          <div className={cn("p-3.5 rounded-2xl text-xs font-semibold shadow-xl border leading-relaxed relative", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                             {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                             {msg.fileData && (
-                              <div className={cn("mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer transition-all hover:brightness-95", isMe ? "bg-white/15 border-white/20" : "bg-slate-50 border-slate-100")} onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
-                                <div className="h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-lg">{getFileIcon(msg.fileType || '')}</div>
-                                <div className="flex-1 min-w-0"><p className={cn("text-[11px] font-black truncate uppercase", isMe ? "text-white" : "text-slate-800")}>{msg.fileName}</p></div>
-                                <Download className={cn("h-4 w-4", isMe ? "text-white/60" : "text-slate-300")} />
+                              <div className={cn("mt-3 p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all hover:brightness-95", isMe ? "bg-white/15 border-white/20" : "bg-slate-50 border-slate-100")} onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
+                                <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-lg">{getFileIcon(msg.fileType || '')}</div>
+                                <div className="flex-1 min-w-0"><p className={cn("text-[9px] font-black truncate uppercase", isMe ? "text-white" : "text-slate-800")}>{msg.fileName}</p></div>
+                                <Download className={cn("h-3.5 w-3.5", isMe ? "text-white/60" : "text-slate-300")} />
                               </div>
                             )}
-                            <div className={cn("text-[8px] mt-3 font-black uppercase opacity-60 flex items-center gap-2", isMe ? "justify-end" : "justify-start")}>
-                              <Clock className="h-3 w-3" /> {mounted ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                            <div className={cn("text-[7px] mt-2 font-black uppercase opacity-60 flex items-center gap-1.5", isMe ? "justify-end" : "justify-start")}>
+                              <Clock className="h-2.5 w-2.5" /> {mounted ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                             </div>
                           </div>
                         </div>
@@ -759,14 +755,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div ref={scrollRef} />
               </div>
             </ScrollArea>
-            <footer className="p-8 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0 relative z-10">
-              <div className="max-w-4xl mx-auto flex gap-5">
+            <footer className="p-4 md:p-6 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0 relative z-10">
+              <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
-                  <Input placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} className="h-16 rounded-[1.5rem] bg-white border-2 border-slate-100 px-8 pr-16 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
-                  <button onClick={() => fileInputRef.current?.click()} className="absolute right-6 top-4 h-8 w-8 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50"><Paperclip className="h-5 w-5" /></button>
+                  <Input placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} className="h-12 rounded-xl bg-white border-2 border-slate-100 px-6 pr-12 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-xs transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+                  <button onClick={() => fileInputRef.current?.click()} className="absolute right-4 top-2.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-lg hover:bg-slate-50"><Paperclip className="h-4 w-4" /></button>
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 </div>
-                <button onClick={() => handleSendMessage()} disabled={!input.trim()} className="h-16 w-16 rounded-[1.5rem] bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center group"><Send className="h-7 w-7 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></button>
+                <button onClick={() => handleSendMessage()} disabled={!input.trim()} className="h-12 w-12 rounded-xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center group"><Send className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></button>
               </div>
             </footer>
           </>
@@ -775,28 +771,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* DIÁLOGOS DE SOLICITUD Y SEGUIMIENTO */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
+        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
             <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
             <DialogDescription className="sr-only">Complete el formulario oficial para solicitar atención técnica institucional.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-4 space-y-4">
-             <div className="space-y-2">
+             <div className="space-y-3">
                 <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5">Información del Solicitante</h4>
                 <div className="space-y-1">
                   <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
-                  <Input placeholder="PATERNO MATERNO NOMBRES..." className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
+                  <Input placeholder="PATERNO MATERNO NOMBRES..." className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
-                    <Input placeholder="ejemplo@desysa.edu.mx" className="h-9 bg-slate-50 border-none rounded-xl text-[9px] font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
+                    <Input placeholder="ejemplo@desysa.edu.mx" className="h-9 bg-slate-50 border-none rounded-lg text-[9px] font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
                     <Select value={helpTopic} onValueChange={val => { setHelpTopic(val); if (val === 'cuenta') setIsResponsivaOpen(true); }} >
-                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-xl text-[8px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
+                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg text-[8px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="cuenta" className="text-[9px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
                         <SelectItem value="transmision" className="text-[9px] font-bold uppercase">Transmisión</SelectItem>
@@ -807,41 +803,41 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                 </div>
              </div>
-             <div className="space-y-2">
+             <div className="space-y-3">
                 <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5">Datos del Servicio</h4>
                 <div className="grid grid-cols-2 gap-2">
-                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">CCT</Label><Input placeholder="15DES0000X" className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
-                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Detalle</Label><Input placeholder="DESCRIPCIÓN..." className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
+                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label><Input placeholder="15DES0000X" className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
+                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Detalle Breve</Label><Input placeholder="DESCRIPCIÓN..." className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-lg p-2 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
                       <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-500")} />
-                      <span className={cn("text-[7px] font-black uppercase truncate", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Solicitud en PDF"}</span>
+                      <div className="flex flex-col min-w-0"><span className={cn("text-[7px] font-black uppercase truncate", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Solicitud PDF"}</span><span className="text-[5px] text-slate-400 uppercase">Click para subir</span></div>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                    </div>
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
+                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-lg p-2 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
                       <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-500")} />
-                      <span className={cn("text-[7px] font-black uppercase truncate", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Archivo Excel"}</span>
+                      <div className="flex flex-col min-w-0"><span className={cn("text-[7px] font-black uppercase truncate", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Archivo Excel"}</span><span className="text-[5px] text-slate-400 uppercase">Click para subir</span></div>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                    </div>
                 </div>
              </div>
           </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-3 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-8 px-4 text-[9px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-10 px-8 text-[10px]">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-10 px-8 text-[9px]">ENVIAR SOLICITUD</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
-        <DialogContent className="sm:max-w-[620px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-[620px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-white text-lg">CARTA RESPONSIVA INSTITUCIONAL</DialogTitle>
             <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">REGLAS DE OPERACIÓN DEL CORREO ELECTRÓNICO</DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 bg-[#fdfaf5]">
-            <div className="p-8 space-y-6 text-[11px] leading-relaxed text-slate-700 text-justify font-medium">
-               <p className="font-bold text-[#9f2241] border-b border-primary/10 pb-4 uppercase tracking-tighter">Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx.</p>
+            <div className="p-8 space-y-4 text-[10px] leading-relaxed text-slate-700 text-justify font-medium">
+               <p className="font-bold text-[#9f2241] border-b border-primary/10 pb-3 uppercase tracking-tighter">Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx.</p>
                
-               <div className="grid grid-cols-1 gap-4">
+               <div className="grid grid-cols-1 gap-3">
                   {[
                     "El servicio de correo electrónico deberá usarse exclusivamente para asuntos relacionados con el organismo y sus instituciones.",
                     "Las cuentas de correo son personales. Por lo cual, los titulares de las cuentas son responsables directos del buen uso de las mismas.",
@@ -852,35 +848,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     "Es responsabilidad de los titulares de las cuentas de correo electrónico, respaldar la información (mensajes) en medios magnéticos u ópticos, para su restauración en caso de pérdida o destrucción parcial o total.",
                     "Estas cuentas son un medio de comunicación de la estructura de la DESySA, por lo que el titular está obligado a consultarla y realizar revisiones periódicas al buzón con la finalidad de depurarlo y asegurar la buena recepción de mensajes."
                   ].map((text, i) => (
-                    <div key={i} className="flex gap-4 items-start bg-white/50 p-4 rounded-2xl border border-primary/5 shadow-sm">
-                       <div className="h-6 w-6 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">{i+1}</div>
+                    <div key={i} className="flex gap-4 items-start bg-white/50 p-3 rounded-xl border border-primary/5 shadow-sm">
+                       <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shrink-0 shadow-md">{i+1}</div>
                        <p className="pt-0.5">{text}</p>
                     </div>
                   ))}
                </div>
-               <p className="font-black text-center text-[9px] uppercase text-slate-400 py-4 italic">Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.</p>
+               <p className="font-black text-center text-[8px] uppercase text-slate-400 py-3 italic">Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.</p>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-6 bg-slate-50 border-t shrink-0">
-             <Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-14 text-[11px]">ACEPTO Y CONTINUAR</Button>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+             <Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-12 text-[10px]">ACEPTO Y CONTINUAR</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-10 overflow-hidden bg-white text-center">
+        <DialogContent className="sm:max-w-[380px] rounded-[2rem] border-none shadow-2xl p-8 overflow-hidden bg-white text-center">
             <DialogHeader className="sr-only">
                <DialogTitle>Solicitud Registrada Exitosamente</DialogTitle>
                <DialogDescription>Aviso de generación de folio institucional COEES.</DialogDescription>
             </DialogHeader>
-            <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
-            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2 mb-8">Su solicitud ha sido recibida correctamente. Use el siguiente número para consultar el estatus.</p>
-            <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner mb-6">
-               <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-2">FOLIO DE SEGUIMIENTO</p>
-               <h4 className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
+            <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-1 mb-6">Su solicitud ha sido recibida correctamente. Use el siguiente número para consultar el estatus.</p>
+            <div className="bg-slate-50 p-5 rounded-[1.5rem] border-2 border-primary/10 shadow-inner mb-6">
+               <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-1">FOLIO DE SEGUIMIENTO</p>
+               <h4 className="text-2xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
             </div>
-            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-14 rounded-2xl shadow-xl">ENTENDIDO</Button>
+            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-12 rounded-xl shadow-xl">ENTENDIDO</Button>
         </DialogContent>
       </Dialog>
 
@@ -910,18 +906,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </Dialog>
 
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+        <DialogContent className="sm:max-w-[420px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-4 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
             <DialogDescription className="sr-only">Registrar el fin de la atención técnica para auditoría y archivo histórico.</DialogDescription>
           </DialogHeader>
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
               <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Plantel Atendido</Label>
               <div className="relative">
-                 <Input placeholder="CCT O NOMBRE..." className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
+                 <Input placeholder="CCT O NOMBRE..." className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
                  {finishSearchTerm.length > 2 && (
-                  <div className="absolute left-0 right-0 top-10 max-h-32 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50">
+                  <div className="absolute left-0 right-0 top-9 max-h-32 overflow-y-auto bg-white border border-slate-100 rounded-lg shadow-xl divide-y z-50">
                     {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
                       <div key={`${s.cct}-${s.turno}`} className="p-2 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
                         <div className="flex flex-col"><span className="text-[9px] font-black uppercase">{s.nombre}</span><span className="text-[7px] font-mono text-slate-400">{s.cct}</span></div>
@@ -930,37 +926,37 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                  )}
               </div>
-              {finishForm.cct && <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-2"><div className="h-6 w-6 rounded bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
+              {finishForm.cct && <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-2"><div className="h-5 w-5 rounded bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div><div className="flex-1 min-w-0"><h4 className="text-[9px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-9 bg-slate-50 border-none rounded-xl text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO COEES</Label><div className="h-9 bg-slate-100 rounded-xl flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber || selectedFormal?.id}</div></div>
+              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO COEES</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[9px]">{selectedRequest?.ticketNumber || selectedFormal?.id}</div></div>
             </div>
-            <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen Operativo</Label><Textarea placeholder="ACCIONES REALIZADAS..." className="h-20 bg-slate-50 border-none rounded-xl p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
+            <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen Operativo</Label><Textarea placeholder="ACCIONES REALIZADAS..." className="h-20 bg-slate-50 border-none rounded-lg p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-10 px-6 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2"><Save className="h-4 w-4" /> REGISTRAR</Button></DialogFooter>
+          <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-9 px-6 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[9px] gap-2"><Save className="h-4 w-4" /> REGISTRAR</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* VISOR DE PDF INTEGRADO */}
       <Dialog open={!!pdfToPreview} onOpenChange={() => setPdfToPreview(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2rem] border-none shadow-2xl">
+          <DialogHeader className="p-5 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-                <FileText className="h-6 w-6 text-accent" /> VISOR OFICIAL COEES
+              <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3">
+                <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documentación Técnica Certificada</DialogDescription>
+              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documentación Técnica Certificada</DialogDescription>
             </div>
-            <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl">
-               <Printer className="h-4 w-4" /> Imprimir Documento
+            <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[9px] uppercase h-9 px-5 rounded-lg gap-2 shadow-xl">
+               <Printer className="h-3.5 w-3.5" /> Imprimir Documento
             </Button>
           </DialogHeader>
-          <div className="flex-1 bg-slate-800 p-2">
+          <div className="flex-1 bg-slate-800 p-1">
              <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
           </div>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR VISOR</Button>
+          <DialogFooter className="p-3 bg-slate-50 border-t shrink-0">
+             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-9 px-8 font-black uppercase text-[9px]">CERRAR VISOR</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
