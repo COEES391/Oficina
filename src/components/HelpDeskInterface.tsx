@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -155,6 +156,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     valle: '',
     oficinaRegionalAtencion: ''
   })
+  
+  const [pdfToPreview, setPdfToPreview] = useState<string | null>(null)
   
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -657,9 +660,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                          <p className="text-[8px] font-bold text-rose-400 truncate mt-1">{selectedFormal.pdfName}</p>
                                       </div>
                                    </div>
-                                   <div className="grid grid-cols-2 gap-3">
-                                      <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Download className="h-4 w-4" /> Bajar</Button>
-                                      <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Printer className="h-4 w-4" /> Imprimir</Button>
+                                   <div className="grid grid-cols-1 gap-3">
+                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-11 rounded-xl text-[10px] font-black uppercase bg-primary text-white hover:bg-primary/90 transition-all gap-3 shadow-lg shadow-primary/20"><Eye className="h-5 w-5" /> VISTA PREVIA</Button>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Download className="h-4 w-4" /> Bajar</Button>
+                                        <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Printer className="h-4 w-4" /> Imprimir</Button>
+                                      </div>
                                    </div>
                                 </div>
                               ) : (
@@ -811,14 +817,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Detalle</Label><Input placeholder="DESCRIPCIÓN..." className="h-9 bg-slate-50 border-none rounded-xl text-[10px] font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-2">
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", pdfFile ? "border-rose-300" : "border-slate-200")}>
-                      <FileText className="h-4 w-4 text-rose-500" />
-                      <span className="text-[7px] font-black uppercase truncate">{pdfFile ? pdfFile.name : "1. Solicitud en PDF"}</span>
+                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
+                      <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-500")} />
+                      <span className={cn("text-[7px] font-black uppercase truncate", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Solicitud en PDF"}</span>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                    </div>
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", excelFile ? "border-emerald-300" : "border-slate-200")}>
-                      <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                      <span className="text-[7px] font-black uppercase truncate">{excelFile ? excelFile.name : "2. Archivo Excel"}</span>
+                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
+                      <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-500")} />
+                      <span className={cn("text-[7px] font-black uppercase truncate", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Archivo Excel"}</span>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                    </div>
                 </div>
@@ -936,6 +942,29 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen Operativo</Label><Textarea placeholder="ACCIONES REALIZADAS..." className="h-20 bg-slate-50 border-none rounded-xl p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>
           <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-10 px-6 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2"><Save className="h-4 w-4" /> REGISTRAR</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* VISOR DE PDF INTEGRADO */}
+      <Dialog open={!!pdfToPreview} onOpenChange={() => setPdfToPreview(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+                <FileText className="h-6 w-6 text-accent" /> VISOR OFICIAL COEES
+              </DialogTitle>
+              <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documentación Técnica Certificada</DialogDescription>
+            </div>
+            <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl">
+               <Printer className="h-4 w-4" /> Imprimir Documento
+            </Button>
+          </DialogHeader>
+          <div className="flex-1 bg-slate-800 p-2">
+             <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
+          </div>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR VISOR</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
