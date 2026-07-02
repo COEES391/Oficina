@@ -48,7 +48,8 @@ import {
   FilePlus,
   Search,
   Mail,
-  Tag
+  Tag,
+  Headset
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -116,6 +117,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
+  // State para activar columna AnyDesk en vista pública por palabras clave
+  const [isRemoteHelpRequested, setIsRemoteHelpRequested] = useState(false)
+
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [isResponsivaOpen, setIsResponsivaOpen] = useState(false)
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
@@ -247,9 +251,31 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Lógica para detectar palabras clave y activar AnyDesk
+  useEffect(() => {
+    if (isPublic && !isRemoteHelpRequested) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.role === 'user') {
+        const text = lastMsg.content.toLowerCase();
+        if (text.includes('office') || text.includes('windows')) {
+          setIsRemoteHelpRequested(true);
+          toast({
+            title: "Soporte Remoto Activado",
+            description: "Se ha desplegado el panel de AnyDesk para apoyarte con tu solicitud.",
+          });
+        }
+      }
+    }
+  }, [messages, isPublic, isRemoteHelpRequested, toast]);
+
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
     if (!input.trim() && !fileData) return
     let updatedActiveChatId = activeChatId || sessionKey;
+
+    // Trigger de palabra clave al escribir (por si no se envía el mensaje)
+    if (isPublic && (input.toLowerCase().includes('office') || input.toLowerCase().includes('windows'))) {
+      setIsRemoteHelpRequested(true);
+    }
 
     const newMessage: Message = { role: isPublic ? 'user' : 'tech', content: input, timestamp: Date.now(), senderName: !isPublic ? techName : undefined, fileData: fileData?.data, fileName: fileData?.name, fileType: fileData?.type }
     const historyKey = `atres_chat_${updatedActiveChatId}`
@@ -260,6 +286,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
 
     input && setInput('')
+  }
+
+  const handleRequestRemoteSupport = () => {
+    if (remoteId.length < 9) { toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese su ID de 9 dígitos." }); return; }
+    const turn = generateSequentialFolio();
+    const newReq: SupportRequest = { remoteId, ticketNumber: turn, timestamp: Date.now(), status: 'pending', requestType: 'remote', chatKey: sessionKey }
+    const rawQueue = localStorage.getItem('atres_support_queue'); const currentQueue = JSON.parse(rawQueue || '[]');
+    localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify([...currentQueue, newReq]) }))
+    setActiveTicketNumber(turn);
+    toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}` });
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -365,6 +402,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
 
+  // Determinar si mostrar la columna izquierda
+  const showLeftColumn = !isPublic || (isPublic && isRemoteHelpRequested);
+
   if (!mounted) return null
 
   return (
@@ -372,86 +412,122 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* COLUMNA IZQUIERDA - SOLO ANALISTA (No visible en Public para restaurar diseño anterior) */}
-      {!isPublic && (
-        <div className="w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60">
-           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-              <div className="space-y-4 shrink-0">
-                 <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
-                    <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
-                    <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
-                    <div className="flex items-end gap-2 mt-1">
-                       <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
-                       <Target className="h-4 w-4 mb-1 text-accent" />
+      {showLeftColumn && (
+        <div className="w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60 animate-in slide-in-from-left duration-500">
+           {isPublic ? (
+             <div className="flex-1 flex flex-col gap-4">
+                <div className="space-y-4">
+                  <div className="bg-[#9f2241] p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Monitor className="h-20 w-20" /></div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Soporte Remoto</Label>
+                    <h3 className="text-xl font-black uppercase mt-1 leading-none">AnyDesk / TeamViewer</h3>
+                    <div className="mt-6 space-y-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-white/60 pl-1">ID de Conexión</Label>
+                        <Input placeholder="000 000 000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 font-mono text-center text-lg h-12 rounded-2xl shadow-inner" value={remoteId} onChange={e => setRemoteId(e.target.value.replace(/\D/g,''))} maxLength={9} />
+                      </div>
+                      <Button onClick={handleRequestRemoteSupport} className="w-full bg-white text-[#9f2241] hover:bg-[#f8f8f8] font-black uppercase text-[10px] tracking-widest h-14 rounded-2xl shadow-xl active:scale-95 transition-all">Solicitar Soporte</Button>
                     </div>
-                 </div>
-              </div>
+                  </div>
 
-              <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
-                 <div className="flex flex-col gap-4">
-                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">
-                       Solicitudes de Servicio 
-                       <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
-                     </Label>
-                     <ScrollArea className="h-48">
-                       <div className="space-y-2 pr-4">
-                         {formalRequests.map(req => (
-                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                             <div className="flex flex-col">
-                               <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
-                               <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
-                             </div>
-                             <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
-                           </button>
-                         ))}
-                       </div>
-                     </ScrollArea>
+                  <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-5">
+                    <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /> Apoyo Remoto</p>
+                    <div className="space-y-4">
+                      {[
+                        { step: "1", text: "Descargue software AnyDesk." },
+                        { step: "2", text: "Localice su ID personal." },
+                        { step: "3", text: "Péguelo arriba y solicite soporte." },
+                        { step: "4", text: "Espere conexión del analista." }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex gap-4 items-start group">
+                          <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-[#9f2241] shrink-0 shadow-sm group-hover:bg-[#9f2241] group-hover:text-white transition-colors">{item.step}</div>
+                          <p className="text-[11px] font-semibold text-slate-600 leading-tight uppercase pt-1">{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <Button variant="ghost" onClick={() => setIsRemoteHelpRequested(false)} className="mt-auto text-[9px] font-black uppercase text-slate-400 gap-2"><X className="h-3 w-3" /> Ocultar Panel</Button>
+             </div>
+           ) : (
+             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+                <div className="space-y-4 shrink-0">
+                   <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
+                      <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
+                      <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
+                      <div className="flex items-end gap-2 mt-1">
+                         <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
+                         <Target className="h-4 w-4 mb-1 text-accent" />
+                      </div>
                    </div>
+                </div>
 
-                   <div className="space-y-3">
-                     <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">
-                       Mesa Operativa (Live) 
-                       <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
-                     </Label>
-                     <ScrollArea className="h-40">
-                       <div className="space-y-2 pr-4">
-                         {queue.map(req => (
-                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                             <div className="flex flex-col">
-                               <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                               <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
-                             </div>
-                             <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
-                           </button>
-                         ))}
-                       </div>
-                     </ScrollArea>
-                   </div>
-                 </div>
-              </div>
+                <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+                   <div className="flex flex-col gap-4">
+                     <div className="space-y-3">
+                       <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">
+                         Solicitudes de Servicio 
+                         <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
+                       </Label>
+                       <ScrollArea className="h-48">
+                         <div className="space-y-2 pr-4">
+                           {formalRequests.map(req => (
+                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                               <div className="flex flex-col">
+                                 <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
+                                 <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
+                               </div>
+                               <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
+                             </button>
+                           ))}
+                         </div>
+                       </ScrollArea>
+                     </div>
 
-              <div className="space-y-2 shrink-0">
-                 <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
-                 <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                 <ScrollArea className="h-28">
-                   <div className="space-y-2 pr-4">
-                     {techLibrary.map(f => (
-                       <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
-                          <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
-                          <div className="flex-1 min-w-0">
-                             <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
-                               <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
-                             </div>
-                          </div>
-                       </div>
-                     ))}
+                     <div className="space-y-3">
+                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">
+                         Mesa Operativa (Live) 
+                         <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
+                       </Label>
+                       <ScrollArea className="h-40">
+                         <div className="space-y-2 pr-4">
+                           {queue.map(req => (
+                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                               <div className="flex flex-col">
+                                 <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                                 <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
+                               </div>
+                               <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                             </button>
+                           ))}
+                         </div>
+                       </ScrollArea>
+                     </div>
                    </div>
-                 </ScrollArea>
-              </div>
-           </div>
+                </div>
+
+                <div className="space-y-2 shrink-0">
+                   <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
+                   <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
+                   <ScrollArea className="h-28">
+                     <div className="space-y-2 pr-4">
+                       {techLibrary.map(f => (
+                         <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
+                            <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
+                            <div className="flex-1 min-w-0">
+                               <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
+                               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
+                                 <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
+                               </div>
+                            </div>
+                         </div>
+                       ))}
+                     </div>
+                   </ScrollArea>
+                </div>
+             </div>
+           )}
         </div>
       )}
 
@@ -535,7 +611,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            <div className="h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors"><FilePlus className="h-5 w-5" /></div>
                            <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu atención de servicio</span></div>
                          </button>
-                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Estatus"><Search className="h-4 w-4" /></button>
+                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Seguimiento de Folio"><Search className="h-4 w-4" /></button>
                       </div>
                     )}
                   </div>
