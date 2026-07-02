@@ -5,7 +5,19 @@ export type AppUser = {
   name: string;
   password: string;
   role: 'admin' | 'user';
-  privileges: string[]; // ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+  privileges: string[]; // ['bitacora-atres', 'planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+};
+
+export type BitacoraEntry = {
+  id: string;
+  folio: string;
+  cct: string;
+  schoolName: string;
+  servicio: string;
+  oficina: string;
+  fecha: string;
+  tecnico: string;
+  tipo: 'FORMAL' | 'LIVE';
 };
 
 export type VisitSchedule = {
