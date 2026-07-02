@@ -170,12 +170,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const generateSequentialFolio = () => {
     const now = new Date();
     const year = now.getFullYear();
+    // Ciclo escolar en México suele iniciar en agosto (mes 7)
     const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-    const counterKey = `atres_folio_counter_${cycle}`;
+    const counterKey = `coees_folio_counter_${cycle}`;
     const lastCounter = parseInt(localStorage.getItem(counterKey) || '0', 10);
     const nextCounter = lastCounter + 1;
     localStorage.setItem(counterKey, nextCounter.toString());
-    return `ATRES-${nextCounter.toString().padStart(5, '0')}`;
+    return `COEES-${nextCounter.toString().padStart(5, '0')}`;
   }
 
   const updateAttendedCount = useCallback(() => {
@@ -930,7 +931,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="space-y-1.5">
                 <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Número de Seguimiento</Label>
                 <div className="flex gap-2">
-                   <Input placeholder="ATRES-00000" className="h-9 bg-slate-50 border-none rounded-lg text-[11px] font-mono font-black uppercase flex-1 shadow-inner" value={trackFolioInput} onChange={e => setTrackFolioInput(e.target.value.toUpperCase())} />
+                   <Input placeholder="COEES-00001" className="h-9 bg-slate-50 border-none rounded-lg text-[11px] font-mono font-black uppercase flex-1 shadow-inner" value={trackFolioInput} onChange={e => setTrackFolioInput(e.target.value.toUpperCase())} />
                    <Button onClick={handleTrackFolio} className="h-9 w-9 p-0 rounded-lg bg-primary hover:bg-primary/90 text-white shadow-lg"><Search className="h-4 w-4" /></Button>
                 </div>
              </div>
