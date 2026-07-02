@@ -48,8 +48,7 @@ import {
   FilePlus,
   Search,
   Mail,
-  Tag,
-  Check
+  Tag
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -108,7 +107,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [input, setInput] = useState('')
   const [remoteId, setRemoteId] = useState('') 
   const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
-  const [isRemoteRequested, setIsRemoteRequested] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [formalRequests, setFormalRequests] = useState<FormalRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
@@ -281,21 +279,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     reader.readAsDataURL(file); e.target.value = '';
   }
 
-  const handleRequestRemote = () => {
-    if (!remoteId || remoteId.length < 5) { toast({ variant: "destructive", title: "ID Inválido" }); return; }
-    let folio = activeTicketNumber || generateSequentialFolio();
-    const rawQueue = localStorage.getItem('atres_support_queue')
-    const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
-    const newReq: SupportRequest = { remoteId, ticketNumber: folio, timestamp: Date.now(), status: 'pending', requestType: 'remote', chatKey: sessionKey }
-    const exists = currentQueue.findIndex(r => r.ticketNumber === folio || r.chatKey === sessionKey);
-    let nQueue = exists >= 0 ? [...currentQueue] : [newReq, ...currentQueue];
-    if (exists >= 0) nQueue[exists] = newReq;
-    localStorage.setItem('atres_support_queue', JSON.stringify(nQueue))
-    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify(nQueue) }))
-    setIsRemoteRequested(true);
-    toast({ title: "Remoto Solicitado", description: `Folio: ${folio}` });
-  }
-
   const handleTrackFolio = () => {
     if (!trackFolioInput) return;
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
@@ -389,135 +372,88 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* COLUMNA IZQUIERDA SEGREGADA */}
-      <div className={cn(
-        "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
-        isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
-      )}>
-        {isPublic ? (
-          <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-             <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
-                <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
-                  <Monitor className="h-24 w-24 text-[#9f2241]" />
-                </div>
-                <div className="relative z-10 space-y-4">
-                   <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">ID ANYDESK / TEAMVIEWER</Label>
-                      <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
-                         <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
-                         <Input placeholder="000 000 000" className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} />
-                      </div>
+      {/* COLUMNA IZQUIERDA - SOLO ANALISTA (No visible en Public para restaurar diseño anterior) */}
+      {!isPublic && (
+        <div className="w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60">
+           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+              <div className="space-y-4 shrink-0">
+                 <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
+                    <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
+                    <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
+                    <div className="flex items-end gap-2 mt-1">
+                       <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
+                       <Target className="h-4 w-4 mb-1 text-accent" />
+                    </div>
+                 </div>
+              </div>
+
+              <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+                 <div className="flex flex-col gap-4">
+                   <div className="space-y-3">
+                     <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">
+                       Solicitudes de Servicio 
+                       <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
+                     </Label>
+                     <ScrollArea className="h-48">
+                       <div className="space-y-2 pr-4">
+                         {formalRequests.map(req => (
+                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <div className="flex flex-col">
+                               <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
+                               <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
+                             </div>
+                             <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
+                           </button>
+                         ))}
+                       </div>
+                     </ScrollArea>
                    </div>
-                   {!isRemoteRequested ? (
-                     <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-xl shadow-xl">SOLICITAR SOPORTE</Button>
-                   ) : (
-                     <Button onClick={() => setIsRemoteRequested(false)} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">ENVIAR OTRO ID</Button>
-                   )}
-                </div>
-             </div>
-             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
-                   <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /></div>
-                   <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Apoyo Remoto</span>
-                </div>
-                <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
-                   {[
-                      { n: "1", t: "Descargue software AnyDesk." },
-                      { n: "2", t: "Localice su ID personal." },
-                      { n: "3", t: "Péguelo arriba y solicite soporte." },
-                      { n: "4", t: "Espere conexión del analista." }
-                   ].map((step, i) => (
-                      <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
-                         <div className="flex flex-col items-center shrink-0">
-                            <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">{step.n}</div>
-                            {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
-                         </div>
-                         <div className="pt-0.5 flex-1 min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p></div>
-                      </div>
-                   ))}
-                </div>
-             </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-             <div className="space-y-4 shrink-0">
-                <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
-                   <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
-                   <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
-                   <div className="flex items-end gap-2 mt-1">
-                      <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
-                      <Target className="h-4 w-4 mb-1 text-accent" />
+
+                   <div className="space-y-3">
+                     <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">
+                       Mesa Operativa (Live) 
+                       <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
+                     </Label>
+                     <ScrollArea className="h-40">
+                       <div className="space-y-2 pr-4">
+                         {queue.map(req => (
+                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <div className="flex flex-col">
+                               <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                               <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
+                             </div>
+                             <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                           </button>
+                         ))}
+                       </div>
+                     </ScrollArea>
                    </div>
-                </div>
-             </div>
+                 </div>
+              </div>
 
-             <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
-                <div className="flex flex-col gap-4">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">
-                      Solicitudes de Servicio 
-                      <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
-                    </Label>
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2 pr-4">
-                        {formalRequests.map(req => (
-                          <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                            <div className="flex flex-col">
-                              <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
-                              <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
-                            </div>
-                            <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">
-                      Mesa Operativa (Live) 
-                      <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
-                    </Label>
-                    <ScrollArea className="h-40">
-                      <div className="space-y-2 pr-4">
-                        {queue.map(req => (
-                          <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                            <div className="flex flex-col">
-                              <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                              <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
-                            </div>
-                            <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </div>
-             </div>
-
-             <div className="space-y-2 shrink-0">
-                <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
-                <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                <ScrollArea className="h-28">
-                  <div className="space-y-2 pr-4">
-                    {techLibrary.map(f => (
-                      <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
-                         <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
-                         <div className="flex-1 min-w-0">
-                            <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
-                              <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
-                            </div>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-             </div>
-          </div>
-        )}
-      </div>
+              <div className="space-y-2 shrink-0">
+                 <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
+                 <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
+                 <ScrollArea className="h-28">
+                   <div className="space-y-2 pr-4">
+                     {techLibrary.map(f => (
+                       <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
+                          <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
+                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
+                               <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
+                             </div>
+                          </div>
+                       </div>
+                     ))}
+                   </div>
+                 </ScrollArea>
+              </div>
+           </div>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest && !selectedFormal ? (
@@ -711,7 +647,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      {/* CARTA RESPONSIVA CON 8 CLÁUSULAS */}
+      {/* CARTA RESPONSIVA CON 8 CLÁUSULAS COMPLETAS */}
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
         <DialogContent className="sm:max-w-[620px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
