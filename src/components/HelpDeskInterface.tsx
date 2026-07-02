@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -117,7 +116,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
   const [showRemotePanel, setShowRemotePanel] = useState(false)
-  const [highlightRemote, setHighlightRemote] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [formalRequests, setFormalRequests] = useState<FormalRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
@@ -133,7 +131,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [lastGeneratedFolio, setLastGeneratedFolio] = useState('')
   
-  // File states for the 2 specific slots
+  // File states
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [excelFile, setExcelFile] = useState<File | null>(null)
   
@@ -212,8 +210,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         sessionStorage.setItem('atres_session_id', sKey)
       }
       setSessionKey(sKey)
-      const savedTicket = sessionStorage.getItem('atres_active_ticket')
-      if (savedTicket) setActiveTicketNumber(savedTicket)
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
@@ -228,14 +224,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
     setQueue(currentQueue)
-    if (isPublic) {
-      const myReq = currentQueue.find(r => r.chatKey === sessionKey || r.ticketNumber === activeTicketNumber);
-      if (myReq) {
-        setActiveTicketNumber(myReq.ticketNumber);
-        sessionStorage.setItem('atres_active_ticket', myReq.ticketNumber);
-      }
-    }
-  }, [isPublic, sessionKey, activeTicketNumber])
+  }, [])
 
   const syncChat = useCallback(() => {
     if (!activeChatId) {
@@ -274,14 +263,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
     if (!input.trim() && !fileData) return
-    let currentFolio = activeTicketNumber;
-    let updatedActiveChatId = activeChatId;
-
-    if (isPublic && !currentFolio) {
-      currentFolio = generateTurnSessionId();
-      setActiveTicketNumber(null); // No folio until tech joins or formal request
-      updatedActiveChatId = sessionKey;
-    }
+    let updatedActiveChatId = activeChatId || sessionKey;
 
     const newMessage: Message = { role: isPublic ? 'user' : 'tech', content: input, timestamp: Date.now(), senderName: !isPublic ? techName : undefined, fileData: fileData?.data, fileName: fileData?.name, fileType: fileData?.type }
     const historyKey = `atres_chat_${updatedActiveChatId}`
@@ -419,141 +401,140 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {(!isPublic || showRemotePanel) && (
-        <div className={cn(
-          "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
-          isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
-        )}>
-          {isPublic ? (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
-                  <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
-                    <Monitor className="h-24 w-24 text-[#9f2241]" />
-                  </div>
-                  <div className="relative z-10 space-y-4">
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
-                        <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
-                           <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
-                           <Input placeholder="000 000 000" className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} />
-                        </div>
-                     </div>
-                     {!isRemoteRequested ? (
-                       <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-xl shadow-xl">SOLICITAR SOPORTE</Button>
-                     ) : (
-                       <Button onClick={() => setIsRemoteRequested(false)} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">ENVIAR OTRO ID</Button>
-                     )}
-                  </div>
-               </div>
-               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
-                     <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /></div>
-                     <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
-                     {[
-                        { n: "1", t: "Descargue software AnyDesk." },
-                        { n: "2", t: "Localice su ID personal." },
-                        { n: "3", t: "Péguelo arriba y solicite soporte." },
-                        { n: "4", t: "Espere conexión del analista." }
-                     ].map((step, i) => (
-                        <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
-                           <div className="flex flex-col items-center shrink-0">
-                              <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">{step.n}</div>
-                              {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
-                           </div>
-                           <div className="pt-0.5 flex-1 min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p></div>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-               <div className="space-y-4">
-                  <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
-                     <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
-                     <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
-                     <div className="flex items-end gap-2 mt-1">
-                        <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
-                        <Target className="h-4 w-4 mb-1 text-accent" />
-                     </div>
-                  </div>
-               </div>
+      <div className={cn(
+        "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
+        isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
+      )}>
+        {isPublic ? (
+          <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+             <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
+                <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
+                  <Monitor className="h-24 w-24 text-[#9f2241]" />
+                </div>
+                <div className="relative z-10 space-y-4">
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
+                      <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
+                         <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
+                         <Input placeholder="000 000 000" className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} />
+                      </div>
+                   </div>
+                   {!isRemoteRequested ? (
+                     <Button onClick={handleRequestRemote} disabled={!remoteId || remoteId.length < 5} className="w-full btn-institutional h-12 text-[10px] rounded-xl shadow-xl">SOLICITAR SOPORTE</Button>
+                   ) : (
+                     <Button onClick={() => setIsRemoteRequested(false)} variant="outline" className="w-full h-12 text-[9px] font-black uppercase border-primary/20 text-primary rounded-xl hover:bg-primary/5">ENVIAR OTRO ID</Button>
+                   )}
+                </div>
+             </div>
+             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
+                   <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /></div>
+                   <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
+                </div>
+                <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                   {[
+                      { n: "1", t: "Descargue software AnyDesk." },
+                      { n: "2", t: "Localice su ID personal." },
+                      { n: "3", t: "Péguelo arriba y solicite soporte." },
+                      { n: "4", t: "Espere conexión del analista." }
+                   ].map((step, i) => (
+                      <div key={i} className="flex gap-4 items-start animate-in fade-in duration-1000" style={{ animationDelay: `${i * 100}ms` }}>
+                         <div className="flex flex-col items-center shrink-0">
+                            <div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[9px] font-black shadow-lg">{step.n}</div>
+                            {i < 3 && <div className="w-0.5 h-full bg-[#B38E5D]/20 my-0.5" />}
+                         </div>
+                         <div className="pt-0.5 flex-1 min-w-0"><p className="text-[10px] font-bold text-slate-500 uppercase leading-tight tracking-tight">{step.t}</p></div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+             <div className="space-y-4 shrink-0">
+                <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
+                   <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
+                   <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Atendidos Hoy</p>
+                   <div className="flex items-end gap-2 mt-1">
+                      <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
+                      <Target className="h-4 w-4 mb-1 text-accent" />
+                   </div>
+                </div>
+             </div>
 
-               {/* NUEVO APARTADO: SOLICITUDES DE SERVICIO */}
-               <div className="space-y-4 shrink-0">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Solicitudes de Servicio <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge></Label>
-                  <ScrollArea className="h-40">
-                    <div className="space-y-2 pr-4">
-                      {formalRequests.map(req => (
-                        <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50")}>
-                          <div className="flex flex-col">
-                            <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
-                            <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
-                          </div>
-                          <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
-                        </button>
-                      ))}
-                      {formalRequests.length === 0 && <p className="text-[8px] text-center text-slate-400 py-4 uppercase font-black">Sin solicitudes formales</p>}
-                    </div>
-                  </ScrollArea>
-               </div>
-
-               <div className="space-y-4 shrink-0">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Mesa Operativa (Live) <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{queue.length}</Badge></Label>
-                  <ScrollArea className="h-40">
-                    <div className="space-y-2 pr-4">
-                      {queue.map(req => (
-                        <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50")}>
-                          <div className="flex flex-col">
-                            <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                            <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
-                          </div>
-                          <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
-                        </button>
-                      ))}
-                    </div>
-                  </ScrollArea>
-               </div>
-
-               <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
-                  <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                  <ScrollArea className="flex-1">
-                    <div className="space-y-2 pr-4">
-                      {techLibrary.map(f => (
-                        <div key={f.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 group hover:border-primary/20 transition-all">
-                           <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
-                           <div className="flex-1 min-w-0">
-                              <p className="text-[9px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                              <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                                <button className="text-[8px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
-                                <button className="text-[8px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
-                              </div>
-                           </div>
+             <div className="space-y-4 shrink-0">
+                <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">Solicitudes de Servicio <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge></Label>
+                <ScrollArea className="h-44">
+                  <div className="space-y-2 pr-4">
+                    {formalRequests.map(req => (
+                      <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                        <div className="flex flex-col">
+                          <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
+                          <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-               </div>
-            </div>
-          )}
-        </div>
-      )}
+                        <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
+                      </button>
+                    ))}
+                    {formalRequests.length === 0 && <p className="text-[8px] text-center text-slate-400 py-4 uppercase font-black">Sin solicitudes formales</p>}
+                  </div>
+                </ScrollArea>
+             </div>
+
+             <div className="space-y-4 shrink-0">
+                <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">Mesa Operativa (Live) <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge></Label>
+                <ScrollArea className="h-40">
+                  <div className="space-y-2 pr-4">
+                    {queue.map(req => (
+                      <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                        <div className="flex flex-col">
+                          <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                          <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
+                        </div>
+                        <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                      </button>
+                    ))}
+                    {queue.length === 0 && <p className="text-[8px] text-center text-slate-400 py-4 uppercase font-black">Sin actividad en vivo</p>}
+                  </div>
+                </ScrollArea>
+             </div>
+
+             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+                <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
+                <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
+                <ScrollArea className="flex-1">
+                  <div className="space-y-2 pr-4">
+                    {techLibrary.map(f => (
+                      <div key={f.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 group hover:border-primary/20 transition-all">
+                         <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
+                         <div className="flex-1 min-w-0">
+                            <p className="text-[9px] font-black text-slate-600 truncate uppercase">{f.name}</p>
+                            <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
+                              <button className="text-[8px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
+                              <button className="text-[8px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
+                            </div>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+             </div>
+          </div>
+        )}
+      </div>
+
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
             <div className="h-28 w-28 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-14 w-14" /></div>
             <div className="space-y-3">
               <h3 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">CENTRO OPERATIVO</h3>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione un turno de Mesa Operativa o una Solicitud de Servicio.</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud de Servicio o un turno de Mesa Operativa en la columna izquierda.</p>
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
           <div className="flex-1 flex flex-col p-10 bg-[#fdfaf5] animate-in fade-in duration-700">
              <div className="max-w-4xl mx-auto w-full space-y-8">
-                <div className="flex justify-between items-center border-b-4 border-accent pb-6">
+                <div className="flex justify-between items-center border-b-4 border-primary pb-6">
                    <div className="space-y-2">
                       <div className="flex items-center gap-3">
                          <Badge className="bg-primary text-white font-mono text-base px-4 py-1 rounded-lg shadow-md">{selectedFormal.id}</Badge>
@@ -597,13 +578,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <p className="text-base font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
                    </div>
                 </div>
-
-                <div className="flex items-center gap-3 p-6 bg-amber-50 border-2 border-amber-100 rounded-3xl">
-                   <AlertCircle className="h-6 w-6 text-amber-600 shrink-0" />
-                   <p className="text-[10px] font-black uppercase tracking-widest text-amber-800 leading-tight">
-                      Nota: Este requerimiento incluye archivos adjuntos que se encuentran almacenados en el servidor seguro de COEES para auditoría.
-                   </p>
-                </div>
              </div>
           </div>
         ) : (
@@ -626,9 +600,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className="flex gap-2 items-center ml-1">
                          <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-white hover:bg-primary pl-3 pr-4 h-10 rounded-xl shadow-xl border-2 border-primary/20 transition-all group animate-pulse hover:animate-none">
                            <div className="h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors"><FilePlus className="h-5 w-5" /></div>
-                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic para soporte formal</span></div>
+                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar atención</span></div>
                          </button>
-                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" title="Estatus"><Search className="h-4 w-4" /></button>
+                         <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Estatus"><Search className="h-4 w-4" /></button>
                       </div>
                     )}
                   </div>
@@ -640,18 +614,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-12">
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
-                  const isBot = msg.role === 'bot';
-                  const isTech = msg.role === 'tech';
-                  const isUser = msg.role === 'user';
                   return (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2 duration-500", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-5 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
-                        <div className={cn("h-10 w-10 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-xl border-2 border-white", isUser ? "bg-[#B38E5D] text-white" : isTech ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
-                          {isUser ? <GraduationCap className="h-5 w-5" /> : isTech ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                        <div className={cn("h-10 w-10 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-xl border-2 border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
+                          {msg.role === 'user' ? <GraduationCap className="h-5 w-5" /> : msg.role === 'tech' ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                         </div>
                         <div className="space-y-1.5">
                           {msg.senderName && <span className={cn("text-[8px] font-black uppercase tracking-widest block", isMe ? "text-right text-[#B38E5D]" : "text-left text-slate-400")}>{msg.senderName}</span>}
-                          <div className={cn("p-5 rounded-[2.25rem] text-[13px] font-semibold shadow-2xl border leading-relaxed relative", isMe ? (isUser ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : isBot ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
+                          <div className={cn("p-5 rounded-[2.25rem] text-[13px] font-semibold shadow-2xl border leading-relaxed relative", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                             {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                             {msg.fileData && (
                               <div className={cn("mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer transition-all hover:brightness-95", isMe ? "bg-white/15 border-white/20" : "bg-slate-50 border-slate-100")} onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
@@ -669,7 +640,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </div>
                   )
                 })}
-                {isTyping && <div className="flex justify-start animate-pulse"><div className="bg-white p-4 rounded-3xl rounded-tl-none shadow-xl flex items-center gap-4 border border-slate-100"><div className="flex gap-1.5"><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.3s]" /><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce [animation-delay:-0.15s]" /><div className="h-2 w-2 rounded-full bg-[#9f2241] animate-bounce" /></div><span className="text-[9px] font-black uppercase text-slate-400">ANALISTA ESCRIBIENDO...</span></div></div>}
                 <div ref={scrollRef} />
               </div>
             </ScrollArea>
@@ -687,6 +657,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
+      {/* DIALOGS */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
@@ -747,7 +718,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-10 overflow-hidden bg-white text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
             <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2 mb-8">Su requerimiento ha sido canalizado al Departamento de Tecnología Educativa.</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2 mb-8">Su solicitud ha sido recibida correctamente. Use el siguiente número para consultar el estatus.</p>
             <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner mb-6">
                <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-2">FOLIO DE SEGUIMIENTO</p>
                <h4 className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
