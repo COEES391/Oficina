@@ -552,42 +552,47 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         ) : (
           <>
-            <header className={cn("px-10 py-6 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
+            <header className={cn("px-6 md:px-10 py-4 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
               <div className="flex items-center gap-6">
-                <div className="h-14 w-14 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
+                <div className="hidden xs:flex h-14 w-14 rounded-2xl bg-[#9f2241] text-white items-center justify-center shadow-2xl relative overflow-hidden group">
                   {isPublic ? <Bot className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" /> : <UserCog className="h-8 w-8 relative z-10 group-hover:scale-110 transition-transform duration-500" />}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">{isPublic ? "ASISTENTE COEES" : "ATENCIÓN AL DOCENTE"}</h2>
-                  <div className="flex flex-wrap items-center gap-3 mt-2.5">
-                    <div className="flex items-center gap-2">
-                       <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                       <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO EN LÍNEA</p>
+                <div className="min-w-0">
+                  <h2 className="text-lg md:text-xl font-black text-slate-800 uppercase leading-none tracking-tight truncate">{isPublic ? "ASISTENTE COEES" : "ATENCIÓN AL DOCENTE"}</h2>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                       <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                       <p className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO</p>
                     </div>
-                    {activeChatId && <Badge className="text-[9px] font-mono bg-[#B38E5D] text-white px-4 h-6 rounded-xl border-none">{activeChatId}</Badge>}
+                    {activeChatId && <Badge className="text-[8px] md:text-[9px] font-mono bg-[#B38E5D] text-white px-3 h-5 rounded-xl border-none">{activeChatId}</Badge>}
                     {isPublic && (
-                      <div className="flex gap-4 ml-4 items-center">
+                      <div className="flex gap-2 items-center ml-1">
                          <button 
                           onClick={() => { setIsNewTicketDialogOpen(true); setPdfFile(null); setExcelFile(null); }} 
-                          className="h-11 w-11 rounded-2xl bg-white shadow-xl border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all group animate-pulse hover:animate-none" 
-                          title="Iniciar Solicitud Técnica (Folio)"
+                          className="flex items-center gap-2 bg-white hover:bg-primary pl-3 pr-4 h-10 rounded-xl shadow-xl border-2 border-primary/20 transition-all group animate-pulse hover:animate-none"
                          >
-                           <FilePlus className="h-7 w-7 group-hover:scale-110 transition-transform" />
+                           <div className="h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors">
+                              <FilePlus className="h-5 w-5" />
+                           </div>
+                           <div className="flex flex-col text-left">
+                              <span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud Técnica</span>
+                              <span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu servicio</span>
+                           </div>
                          </button>
                          <button 
                           onClick={() => setIsTrackTicketDialogOpen(true)} 
-                          className="h-9 w-9 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" 
+                          className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all group" 
                           title="Seguimiento de Estatus"
                          >
-                           <Search className="h-5 w-5" />
+                           <Search className="h-4 w-4" />
                          </button>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[11px] uppercase h-12 px-10 rounded-2xl shadow-2xl transition-all active:scale-95 gap-3"><CheckCircle2 className="h-5 w-5" /> FINALIZAR ATENCIÓN</Button>}
+              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} size="sm" className="bg-[#9f2241] hover:bg-[#801a34] text-white font-black text-[9px] uppercase h-10 px-4 md:px-8 rounded-xl shadow-2xl transition-all active:scale-95 gap-2"><CheckCircle2 className="h-4 w-4" /> FINALIZAR</Button>}
             </header>
             <ScrollArea className="flex-1 px-6 py-10">
               <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-12">
@@ -640,7 +645,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Modal Nueva Solicitud Técnica - COMPACTED FOR ZERO-SCROLL */}
+      {/* Modal Nueva Solicitud Técnica */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
