@@ -39,7 +39,6 @@ import {
   ArrowRightCircle,
   Clock,
   Activity,
-  Sparkles,
   Monitor,
   ShieldCheck,
   Circle,
@@ -48,13 +47,9 @@ import {
   Target,
   FilePlus,
   Search,
-  AlertCircle,
-  ImageIcon,
-  User,
   Mail,
   Tag,
-  Check,
-  ClipboardList
+  Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -123,13 +118,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   
-  // Solicitud Ticket State
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
   const [isResponsivaOpen, setIsResponsivaOpen] = useState(false)
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [lastGeneratedFolio, setLastGeneratedFolio] = useState('')
   
-  // File states
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [excelFile, setExcelFile] = useState<File | null>(null)
   
@@ -139,7 +132,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [ticketCct, setTicketCct] = useState('')
   const [ticketDetail, setTicketDetail] = useState('')
 
-  // Seguimiento State
   const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
   const [trackFolioInput, setTrackFolioInput] = useState('')
   const [trackedTicket, setTrackedTicket] = useState<any>(null)
@@ -397,13 +389,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {/* COLUMNA IZQUIERDA CONDICIONAL */}
+      {/* COLUMNA IZQUIERDA SEGREGADA */}
       <div className={cn(
         "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
         isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
       )}>
         {isPublic ? (
-          /* VISTA PÚBLICA: PANEL ANYDESK */
           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
              <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                 <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
@@ -411,7 +402,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <div className="relative z-10 space-y-4">
                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Solicitud AnyDesk</Label>
+                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">ID ANYDESK / TEAMVIEWER</Label>
                       <div className="bg-[#f8f5f0] p-4 rounded-2xl border border-[#ddc8a4]/30 shadow-inner">
                          <span className="text-[9px] font-black text-[#9f2241] uppercase block mb-1">ID DE CONEXIÓN</span>
                          <Input placeholder="000 000 000" className="h-10 text-center font-mono font-black border-none text-2xl bg-transparent focus:ring-0 shadow-none transition-all p-0 text-[#9f2241]" value={remoteId} onChange={(e) => setRemoteId(e.target.value)} disabled={isRemoteRequested} />
@@ -427,7 +418,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="flex-1 flex flex-col gap-4 overflow-hidden">
                 <div className="flex items-center gap-3 border-b border-[#ddc8a4]/30 pb-3 shrink-0">
                    <div className="h-7 w-7 rounded-xl bg-[#B38E5D]/10 flex items-center justify-center"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /></div>
-                   <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Protocolo de Atención</span>
+                   <span className="text-[11px] font-black uppercase text-[#9f2241] tracking-widest">Apoyo Remoto</span>
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
                    {[
@@ -448,7 +439,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
           </div>
         ) : (
-          /* VISTA ANALISTA: PANEL DE GESTIÓN */
           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
              <div className="space-y-4 shrink-0">
                 <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
@@ -461,57 +451,63 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
              </div>
 
-             {/* APARTADO SOLICITUDES DE SERVICIO */}
-             <div className="space-y-4 shrink-0">
-                <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">Solicitudes de Servicio <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge></Label>
-                <ScrollArea className="h-44">
-                  <div className="space-y-2 pr-4">
-                    {formalRequests.map(req => (
-                      <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                        <div className="flex flex-col">
-                          <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
-                          <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
-                        </div>
-                        <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
-                      </button>
-                    ))}
-                    {formalRequests.length === 0 && <p className="text-[8px] text-center text-slate-400 py-4 uppercase font-black">Sin solicitudes formales</p>}
+             <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
+                <div className="flex flex-col gap-4">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">
+                      Solicitudes de Servicio 
+                      <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge>
+                    </Label>
+                    <ScrollArea className="h-48">
+                      <div className="space-y-2 pr-4">
+                        {formalRequests.map(req => (
+                          <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                            <div className="flex flex-col">
+                              <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
+                              <span className={cn("text-[9px] font-black truncate max-w-[150px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
+                            </div>
+                            <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
-                </ScrollArea>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">
+                      Mesa Operativa (Live) 
+                      <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge>
+                    </Label>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-2 pr-4">
+                        {queue.map(req => (
+                          <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                            <div className="flex flex-col">
+                              <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                              <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
+                            </div>
+                            <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
              </div>
 
-             {/* APARTADO MESA OPERATIVA (LIVE) */}
-             <div className="space-y-4 shrink-0">
-                <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">Mesa Operativa (Live) <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge></Label>
-                <ScrollArea className="h-40">
-                  <div className="space-y-2 pr-4">
-                    {queue.map(req => (
-                      <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg scale-[1.02]" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                        <div className="flex flex-col">
-                          <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                          <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA' : 'REMOTO'}</span>
-                        </div>
-                        <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
-                      </button>
-                    ))}
-                    {queue.length === 0 && <p className="text-[8px] text-center text-slate-400 py-4 uppercase font-black">Sin actividad en vivo</p>}
-                  </div>
-                </ScrollArea>
-             </div>
-
-             <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+             <div className="space-y-2 shrink-0">
                 <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-2 flex items-center justify-between w-full">Biblioteca Soporte <Plus className="h-4 w-4 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
                 <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                <ScrollArea className="flex-1">
+                <ScrollArea className="h-28">
                   <div className="space-y-2 pr-4">
                     {techLibrary.map(f => (
-                      <div key={f.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 group hover:border-primary/20 transition-all">
-                         <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
+                      <div key={f.id} className="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
+                         <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
                          <div className="flex-1 min-w-0">
-                            <p className="text-[9px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                            <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                              <button className="text-[8px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
-                              <button className="text-[8px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
+                            <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="text-[7px] font-black text-primary uppercase" onClick={() => handleSendMessage({ data: f.data, name: f.name, type: f.type })}>Enviar</button>
+                              <button className="text-[7px] font-black text-rose-500 uppercase" onClick={() => { const updated = techLibrary.filter(lib => lib.id !== f.id); setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated)) }}>Borrar</button>
                             </div>
                          </div>
                       </div>
@@ -523,7 +519,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* ÁREA PRINCIPAL: DETALLE O CHAT */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
@@ -534,56 +529,55 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
-          <div className="flex-1 flex flex-col p-10 bg-[#fdfaf5] animate-in fade-in duration-700">
-             <div className="max-w-4xl mx-auto w-full space-y-8">
-                <div className="flex justify-between items-center border-b-4 border-primary pb-6">
-                   <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                         <Badge className="bg-primary text-white font-mono text-base px-4 py-1 rounded-lg shadow-md">{selectedFormal.id}</Badge>
-                         <Badge variant="outline" className="border-accent text-accent font-black uppercase text-xs px-4">SOLICITUD DE SERVICIO</Badge>
-                      </div>
-                      <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">{selectedFormal.requesterName}</h2>
-                   </div>
-                   <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-14 px-12 text-[11px] gap-3 shadow-2xl">
-                      <CheckCircle2 className="h-5 w-5" /> REGISTRAR ATENCIÓN
-                   </Button>
-                </div>
+          <div className="flex-1 flex flex-col p-10 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
+             <ScrollArea className="flex-1">
+               <div className="max-w-4xl mx-auto w-full space-y-8 pb-10">
+                  <div className="flex justify-between items-center border-b-4 border-primary pb-6">
+                     <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                           <Badge className="bg-primary text-white font-mono text-base px-4 py-1 rounded-lg shadow-md">{selectedFormal.id}</Badge>
+                           <Badge variant="outline" className="border-accent text-accent font-black uppercase text-xs px-4">SOLICITUD DE SERVICIO</Badge>
+                        </div>
+                        <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">{selectedFormal.requesterName}</h2>
+                     </div>
+                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-14 px-12 text-[11px] gap-3 shadow-2xl">
+                        <CheckCircle2 className="h-5 w-5" /> REGISTRAR ATENCIÓN
+                     </Button>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-6">
-                      <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Mail className="h-12 w-12" /></div>
-                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Contacto Institucional</Label>
-                         <p className="text-lg font-black text-slate-700 mt-1">{selectedFormal.requesterEmail}</p>
-                      </div>
-                      <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
-                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Tag className="h-12 w-12" /></div>
-                         <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tema del Requerimiento</Label>
-                         <p className="text-lg font-black text-primary uppercase mt-1 leading-tight">{selectedFormal.helpTopic}</p>
-                      </div>
-                   </div>
-                   <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-2 border-primary/5 flex flex-col gap-4 relative overflow-hidden group">
-                      <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700"><School className="h-32 w-32" /></div>
-                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                        <School className="h-4 w-4" /> Plantel de Adscripción
-                      </Label>
-                      <h4 className="text-4xl font-black text-slate-800 font-mono tracking-tighter">{selectedFormal.cct}</h4>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest border-t pt-4">Sincronización con Base CCT Maestra</p>
-                   </div>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
+                           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Contacto Institucional</Label>
+                           <p className="text-lg font-black text-slate-700 mt-1 flex items-center gap-3"><Mail className="h-5 w-5 text-primary/40" /> {selectedFormal.requesterEmail}</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group">
+                           <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tema del Requerimiento</Label>
+                           <p className="text-lg font-black text-primary uppercase mt-1 leading-tight flex items-center gap-3"><Tag className="h-5 w-5 text-accent/40" /> {selectedFormal.helpTopic}</p>
+                        </div>
+                     </div>
+                     <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border-2 border-primary/5 flex flex-col gap-4 relative overflow-hidden group">
+                        <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700"><School className="h-32 w-32" /></div>
+                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                          <School className="h-4 w-4" /> Plantel de Adscripción
+                        </Label>
+                        <h4 className="text-4xl font-black text-slate-800 font-mono tracking-tighter">{selectedFormal.cct}</h4>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest border-t pt-4">Sincronización COEES Activa</p>
+                     </div>
+                  </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 space-y-4">
-                   <Label className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
-                     <MessageSquare className="h-5 w-5" /> Detalle Técnico del Reporte
-                   </Label>
-                   <div className="p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                      <p className="text-base font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
-                   </div>
-                </div>
-             </div>
+                  <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 space-y-4">
+                     <Label className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
+                       <MessageSquare className="h-5 w-5" /> Detalle Técnico del Reporte
+                     </Label>
+                     <div className="p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                        <p className="text-base font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
+                     </div>
+                  </div>
+               </div>
+             </ScrollArea>
           </div>
         ) : (
-          /* ÁREA DE CHAT / SOPORTE LIVE */
           <>
             <header className={cn("px-6 md:px-10 py-4 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
               <div className="flex items-center gap-6">
@@ -603,7 +597,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className="flex gap-2 items-center ml-1">
                          <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-white hover:bg-primary pl-3 pr-4 h-10 rounded-xl shadow-xl border-2 border-primary/20 transition-all group animate-pulse hover:animate-none">
                            <div className="h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-white/20 flex items-center justify-center text-primary group-hover:text-white transition-colors"><FilePlus className="h-5 w-5" /></div>
-                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar atención</span></div>
+                           <div className="flex flex-col text-left"><span className="text-[8px] font-black text-primary group-hover:text-white uppercase leading-none">Solicitud de Servicio</span><span className="text-[6px] font-bold text-slate-400 group-hover:text-white/80 uppercase tracking-tight leading-none mt-0.5">Haz clic aquí para solicitar tu atención de servicio</span></div>
                          </button>
                          <button onClick={() => setIsTrackTicketDialogOpen(true)} className="h-10 w-10 rounded-xl bg-white shadow-lg border border-accent/20 flex items-center justify-center text-accent hover:bg-accent hover:text-white transition-all" title="Estatus"><Search className="h-4 w-4" /></button>
                       </div>
@@ -702,12 +696,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div className="grid grid-cols-2 gap-3 mt-2">
                    <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", pdfFile ? "border-rose-300" : "border-slate-200")}>
                       <FileText className="h-4 w-4 text-rose-500" />
-                      <span className="text-[7px] font-black uppercase truncate">{pdfFile ? pdfFile.name : "PDF (Solicitud)"}</span>
+                      <span className="text-[7px] font-black uppercase truncate">{pdfFile ? pdfFile.name : "1. Solicitud en PDF"}</span>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                    </div>
                    <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", excelFile ? "border-emerald-300" : "border-slate-200")}>
                       <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                      <span className="text-[7px] font-black uppercase truncate">{excelFile ? excelFile.name : "EXCEL"}</span>
+                      <span className="text-[7px] font-black uppercase truncate">{excelFile ? excelFile.name : "2. Archivo Excel"}</span>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                    </div>
                 </div>
@@ -717,7 +711,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      {/* CARTA RESPONSIVA INSTITUCIONAL */}
+      {/* CARTA RESPONSIVA CON 8 CLÁUSULAS */}
       <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
         <DialogContent className="sm:max-w-[620px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
@@ -754,7 +748,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      {/* CONFIRMACIÓN DE FOLIO */}
+      {/* CONFIRMACIÓN DE FOLIO COEES */}
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-10 overflow-hidden bg-white text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
