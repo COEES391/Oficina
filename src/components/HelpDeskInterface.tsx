@@ -586,110 +586,107 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
-          <div className="flex-1 flex flex-col p-10 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
+          <div className="flex-1 flex flex-col p-6 md:p-8 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
              <ScrollArea className="flex-1">
-               <div className="max-w-5xl mx-auto w-full space-y-10 pb-16">
-                  <div className="flex justify-between items-end border-b-8 border-primary pb-8">
-                     <div className="space-y-3">
-                        <div className="flex items-center gap-4">
-                           <div className="bg-primary text-white font-mono text-2xl px-6 py-2 rounded-2xl shadow-xl border-4 border-white/20">{selectedFormal.id}</div>
-                           <Badge variant="outline" className="border-accent text-accent font-black uppercase text-xs px-6 h-8 tracking-widest bg-white shadow-sm">SOLICITUD FORMAL</Badge>
+               <div className="max-w-6xl mx-auto w-full space-y-6 pb-12">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-4 border-primary pb-6 gap-4">
+                     <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                           <div className="bg-primary text-white font-mono text-xl px-4 py-1.5 rounded-xl shadow-lg border-2 border-white/20">{selectedFormal.id}</div>
+                           <Badge variant="outline" className="border-accent text-accent font-black uppercase text-[9px] px-4 h-6 tracking-widest bg-white shadow-sm">SOLICITUD FORMAL</Badge>
                         </div>
-                        <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight leading-none">{selectedFormal.requesterName}</h2>
-                        <div className="flex items-center gap-2 mt-2">
-                           <Clock className="h-4 w-4 text-slate-400" />
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">RECIBIDO EL: {format(selectedFormal.timestamp, "dd/MM/yyyy HH:mm")}</span>
+                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight leading-none">{selectedFormal.requesterName}</h2>
+                        <div className="flex items-center gap-2">
+                           <Clock className="h-3 w-3 text-slate-400" />
+                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RECIBIDO: {format(selectedFormal.timestamp, "dd/MM/yyyy HH:mm")}</span>
                         </div>
                      </div>
-                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-16 px-16 text-xs gap-4 shadow-[0_20px_50px_rgba(159,34,65,0.3)] hover:scale-105 transition-all">
-                        <CheckCircle2 className="h-6 w-6" /> REGISTRAR ATENCIÓN FINAL
+                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-12 px-10 text-[10px] gap-3 shadow-xl hover:scale-105 transition-all">
+                        <CheckCircle2 className="h-5 w-5" /> REGISTRAR ATENCIÓN FINAL
                      </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <div className="md:col-span-2 space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all">
-                              <div className="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform"><Mail className="h-24 w-24" /></div>
-                              <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">Contacto Institucional</Label>
-                              <p className="text-xl font-black text-slate-700 break-all">{selectedFormal.requesterEmail}</p>
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                     <div className="lg:col-span-3 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all">
+                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Mail className="h-16 w-16" /></div>
+                              <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Contacto Institucional</Label>
+                              <p className="text-sm font-black text-slate-700 break-all">{selectedFormal.requesterEmail}</p>
                            </div>
-                           <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 relative overflow-hidden group hover:border-accent/20 transition-all">
-                              <div className="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform"><Tag className="h-24 w-24" /></div>
-                              <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 block">Tema del Requerimiento</Label>
-                              <p className="text-xl font-black text-primary uppercase leading-tight">{selectedFormal.helpTopic}</p>
+                           <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden group hover:border-accent/20 transition-all">
+                              <div className="absolute -right-2 -top-2 opacity-5 group-hover:scale-110 transition-transform"><Tag className="h-16 w-16" /></div>
+                              <Label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Tema del Requerimiento</Label>
+                              <p className="text-sm font-black text-primary uppercase leading-tight">{selectedFormal.helpTopic}</p>
                            </div>
                         </div>
 
-                        <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 space-y-6 relative overflow-hidden">
-                           <div className="absolute top-0 right-0 p-10 opacity-5"><MessageSquare className="h-40 w-40" /></div>
-                           <Label className="text-[12px] font-black uppercase text-accent tracking-[0.3em] flex items-center gap-4 relative z-10">
-                             <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent"><MessageSquare className="h-6 w-6" /></div>
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-4 relative overflow-hidden">
+                           <div className="absolute top-0 right-0 p-8 opacity-5"><MessageSquare className="h-32 w-32" /></div>
+                           <Label className="text-[10px] font-black uppercase text-accent tracking-widest flex items-center gap-3 relative z-10">
+                             <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent"><MessageSquare className="h-5 w-5" /></div>
                              Detalle Técnico del Reporte
                            </Label>
-                           <div className="p-10 bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 relative z-10">
-                              <p className="text-lg font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
+                           <div className="p-6 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 relative z-10">
+                              <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
                            </div>
                         </div>
                      </div>
 
-                     <div className="space-y-8">
-                        <div className="bg-primary p-10 rounded-[3rem] shadow-2xl border-4 border-white flex flex-col gap-6 relative overflow-hidden group transition-all hover:rotate-1">
-                           <div className="absolute -top-6 -right-6 opacity-10 group-hover:rotate-12 transition-transform duration-700"><School className="h-40 w-40" /></div>
-                           <Label className="text-[10px] font-black uppercase text-white/60 tracking-widest flex items-center gap-2">
-                             <School className="h-5 w-5" /> Plantel de Adscripción
+                     <div className="space-y-6">
+                        <div className="bg-primary p-6 rounded-[2.5rem] shadow-xl border-4 border-white flex flex-col gap-4 relative overflow-hidden group transition-all">
+                           <div className="absolute -top-4 -right-4 opacity-10 group-hover:rotate-12 transition-transform duration-700"><School className="h-32 w-32" /></div>
+                           <Label className="text-[9px] font-black uppercase text-white/60 tracking-widest flex items-center gap-2">
+                             <School className="h-4 w-4" /> Plantel (CCT)
                            </Label>
-                           <h4 className="text-5xl font-black text-white font-mono tracking-tighter drop-shadow-lg">{selectedFormal.cct}</h4>
-                           <div className="bg-white/10 px-4 py-2 rounded-xl border border-white/20 w-fit">
-                             <p className="text-[9px] font-black text-white uppercase tracking-widest">Sincronización COEES Activa</p>
-                           </div>
+                           <h4 className="text-3xl font-black text-white font-mono tracking-tighter drop-shadow-md">{selectedFormal.cct}</h4>
                         </div>
 
-                        <div className="bg-white p-8 rounded-[3rem] shadow-2xl border-2 border-primary/5 space-y-8">
-                           <Label className="text-[12px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-4">
-                             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><FileBox className="h-6 w-6" /></div>
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-primary/5 space-y-6">
+                           <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-3">
+                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><FileBox className="h-5 w-5" /></div>
                              Expediente Digital
                            </Label>
-                           <div className="space-y-6">
+                           <div className="space-y-4">
                               {selectedFormal.pdfData ? (
-                                <div className="p-6 bg-rose-50 rounded-[2rem] border-2 border-rose-100 flex flex-col gap-6 group transition-all hover:bg-rose-100/30">
-                                   <div className="flex items-center gap-5">
-                                      <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center shadow-xl text-rose-600 border-2 border-rose-50"><FileText className="h-8 w-8" /></div>
+                                <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex flex-col gap-4 group transition-all hover:bg-rose-100/30">
+                                   <div className="flex items-center gap-3">
+                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-rose-600 border border-rose-50"><FileText className="h-6 w-6" /></div>
                                       <div className="flex-1 min-w-0">
-                                         <p className="text-[11px] font-black text-slate-800 uppercase truncate">Solicitud Institucional (PDF)</p>
-                                         <p className="text-[8px] font-bold text-rose-400 truncate mt-1">{selectedFormal.pdfName}</p>
+                                         <p className="text-[9px] font-black text-slate-800 uppercase truncate">Solicitud (PDF)</p>
+                                         <p className="text-[7px] font-bold text-rose-400 truncate">{selectedFormal.pdfName}</p>
                                       </div>
                                    </div>
-                                   <div className="grid grid-cols-1 gap-3">
-                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-11 rounded-xl text-[10px] font-black uppercase bg-primary text-white hover:bg-primary/90 transition-all gap-3 shadow-lg shadow-primary/20"><Eye className="h-5 w-5" /> VISTA PREVIA</Button>
-                                      <div className="grid grid-cols-2 gap-3">
-                                        <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Download className="h-4 w-4" /> Bajar</Button>
-                                        <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-2"><Printer className="h-4 w-4" /> Imprimir</Button>
+                                   <div className="flex flex-col gap-2">
+                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-9 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/90 transition-all gap-2 shadow-lg"><Eye className="h-4 w-4" /> VISTA PREVIA</Button>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="h-8 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Download className="h-3.5 w-3.5" /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="h-8 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all"><Printer className="h-3.5 w-3.5" /></Button>
                                       </div>
                                    </div>
                                 </div>
                               ) : (
-                                <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
-                                  <FileText className="h-6 w-6 text-slate-300" />
-                                  <p className="text-[9px] font-black uppercase">Sin PDF adjunto</p>
+                                <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
+                                  <FileText className="h-5 w-5 text-slate-300" />
+                                  <p className="text-[8px] font-black uppercase">SIN PDF ADJUNTO</p>
                                 </div>
                               )}
 
                               {selectedFormal.excelData ? (
-                                <div className="p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex flex-col gap-6 group transition-all hover:bg-emerald-100/30">
-                                   <div className="flex items-center gap-5">
-                                      <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center shadow-xl text-emerald-600 border-2 border-emerald-50"><FileSpreadsheet className="h-8 w-8" /></div>
+                                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col gap-4 group transition-all hover:bg-emerald-100/30">
+                                   <div className="flex items-center gap-3">
+                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
                                       <div className="flex-1 min-w-0">
-                                         <p className="text-[11px] font-black text-slate-800 uppercase truncate">Base de Datos (Excel)</p>
-                                         <p className="text-[8px] font-bold text-emerald-400 truncate mt-1">{selectedFormal.excelName}</p>
+                                         <p className="text-[9px] font-black text-slate-800 uppercase truncate">Base Datos (EXCEL)</p>
+                                         <p className="text-[7px] font-bold text-emerald-400 truncate">{selectedFormal.excelName}</p>
                                       </div>
                                    </div>
-                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName!)} className="w-full h-11 rounded-xl text-[9px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-3"><Download className="h-4 w-4" /> Descargar Excel Oficial</Button>
+                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName!)} className="w-full h-9 rounded-xl text-[8px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-2"><Download className="h-4 w-4" /> BAJAR EXCEL</Button>
                                 </div>
                               ) : (
-                                <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
-                                  <FileSpreadsheet className="h-6 w-6 text-slate-300" />
-                                  <p className="text-[9px] font-black uppercase">Sin Excel adjunto</p>
+                                <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
+                                  <FileSpreadsheet className="h-5 w-5 text-slate-300" />
+                                  <p className="text-[8px] font-black uppercase">SIN EXCEL ADJUNTO</p>
                                 </div>
                               )}
                            </div>
