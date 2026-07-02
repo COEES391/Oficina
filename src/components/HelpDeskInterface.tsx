@@ -677,6 +677,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
             <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
+            <DialogDescription className="sr-only">Complete el formulario oficial para solicitar atención técnica institucional.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-4 space-y-4">
              <div className="space-y-2">
@@ -766,6 +767,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-10 overflow-hidden bg-white text-center">
+            <DialogHeader className="sr-only">
+               <DialogTitle>Solicitud Registrada Exitosamente</DialogTitle>
+               <DialogDescription>Aviso de generación de folio institucional COEES.</DialogDescription>
+            </DialogHeader>
             <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
             <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2 mb-8">Su solicitud ha sido recibida correctamente. Use el siguiente número para consultar el estatus.</p>
@@ -779,7 +784,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-4 overflow-hidden bg-white">
-          <DialogHeader><DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO COEES</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO COEES</DialogTitle>
+            <DialogDescription className="sr-only">Ingrese su número de folio para consultar el estatus operativo de su servicio.</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 pt-4">
              <div className="flex gap-2">
                 <Input placeholder="COEES-00001" className="h-10 bg-slate-50 border-none rounded-lg text-xs font-mono font-black uppercase flex-1 shadow-inner" value={trackFolioInput} onChange={e => setTrackFolioInput(e.target.value.toUpperCase())} />
@@ -803,6 +811,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-4 bg-primary text-white shrink-0">
             <DialogTitle className="uppercase font-black text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
+            <DialogDescription className="sr-only">Registrar el fin de la atención técnica para auditoría y archivo histórico.</DialogDescription>
           </DialogHeader>
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
