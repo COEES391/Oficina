@@ -111,11 +111,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const { toast } = useToast()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   const [remoteId, setRemoteId] = useState('') 
   const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [isRemoteRequested, setIsRemoteRequested] = useState(false)
-  const [showRemotePanel, setShowRemotePanel] = useState(false)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [formalRequests, setFormalRequests] = useState<FormalRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
@@ -163,9 +161,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const libraryInputRef = useRef<HTMLInputElement>(null)
 
   const activeChatId = useMemo(() => {
-    if (isPublic) {
-      return activeTicketNumber || sessionKey;
-    }
+    if (isPublic) return activeTicketNumber || sessionKey;
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
@@ -202,24 +198,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setFormalRequests(stored ? JSON.parse(stored) : [])
   }, [])
 
-  useEffect(() => {
-    if (isPublic) {
-      let sKey = sessionStorage.getItem('atres_session_id')
-      if (!sKey) {
-        sKey = generateTurnSessionId()
-        sessionStorage.setItem('atres_session_id', sKey)
-      }
-      setSessionKey(sKey)
-    } else {
-      const savedTechName = localStorage.getItem('atres_tech_name')
-      if (savedTechName) setTechName(savedTechName)
-      const savedLibrary = localStorage.getItem('atres_tech_library')
-      if (savedLibrary) setTechLibrary(JSON.parse(savedLibrary))
-      updateAttendedCount();
-      syncFormalRequests();
-    }
-  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests])
-
   const syncQueue = useCallback(() => {
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
@@ -241,6 +219,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       localStorage.setItem(historyKey, JSON.stringify(initial))
     }
   }, [activeChatId])
+
+  useEffect(() => {
+    if (isPublic) {
+      let sKey = sessionStorage.getItem('atres_session_id')
+      if (!sKey) {
+        sKey = generateTurnSessionId()
+        sessionStorage.setItem('atres_session_id', sKey)
+      }
+      setSessionKey(sKey)
+    } else {
+      const savedTechName = localStorage.getItem('atres_tech_name')
+      if (savedTechName) setTechName(savedTechName)
+      const savedLibrary = localStorage.getItem('atres_tech_library')
+      if (savedLibrary) setTechLibrary(JSON.parse(savedLibrary))
+      updateAttendedCount();
+      syncFormalRequests();
+    }
+  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests])
 
   useEffect(() => {
     setMounted(true)
@@ -401,11 +397,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
+      {/* COLUMNA IZQUIERDA CONDICIONAL */}
       <div className={cn(
         "w-full md:w-[320px] flex flex-col p-6 shrink-0 transition-all duration-500 relative z-20 overflow-hidden",
         isPublic ? "bg-white/70 backdrop-blur-3xl border-r border-white/40" : "bg-slate-50 border-r border-slate-200/60"
       )}>
         {isPublic ? (
+          /* VISTA PÚBLICA: PANEL ANYDESK */
           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
              <div className="bg-white/80 rounded-[2.5rem] border border-white p-6 shadow-2xl space-y-4 relative overflow-hidden shrink-0 group">
                 <div className="absolute -top-4 -right-4 opacity-5 group-hover:rotate-12 transition-transform duration-700">
@@ -450,6 +448,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
           </div>
         ) : (
+          /* VISTA ANALISTA: PANEL DE GESTIÓN */
           <div className="flex-1 flex flex-col gap-6 overflow-hidden">
              <div className="space-y-4 shrink-0">
                 <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden">
@@ -524,6 +523,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
+      {/* ÁREA PRINCIPAL: DETALLE O CHAT */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {!isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
@@ -583,6 +583,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
           </div>
         ) : (
+          /* ÁREA DE CHAT / SOPORTE LIVE */
           <>
             <header className={cn("px-6 md:px-10 py-4 flex justify-between items-center z-10 shrink-0 shadow-sm border-b", isPublic ? "bg-white/60 backdrop-blur-3xl border-white/40" : "bg-white/80 backdrop-blur-2xl border-slate-200/60")}>
               <div className="flex items-center gap-6">
@@ -659,7 +660,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* DIALOGS */}
+      {/* DIÁLOGOS DE SOLICITUD Y SEGUIMIENTO */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[98vh] flex flex-col">
           <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
@@ -701,7 +702,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div className="grid grid-cols-2 gap-3 mt-2">
                    <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", pdfFile ? "border-rose-300" : "border-slate-200")}>
                       <FileText className="h-4 w-4 text-rose-500" />
-                      <span className="text-[7px] font-black uppercase truncate">{pdfFile ? pdfFile.name : "PDF"}</span>
+                      <span className="text-[7px] font-black uppercase truncate">{pdfFile ? pdfFile.name : "PDF (Solicitud)"}</span>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                    </div>
                    <div className={cn("flex items-center gap-2 bg-slate-50 rounded-xl p-2 border-2 border-dashed h-12 relative", excelFile ? "border-emerald-300" : "border-slate-200")}>
@@ -716,6 +717,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
+      {/* CARTA RESPONSIVA INSTITUCIONAL */}
+      <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
+        <DialogContent className="sm:max-w-[620px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[85vh] flex flex-col">
+          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-white text-lg">CARTA RESPONSIVA INSTITUCIONAL</DialogTitle>
+            <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">REGLAS DE OPERACIÓN DEL CORREO ELECTRÓNICO</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 bg-[#fdfaf5]">
+            <div className="p-8 space-y-6 text-[11px] leading-relaxed text-slate-700 text-justify font-medium">
+               <p className="font-bold text-[#9f2241] border-b border-primary/10 pb-4 uppercase tracking-tighter">Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx.</p>
+               
+               <div className="grid grid-cols-1 gap-4">
+                  {[
+                    "El servicio de correo electrónico deberá usarse exclusivamente para asuntos relacionados con el organismo y sus instituciones.",
+                    "Las cuentas de correo son personales. Por lo cual, los titulares de las cuentas son responsables directos del buen uso de las mismas.",
+                    "Las claves de acceso son para uso exclusivo de la persona usuaria titular y su custodia y correcta utilización son de su responsabilidad. Queda prohibido permitir su utilización a personas no autorizadas.",
+                    "Los usuarios de este servicio deberán realizar el cambio de contraseña al recibir por primera vez su cuenta, cuando sea requerido por el sistema o cuando considere que la cuenta esté en riesgo por mal uso.",
+                    "Queda prohibido enviar correo electrónico no solicitado o cadenas (spamming), con fines comerciales, informativos, publicitarios, políticos y religiosos entre otros; así mismo se deberá respetar la privacidad de otros usuarios.",
+                    "Queda prohibido el uso de cuentas de correo electrónico por parte de personas distintas al titular de la misma, por lo que las cuentas y contraseñas son intransferibles.",
+                    "Es responsabilidad de los titulares de las cuentas de correo electrónico, respaldar la información (mensajes) en medios magnéticos u ópticos, para su restauración en caso de pérdida o destrucción parcial o total.",
+                    "Estas cuentas son un medio de comunicación de la estructura de la DESySA, por lo que el titular está obligado a consultarla y realizar revisiones periódicas al buzón con la finalidad de depurarlo y asegurar la buena recepción de mensajes."
+                  ].map((text, i) => (
+                    <div key={i} className="flex gap-4 items-start bg-white/50 p-4 rounded-2xl border border-primary/5 shadow-sm">
+                       <div className="h-6 w-6 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-md">{i+1}</div>
+                       <p className="pt-0.5">{text}</p>
+                    </div>
+                  ))}
+               </div>
+               <p className="font-black text-center text-[9px] uppercase text-slate-400 py-4 italic">Acepto que he leído cada una de las cláusulas y las aceptaciones de conformidad con las políticas establecidas.</p>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="p-6 bg-slate-50 border-t shrink-0">
+             <Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-14 text-[11px]">ACEPTO Y CONTINUAR</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CONFIRMACIÓN DE FOLIO */}
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-10 overflow-hidden bg-white text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-6" />
@@ -729,28 +768,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isResponsivaOpen} onOpenChange={setIsResponsivaOpen}>
-        <DialogContent className="sm:max-w-[620px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[80vh] flex flex-col">
-          <DialogHeader className="p-6 bg-[#9f2241] text-white"><DialogTitle className="uppercase font-black text-white text-lg">CARTA RESPONSIVA INSTITUCIONAL</DialogTitle></DialogHeader>
-          <ScrollArea className="flex-1 p-8"><div className="space-y-6 text-[11px] leading-relaxed text-slate-700 text-justify font-medium">
-            <p className="font-bold text-[#9f2241] border-b pb-4">Las cláusulas aquí definidas aplican a todas las personas que tienen acceso a una cuenta de correo con dominio @desysa.gob.mx, @desysa.edu.mx y @aulamexiquense.mx.</p>
-            {[
-              "El servicio de correo electrónico deberá usarse exclusivamente para asuntos oficiales.",
-              "Las cuentas de correo son personales e intransferibles.",
-              "Las claves de acceso son responsabilidad exclusiva del titular.",
-              "Los usuarios deben realizar el cambio de contraseña cuando sea requerido por el sistema.",
-              "Queda prohibido enviar correo no solicitado o cadenas (spamming).",
-              "Queda prohibido permitir el uso de la cuenta a personas distintas al titular.",
-              "Es responsabilidad del titular respaldar la información del buzón.",
-              "El titular está obligado a consultar periódicamente el buzón institucional."
-            ].map((text, i) => (
-              <div key={i} className="flex gap-4 items-start"><div className="h-5 w-5 rounded-full bg-[#B38E5D] text-white flex items-center justify-center text-[10px] font-black shrink-0">{i+1}</div><p>{text}</p></div>
-            ))}
-          </div></ScrollArea>
-          <DialogFooter className="p-6 bg-slate-50 border-t"><Button onClick={() => setIsResponsivaOpen(false)} className="btn-institutional w-full h-14 text-[11px]">ACEPTO Y CONTINUAR</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* SEGUIMIENTO DE STATUS */}
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-4 overflow-hidden bg-white">
           <DialogHeader><DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO COEES</DialogTitle></DialogHeader>
@@ -760,10 +778,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <Button onClick={handleTrackFolio} className="h-10 w-10 p-0 rounded-lg bg-primary text-white"><Search className="h-4 w-4" /></Button>
              </div>
              {trackedTicket && (
-               <div className="p-4 bg-slate-50 rounded-2xl border-2 border-accent/20">
+               <div className="p-4 bg-slate-50 rounded-2xl border-2 border-accent/20 animate-in zoom-in-95">
                   <div className="flex justify-between items-start border-b pb-2 mb-3">
                      <div><p className="text-[8px] font-black text-slate-400 uppercase">FOLIO:</p><h4 className="text-lg font-black text-primary leading-none">{trackedTicket.id || trackedTicket.ticketNumber}</h4></div>
-                     <Badge className="text-[9px] font-black uppercase py-1 px-3 rounded-full">{trackedTicket.displayStatus}</Badge>
+                     <Badge className="text-[9px] font-black uppercase py-1 px-3 rounded-full">{trackedTicket.displayStatus || 'REGISTRADA'}</Badge>
                   </div>
                   <p className="text-[9px] font-bold text-slate-600 uppercase"><span className="text-accent">Plantel:</span> {trackedTicket.schoolName || trackedTicket.cct || 'En Proceso'}</p>
                </div>
@@ -773,6 +791,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
+      {/* FINALIZAR SERVICIO (ANALISTA) */}
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[420px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-4 bg-primary text-white shrink-0">
@@ -797,7 +816,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-9 bg-slate-50 border-none rounded-xl text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO ATRES</Label><div className="h-9 bg-slate-100 rounded-xl flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber || selectedFormal?.id}</div></div>
+              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO COEES</Label><div className="h-9 bg-slate-100 rounded-xl flex items-center px-3 font-mono font-black text-primary shadow-inner text-[10px]">{selectedRequest?.ticketNumber || selectedFormal?.id}</div></div>
             </div>
             <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen Operativo</Label><Textarea placeholder="ACCIONES REALIZADAS..." className="h-20 bg-slate-50 border-none rounded-xl p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>
