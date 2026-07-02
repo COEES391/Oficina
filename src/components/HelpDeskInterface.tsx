@@ -462,6 +462,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
              </div>
 
+             {/* APARTADO SOLICITUDES DE SERVICIO */}
              <div className="space-y-4 shrink-0">
                 <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-2 flex items-center justify-between w-full">Solicitudes de Servicio <Badge className="bg-primary text-white text-[9px] px-3 rounded-full">{formalRequests.length}</Badge></Label>
                 <ScrollArea className="h-44">
@@ -480,6 +481,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </ScrollArea>
              </div>
 
+             {/* APARTADO MESA OPERATIVA (LIVE) */}
              <div className="space-y-4 shrink-0">
                 <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-2 flex items-center justify-between w-full">Mesa Operativa (Live) <Badge className="bg-accent text-white text-[9px] px-3 rounded-full">{queue.length}</Badge></Label>
                 <ScrollArea className="h-40">
