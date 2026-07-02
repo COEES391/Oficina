@@ -49,7 +49,9 @@ import {
   Search,
   Mail,
   Tag,
-  Headset
+  Headset,
+  Printer,
+  Eye
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -84,6 +86,10 @@ type FormalRequest = {
   detail: string;
   timestamp: number;
   status: 'recibida' | 'en proceso' | 'atendida';
+  pdfData?: string;
+  pdfName?: string;
+  excelData?: string;
+  excelName?: string;
 }
 
 type TechFile = {
@@ -348,15 +354,39 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setTrackedTicket(null);
   }
 
-  const handleSendNewTicketRequest = () => {
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSendNewTicketRequest = async () => {
     if (!requesterName || !requesterEmail || !helpTopic || !ticketCct || !ticketDetail) {
       toast({ variant: "destructive", title: "Datos Incompletos", description: "Todos los campos son obligatorios." });
       return;
     }
     const folio = generateSequentialFolio();
+
+    let pdfData, excelData;
+    if (pdfFile) pdfData = await readFileAsDataURL(pdfFile);
+    if (excelFile) excelData = await readFileAsDataURL(excelFile);
     
     const newFormalReq: FormalRequest = {
-      id: folio, requesterName, requesterEmail, helpTopic, cct: ticketCct, detail: ticketDetail, timestamp: Date.now(), status: 'recibida'
+      id: folio, 
+      requesterName, 
+      requesterEmail, 
+      helpTopic, 
+      cct: ticketCct, 
+      detail: ticketDetail, 
+      timestamp: Date.now(), 
+      status: 'recibida',
+      pdfData,
+      pdfName: pdfFile?.name,
+      excelData,
+      excelName: excelFile?.name
     }
 
     const stored = JSON.parse(localStorage.getItem('coees_formal_requests') || '[]')
@@ -407,6 +437,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
+
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) { toast({ variant: "destructive", title: "Error", description: "Bloqueador de popups detectado." }); return; }
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
 
   const showLeftColumn = !isPublic || (isPublic && isRemoteHelpRequested);
 
@@ -583,13 +619,57 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
                   </div>
 
-                  <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 space-y-4">
-                     <Label className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
-                       <MessageSquare className="h-5 w-5" /> Detalle Técnico del Reporte
-                     </Label>
-                     <div className="p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                        <p className="text-base font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
-                     </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 space-y-4">
+                       <Label className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
+                         <MessageSquare className="h-5 w-5" /> Detalle Técnico del Reporte
+                       </Label>
+                       <div className="p-8 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                          <p className="text-base font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedFormal.detail}</p>
+                       </div>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 space-y-6">
+                       <Label className="text-[11px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3">
+                         <Paperclip className="h-5 w-5" /> Documentación Adjunta
+                       </Label>
+                       <div className="space-y-4">
+                          {selectedFormal.pdfData ? (
+                            <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex flex-col gap-3 group transition-all hover:bg-rose-100/50">
+                               <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-rose-600"><FileText className="h-6 w-6" /></div>
+                                  <div className="flex-1 min-w-0">
+                                     <p className="text-[10px] font-black text-slate-700 uppercase truncate">Solicitud en PDF</p>
+                                     <p className="text-[8px] font-bold text-rose-400 truncate">{selectedFormal.pdfName}</p>
+                                  </div>
+                               </div>
+                               <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName!)} className="flex-1 h-8 rounded-lg text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-1.5"><Download className="h-3 w-3" /> Descargar</Button>
+                                  <Button variant="outline" size="sm" onClick={() => printFile(selectedFormal.pdfData!)} className="flex-1 h-8 rounded-lg text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all gap-1.5"><Printer className="h-3 w-3" /> Imprimir</Button>
+                               </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-center opacity-40"><p className="text-[8px] font-black uppercase">Sin PDF adjunto</p></div>
+                          )}
+
+                          {selectedFormal.excelData ? (
+                            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col gap-3 group transition-all hover:bg-emerald-100/50">
+                               <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-md text-emerald-600"><FileSpreadsheet className="h-6 w-6" /></div>
+                                  <div className="flex-1 min-w-0">
+                                     <p className="text-[10px] font-black text-slate-700 uppercase truncate">Base de Datos Excel</p>
+                                     <p className="text-[8px] font-bold text-emerald-400 truncate">{selectedFormal.excelName}</p>
+                                  </div>
+                               </div>
+                               <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName!)} className="w-full h-8 rounded-lg text-[8px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-1.5"><Download className="h-3 w-3" /> Descargar Excel</Button>
+                               </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-center opacity-40"><p className="text-[8px] font-black uppercase">Sin Excel adjunto</p></div>
+                          )}
+                       </div>
+                    </div>
                   </div>
                </div>
              </ScrollArea>
