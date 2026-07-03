@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -14,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { type AppUser } from '@/lib/planning-data'
 
 const SECTIONS = [
-  { id: 'bitacora-atres', name: 'Bitácora ATRES' },
+  { id: 'bitacora-atres', name: 'Bitácora SOLICITUDES' },
   { id: 'planeacion', name: 'PLANEACIÓN' },
   { id: 'soporte', name: 'Soporte Técnico' },
   { id: 'capacitacion', name: 'Capacitación' },
