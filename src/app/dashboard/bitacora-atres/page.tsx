@@ -13,21 +13,19 @@ import {
   Search, 
   FileSpreadsheet, 
   Building2, 
-  CheckCircle2, 
   UserCheck, 
   Calendar, 
   FileText, 
   Eye, 
   Download, 
   Printer, 
-  FileBox,
-  Pencil,
-  Trash2,
-  ShieldCheck,
-  Save,
-  X,
+  Pencil, 
+  Trash2, 
+  ShieldCheck, 
+  Save, 
   AlertCircle,
-  Circle
+  Bell,
+  X
 } from "lucide-react"
 import { 
   Dialog, 
@@ -63,8 +61,7 @@ const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
       
       {/* Luz Verde */}
       <div className={cn(
-        "h-3.5 w-3.5 rounded-full transition-all duration-500 border border-black/20",
-        status === 'atendido' 
+        "h-3.5 w-3.5 rounded-full transition-all duration-500 border border-black/20", status === 'atendido' 
           ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
           : "bg-emerald-900/30 grayscale"
       )} title="Atendido" />
@@ -84,12 +81,10 @@ export default function BitacoraAtresPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<BitacoraEntry | null>(null)
 
-  useEffect(() => {
-    setMounted(true)
+  const loadData = () => {
     const stored = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setRecords(stored)
 
-    // Check Admin Status
     const rfc = localStorage.getItem('userRfc')
     if (rfc === 'COEES') {
       setIsAdmin(true)
@@ -98,6 +93,17 @@ export default function BitacoraAtresPage() {
       const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc?.toUpperCase())
       if (user?.role === 'admin') setIsAdmin(true)
     }
+  }
+
+  useEffect(() => {
+    setMounted(true)
+    loadData()
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'atres_bitacora') loadData()
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [])
 
   const filteredRecords = useMemo(() => {
@@ -107,9 +113,12 @@ export default function BitacoraAtresPage() {
       (r.cct || '').toUpperCase().includes(term) ||
       (r.schoolName || '').toUpperCase().includes(term) ||
       (r.folio || '').toUpperCase().includes(term) ||
-      (r.tecnico || '').toUpperCase().includes(term)
+      (r.tecnico || '').toUpperCase().includes(term) ||
+      (r.status || '').toUpperCase().includes(term)
     );
   }, [searchTerm, records]);
+
+  const pendingCount = useMemo(() => records.filter(r => r.status === 'pendiente').length, [records]);
 
   const downloadExcel = () => {
     const dataToExport = filteredRecords.map(r => ({
@@ -122,7 +131,6 @@ export default function BitacoraAtresPage() {
       Oficina: r.oficina,
       Estatus: r.status === 'atendido' ? 'Atendido' : r.status === 'proceso' ? 'En Proceso' : 'No Atendido'
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Bitácora ATRES");
@@ -130,10 +138,7 @@ export default function BitacoraAtresPage() {
   };
 
   const downloadFile = (data: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = data;
-    link.download = name;
-    link.click();
+    const link = document.createElement('a'); link.href = data; link.download = name; link.click();
   }
 
   const printFile = (data: string) => {
@@ -142,16 +147,13 @@ export default function BitacoraAtresPage() {
     win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
   }
 
-  const handleEdit = (record: BitacoraEntry) => {
-    setEditingRecord({ ...record });
-    setIsEditDialogOpen(true);
-  }
+  const handleEdit = (record: BitacoraEntry) => { setEditingRecord({ ...record }); setIsEditDialogOpen(true); }
 
   const handleDelete = (id: string) => {
     const updated = records.filter(r => r.id !== id);
     setRecords(updated);
     localStorage.setItem('atres_bitacora', JSON.stringify(updated));
-    toast({ title: "Registro eliminado", description: "El folio ha sido removido de la bitácora." });
+    toast({ title: "Registro eliminado" });
   }
 
   const saveEdits = () => {
@@ -161,18 +163,42 @@ export default function BitacoraAtresPage() {
     localStorage.setItem('atres_bitacora', JSON.stringify(updated));
     setIsEditDialogOpen(false);
     setEditingRecord(null);
-    toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente." });
+    toast({ title: "Registro actualizado" });
   }
 
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+    <div className="space-y-6 animate-in fade-in duration-700 w-full max-w-full overflow-hidden px-1">
+      {/* ALERTA OPERATIVA - SE ACTIVA AL ENVIAR SOLICITUD */}
+      {pendingCount > 0 && (
+        <div className="bg-rose-600 text-white p-5 rounded-[2rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-4 ring-rose-200">
+           <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center animate-pulse">
+                <Bell className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-widest leading-none">Nueva Alerta Operativa</h3>
+                <p className="text-[10px] font-bold uppercase opacity-80 mt-1">Existen {pendingCount} folios con estatus PENDIENTE que requieren atención técnica inmediata.</p>
+              </div>
+           </div>
+           <div className="flex gap-2">
+             <Button 
+                onClick={() => setSearchTerm('pendiente')} 
+                className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[10px] h-10 px-8 rounded-xl shadow-xl border-none transition-all active:scale-95"
+             >
+                Atender Solicitudes
+             </Button>
+             <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-xl"><X className="h-4 w-4" /></Button>
+           </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Bitácora de Solicitudes</h2>
           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
-            <History className="h-4 w-4 text-accent" /> Control Histórico de Atención
+            <History className="h-4 w-4 text-accent" /> Control Histórico de Atención Final
           </p>
         </div>
         
@@ -199,24 +225,24 @@ export default function BitacoraAtresPage() {
            </div>
 
            <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
-             Total Atenciones: {filteredRecords.length}
+             Atenciones Totales: {filteredRecords.length}
            </Badge>
         </div>
       </Card>
 
       <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
         <div className="overflow-x-auto w-full">
-          <Table>
+          <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
               <TableRow className="h-14">
                 <TableHead className="w-20 text-[10px] font-black uppercase text-center pl-6">Estatus</TableHead>
-                <TableHead className="w-24 text-[10px] font-black uppercase text-center">Folio</TableHead>
-                <TableHead className="min-w-[150px] text-[10px] font-black uppercase">Fecha / Hora</TableHead>
-                <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Plantel Institucional</TableHead>
-                <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Resumen Operativo</TableHead>
-                <TableHead className="min-w-[120px] text-[10px] font-black uppercase text-center">Analista</TableHead>
-                <TableHead className="w-28 text-[10px] font-black uppercase text-center">Expediente</TableHead>
-                {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>}
+                <TableHead className="w-28 text-[10px] font-black uppercase text-center text-primary">Folio</TableHead>
+                <TableHead className="w-40 text-[10px] font-black uppercase">Fecha / Hora</TableHead>
+                <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Plantel Institucional</TableHead>
+                <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Resumen Operativo del Servicio</TableHead>
+                <TableHead className="w-40 text-[10px] font-black uppercase text-center">Analista</TableHead>
+                <TableHead className="w-32 text-[10px] font-black uppercase text-center">Expediente</TableHead>
+                {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10 w-28">Acción</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -235,23 +261,23 @@ export default function BitacoraAtresPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-700 uppercase leading-none">{r.schoolName}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate max-w-[200px]">{r.schoolName}</span>
                       <div className="flex items-center gap-2 mt-1.5">
                          <Badge variant="secondary" className="bg-primary/5 text-primary text-[8px] font-black border-primary/10">{r.cct}</Badge>
-                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{r.oficina.replace("Oficina de ", "")}</span>
+                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">{r.oficina?.replace("Oficina de ", "")}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="text-[9px] font-semibold text-slate-600 leading-relaxed line-clamp-3 max-w-[300px]">
+                    <p className="text-[9px] font-semibold text-slate-600 leading-relaxed line-clamp-3 max-w-[350px]">
                       {r.servicio}
                     </p>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
                        <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
-                       <span className="text-[10px] font-black text-slate-700 uppercase">{r.tecnico}</span>
+                       <span className="text-[10px] font-black text-slate-700 uppercase truncate max-w-[120px]">{r.tecnico}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -295,7 +321,7 @@ export default function BitacoraAtresPage() {
                   <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-28 opacity-30">
                     <div className="flex flex-col items-center gap-4">
                       <History className="h-12 w-12 text-slate-300" />
-                      <p className="text-sm font-black uppercase tracking-widest text-slate-400">Sin registros en bitácora para mostrar</p>
+                      <p className="text-sm font-black uppercase tracking-widest text-slate-400">Sin registros en bitácora</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -306,9 +332,9 @@ export default function BitacoraAtresPage() {
       </Card>
 
       <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-pulse">
-         <UserCheck className="h-5 w-5 text-accent" />
+         <AlertCircle className="h-5 w-5 text-accent" />
          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent">
-            Histórico consolidado de atenciones técnicas. El estatus indica la situación operativa final del servicio para reporte administrativo 2026.
+            Histórico consolidado de atenciones técnicas. El semáforo indica la situación operativa final para reporte administrativo 2026.
          </p>
       </div>
 
@@ -373,7 +399,7 @@ export default function BitacoraAtresPage() {
                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-3">
                   <ShieldCheck className="h-5 w-5 text-amber-600" />
                   <p className="text-[9px] font-black text-amber-800 uppercase leading-tight">
-                    Esta acción modificará permanentemente el registro en la bitácora oficial y en los reportes de planeación anual.
+                    Esta acción modificará permanentemente el registro oficial.
                   </p>
                </div>
             </div>
@@ -394,7 +420,7 @@ export default function BitacoraAtresPage() {
               <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3">
                 <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documentación Histórica de Solicitud de Servicio</DialogDescription>
+              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documentación de Solicitud de Servicio</DialogDescription>
             </div>
             <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[9px] uppercase h-9 px-5 rounded-lg gap-2 shadow-xl">
                <Printer className="h-3.5 w-3.5" /> Imprimir Documento

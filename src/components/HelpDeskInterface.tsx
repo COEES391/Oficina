@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -299,7 +298,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleRequestRemoteSupport = () => {
     if (remoteId.length < 9) { toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese su ID de 9 dígitos." }); return; }
-    const turn = generateSequentialFolio();
+    const turn = generateTurnSessionId();
     const newReq: SupportRequest = { remoteId, ticketNumber: turn, timestamp: Date.now(), status: 'pending', requestType: 'remote', chatKey: sessionKey }
     const rawQueue = localStorage.getItem('atres_support_queue'); const currentQueue = JSON.parse(rawQueue || '[]');
     localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
@@ -366,26 +365,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         excelContent = await readFileAsDataURL(excelFile);
       }
       
-      // 1. Registro en Cola Formal (para el analista en la Mesa de Ayuda)
       const newFormalReq: FormalRequest = {
-        id: folio, 
-        requesterName, 
-        requesterEmail, 
-        helpTopic, 
-        cct: ticketCct, 
-        detail: ticketDetail, 
-        timestamp: Date.now(), 
-        status: 'recibida',
-        pdfData: pdfContent,
-        pdfName: pdfFile?.name,
-        excelData: excelContent,
-        excelName: excelFile?.name
+        id: folio, requesterName, requesterEmail, helpTopic, cct: ticketCct, detail: ticketDetail, timestamp: Date.now(), status: 'recibida',
+        pdfData: pdfContent, pdfName: pdfFile?.name, excelData: excelContent, excelName: excelFile?.name
       }
 
       const stored = JSON.parse(localStorage.getItem('coees_formal_requests') || '[]')
       localStorage.setItem('coees_formal_requests', JSON.stringify([newFormalReq, ...stored]))
 
-      // 2. Registro en Bitácora de SOLICITUDES (Estatus: Pendiente 🔴)
+      // REGISTRO EN BITÁCORA DE SOLICITUDES (Estatus: Pendiente)
       const school = schoolsDirectory.find(s => s.cct === ticketCct.toUpperCase());
       const bitacoraEntry: BitacoraEntry = {
         id: `BIT-${Date.now()}`,
@@ -393,7 +381,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         cct: ticketCct.toUpperCase(),
         schoolName: school?.nombre || "CCT NO IDENTIFICADO",
         servicio: ticketDetail,
-        oficina: "PENDIENTE",
+        oficina: "MESA DE AYUDA",
         fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
         tecnico: "POR ASIGNAR",
         tipo: 'FORMAL',
@@ -405,15 +393,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       };
 
       const currentBitacora = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
-      localStorage.setItem('atres_bitacora', JSON.stringify([bitacoraEntry, ...currentBitacora]));
+      const updatedBitacora = [bitacoraEntry, ...currentBitacora];
+      localStorage.setItem('atres_bitacora', JSON.stringify(updatedBitacora));
 
-      window.dispatchEvent(new StorageEvent('storage', { key: 'coees_formal_requests', storageArea: localStorage }))
-      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', storageArea: localStorage }))
+      // DISPARAR EVENTOS DE ALMACENAMIENTO PARA ALERTAS
+      window.dispatchEvent(new StorageEvent('storage', { key: 'coees_formal_requests', newValue: JSON.stringify([newFormalReq, ...stored]), storageArea: localStorage }));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: JSON.stringify(updatedBitacora), storageArea: localStorage }));
 
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
-      
       setPdfFile(null); setExcelFile(null);
       setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
     } catch (e: any) {
@@ -422,14 +411,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const handleFinishConfirm = () => {
-    if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) { 
-      toast({ variant: "destructive", title: "Faltan datos obligatorios" }); 
-      return; 
-    }
+    if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) { toast({ variant: "destructive", title: "Faltan datos obligatorios" }); return; }
     const folio = selectedRequest?.ticketNumber || selectedFormal?.id;
     if (!folio) return;
 
-    // 1. ACTUALIZAR Bitácora de SOLICITUDES (Cambiar a Atendido 🟢)
+    // ACTUALIZAR Bitácora de SOLICITUDES (Atendido)
     const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
     const updatedBitacora = currentBitacora.map(b => b.folio === folio ? {
       ...b,
@@ -439,44 +425,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       oficina: finishForm.oficinaRegionalAtencion,
       schoolName: finishForm.schoolName
     } : b);
-    
-    // Si no existía (era un chat live), lo creamos
-    if (!currentBitacora.find(b => b.folio === folio)) {
-       const newEntry: BitacoraEntry = {
-          id: `BIT-${Date.now()}`,
-          folio: folio,
-          cct: finishForm.cct,
-          schoolName: finishForm.schoolName,
-          servicio: finishForm.servicio,
-          oficina: finishForm.oficinaRegionalAtencion,
-          fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
-          tecnico: techName || 'Analista COEES',
-          tipo: 'LIVE',
-          status: 'atendido'
-       };
-       updatedBitacora.unshift(newEntry);
-    }
     localStorage.setItem('atres_bitacora', JSON.stringify(updatedBitacora));
 
-    // 2. Registro en Apartado ATRES (Programas / Estadísticas)
+    // Registro en Apartado ATRES
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
-      id: folio, 
-      name: 'ATRES', 
-      cct: finishForm.cct, 
-      schoolName: finishForm.schoolName, 
-      municipio: finishForm.municipio, 
-      valle: finishForm.valle, 
-      status: 'concluido', 
-      date: format(new Date(), 'yyyy-MM-dd'), 
-      progress: 100, 
-      observaciones: finishForm.servicio, 
-      tecnicos: techName, 
-      oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion 
+      id: folio, name: 'ATRES', cct: finishForm.cct, schoolName: finishForm.schoolName, municipio: finishForm.municipio, valle: finishForm.valle, 
+      status: 'concluido', date: format(new Date(), 'yyyy-MM-dd'), progress: 100, observaciones: finishForm.servicio, tecnicos: techName, oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion 
     }
     localStorage.setItem('programs_full_v24', JSON.stringify([newRec, ...progs]))
 
-    // 3. Limpiar colas activas
     if (selectedRequest) {
       const rawQueue = localStorage.getItem('atres_support_queue')
       const updatedQueue = JSON.parse(rawQueue || '[]').filter((r: any) => r.ticketNumber !== folio);
@@ -487,15 +445,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       localStorage.setItem('coees_formal_requests', JSON.stringify(updatedFormal))
     }
 
-    window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', storageArea: localStorage }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', storageArea: localStorage }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify([newRec, ...progs]), storageArea: localStorage }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: JSON.stringify(updatedBitacora), storageArea: localStorage }));
     
-    setIsFinishDialogOpen(false); 
-    setSelectedRequest(null); 
-    setSelectedFormal(null); 
-    syncQueue(); 
-    syncFormalRequests(); 
-    updateAttendedCount();
+    setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null); syncQueue(); syncFormalRequests(); updateAttendedCount();
     toast({ title: "Atención Registrada en ATRES" });
   }
 
@@ -510,7 +463,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const printFile = (data: string) => {
     const win = window.open();
-    if (!win) { toast({ variant: "destructive", title: "Error", description: "Bloqueador de popups detectado." }); return; }
+    if (!win) return;
     win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
   }
 
@@ -524,7 +477,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       isPublic ? "rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.15)] bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
       {showLeftColumn && (
-        <div className="w-full md:w-[280px] flex flex-col p-4 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60 animate-in slide-in-from-left duration-500">
+        <div className="w-full md:w-[320px] flex flex-col p-4 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-slate-50 border-r border-slate-200/60 animate-in slide-in-from-left duration-500">
            {isPublic ? (
              <div className="flex-1 flex flex-col gap-4">
                 <div className="space-y-4">
@@ -828,59 +781,59 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       {/* DIÁLOGOS DE SOLICITUD Y SEGUIMIENTO */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
-          <DialogHeader className="p-4 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-2 opacity-10 rotate-12"><FilePlus className="h-12 w-12" /></div>
-            <DialogTitle className="uppercase font-black text-base flex items-center gap-2 relative z-10 leading-none"><FilePlus className="h-5 w-5 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
-            <DialogDescription className="sr-only">Complete el formulario oficial para solicitar atención técnica institucional.</DialogDescription>
+        <DialogContent className="sm:max-w-[550px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
+          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><FilePlus className="h-16 w-16" /></div>
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3 relative z-10 leading-none"><FilePlus className="h-6 w-6 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-widest mt-2 relative z-10">Complete el formulario oficial para atención técnica.</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden p-4 space-y-4">
-             <div className="space-y-3">
-                <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5">Información del Solicitante</h4>
-                <div className="space-y-1">
-                  <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
-                  <Input placeholder="PATERNO MATERNO NOMBRES..." className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Información del Solicitante</h4>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
+                  <Input placeholder="PATERNO MATERNO NOMBRES..." className="h-10 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
-                    <Input placeholder="ejemplo@desysa.edu.mx" className="h-9 bg-slate-50 border-none rounded-lg text-[9px] font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo Institucional</Label>
+                    <Input placeholder="ejemplo@desysa.edu.mx" className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
                     <Select value={helpTopic} onValueChange={val => { setHelpTopic(val); if (val === 'cuenta') setIsResponsivaOpen(true); }} >
-                      <SelectTrigger className="h-9 bg-slate-50 border-none rounded-lg text-[8px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
+                      <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="cuenta" className="text-[9px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
-                        <SelectItem value="transmision" className="text-[9px] font-bold uppercase">Transmisión</SelectItem>
-                        <SelectItem value="soporte" className="text-[9px] font-bold uppercase">Soporte Técnico</SelectItem>
-                        <SelectItem value="capacitacion" className="text-[9px] font-bold uppercase">Capacitación</SelectItem>
+                        <SelectItem value="cuenta" className="text-[10px] font-bold uppercase">Cuenta institucional (crear, restablecer, eliminar)</SelectItem>
+                        <SelectItem value="transmision" className="text-[10px] font-bold uppercase">Transmisión</SelectItem>
+                        <SelectItem value="soporte" className="text-[10px] font-bold uppercase">Soporte Técnico</SelectItem>
+                        <SelectItem value="capacitacion" className="text-[10px] font-bold uppercase">Capacitación</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
              </div>
-             <div className="space-y-3">
-                <h4 className="text-[9px] font-black uppercase text-accent border-b pb-0.5">Datos del Servicio</h4>
-                <div className="grid grid-cols-2 gap-2">
-                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label><Input placeholder="15DES0000X" className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
-                   <div className="space-y-1"><Label className="text-[8px] font-black uppercase text-slate-400 pl-1">Detalle Breve</Label><Input placeholder="DESCRIPCIÓN..." className="h-9 bg-slate-50 border-none rounded-lg text-[10px] font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
+             <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Datos del Servicio Técnico</h4>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label><Input placeholder="15DES0000X" className="h-10 bg-slate-50 border-none rounded-xl text-xs font-mono font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
+                   <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Detalle Breve</Label><Input placeholder="DESCRIBA LA NECESIDAD..." className="h-10 bg-slate-50 border-none rounded-xl text-xs font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-1">
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-lg p-2 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
-                      <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-500")} />
-                      <div className="flex flex-col min-w-0"><span className={cn("text-[7px] font-black uppercase truncate", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Solicitud PDF"}</span><span className="text-[5px] text-slate-400 uppercase">{pdfFile ? "Listo" : "Subir PDF"}</span></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                   <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-14 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
+                      <FileText className={cn("h-5 w-5", pdfFile ? "text-rose-600" : "text-rose-400")} />
+                      <div className="flex flex-col min-w-0"><span className={cn("text-[8px] font-black uppercase truncate", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Subir Solicitud PDF"}</span><span className="text-[6px] text-slate-400 uppercase">{pdfFile ? "Documento Listo" : "Formato Oficial"}</span></div>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                    </div>
-                   <div className={cn("flex items-center gap-2 bg-slate-50 rounded-lg p-2 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
-                      <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-500")} />
-                      <div className="flex flex-col min-w-0"><span className={cn("text-[7px] font-black uppercase truncate", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Archivo Excel"}</span><span className="text-[5px] text-slate-400 uppercase">{excelFile ? "Listo" : "Subir Excel"}</span></div>
+                   <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-14 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
+                      <FileSpreadsheet className={cn("h-5 w-5", excelFile ? "text-emerald-600" : "text-emerald-400")} />
+                      <div className="flex flex-col min-w-0"><span className={cn("text-[8px] font-black uppercase truncate", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Subir Base Excel"}</span><span className="text-[6px] text-slate-400 uppercase">{excelFile ? "Documento Listo" : "Formato Oficial"}</span></div>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                    </div>
                 </div>
              </div>
           </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-8 px-4 text-[8px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-10 px-8 text-[9px]">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-12 px-6 text-[10px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-12 px-10 text-[10px]">ENVIAR SOLICITUD</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
