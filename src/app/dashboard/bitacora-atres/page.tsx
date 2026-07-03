@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -42,6 +41,36 @@ import { type BitacoraEntry, type AppUser } from '@/lib/planning-data'
 import * as XLSX from 'xlsx'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+
+const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
+  return (
+    <div className="inline-flex flex-col gap-1 bg-slate-900 p-1.5 rounded-xl shadow-2xl border border-slate-700/50 w-8">
+      {/* Luz Roja */}
+      <div className={cn(
+        "h-3.5 w-3.5 rounded-full transition-all duration-500 border border-black/20",
+        status === 'pendiente' 
+          ? "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)] animate-pulse" 
+          : "bg-rose-900/30 grayscale"
+      )} title="No Atendido" />
+      
+      {/* Luz Ámbar */}
+      <div className={cn(
+        "h-3.5 w-3.5 rounded-full transition-all duration-500 border border-black/20",
+        status === 'proceso' 
+          ? "bg-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]" 
+          : "bg-amber-900/30 grayscale"
+      )} title="En Proceso" />
+      
+      {/* Luz Verde */}
+      <div className={cn(
+        "h-3.5 w-3.5 rounded-full transition-all duration-500 border border-black/20",
+        status === 'atendido' 
+          ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" 
+          : "bg-emerald-900/30 grayscale"
+      )} title="Atendido" />
+    </div>
+  );
+}
 
 export default function BitacoraAtresPage() {
   const { toast } = useToast()
@@ -135,30 +164,6 @@ export default function BitacoraAtresPage() {
     toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente." });
   }
 
-  const getStatusBadge = (status: BitacoraEntry['status']) => {
-    switch (status) {
-      case 'atendido':
-        return (
-          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 h-6 px-3 rounded-full">
-            <Circle className="h-1.5 w-1.5 fill-emerald-600 border-none" /> Atendido
-          </Badge>
-        );
-      case 'proceso':
-        return (
-          <Badge className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 h-6 px-3 rounded-full">
-            <Circle className="h-1.5 w-1.5 fill-amber-500 border-none" /> En Proceso
-          </Badge>
-        );
-      case 'pendiente':
-      default:
-        return (
-          <Badge className="bg-rose-50 text-rose-700 border-rose-200 gap-1.5 h-6 px-3 rounded-full">
-            <Circle className="h-1.5 w-1.5 fill-rose-600 border-none" /> No Atendido
-          </Badge>
-        );
-    }
-  }
-
   if (!mounted) return null;
 
   return (
@@ -204,11 +209,11 @@ export default function BitacoraAtresPage() {
           <Table>
             <TableHeader className="bg-slate-50 border-b">
               <TableRow className="h-14">
-                <TableHead className="w-24 text-[10px] font-black uppercase text-center pl-6">Folio</TableHead>
+                <TableHead className="w-20 text-[10px] font-black uppercase text-center pl-6">Semáforo</TableHead>
+                <TableHead className="w-24 text-[10px] font-black uppercase text-center">Folio</TableHead>
                 <TableHead className="min-w-[150px] text-[10px] font-black uppercase">Fecha / Hora</TableHead>
-                <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Identificación del Plantel</TableHead>
+                <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Plantel Institucional</TableHead>
                 <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Resumen Operativo</TableHead>
-                <TableHead className="w-40 text-[10px] font-black uppercase text-center">Estatus Operativo</TableHead>
                 <TableHead className="min-w-[120px] text-[10px] font-black uppercase text-center">Analista</TableHead>
                 <TableHead className="w-28 text-[10px] font-black uppercase text-center">Expediente</TableHead>
                 {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>}
@@ -218,6 +223,9 @@ export default function BitacoraAtresPage() {
               {filteredRecords.length > 0 ? filteredRecords.map((r) => (
                 <TableRow key={r.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-24 group">
                   <TableCell className="pl-6 text-center">
+                    <TrafficLight status={r.status} />
+                  </TableCell>
+                  <TableCell className="text-center">
                     <span className="font-mono font-black text-xs text-primary">{r.folio}</span>
                   </TableCell>
                   <TableCell>
@@ -239,9 +247,6 @@ export default function BitacoraAtresPage() {
                     <p className="text-[9px] font-semibold text-slate-600 leading-relaxed line-clamp-3 max-w-[300px]">
                       {r.servicio}
                     </p>
-                  </TableCell>
-                  <TableCell className="text-center">
-                     {getStatusBadge(r.status)}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -303,7 +308,7 @@ export default function BitacoraAtresPage() {
       <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-pulse">
          <UserCheck className="h-5 w-5 text-accent" />
          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent">
-            Histórico consolidado de atenciones técnicas. Los datos aquí mostrados son auditables y permanentes para el reporte de actividades COEES 2026.
+            Histórico consolidado de atenciones técnicas. El semáforo indica el estatus operativo final del servicio para reporte administrativo 2026.
          </p>
       </div>
 
@@ -337,19 +342,22 @@ export default function BitacoraAtresPage() {
                   </div>
                </div>
 
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase text-primary pl-1">Estatus del Semáforo</Label>
-                     <Select value={editingRecord.status} onValueChange={(val: any) => setEditingRecord({...editingRecord, status: val})}>
-                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 font-black uppercase text-[10px]">
-                           <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                           <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
-                           <SelectItem value="proceso" className="text-[10px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
-                           <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">🔴 NO ATENDIDO</SelectItem>
-                        </SelectContent>
-                     </Select>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                     <Label className="text-[10px] font-black uppercase text-primary pl-1">Actualizar Semáforo</Label>
+                     <div className="flex items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-inner">
+                        <TrafficLight status={editingRecord.status} />
+                        <Select value={editingRecord.status} onValueChange={(val: any) => setEditingRecord({...editingRecord, status: val})}>
+                          <SelectTrigger className="h-10 rounded-xl bg-white/10 border-white/20 font-black uppercase text-[10px] text-white">
+                             <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                             <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
+                             <SelectItem value="proceso" className="text-[10px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
+                             <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">🔴 NO ATENDIDO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                     </div>
                   </div>
                </div>
 
