@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { 
   History, 
   Search, 
@@ -18,7 +20,12 @@ import {
   Eye, 
   Download, 
   Printer, 
-  FileBox 
+  FileBox,
+  Pencil,
+  Trash2,
+  ShieldCheck,
+  Save,
+  X
 } from "lucide-react"
 import { 
   Dialog, 
@@ -28,20 +35,37 @@ import {
   DialogDescription, 
   DialogFooter 
 } from "@/components/ui/dialog"
-import { type BitacoraEntry } from '@/lib/planning-data'
+import { type BitacoraEntry, type AppUser } from '@/lib/planning-data'
 import * as XLSX from 'xlsx'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function BitacoraAtresPage() {
+  const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<BitacoraEntry[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [pdfToPreview, setPdfToPreview] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  
+  // Edit State
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<BitacoraEntry | null>(null)
 
   useEffect(() => {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setRecords(stored)
+
+    // Check Admin Status
+    const rfc = localStorage.getItem('userRfc')
+    if (rfc === 'COEES') {
+      setIsAdmin(true)
+    } else {
+      const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
+      const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc?.toUpperCase())
+      if (user?.role === 'admin') setIsAdmin(true)
+    }
   }, [])
 
   const filteredRecords = useMemo(() => {
@@ -84,6 +108,28 @@ export default function BitacoraAtresPage() {
     const win = window.open();
     if (!win) return;
     win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
+
+  const handleEdit = (record: BitacoraEntry) => {
+    setEditingRecord({ ...record });
+    setIsEditDialogOpen(true);
+  }
+
+  const handleDelete = (id: string) => {
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    localStorage.setItem('atres_bitacora', JSON.stringify(updated));
+    toast({ title: "Registro eliminado", description: "El folio ha sido removido de la bitácora." });
+  }
+
+  const saveEdits = () => {
+    if (!editingRecord) return;
+    const updated = records.map(r => r.id === editingRecord.id ? editingRecord : r);
+    setRecords(updated);
+    localStorage.setItem('atres_bitacora', JSON.stringify(updated));
+    setIsEditDialogOpen(false);
+    setEditingRecord(null);
+    toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente." });
   }
 
   if (!mounted) return null;
@@ -137,7 +183,7 @@ export default function BitacoraAtresPage() {
                 <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Resumen Operativo</TableHead>
                 <TableHead className="min-w-[120px] text-[10px] font-black uppercase">Analista Técnico</TableHead>
                 <TableHead className="min-w-[130px] text-[10px] font-black uppercase text-center">Expediente</TableHead>
-                <TableHead className="text-right text-[10px] font-black uppercase pr-10">Estatus</TableHead>
+                {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -195,15 +241,22 @@ export default function BitacoraAtresPage() {
                         )}
                      </div>
                   </TableCell>
-                  <TableCell className="text-right pr-10">
-                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-black text-[9px] uppercase px-4 h-6">
-                      <CheckCircle2 className="h-3 w-3 mr-1.5" /> CONCLUIDO
-                    </Badge>
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right pr-10">
+                      <div className="flex justify-end gap-2">
+                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-xl transition-all" onClick={() => handleEdit(r)}>
+                            <Pencil className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-xl transition-all" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-28 opacity-30">
+                  <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-28 opacity-30">
                     <div className="flex flex-col items-center gap-4">
                       <History className="h-12 w-12 text-slate-300" />
                       <p className="text-sm font-black uppercase tracking-widest text-slate-400">Sin registros en bitácora para mostrar</p>
@@ -222,6 +275,61 @@ export default function BitacoraAtresPage() {
             Histórico consolidado de atenciones técnicas. Los datos aquí mostrados son auditables y permanentes para el reporte de actividades COEES 2026.
          </p>
       </div>
+
+      {/* DIÁLOGO DE EDICIÓN (ADMIN ONLY) */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if(!open) setEditingRecord(null); }}>
+        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10"><ShieldCheck className="h-24 w-24" /></div>
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4 relative z-10">
+              <Pencil className="h-6 w-6 text-accent" /> Corregir Registro Histórico
+            </DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-[0.3em] mt-2 relative z-10">
+              Modificación controlada de atención técnica concluida
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingRecord && (
+            <div className="p-8 space-y-6">
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio Asociado</Label>
+                     <div className="h-10 bg-slate-50 rounded-xl flex items-center px-4 font-mono font-black text-primary border border-slate-100 shadow-inner">{editingRecord.folio}</div>
+                  </div>
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Analista Responsable</Label>
+                     <Input 
+                        className="h-10 bg-white rounded-xl border-slate-200 font-black uppercase text-xs"
+                        value={editingRecord.tecnico}
+                        onChange={e => setEditingRecord({...editingRecord, tecnico: e.target.value.toUpperCase()})}
+                     />
+                  </div>
+               </div>
+
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Resumen Operativo del Servicio</Label>
+                  <Textarea 
+                    className="min-h-[160px] bg-slate-50 border-none rounded-2xl p-4 text-xs font-semibold shadow-inner focus:bg-white transition-all"
+                    value={editingRecord.servicio}
+                    onChange={e => setEditingRecord({...editingRecord, servicio: e.target.value.toUpperCase()})}
+                  />
+               </div>
+
+               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-amber-600" />
+                  <p className="text-[9px] font-black text-amber-800 uppercase leading-tight">
+                    Esta acción modificará permanentemente el registro en la bitácora oficial y en los reportes de planeación anual.
+                  </p>
+               </div>
+            </div>
+          )}
+
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+             <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
+             <Button onClick={saveEdits} className="btn-institutional h-12 px-12 text-[10px] gap-2"><Save className="h-4 w-4" /> Guardar Cambios</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* VISOR DE PDF INTEGRADO */}
       <Dialog open={!!pdfToPreview} onOpenChange={() => setPdfToPreview(null)}>
