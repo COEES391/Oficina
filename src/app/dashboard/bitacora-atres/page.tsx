@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   History, 
   Search, 
@@ -25,7 +26,9 @@ import {
   Trash2,
   ShieldCheck,
   Save,
-  X
+  X,
+  AlertCircle,
+  Circle
 } from "lucide-react"
 import { 
   Dialog, 
@@ -88,7 +91,7 @@ export default function BitacoraAtresPage() {
       Servicio: r.servicio,
       Técnico: r.tecnico,
       Oficina: r.oficina,
-      Tipo: r.tipo
+      Estatus: r.status === 'atendido' ? 'Atendido' : r.status === 'proceso' ? 'En Proceso' : 'No Atendido'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -130,6 +133,30 @@ export default function BitacoraAtresPage() {
     setIsEditDialogOpen(false);
     setEditingRecord(null);
     toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente." });
+  }
+
+  const getStatusBadge = (status: BitacoraEntry['status']) => {
+    switch (status) {
+      case 'atendido':
+        return (
+          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1.5 h-6 px-3 rounded-full">
+            <Circle className="h-1.5 w-1.5 fill-emerald-600 border-none" /> Atendido
+          </Badge>
+        );
+      case 'proceso':
+        return (
+          <Badge className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 h-6 px-3 rounded-full">
+            <Circle className="h-1.5 w-1.5 fill-amber-500 border-none" /> En Proceso
+          </Badge>
+        );
+      case 'pendiente':
+      default:
+        return (
+          <Badge className="bg-rose-50 text-rose-700 border-rose-200 gap-1.5 h-6 px-3 rounded-full">
+            <Circle className="h-1.5 w-1.5 fill-rose-600 border-none" /> No Atendido
+          </Badge>
+        );
+    }
   }
 
   if (!mounted) return null;
@@ -181,8 +208,9 @@ export default function BitacoraAtresPage() {
                 <TableHead className="min-w-[150px] text-[10px] font-black uppercase">Fecha / Hora</TableHead>
                 <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Identificación del Plantel</TableHead>
                 <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Resumen Operativo</TableHead>
-                <TableHead className="min-w-[120px] text-[10px] font-black uppercase">Analista Técnico</TableHead>
-                <TableHead className="min-w-[130px] text-[10px] font-black uppercase text-center">Expediente</TableHead>
+                <TableHead className="w-40 text-[10px] font-black uppercase text-center">Estatus Operativo</TableHead>
+                <TableHead className="min-w-[120px] text-[10px] font-black uppercase text-center">Analista</TableHead>
+                <TableHead className="w-28 text-[10px] font-black uppercase text-center">Expediente</TableHead>
                 {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>}
               </TableRow>
             </TableHeader>
@@ -212,8 +240,11 @@ export default function BitacoraAtresPage() {
                       {r.servicio}
                     </p>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                  <TableCell className="text-center">
+                     {getStatusBadge(r.status)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
                        <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
                        <span className="text-[10px] font-black text-slate-700 uppercase">{r.tecnico}</span>
                     </div>
@@ -256,7 +287,7 @@ export default function BitacoraAtresPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-28 opacity-30">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-28 opacity-30">
                     <div className="flex flex-col items-center gap-4">
                       <History className="h-12 w-12 text-slate-300" />
                       <p className="text-sm font-black uppercase tracking-widest text-slate-400">Sin registros en bitácora para mostrar</p>
@@ -303,6 +334,22 @@ export default function BitacoraAtresPage() {
                         value={editingRecord.tecnico}
                         onChange={e => setEditingRecord({...editingRecord, tecnico: e.target.value.toUpperCase()})}
                      />
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-primary pl-1">Estatus del Semáforo</Label>
+                     <Select value={editingRecord.status} onValueChange={(val: any) => setEditingRecord({...editingRecord, status: val})}>
+                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 font-black uppercase text-[10px]">
+                           <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                           <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">🟢 ATENDIDO</SelectItem>
+                           <SelectItem value="proceso" className="text-[10px] font-black text-amber-600">🟡 EN PROCESO</SelectItem>
+                           <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">🔴 NO ATENDIDO</SelectItem>
+                        </SelectContent>
+                     </Select>
                   </div>
                </div>
 

@@ -450,6 +450,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
       tecnico: techName || 'Analista COEES',
       tipo: selectedFormal ? 'FORMAL' : 'LIVE',
+      status: 'atendido',
       pdfData: selectedFormal?.pdfData,
       pdfName: selectedFormal?.pdfName,
       excelData: selectedFormal?.excelData,

@@ -18,6 +18,7 @@ export type BitacoraEntry = {
   fecha: string;
   tecnico: string;
   tipo: 'FORMAL' | 'LIVE';
+  status: 'atendido' | 'proceso' | 'pendiente';
   pdfData?: string;
   pdfName?: string;
   excelData?: string;
