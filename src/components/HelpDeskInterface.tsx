@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -60,6 +61,7 @@ import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { schoolsDirectory } from '@/lib/schools-directory'
 import { format } from 'date-fns'
+import { type BitacoraEntry } from '@/lib/planning-data'
 
 type Message = {
   role: 'user' | 'tech' | 'bot';
@@ -101,18 +103,6 @@ type TechFile = {
   data: string;
   type: string;
   lastUpdated: number;
-}
-
-type BitacoraEntry = {
-  id: string;
-  folio: string;
-  cct: string;
-  schoolName: string;
-  servicio: string;
-  oficina: string;
-  fecha: string;
-  tecnico: string;
-  tipo: 'FORMAL' | 'LIVE';
 }
 
 const REGIONAL_OFFICES = [
@@ -459,7 +449,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       oficina: finishForm.oficinaRegionalAtencion,
       fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
       tecnico: techName || 'Analista COEES',
-      tipo: selectedFormal ? 'FORMAL' : 'LIVE'
+      tipo: selectedFormal ? 'FORMAL' : 'LIVE',
+      pdfData: selectedFormal?.pdfData,
+      pdfName: selectedFormal?.pdfName,
+      excelData: selectedFormal?.excelData,
+      excelName: selectedFormal?.excelName,
     };
 
     const currentBitacora = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
@@ -602,7 +596,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
 
                      <div className="space-y-2 flex flex-col h-[30%] overflow-hidden">
-                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-accent/10 pb-1 flex items-center justify-between w-full shrink-0">
+                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
                          Mesa Operativa (Live) 
                          <Badge className="bg-accent text-white text-[9px] px-2 h-4 rounded-full">{queue.length}</Badge>
                        </Label>
@@ -711,6 +705,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <Badge variant="secondary" className="bg-white/50 text-emerald-700 text-[10px] font-black uppercase px-4">Concluido: {selectedBitacora.fecha}</Badge>
                      </div>
                   </div>
+
+                  {(selectedBitacora.pdfData || selectedBitacora.excelData) && (
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-primary/5 space-y-4">
+                       <Label className="text-[10px] font-black uppercase text-primary tracking-[0.3em] flex items-center gap-3 border-b pb-2">
+                         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm"><FileBox className="h-4 w-4" /></div>
+                         Expediente Digital Histórico
+                       </Label>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         {selectedBitacora.pdfData && (
+                            <div className="p-4 bg-rose-50 rounded-[1.5rem] border-2 border-rose-200 flex flex-col gap-3 shadow-md">
+                               <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-rose-600 border border-rose-50"><FileText className="h-6 w-6" /></div>
+                                  <div className="flex-1 min-w-0">
+                                     <p className="text-[10px] font-black text-slate-800 uppercase truncate">Reporte Técnico</p>
+                                     <p className="text-[7px] font-bold text-rose-400 truncate tracking-tight">{selectedBitacora.pdfName || 'Expediente.pdf'}</p>
+                                  </div>
+                               </div>
+                               <div className="grid grid-cols-2 gap-2">
+                                  <Button onClick={() => setPdfToPreview(selectedBitacora.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/95 shadow-xl"><Eye className="h-4 w-4 mr-2" /> VER</Button>
+                                  <Button variant="outline" onClick={() => printFile(selectedBitacora.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white shadow-md"><Printer className="h-4 w-4 mr-2" /> IMPRIMIR</Button>
+                               </div>
+                            </div>
+                         )}
+                         {selectedBitacora.excelData && (
+                            <div className="p-4 bg-emerald-50 rounded-[1.5rem] border-2 border-emerald-200 flex flex-col gap-3 shadow-md">
+                               <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
+                                  <div className="flex-1 min-w-0">
+                                     <p className="text-[10px] font-black text-slate-800 uppercase truncate">Bases de Datos</p>
+                                     <p className="text-[7px] font-bold text-emerald-400 truncate tracking-tight">{selectedBitacora.excelName || 'Lista.xlsx'}</p>
+                                  </div>
+                               </div>
+                               <Button variant="outline" onClick={() => downloadFile(selectedBitacora.excelData!, selectedBitacora.excelName || 'base.xlsx')} className="h-10 rounded-xl text-[9px] font-black uppercase border-emerald-200 text-emerald-600 bg-white shadow-md"><Download className="h-4 w-4 mr-2" /> DESCARGAR EXCEL</Button>
+                            </div>
+                         )}
+                       </div>
+                    </div>
+                  )}
                </div>
              </ScrollArea>
           </div>
@@ -805,7 +837,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               {selectedFormal.excelData ? (
                                 <div className="p-4 bg-emerald-50 rounded-[1.5rem] border-2 border-emerald-200 flex flex-col gap-3 group transition-all hover:bg-emerald-100 shadow-md">
                                    <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-xl text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
+                                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
                                       <div className="flex-1 min-w-0">
                                          <p className="text-[10px] font-black text-slate-800 uppercase truncate">Base de Datos</p>
                                          <p className="text-[7px] font-bold text-emerald-400 truncate tracking-tight">{selectedFormal.excelName || 'Lista.xlsx'}</p>

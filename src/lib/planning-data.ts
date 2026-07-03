@@ -18,6 +18,10 @@ export type BitacoraEntry = {
   fecha: string;
   tecnico: string;
   tipo: 'FORMAL' | 'LIVE';
+  pdfData?: string;
+  pdfName?: string;
+  excelData?: string;
+  excelName?: string;
 };
 
 export type VisitSchedule = {
