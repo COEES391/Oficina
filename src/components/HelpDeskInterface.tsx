@@ -97,14 +97,6 @@ type FormalRequest = {
   excelName?: string;
 }
 
-type TechFile = {
-  id: string;
-  name: string;
-  data: string;
-  type: string;
-  lastUpdated: number;
-}
-
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
   "Oficina de Tecnóloga Educativa Naucalpan",
@@ -121,10 +113,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [formalRequests, setFormalRequests] = useState<FormalRequest[]>([])
-  const [bitacora, setBitacora] = useState<BitacoraEntry[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
   const [selectedFormal, setSelectedFormal] = useState<FormalRequest | null>(null)
-  const [selectedBitacora, setSelectedBitacora] = useState<BitacoraEntry | null>(null)
   const [techName, setTechName] = useState('')
   const [mounted, setMounted] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
@@ -149,7 +139,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [trackFolioInput, setTrackFolioInput] = useState('')
   const [trackedTicket, setTrackedTicket] = useState<any>(null)
   
-  const [techLibrary, setTechLibrary] = useState<TechFile[]>([])
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [finishSearchTerm, setFinishSearchTerm] = useState('')
   const [finishForm, setFinishForm] = useState({
@@ -165,7 +154,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const libraryInputRef = useRef<HTMLInputElement>(null)
 
   const activeChatId = useMemo(() => {
     if (isPublic) return activeTicketNumber || sessionKey;
@@ -205,11 +193,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setFormalRequests(stored ? JSON.parse(stored) : [])
   }, [])
 
-  const syncBitacora = useCallback(() => {
-    const stored = localStorage.getItem('atres_bitacora')
-    setBitacora(stored ? JSON.parse(stored) : [])
-  }, [])
-
   const syncQueue = useCallback(() => {
     const rawQueue = localStorage.getItem('atres_support_queue')
     const currentQueue: SupportRequest[] = rawQueue ? JSON.parse(rawQueue) : []
@@ -243,13 +226,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
-      const savedLibrary = localStorage.getItem('atres_tech_library')
-      if (savedLibrary) setTechLibrary(JSON.parse(savedLibrary))
       updateAttendedCount();
       syncFormalRequests();
-      syncBitacora();
     }
-  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests, syncBitacora])
+  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests])
 
   useEffect(() => {
     setMounted(true)
@@ -257,18 +237,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     syncChat()
     if (!isPublic) {
       syncFormalRequests()
-      syncBitacora()
     }
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'atres_support_queue') syncQueue()
       if (e.key === 'coees_formal_requests') syncFormalRequests()
-      if (e.key === 'atres_bitacora') syncBitacora()
       if (activeChatId && e.key === `atres_chat_${activeChatId}`) syncChat()
       if (e.key === 'programs_full_v24' && !isPublic) updateAttendedCount()
     };
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [syncQueue, syncChat, activeChatId, isPublic, updateAttendedCount, syncFormalRequests, syncBitacora])
+  }, [syncQueue, syncChat, activeChatId, isPublic, updateAttendedCount, syncFormalRequests])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
@@ -336,16 +314,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => handleSendMessage({ data: ev.target?.result as string, name: file.name, type: file.type })
-    reader.readAsDataURL(file); e.target.value = '';
-  }
-
-  const handleLibraryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const newFile: TechFile = { id: `FILE-${Date.now()}`, name: file.name, data: ev.target?.result as string, type: file.type, lastUpdated: Date.now() }
-      const updated = [newFile, ...techLibrary]; setTechLibrary(updated); localStorage.setItem('atres_tech_library', JSON.stringify(updated))
-    }
     reader.readAsDataURL(file); e.target.value = '';
   }
 
@@ -497,7 +465,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setSelectedFormal(null); 
     syncQueue(); 
     syncFormalRequests(); 
-    syncBitacora();
     updateAttendedCount();
     toast({ title: "Atención Registrada en Bitácora" });
   }
@@ -576,7 +543,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex-1 flex flex-col gap-4 overflow-hidden min-h-0">
                    <div className="flex flex-col gap-4 overflow-hidden h-full">
-                     <div className="space-y-2 flex flex-col h-[30%] overflow-hidden">
+                     <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
                        <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
                          Solicitudes de Servicio 
                          <Badge className="bg-primary text-white text-[9px] px-2 h-4 rounded-full">{formalRequests.length}</Badge>
@@ -584,7 +551,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        <ScrollArea className="flex-1">
                          <div className="space-y-1.5 pr-2 pb-4">
                            {formalRequests.map(req => (
-                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setSelectedBitacora(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                                <div className="flex flex-col">
                                  <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.id}</span>
                                  <span className={cn("text-[10px] font-black truncate max-w-[130px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.requesterName}</span>
@@ -596,7 +563,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        </ScrollArea>
                      </div>
 
-                     <div className="space-y-2 flex flex-col h-[30%] overflow-hidden">
+                     <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
                        <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
                          Mesa Operativa (Live) 
                          <Badge className="bg-accent text-white text-[9px] px-2 h-4 rounded-full">{queue.length}</Badge>
@@ -604,7 +571,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        <ScrollArea className="flex-1">
                          <div className="space-y-1.5 pr-2 pb-4">
                            {queue.map(req => (
-                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setSelectedBitacora(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                                <div className="flex flex-col">
                                  <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                  <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA LIVE' : 'ACCESO REMOTO'}</span>
@@ -615,44 +582,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          </div>
                        </ScrollArea>
                      </div>
-
-                     <div className="space-y-2 flex flex-col h-[30%] overflow-hidden">
-                       <Label className="text-[10px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center justify-between w-full shrink-0">
-                         Bitácora de Atención
-                         <Badge className="bg-slate-400 text-white text-[9px] px-2 h-4 rounded-full">{bitacora.length}</Badge>
-                       </Label>
-                       <ScrollArea className="flex-1">
-                         <div className="space-y-1.5 pr-2 pb-4">
-                           {bitacora.map(entry => (
-                             <button key={entry.id} onClick={() => { setSelectedBitacora(entry); setSelectedFormal(null); setSelectedRequest(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedBitacora?.id === entry.id ? "bg-slate-800 border-slate-800 shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                               <div className="flex flex-col">
-                                 <span className={cn("text-[7px] font-black", selectedBitacora?.id === entry.id ? "text-white/60" : "text-slate-400")}>{entry.fecha}</span>
-                                 <span className={cn("text-[9px] font-black truncate max-w-[130px]", selectedBitacora?.id === entry.id ? "text-white" : "text-slate-600")}>{entry.cct}</span>
-                               </div>
-                               <History className={cn("h-3.5 w-3.5", selectedBitacora?.id === entry.id ? "text-white" : "text-slate-300")} />
-                             </button>
-                           ))}
-                         </div>
-                       </ScrollArea>
-                     </div>
                    </div>
-                </div>
-
-                <div className="space-y-2 shrink-0 pt-2 border-t">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 border-b pb-1 flex items-center justify-between w-full">Biblioteca <Plus className="h-3 w-3 cursor-pointer hover:text-primary" onClick={() => libraryInputRef.current?.click()} /></Label>
-                   <input type="file" ref={libraryInputRef} className="hidden" onChange={handleLibraryUpload} />
-                   <ScrollArea className="h-14">
-                     <div className="space-y-1.5 pr-2">
-                       {techLibrary.map(f => (
-                         <div key={f.id} className="p-1.5 bg-white rounded-lg border border-slate-100 shadow-sm flex items-center gap-2 group hover:border-primary/20 transition-all">
-                            <div className="h-6 w-6 rounded bg-slate-50 flex items-center justify-center shrink-0">{getFileIcon(f.type)}</div>
-                            <div className="flex-1 min-w-0">
-                               <p className="text-[8px] font-black text-slate-600 truncate uppercase">{f.name}</p>
-                            </div>
-                         </div>
-                       ))}
-                     </div>
-                   </ScrollArea>
                 </div>
              </div>
            )}
@@ -660,92 +590,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {!isPublic && !selectedRequest && !selectedFormal && !selectedBitacora ? (
+        {!isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 bg-slate-50/50">
             <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-12 w-12" /></div>
             <div className="space-y-2">
               <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">CENTRO OPERATIVO</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud, un Turno o la Bitácora en la columna izquierda para iniciar.</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud o un Turno en la columna izquierda para iniciar.</p>
             </div>
-          </div>
-        ) : !isPublic && selectedBitacora ? (
-          <div className="flex-1 flex flex-col p-4 md:p-8 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
-             <ScrollArea className="flex-1">
-               <div className="max-w-5xl mx-auto w-full space-y-6 pb-12">
-                  <div className="flex justify-between items-center border-b-4 border-slate-800 pb-4">
-                     <div>
-                        <Badge className="bg-slate-800 text-white font-black uppercase text-[10px] px-4 h-6 mb-2 tracking-[0.2em]">REGISTRO DE BITÁCORA</Badge>
-                        <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter leading-none">Atención Concluida</h2>
-                     </div>
-                     <Button variant="outline" onClick={() => setSelectedBitacora(null)} className="rounded-xl h-12 px-8 font-black uppercase text-[10px] border-slate-300">Cerrar Registro</Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                     <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 flex flex-col justify-center">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 mb-2">Folio Atendido</Label>
-                        <p className="text-2xl font-black text-primary font-mono">{selectedBitacora.folio}</p>
-                     </div>
-                     <div className="md:col-span-2 bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
-                        <Label className="text-[10px] font-black uppercase text-slate-400 mb-2">Plantel Institucional</Label>
-                        <p className="text-xl font-black text-slate-800 uppercase leading-none">{selectedBitacora.schoolName}</p>
-                        <p className="text-xs font-mono font-bold text-primary mt-2">{selectedBitacora.cct} • {selectedBitacora.oficina}</p>
-                     </div>
-                  </div>
-
-                  <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-emerald-100 space-y-4 relative overflow-hidden shadow-inner">
-                     <div className="absolute top-0 right-0 p-8 opacity-5"><CheckCircle2 className="h-32 w-32" /></div>
-                     <Label className="text-[11px] font-black uppercase text-emerald-700 flex items-center gap-3 relative z-10">
-                        <div className="h-10 w-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm"><CheckCircle2 className="h-5 w-5" /></div>
-                        Resumen de la Atención Técnica Realizada
-                     </Label>
-                     <div className="p-6 bg-white/60 rounded-[2rem] border border-white relative z-10">
-                        <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedBitacora.servicio}</p>
-                     </div>
-                     <div className="flex flex-wrap gap-4 pt-4 border-t border-emerald-100 relative z-10">
-                        <Badge variant="secondary" className="bg-white/50 text-emerald-700 text-[10px] font-black uppercase px-4">Técnico: {selectedBitacora.tecnico}</Badge>
-                        <Badge variant="secondary" className="bg-white/50 text-emerald-700 text-[10px] font-black uppercase px-4">Concluido: {selectedBitacora.fecha}</Badge>
-                     </div>
-                  </div>
-
-                  {(selectedBitacora.pdfData || selectedBitacora.excelData) && (
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-primary/5 space-y-4">
-                       <Label className="text-[10px] font-black uppercase text-primary tracking-[0.3em] flex items-center gap-3 border-b pb-2">
-                         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm"><FileBox className="h-4 w-4" /></div>
-                         Expediente Digital Histórico
-                       </Label>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         {selectedBitacora.pdfData && (
-                            <div className="p-4 bg-rose-50 rounded-[1.5rem] border-2 border-rose-200 flex flex-col gap-3 shadow-md">
-                               <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-rose-600 border border-rose-50"><FileText className="h-6 w-6" /></div>
-                                  <div className="flex-1 min-w-0">
-                                     <p className="text-[10px] font-black text-slate-800 uppercase truncate">Reporte Técnico</p>
-                                     <p className="text-[7px] font-bold text-rose-400 truncate tracking-tight">{selectedBitacora.pdfName || 'Expediente.pdf'}</p>
-                                  </div>
-                               </div>
-                               <div className="grid grid-cols-2 gap-2">
-                                  <Button onClick={() => setPdfToPreview(selectedBitacora.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/95 shadow-xl"><Eye className="h-4 w-4 mr-2" /> VER</Button>
-                                  <Button variant="outline" onClick={() => printFile(selectedBitacora.pdfData!)} className="h-10 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 bg-white shadow-md"><Printer className="h-4 w-4 mr-2" /> IMPRIMIR</Button>
-                               </div>
-                            </div>
-                         )}
-                         {selectedBitacora.excelData && (
-                            <div className="p-4 bg-emerald-50 rounded-[1.5rem] border-2 border-emerald-200 flex flex-col gap-3 shadow-md">
-                               <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
-                                  <div className="flex-1 min-w-0">
-                                     <p className="text-[10px] font-black text-slate-800 uppercase truncate">Bases de Datos</p>
-                                     <p className="text-[7px] font-bold text-emerald-400 truncate tracking-tight">{selectedBitacora.excelName || 'Lista.xlsx'}</p>
-                                  </div>
-                               </div>
-                               <Button variant="outline" onClick={() => downloadFile(selectedBitacora.excelData!, selectedBitacora.excelName || 'base.xlsx')} className="h-10 rounded-xl text-[9px] font-black uppercase border-emerald-200 text-emerald-600 bg-white shadow-md"><Download className="h-4 w-4 mr-2" /> DESCARGAR EXCEL</Button>
-                            </div>
-                         )}
-                       </div>
-                    </div>
-                  )}
-               </div>
-             </ScrollArea>
           </div>
         ) : !isPublic && selectedFormal ? (
           <div className="flex-1 flex flex-col p-4 md:p-6 bg-[#fdfaf5] animate-in fade-in duration-700 overflow-hidden">
@@ -910,7 +761,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                 <Download className={cn("h-3.5 w-3.5", isMe ? "text-white/60" : "text-slate-300")} />
                               </div>
                             )}
-                            <div className={cn("text-[7px] mt-2 font-black uppercase opacity-60 flex items-center gap-1.5", isMe ? "justify-end" : "justify-start")}>
+                            <div className={cn("text-[7px] mt-2 font-black uppercase flex items-center gap-1.5", isMe ? "justify-end" : "justify-start")}>
                               <Clock className="h-2.5 w-2.5" /> {mounted ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                             </div>
                           </div>
