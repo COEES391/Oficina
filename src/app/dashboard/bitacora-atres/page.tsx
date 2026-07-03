@@ -172,7 +172,7 @@ export default function BitacoraAtresPage() {
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Bitácora de Solicitudes</h2>
           <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
-            <History className="h-4 w-4 text-accent" /> Control Histórico de Atención Final ATRES
+            <History className="h-4 w-4 text-accent" /> Control Histórico de Atención
           </p>
         </div>
         
@@ -392,7 +392,7 @@ export default function BitacoraAtresPage() {
           <DialogHeader className="p-5 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3">
-                <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES - BITÁCORA
+                <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES
               </DialogTitle>
               <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documentación Histórica de Solicitud de Servicio</DialogDescription>
             </div>
