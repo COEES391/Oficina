@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -173,7 +172,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const syncFormalRequests = useCallback(() => {
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
-    // Solo mostramos las que están pendientes o en proceso en la columna izquierda
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
   }, [])
 
@@ -241,7 +239,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const lastMsg = messages[messages.length - 1];
       if (lastMsg && lastMsg.role === 'user') {
         const text = lastMsg.content.toLowerCase();
-        if (text.includes('office') || text.includes('windows')) {
+        if (text.includes('office') || text.includes('windows') || text.includes('anydesk')) {
           setIsRemoteHelpRequested(true);
         }
       }
@@ -280,9 +278,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     try {
       localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
     } catch (e) {
-      // Si falla por espacio, borramos chats muy viejos
       const keys = Object.keys(localStorage).filter(k => k.startsWith('atres_chat_'));
-      if (keys.length > 5) {
+      if (keys.length > 3) {
         localStorage.removeItem(keys[0]);
         localStorage.setItem(historyKey, JSON.stringify(updatedMessages));
       }
@@ -290,7 +287,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     setMessages(updatedMessages)
     window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
-
     input && setInput('')
   }
 
@@ -322,10 +318,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (concluded) { setTrackedTicket({ ...concluded, displayStatus: 'Atendida' }); return; }
 
     const inBitacora = bitacoraStored.find((b: any) => b.folio === trackFolioInput.toUpperCase());
-    if (inBitacora) { setTrackedTicket({ ...inBitacora, id: inBitacora.folio, displayStatus: inBitacora.status === 'atendido' ? 'Atendida (Historial)' : (inBitacora.status === 'proceso' ? 'En Proceso' : 'Recibida') }); return; }
+    if (inBitacora) { setTrackedTicket({ ...inBitacora, id: inBitacora.folio, displayStatus: inBitacora.status === 'atendido' ? 'Atendida' : (inBitacora.status === 'proceso' ? 'En Proceso' : 'Pendiente') }); return; }
     
     const inQueue = liveQueue.find((r: any) => r.ticketNumber === trackFolioInput.toUpperCase());
-    if (inQueue) { setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'Recibida / Pendiente' }); return; }
+    if (inQueue) { setTrackedTicket({ ...inQueue, displayStatus: inQueue.status === 'attending' ? 'En Proceso' : 'Recibida' }); return; }
     
     toast({ variant: "destructive", title: "Folio no encontrado" });
     setTrackedTicket(null);
@@ -351,11 +347,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let pdfContent, excelContent;
       
       if (pdfFile) {
-        if (pdfFile.size > 2.5 * 1024 * 1024) throw new Error("Archivo demasiado grande. El límite es de 2.5MB por archivo para garantizar el almacenamiento.");
+        if (pdfFile.size > 2.5 * 1024 * 1024) throw new Error("Archivo demasiado grande. El límite es de 2.5MB.");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > 2.5 * 1024 * 1024) throw new Error("Archivo demasiado grande. El límite es de 2.5MB por archivo para garantizar el almacenamiento.");
+        if (excelFile.size > 2.5 * 1024 * 1024) throw new Error("Archivo demasiado grande. El límite es de 2.5MB.");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -378,30 +374,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       };
 
       const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
-      
-      // LÓGICA DE LIMPIEZA AUTOMÁTICA DE STORAGE SI EXCEDEMOS LA CUOTA
       const saveToBitacora = (entries: BitacoraEntry[]) => {
         try {
           localStorage.setItem('atres_bitacora', JSON.stringify(entries));
         } catch (e) {
-          if (entries.length > 1) {
-            // Borramos el más antiguo que tenga archivos adjuntos pesados
-            const oldestWithFilesIdx = entries.map((e, i) => ({has: !!e.pdfData, i})).reverse().find(o => o.has)?.i;
-            if (oldestWithFilesIdx !== undefined) {
-              const cleaned = [...entries];
-              cleaned[oldestWithFilesIdx].pdfData = undefined;
-              cleaned[oldestWithFilesIdx].excelData = undefined;
-              saveToBitacora(cleaned);
-            } else {
-              saveToBitacora(entries.slice(0, entries.length - 1));
-            }
+          if (entries.length > 2) {
+            saveToBitacora(entries.slice(0, entries.length - 1));
           }
         }
       }
-
       saveToBitacora([bitacoraEntry, ...currentBitacora]);
-
-      // DISPARAR EVENTO GLOBAL PARA ALERTA
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: localStorage.getItem('atres_bitacora'), storageArea: localStorage }));
 
       setLastGeneratedFolio(folio);
@@ -419,7 +401,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const folio = selectedRequest?.ticketNumber || selectedFormal?.folio;
     if (!folio) return;
 
-    // ACTUALIZAR Bitácora de SOLICITUDES (Atendido)
     const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
     const updatedBitacora = currentBitacora.map(b => b.folio === folio ? {
       ...b,
@@ -431,7 +412,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     } : b);
     localStorage.setItem('atres_bitacora', JSON.stringify(updatedBitacora));
 
-    // Registro en Apartado ATRES (Programas)
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
       id: folio, name: 'ATRES', cct: finishForm.cct, schoolName: finishForm.schoolName, municipio: finishForm.municipio, valle: finishForm.valle, 
@@ -460,12 +440,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
-
-  const printFile = (data: string) => {
-    const win = window.open();
-    if (!win) return;
-    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-  }
+  const printFile = (data: string) => { const win = window.open(); if (!win) return; win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`); }
 
   const showLeftColumn = !isPublic || (isPublic && isRemoteHelpRequested);
 
@@ -525,46 +500,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4 overflow-hidden min-h-0">
-                   <div className="flex flex-col gap-4 overflow-hidden h-full">
-                     <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
-                       <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
-                         Solicitudes de Servicio 
-                         <Badge className="bg-primary text-white text-[9px] px-2 h-4 rounded-full">{formalRequests.length}</Badge>
-                       </Label>
-                       <ScrollArea className="flex-1">
-                         <div className="space-y-1.5 pr-2 pb-4">
-                           {formalRequests.map(req => (
-                             <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                               <div className="flex flex-col">
-                                 <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
-                                 <span className={cn("text-[10px] font-black truncate max-w-[130px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
-                               </div>
-                               <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
-                             </button>
-                           ))}
-                         </div>
-                       </ScrollArea>
-                     </div>
+                   <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
+                     <Label className="text-[10px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
+                       Solicitudes de Servicio 
+                       <Badge className="bg-primary text-white text-[9px] px-2 h-4 rounded-full">{formalRequests.length}</Badge>
+                     </Label>
+                     <ScrollArea className="flex-1">
+                       <div className="space-y-1.5 pr-2 pb-4">
+                         {formalRequests.map(req => (
+                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <div className="flex flex-col">
+                               <span className={cn("text-[8px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
+                               <span className={cn("text-[10px] font-black truncate max-w-[130px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
+                             </div>
+                             <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
+                           </button>
+                         ))}
+                       </div>
+                     </ScrollArea>
+                   </div>
 
-                     <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
-                       <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
-                         Mesa Operativa (Live) 
-                         <Badge className="bg-accent text-white text-[9px] px-2 h-4 rounded-full">{queue.length}</Badge>
-                       </Label>
-                       <ScrollArea className="flex-1">
-                         <div className="space-y-1.5 pr-2 pb-4">
-                           {queue.map(req => (
-                             <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
-                               <div className="flex flex-col">
-                                 <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
-                                 <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA LIVE' : 'ACCESO REMOTO'}</span>
-                               </div>
-                               <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
-                             </button>
-                           ))}
-                         </div>
-                       </ScrollArea>
-                     </div>
+                   <div className="space-y-2 flex flex-col h-[50%] overflow-hidden">
+                     <Label className="text-[10px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between w-full shrink-0">
+                       Mesa Operativa (Live) 
+                       <Badge className="bg-accent text-white text-[9px] px-2 h-4 rounded-full">{queue.length}</Badge>
+                     </Label>
+                     <ScrollArea className="flex-1">
+                       <div className="space-y-1.5 pr-2 pb-4">
+                         {queue.map(req => (
+                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-2.5 rounded-xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                             <div className="flex flex-col">
+                               <span className={cn("text-[8px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
+                               <span className={cn("text-[10px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'CONSULTA LIVE' : 'ACCESO REMOTO'}</span>
+                             </div>
+                             <ChevronRight className={cn("h-4 w-4", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-300")} />
+                           </button>
+                         ))}
+                       </div>
+                     </ScrollArea>
                    </div>
                 </div>
              </div>
@@ -578,7 +551,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <div className="h-24 w-24 rounded-[2.5rem] bg-white shadow-2xl flex items-center justify-center text-primary/10 border-4 border-white animate-pulse"><MessageSquare className="h-12 w-12" /></div>
             <div className="space-y-2">
               <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">CENTRO OPERATIVO</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud o un Turno en la columna izquierda para iniciar.</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una Solicitud o un Turno para iniciar.</p>
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
@@ -769,8 +742,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[500px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><FilePlus className="h-16 w-16" /></div>
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3 relative z-10 leading-none"><FilePlus className="h-6 w-6 text-accent" /> SOLICITUD DE SERVICIO</DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-widest mt-2 relative z-10">Complete el formulario para atención técnica.</DialogDescription>
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3 relative z-10 leading-none">SOLICITUD DE SERVICIO</DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-widest mt-2 relative z-10">Complete el formulario técnico oficial.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
              <div className="max-w-[420px] mx-auto space-y-5">
@@ -828,6 +801,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[620px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white h-[80vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-white text-lg">CARTA RESPONSIVA INSTITUCIONAL</DialogTitle>
+            <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest mt-1">Normativa para el uso de cuentas oficiales @desysa.edu.mx</DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 bg-[#fdfaf5]">
             <div className="p-8 space-y-4 text-[10px] leading-relaxed text-slate-700 text-justify font-medium">
@@ -859,9 +833,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
         <DialogContent className="sm:max-w-[380px] rounded-[2rem] border-none shadow-2xl p-8 overflow-hidden bg-white text-center">
-            <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto mb-4" />
-            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</h3>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-1 mb-6">Su solicitud ha sido recibida correctamente en la Bitácora de Solicitudes.</p>
+            <DialogHeader className="flex flex-col items-center">
+              <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto mb-4" />
+              <DialogTitle className="text-lg font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</DialogTitle>
+              <DialogDescription className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-1 mb-6">
+                  Su solicitud ha sido recibida correctamente en la Bitácora de Solicitudes.
+              </DialogDescription>
+            </DialogHeader>
             <div className="bg-slate-50 p-5 rounded-[1.5rem] border-2 border-primary/10 shadow-inner mb-6">
                <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-1">FOLIO DE SEGUIMIENTO</p>
                <h4 className="text-2xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
@@ -871,9 +849,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </Dialog>
 
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-4 overflow-hidden bg-white">
+        <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-6 overflow-hidden bg-white">
           <DialogHeader>
             <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO COEES</DialogTitle>
+            <DialogDescription className="text-[9px] font-bold uppercase text-slate-400">Verifique el estatus de su folio institucional.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
              <div className="flex gap-2">
@@ -898,6 +877,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-4 bg-primary text-white shrink-0">
             <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
+            <DialogDescription className="text-white/60 text-[8px] font-bold uppercase tracking-widest mt-1">Registre el cierre oficial de la atención técnica.</DialogDescription>
           </DialogHeader>
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
@@ -933,6 +913,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3">
                 <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES
               </DialogTitle>
+              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documento de Solicitud de Servicio Técnico</DialogDescription>
             </div>
             <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[9px] uppercase h-9 px-5 rounded-lg gap-2 shadow-xl">
                <Printer className="h-3.5 w-3.5" /> Imprimir Documento
