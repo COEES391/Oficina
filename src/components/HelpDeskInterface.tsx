@@ -53,9 +53,7 @@ import {
   Headset,
   Printer,
   Eye,
-  FileBox,
-  History,
-  AlertCircle
+  FileBox
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -368,6 +366,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         excelContent = await readFileAsDataURL(excelFile);
       }
       
+      // 1. Registro en Cola Formal (para el analista en la Mesa de Ayuda)
       const newFormalReq: FormalRequest = {
         id: folio, 
         requesterName, 
@@ -384,9 +383,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }
 
       const stored = JSON.parse(localStorage.getItem('coees_formal_requests') || '[]')
-      const updated = [newFormalReq, ...stored]
-      localStorage.setItem('coees_formal_requests', JSON.stringify(updated))
-      window.dispatchEvent(new StorageEvent('storage', { key: 'coees_formal_requests', newValue: JSON.stringify(updated), storageArea: localStorage }))
+      localStorage.setItem('coees_formal_requests', JSON.stringify([newFormalReq, ...stored]))
+
+      // 2. Registro en Bitácora de SOLICITUDES (Estatus: Pendiente 🔴)
+      const school = schoolsDirectory.find(s => s.cct === ticketCct.toUpperCase());
+      const bitacoraEntry: BitacoraEntry = {
+        id: `BIT-${Date.now()}`,
+        folio: folio,
+        cct: ticketCct.toUpperCase(),
+        schoolName: school?.nombre || "CCT NO IDENTIFICADO",
+        servicio: ticketDetail,
+        oficina: "PENDIENTE",
+        fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
+        tecnico: "POR ASIGNAR",
+        tipo: 'FORMAL',
+        status: 'pendiente',
+        pdfData: pdfContent,
+        pdfName: pdfFile?.name,
+        excelData: excelContent,
+        excelName: excelFile?.name,
+      };
+
+      const currentBitacora = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
+      localStorage.setItem('atres_bitacora', JSON.stringify([bitacoraEntry, ...currentBitacora]));
+
+      window.dispatchEvent(new StorageEvent('storage', { key: 'coees_formal_requests', storageArea: localStorage }))
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', storageArea: localStorage }))
 
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
@@ -407,28 +429,36 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const folio = selectedRequest?.ticketNumber || selectedFormal?.id;
     if (!folio) return;
 
-    // 1. Generar Registro de Bitácora
-    const bitacoraEntry: BitacoraEntry = {
-      id: `BIT-${Date.now()}`,
-      folio: folio,
-      cct: finishForm.cct,
-      schoolName: finishForm.schoolName,
+    // 1. ACTUALIZAR Bitácora de SOLICITUDES (Cambiar a Atendido 🟢)
+    const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
+    const updatedBitacora = currentBitacora.map(b => b.folio === folio ? {
+      ...b,
+      status: 'atendido' as const,
       servicio: finishForm.servicio,
-      oficina: finishForm.oficinaRegionalAtencion,
-      fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
       tecnico: techName || 'Analista COEES',
-      tipo: selectedFormal ? 'FORMAL' : 'LIVE',
-      status: 'atendido',
-      pdfData: selectedFormal?.pdfData,
-      pdfName: selectedFormal?.pdfName,
-      excelData: selectedFormal?.excelData,
-      excelName: selectedFormal?.excelName,
-    };
+      oficina: finishForm.oficinaRegionalAtencion,
+      schoolName: finishForm.schoolName
+    } : b);
+    
+    // Si no existía (era un chat live), lo creamos
+    if (!currentBitacora.find(b => b.folio === folio)) {
+       const newEntry: BitacoraEntry = {
+          id: `BIT-${Date.now()}`,
+          folio: folio,
+          cct: finishForm.cct,
+          schoolName: finishForm.schoolName,
+          servicio: finishForm.servicio,
+          oficina: finishForm.oficinaRegionalAtencion,
+          fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
+          tecnico: techName || 'Analista COEES',
+          tipo: 'LIVE',
+          status: 'atendido'
+       };
+       updatedBitacora.unshift(newEntry);
+    }
+    localStorage.setItem('atres_bitacora', JSON.stringify(updatedBitacora));
 
-    const currentBitacora = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
-    localStorage.setItem('atres_bitacora', JSON.stringify([bitacoraEntry, ...currentBitacora]));
-
-    // 2. Sincronizar con Programas (Stats Dashboard)
+    // 2. Registro en Apartado ATRES (Programas / Estadísticas)
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
       id: folio, 
@@ -466,7 +496,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     syncQueue(); 
     syncFormalRequests(); 
     updateAttendedCount();
-    toast({ title: "Atención Registrada en Bitácora" });
+    toast({ title: "Atención Registrada en ATRES" });
   }
 
   const getFileIcon = (type: string) => {
@@ -614,7 +644,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RECIBIDO: {format(selectedFormal.timestamp, "dd/MM/yyyy HH:mm")}</span>
                         </div>
                      </div>
-                     <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl hover:scale-105 transition-all">
+                     <Button onClick={() => {
+                        setFinishForm({
+                           ...finishForm,
+                           cct: selectedFormal.cct,
+                           schoolName: schoolsDirectory.find(s => s.cct === selectedFormal.cct)?.nombre || "",
+                           municipio: schoolsDirectory.find(s => s.cct === selectedFormal.cct)?.municipio || "",
+                           valle: schoolsDirectory.find(s => s.cct === selectedFormal.cct)?.valle || ""
+                        });
+                        setIsFinishDialogOpen(true);
+                     }} className="btn-institutional h-10 px-8 text-[10px] gap-2 shadow-xl hover:scale-105 transition-all">
                         <CheckCircle2 className="h-4 w-4" /> REGISTRAR ATENCIÓN FINAL
                      </Button>
                   </div>
