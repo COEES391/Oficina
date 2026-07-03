@@ -209,7 +209,7 @@ export default function BitacoraAtresPage() {
           <Table>
             <TableHeader className="bg-slate-50 border-b">
               <TableRow className="h-14">
-                <TableHead className="w-20 text-[10px] font-black uppercase text-center pl-6">Semáforo</TableHead>
+                <TableHead className="w-20 text-[10px] font-black uppercase text-center pl-6">Estatus</TableHead>
                 <TableHead className="w-24 text-[10px] font-black uppercase text-center">Folio</TableHead>
                 <TableHead className="min-w-[150px] text-[10px] font-black uppercase">Fecha / Hora</TableHead>
                 <TableHead className="min-w-[180px] text-[10px] font-black uppercase">Plantel Institucional</TableHead>
@@ -308,7 +308,7 @@ export default function BitacoraAtresPage() {
       <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-pulse">
          <UserCheck className="h-5 w-5 text-accent" />
          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent">
-            Histórico consolidado de atenciones técnicas. El semáforo indica el estatus operativo final del servicio para reporte administrativo 2026.
+            Histórico consolidado de atenciones técnicas. El estatus indica la situación operativa final del servicio para reporte administrativo 2026.
          </p>
       </div>
 
@@ -344,7 +344,7 @@ export default function BitacoraAtresPage() {
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-4">
-                     <Label className="text-[10px] font-black uppercase text-primary pl-1">Actualizar Semáforo</Label>
+                     <Label className="text-[10px] font-black uppercase text-primary pl-1">Actualizar Estatus</Label>
                      <div className="flex items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-inner">
                         <TrafficLight status={editingRecord.status} />
                         <Select value={editingRecord.status} onValueChange={(val: any) => setEditingRecord({...editingRecord, status: val})}>
