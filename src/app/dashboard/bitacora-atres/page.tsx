@@ -180,62 +180,62 @@ export default function BitacoraAtresPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 w-full">
+    <div className="space-y-3 animate-in fade-in duration-700 w-full">
       {pendingCount > 0 && (
-        <div className="bg-rose-600 text-white p-2 rounded-lg shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300">
-           <div className="flex items-center gap-3 pl-2">
-              <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
-                <Bell className="h-5 w-5 text-white" />
+        <div className="bg-rose-600 text-white p-1.5 rounded-lg shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300">
+           <div className="flex items-center gap-2 pl-2">
+              <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
+                <Bell className="h-3.5 w-3.5 text-white" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase opacity-90 tracking-widest">{pendingCount} SOLICITUDES PENDIENTES</p>
-                <h4 className="text-xs font-black uppercase leading-none">Nueva Alerta Operativa</h4>
+                <p className="text-[7px] font-black uppercase opacity-90 tracking-widest leading-none">{pendingCount} SOLICITUDES PENDIENTES</p>
+                <h4 className="text-[8px] font-black uppercase mt-0.5 leading-none">Nueva Alerta Operativa</h4>
               </div>
            </div>
            <div className="flex gap-2 pr-2">
              <Button 
                 onClick={() => setSearchTerm('pendiente')} 
-                className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[10px] h-8 px-4 rounded-xl shadow-md border-none transition-all active:scale-95"
+                className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded-lg shadow-md border-none transition-all active:scale-95"
              >
                 ATENDER SOLICITUDES
              </Button>
-             <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-8 w-8 p-0 rounded-full"><X className="h-4 w-4" /></Button>
+             <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-6 w-6 p-0 rounded-full"><X className="h-3 w-3" /></Button>
            </div>
         </div>
       )}
 
       <div className="flex flex-col md:flex-row justify-between items-end gap-3">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Bitácora de Solicitudes ATRES</h2>
-          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-1.5">
-            <History className="h-4 w-4 text-accent" /> Control Histórico de Atención Institucional
+          <h2 className="text-xl font-black tracking-tight text-primary uppercase leading-none">Bitácora de Solicitudes ATRES</h2>
+          <p className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-1.5">
+            <History className="h-3 w-3 text-accent" /> Control Histórico de Atención Institucional
           </p>
         </div>
         
-        <Button onClick={downloadExcel} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md">
-          <FileSpreadsheet className="h-4 w-4" /> Exportar a Excel
+        <Button onClick={downloadExcel} variant="outline" className="h-8 px-4 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[8px] gap-2 hover:bg-emerald-50 shadow-md">
+          <FileSpreadsheet className="h-3.5 w-3.5" /> Exportar a Excel
         </Button>
       </div>
 
-      <Card className="executive-card p-4 bg-white/80 border-none shadow-md">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-           <div className="flex items-center gap-3 w-full md:w-auto">
-              <Search className="h-5 w-5 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
+      <Card className="executive-card p-3 bg-white/80 border-none shadow-md">
+        <div className="flex flex-col md:flex-row items-center gap-3">
+           <div className="flex items-center gap-2 w-full md:w-auto">
+              <Search className="h-4 w-4 text-primary" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Buscador:</span>
            </div>
            
            <div className="relative flex-1 w-full">
               <Input 
-                placeholder="BUSCAR POR CCT, PLANTEL, FOLIO O TÉCNICO..." 
-                className="h-11 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[11px] font-bold uppercase shadow-inner focus:bg-white transition-all"
+                placeholder="CCT, PLANTEL, FOLIO O TÉCNICO..." 
+                className="h-9 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-300" />
            </div>
 
-           <Badge variant="outline" className="h-11 px-5 rounded-xl border-primary/10 text-primary font-black text-[10px] uppercase">
-             Registros: {filteredRecords.length}
+           <Badge variant="outline" className="h-9 px-4 rounded-xl border-primary/10 text-primary font-black text-[9px] uppercase">
+             Folios: {filteredRecords.length}
            </Badge>
         </div>
       </Card>
@@ -244,83 +244,83 @@ export default function BitacoraAtresPage() {
         <div className="overflow-x-auto w-full">
           <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
-              <TableRow className="h-12">
-                <TableHead className="w-12 text-[10px] font-black uppercase text-center pl-6">Estatus</TableHead>
-                <TableHead className="w-24 text-[10px] font-black uppercase text-center text-primary">Folio</TableHead>
-                <TableHead className="w-32 text-[10px] font-black uppercase">Fecha / Hora</TableHead>
-                <TableHead className="min-w-[200px] text-[10px] font-black uppercase">Plantel Institucional</TableHead>
-                <TableHead className="min-w-[250px] text-[10px] font-black uppercase">Resumen Operativo del Servicio</TableHead>
-                <TableHead className="w-32 text-[10px] font-black uppercase text-center">Analista</TableHead>
-                <TableHead className="w-28 text-[10px] font-black uppercase text-center">Expediente</TableHead>
-                {isAdmin && <TableHead className="text-right text-[10px] font-black uppercase pr-10 w-24">Acción</TableHead>}
+              <TableRow className="h-10">
+                <TableHead className="w-12 text-[9px] font-black uppercase text-center pl-4">Status</TableHead>
+                <TableHead className="w-24 text-[9px] font-black uppercase text-center text-primary">Folio</TableHead>
+                <TableHead className="w-28 text-[9px] font-black uppercase">Fecha</TableHead>
+                <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Plantel</TableHead>
+                <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Resumen Operativo</TableHead>
+                <TableHead className="w-28 text-[9px] font-black uppercase text-center">Analista</TableHead>
+                <TableHead className="w-24 text-[9px] font-black uppercase text-center">Docs</TableHead>
+                {isAdmin && <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-20">Edit</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRecords.length > 0 ? filteredRecords.map((r) => (
-                <TableRow key={r.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
-                  <TableCell className="pl-6 text-center py-2">
+              {filteredRecords.length > 0 ? filteredRecords.map((r, idx) => (
+                <TableRow key={`${r.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-14 group">
+                  <TableCell className="pl-4 text-center py-1">
                     <TrafficLight status={r.status} />
                   </TableCell>
-                  <TableCell className="text-center py-2">
-                    <span className="font-mono font-black text-[11px] text-primary">{r.folio}</span>
+                  <TableCell className="text-center py-1">
+                    <span className="font-mono font-black text-[10px] text-primary">{r.folio}</span>
                   </TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex items-center gap-1.5">
-                       <Calendar className="h-3.5 w-3.5 text-accent opacity-50" />
-                       <span className="text-[10px] font-bold text-slate-500">{r.fecha}</span>
+                  <TableCell className="py-1">
+                    <div className="flex items-center gap-1">
+                       <Calendar className="h-3 w-3 text-accent opacity-50" />
+                       <span className="text-[9px] font-bold text-slate-500">{r.fecha}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-1">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[11px] font-black text-slate-700 uppercase leading-none truncate max-w-[220px]">{r.schoolName}</span>
-                      <div className="flex items-center gap-2 mt-1">
-                         <Badge variant="secondary" className="bg-primary/5 text-primary text-[8px] font-black border-primary/5 h-4 px-2">{r.cct}</Badge>
-                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">{r.oficina?.replace("Oficina de ", "")}</span>
+                      <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate max-w-[200px]">{r.schoolName}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                         <Badge variant="secondary" className="bg-primary/5 text-primary text-[7px] font-black border-none h-3.5 px-1.5">{r.cct}</Badge>
+                         <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{r.oficina?.replace("Oficina de ", "")}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-2">
-                    <p className="text-[10px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[300px]">
+                  <TableCell className="py-1">
+                    <p className="text-[9px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[280px]">
                       {r.servicio}
                     </p>
                   </TableCell>
-                  <TableCell className="text-center py-2">
-                    <div className="flex items-center justify-center gap-2">
-                       <UserCheck className="h-3.5 w-3.5 text-emerald-600 opacity-50" />
-                       <span className="text-[10px] font-black text-slate-700 uppercase truncate max-w-[110px]">{r.tecnico}</span>
+                  <TableCell className="text-center py-1">
+                    <div className="flex items-center justify-center gap-1.5">
+                       <UserCheck className="h-3 w-3 text-emerald-600 opacity-50" />
+                       <span className="text-[9px] font-black text-slate-700 uppercase truncate max-w-[100px]">{r.tecnico}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-2">
-                     <div className="flex items-center justify-center gap-2">
+                  <TableCell className="py-1">
+                     <div className="flex items-center justify-center gap-1.5">
                         {r.pdfData ? (
-                          <div className="flex gap-1">
-                             <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => setPdfToPreview(r.pdfData!)} title="Ver PDF">
-                                <Eye className="h-4 w-4" />
+                          <div className="flex gap-0.5">
+                             <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => setPdfToPreview(r.pdfData!)} title="Ver PDF">
+                                <Eye className="h-3.5 w-3.5" />
                              </Button>
-                             <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => downloadFile(r.pdfData!, r.pdfName || 'solicitud.pdf')} title="Bajar PDF">
-                                <Download className="h-4 w-4" />
+                             <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => downloadFile(r.pdfData!, r.pdfName || 'solicitud.pdf')} title="Bajar PDF">
+                                <Download className="h-3.5 w-3.5" />
                              </Button>
                           </div>
                         ) : (
-                          <span className="text-[8px] font-black text-slate-300 uppercase italic">Sin PDF</span>
+                          <span className="text-[7px] font-black text-slate-300 uppercase italic">Sin PDF</span>
                         )}
                         {r.excelData ? (
-                           <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg" onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} title="Bajar Excel">
-                              <FileSpreadsheet className="h-4 w-4" />
+                           <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg" onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} title="Bajar Excel">
+                              <FileSpreadsheet className="h-3.5 w-3.5" />
                            </Button>
                         ) : (
-                          <span className="text-[8px] font-black text-slate-300 uppercase italic ml-1">Sin XL</span>
+                          <span className="text-[7px] font-black text-slate-300 uppercase italic ml-1">Sin XL</span>
                         )}
                      </div>
                   </TableCell>
                   {isAdmin && (
-                    <TableCell className="text-right pr-10 py-2">
-                      <div className="flex justify-end gap-1.5">
-                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-xl" onClick={() => handleEdit(r)}>
-                            <Pencil className="h-4 w-4" />
+                    <TableCell className="text-right pr-6 py-1">
+                      <div className="flex justify-end gap-1">
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEdit(r)}>
+                            <Pencil className="h-3.5 w-3.5" />
                          </Button>
-                         <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDelete(r.id)}>
-                            <Trash2 className="h-4 w-4" />
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
                          </Button>
                       </div>
                     </TableCell>
@@ -328,10 +328,10 @@ export default function BitacoraAtresPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-28 opacity-30">
-                    <div className="flex flex-col items-center gap-4">
-                      <History className="h-12 w-12 text-slate-300" />
-                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Sin registros operativos en la bitácora</p>
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-24 opacity-30">
+                    <div className="flex flex-col items-center gap-3">
+                      <History className="h-10 w-10 text-slate-300" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros operativos en la bitácora</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -341,9 +341,9 @@ export default function BitacoraAtresPage() {
         </div>
       </Card>
 
-      <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl">
-         <AlertCircle className="h-5 w-5 text-accent" />
-         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent">
+      <div className="flex items-center gap-2.5 p-3 bg-accent/5 border border-accent/10 rounded-2xl">
+         <AlertCircle className="h-4 w-4 text-accent" />
+         <p className="text-[9px] font-black uppercase tracking-[0.15em] text-accent">
             Reporte administrativo ATRES auditado. Los folios con semáforo rojo requieren atención inmediata.
          </p>
       </div>

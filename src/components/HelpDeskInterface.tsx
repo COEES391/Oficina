@@ -91,7 +91,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 512 * 1024; // 500KB
+const FILE_SIZE_LIMIT = 500 * 1024; // 500KB strict
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -404,7 +404,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
-      id: `${folio}-${Date.now()}`, // ID único para evitar errores de clave duplicada
+      id: `${folio}-${Date.now()}`, 
       name: 'ATRES', 
       cct: finishForm.cct, 
       schoolName: finishForm.schoolName, 
@@ -465,7 +465,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
 
                 <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
-                   <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /> Guía de Soporte</p>
+                   <div className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /> Guía de Soporte</div>
                    <div className="space-y-3">
                       {[
                         { step: "1", text: "Descargue AnyDesk en su equipo." },
@@ -475,7 +475,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       ].map((item, idx) => (
                         <div key={idx} className="flex gap-4 items-start">
                           <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center text-[9px] font-black text-[#9f2241] shadow-sm shrink-0">{item.step}</div>
-                          <p className="text-[10px] font-bold text-slate-600 leading-tight uppercase pt-0.5">{item.text}</p>
+                          <div className="text-[10px] font-bold text-slate-600 leading-tight uppercase pt-0.5">{item.text}</div>
                         </div>
                       ))}
                    </div>
@@ -507,8 +507,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </Label>
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
-                         {formalRequests.map(req => (
-                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                         {formalRequests.map((req, idx) => (
+                           <button key={`${req.id}-${idx}`} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
                                <span className={cn("text-[11px] font-black truncate max-w-[140px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
@@ -527,8 +527,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </Label>
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
-                         {queue.map(req => (
-                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                         {queue.map((req, idx) => (
+                           <button key={`${req.ticketNumber}-${idx}`} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                <span className={cn("text-[11px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'LIVE CHAT' : 'REMOTO'}</span>
@@ -583,12 +583,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                     <Calendar className="h-3.5 w-3.5" /> {hist.fecha}
                                  </div>
                               </div>
-                              <div>
+                              <div className="space-y-2">
                                  <h4 className="text-[13px] font-black text-slate-800 uppercase leading-none tracking-tight">{hist.schoolName}</h4>
-                                 <p className="text-[10px] font-bold text-slate-400 mt-1.5 flex items-center gap-2">
+                                 <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
                                    <Badge variant="outline" className="text-[8px] border-slate-200">{hist.cct}</Badge>
                                    {hist.oficina?.replace("Oficina de ", "")}
-                                 </p>
+                                 </div>
                               </div>
                               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
                                  <p className="text-[11px] font-semibold text-slate-600 italic leading-relaxed">"{hist.servicio}"</p>
@@ -627,7 +627,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una solicitud activa para iniciar la gestión técnica.</p>
             </div>
             <div className="pt-4 flex flex-col items-center gap-2 opacity-50">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">O haga clic en servicios de hoy para ver la bitácora</p>
+               <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">O haga clic en servicios de hoy para ver la bitácora</div>
                <Activity className="h-5 w-5 text-primary animate-bounce" />
             </div>
           </div>
@@ -758,7 +758,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="flex items-center gap-3 mt-1.5">
                     <div className="flex items-center gap-1.5">
                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                       <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">En Línea</p>
+                       <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">En Línea</div>
                     </div>
                     {activeChatId && <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5 px-2">{activeChatId}</Badge>}
                     {isPublic && (
@@ -821,7 +821,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* DIÁLOGOS RESTAURADOS */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
