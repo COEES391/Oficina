@@ -23,6 +23,11 @@ export type BitacoraEntry = {
   pdfName?: string;
   excelData?: string;
   excelName?: string;
+  // Campos adicionales para captura completa
+  requesterName?: string;
+  requesterEmail?: string;
+  helpTopic?: string;
+  ticketDetail?: string;
 };
 
 export type VisitSchedule = {
@@ -807,7 +812,7 @@ const getGeoData = (): ProgramStatus[] => {
     ["15DST0236X", "-99.646493", "19.396925"],
     ["15DST0237W", "-99.033851", "19.640876"],
     ["15DST0238V", "-99.044212", "19.628016"],
-    ["15DST0239U", "-99.710201", "19.346258"],
+    ["15DST0239U", "-99.710201", "19.344258"],
     ["15DST0240J", "-98.987091", "19.813356"],
     ["15DST0241I", "-98.852058", "19.272819"],
     ["15DST0242H", "-99.554413", "19.184124"],
