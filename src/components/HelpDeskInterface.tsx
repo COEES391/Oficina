@@ -89,7 +89,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 500 * 1024; 
+const FILE_SIZE_LIMIT = 1024 * 1024; // 1MB total por seguridad
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -237,19 +237,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const safeSaveBitacora = (entries: BitacoraEntry[]): boolean => {
-    try {
-      localStorage.setItem('atres_bitacora', JSON.stringify(entries));
-      return true;
-    } catch (e) {
-      if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        if (entries.length > 2) {
-          const reduced = entries.slice(0, Math.floor(entries.length * 0.8));
-          return safeSaveBitacora(reduced);
+  // LÓGICA AGRESIVA DE GUARDADO CIRCULAR
+  const safeSaveNewEntry = (newEntry: BitacoraEntry): boolean => {
+    const rawBitacora = localStorage.getItem('atres_bitacora') || '[]';
+    let bitacora: BitacoraEntry[] = JSON.parse(rawBitacora);
+    
+    bitacora = [newEntry, ...bitacora];
+
+    // Intento de guardado con purga recursiva
+    while (bitacora.length > 0) {
+      try {
+        localStorage.setItem('atres_bitacora', JSON.stringify(bitacora));
+        return true;
+      } catch (e) {
+        if (bitacora.length > 1) {
+          // Si falla por espacio, removemos el 10% más antiguo o al menos uno
+          const removeCount = Math.max(1, Math.ceil(bitacora.length * 0.1));
+          bitacora = bitacora.slice(0, bitacora.length - removeCount);
+        } else {
+          // Ni siquiera la nueva entrada cabe sola (archivo demasiado grande)
+          return false;
         }
       }
-      return false;
     }
+    return false;
   }
 
   const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
@@ -284,7 +295,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(updatedMessages)
       window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
     } catch (e) {
-      toast({ variant: "destructive", title: "Memoria insuficiente", description: "Elimine mensajes anteriores o use archivos más pequeños." });
+      toast({ variant: "destructive", title: "Memoria insuficiente", description: "Se limpiará el chat antiguo para continuar." });
+      // Purga de chat si se llena
+      const purged = updatedMessages.slice(Math.floor(updatedMessages.length / 2));
+      localStorage.setItem(historyKey, JSON.stringify(purged));
+      setMessages(purged);
     }
     input && setInput('')
   }
@@ -303,7 +318,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 500KB permitido." });
+      toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 1MB permitido." });
       return;
     }
     const reader = new FileReader();
@@ -350,11 +365,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let pdfContent, excelContent;
       
       if (pdfFile) {
-        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF excede los 500KB.");
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF excede el límite de seguridad (1MB).");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel excede los 500KB.");
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel excede el límite de seguridad (1MB).");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -380,10 +395,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         ticketDetail: ticketDetail
       };
 
-      const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
-      const saved = safeSaveBitacora([bitacoraEntry, ...currentBitacora]);
+      const saved = safeSaveNewEntry(bitacoraEntry);
 
-      if (!saved) throw new Error("Error crítico de almacenamiento.");
+      if (!saved) throw new Error("Los archivos son demasiado grandes para la memoria del navegador.");
 
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: localStorage.getItem('atres_bitacora'), storageArea: localStorage }));
 
@@ -393,7 +407,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setPdfFile(null); setExcelFile(null);
       setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Falla de Memoria", description: "El dispositivo no tiene espacio. Se intentó purgar registros antiguos." });
+      toast({ variant: "destructive", title: "Falla de Memoria", description: e.message });
     }
   }
 
@@ -411,7 +425,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       oficina: finishForm.oficinaRegionalAtencion,
       schoolName: finishForm.schoolName
     } : b);
-    safeSaveBitacora(updatedBitacora);
+    
+    // Intento de guardado tras atención
+    try {
+      localStorage.setItem('atres_bitacora', JSON.stringify(updatedBitacora));
+    } catch (e) {
+      const purged = updatedBitacora.slice(0, updatedBitacora.length - 1);
+      localStorage.setItem('atres_bitacora', JSON.stringify(purged));
+    }
 
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
@@ -427,7 +448,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
 
     window.dispatchEvent(new StorageEvent('storage', { key: 'programs_full_v24', newValue: JSON.stringify([newRec, ...progs]), storageArea: localStorage }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: JSON.stringify(updatedBitacora), storageArea: localStorage }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: localStorage.getItem('atres_bitacora'), storageArea: localStorage }));
     
     setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null); syncQueue(); syncFormalRequests(); updateAttendedCount();
     toast({ title: "Atención Registrada" });
@@ -806,12 +827,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="grid grid-cols-1 gap-3 mt-2">
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
                         <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Subir PDF (Máx 500KB)"}</span></div>
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Subir PDF (Máx 1MB)"}</span></div>
                         <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                     </div>
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
                         <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Subir Excel (Máx 500KB)"}</span></div>
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Subir Excel (Máx 1MB)"}</span></div>
                         <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                     </div>
                   </div>
