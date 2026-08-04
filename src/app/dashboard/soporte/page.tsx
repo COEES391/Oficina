@@ -753,8 +753,8 @@ export default function SupportPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {movements.map(mov => (
-                            <TableRow key={mov.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                          {movements.map((mov, idx) => (
+                            <TableRow key={`${mov.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
                               <TableCell className="font-mono text-[10px] font-bold text-slate-400 pl-6 py-4">{mov.date}</TableCell>
                               <TableCell>
                                 <Badge className={cn(
@@ -801,76 +801,6 @@ export default function SupportPage() {
                 Cerrar Panel Operativo
               </Button>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Edición de Insumo */}
-        <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
-          <DialogContent className="sm:max-w-[500px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
-             <DialogHeader className="p-8 bg-slate-50 border-b">
-                <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
-                  <Pencil className="h-6 w-6 text-accent" /> Editar Insumo Técnico
-                </DialogTitle>
-             </DialogHeader>
-             <div className="p-8 space-y-6">
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Material</Label>
-                   <Input 
-                      className="h-12 bg-slate-50 font-bold uppercase shadow-inner" 
-                      value={editingItem?.name || ''} 
-                      onChange={e => setEditingItem(prev => prev ? {...prev, name: e.target.value.toUpperCase()} : null)}
-                   />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                   <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Stock Actual</Label>
-                      <Input 
-                        type="number" 
-                        className="h-12 text-center font-black text-lg bg-slate-50 shadow-inner" 
-                        value={editingItem?.qty || 0} 
-                        onChange={e => setEditingItem(prev => prev ? {...prev, qty: parseInt(e.target.value) || 0} : null)}
-                      />
-                   </div>
-                   <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Mínimo Crítico</Label>
-                      <Input 
-                        type="number" 
-                        className="h-12 text-center font-black text-lg bg-slate-50 shadow-inner" 
-                        value={editingItem?.minStock || 0} 
-                        onChange={e => setEditingItem(prev => prev ? {...prev, minStock: parseInt(e.target.value) || 0} : null)}
-                      />
-                   </div>
-                </div>
-                
-                <div className="space-y-3">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Ubicaciones de Resguardo</Label>
-                   <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
-                      {WAREHOUSE_LOCATIONS.map(loc => (
-                         <div key={loc} className="flex items-center space-x-2 bg-white p-2 rounded-xl border border-slate-50 shadow-sm">
-                            <Checkbox 
-                              id={`edit-loc-${loc}`} 
-                              checked={editingItem?.locations?.includes(loc)}
-                              onCheckedChange={(checked) => {
-                                if (!editingItem) return;
-                                const currentLocs = editingItem.locations || [];
-                                const newLocs = checked 
-                                  ? [...currentLocs, loc]
-                                  : currentLocs.filter(l => l !== loc);
-                                setEditingItem({...editingItem, locations: newLocs});
-                              }}
-                            />
-                            <Label htmlFor={`edit-loc-${loc}`} className="text-[10px] font-black uppercase text-slate-600 cursor-pointer">
-                              {loc}
-                            </Label>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-             </div>
-             <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
-                <Button variant="ghost" onClick={() => setIsEditItemOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
-                <Button onClick={handleSaveEditedItem} className="btn-institutional h-12 px-10 text-[10px]">Guardar Cambios</Button>
-             </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -1453,8 +1383,8 @@ export default function SupportPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTickets.map(t => (
-              <TableRow key={t.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
+            {filteredTickets.map((t, idx) => (
+              <TableRow key={`${t.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
                 <TableCell className="font-black text-primary text-sm text-center">{t.id}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
@@ -1554,6 +1484,9 @@ export default function SupportPage() {
               {evidenceToView?.type === 'pdf' ? <FileText className="h-6 w-6 text-blue-600" /> : <ImageIcon className="h-6 w-6 text-pink-600" />}
               {evidenceToView?.title}
             </DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+               Visualizador de expedientes digitales y registros fotográficos.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-slate-100 relative">
              {evidenceToView?.type === 'pdf' ? (

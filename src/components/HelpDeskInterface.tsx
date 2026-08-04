@@ -404,8 +404,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]')
     const newRec = { 
-      id: folio, name: 'ATRES', cct: finishForm.cct, schoolName: finishForm.schoolName, municipio: finishForm.municipio, valle: finishForm.valle, 
-      status: 'concluido', date: format(new Date(), 'yyyy-MM-dd'), progress: 100, observaciones: finishForm.servicio, tecnicos: techName, oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion 
+      id: `${folio}-${Date.now()}`, // ID único para evitar errores de clave duplicada
+      name: 'ATRES', 
+      cct: finishForm.cct, 
+      schoolName: finishForm.schoolName, 
+      municipio: finishForm.municipio, 
+      valle: finishForm.valle, 
+      status: 'concluido', 
+      date: format(new Date(), 'yyyy-MM-dd'), 
+      progress: 100, 
+      observaciones: finishForm.servicio, 
+      tecnicos: techName, 
+      oficinaRegionalAtencion: finishForm.oficinaRegionalAtencion 
     }
     localStorage.setItem('programs_full_v24', JSON.stringify([newRec, ...progs]))
 
@@ -490,9 +500,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
 
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0">
-                   <div className="space-y-3 flex flex-col h-[40%] overflow-hidden">
+                   <div className="space-y-3 flex flex-col h-[50%] overflow-hidden">
                      <Label className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between">
-                       Solicitudes Pendientes
+                       Solicitudes de Servicio
                        <Badge className="bg-primary text-white text-[10px] px-2 h-5 rounded-full">{formalRequests.length}</Badge>
                      </Label>
                      <ScrollArea className="flex-1">
@@ -510,9 +520,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </ScrollArea>
                    </div>
 
-                   <div className="space-y-3 flex flex-col h-[30%] overflow-hidden">
+                   <div className="space-y-3 flex flex-col h-[50%] overflow-hidden">
                      <Label className="text-[11px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between">
-                       Mesa Operativa
+                       Mesa Operativa (Live)
                        <Badge className="bg-accent text-white text-[10px] px-2 h-5 rounded-full">{queue.length}</Badge>
                      </Label>
                      <ScrollArea className="flex-1">
@@ -529,15 +539,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        </div>
                      </ScrollArea>
                    </div>
-
-                   <div className="space-y-3 flex flex-col h-[30%] overflow-hidden">
-                     <Label className="text-[11px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center gap-2">
-                       <Library className="h-4 w-4" /> Biblioteca Técnica
-                     </Label>
-                     <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center opacity-60">
-                        <p className="text-[9px] font-black uppercase text-slate-400">Sin Archivos Recientes</p>
-                     </div>
-                   </div>
+                </div>
+                
+                <div className="mt-auto space-y-3 shrink-0">
+                  <Label className="text-[11px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center gap-2">
+                    <Library className="h-4 w-4" /> Biblioteca
+                  </Label>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center opacity-60">
+                     <p className="text-[9px] font-black uppercase text-slate-400">Sin Archivos Recientes</p>
+                  </div>
                 </div>
              </div>
            )}
@@ -546,7 +556,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
         {!isPublic && showHistory ? (
-          <div className="flex-1 flex flex-col p-8 animate-in fade-in slide-in-from-right duration-500 overflow-hidden">
+          <div className="flex-1 flex flex-col p-8 animate-in fade-in slide-in-from-right duration-500 overflow-hidden bg-slate-50/30">
              <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-6">
                 <div className="flex justify-between items-center border-b pb-4">
                    <div className="space-y-1">
@@ -557,41 +567,51 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         Listado oficial de atenciones concluidas en el Centro Operativo.
                       </p>
                    </div>
-                   <Button variant="outline" onClick={() => setShowHistory(false)} className="h-10 px-6 rounded-xl font-black text-[10px] uppercase gap-2 border-slate-200">
+                   <Button variant="outline" onClick={() => setShowHistory(false)} className="h-10 px-6 rounded-xl font-black text-[10px] uppercase gap-2 border-slate-200 shadow-sm">
                      <X className="h-4 w-4" /> CERRAR VISTA
                    </Button>
                 </div>
 
-                <div className="flex-1 border rounded-[2.5rem] bg-slate-50/50 shadow-inner overflow-hidden">
+                <div className="flex-1 border rounded-[2.5rem] bg-white shadow-2xl overflow-hidden">
                    <ScrollArea className="h-full">
-                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {attendanceHistory.length > 0 ? attendanceHistory.map(hist => (
-                           <div key={hist.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group">
+                      <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                         {attendanceHistory.length > 0 ? attendanceHistory.map((hist, idx) => (
+                           <div key={`${hist.id}-${idx}`} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col gap-4 group hover:-translate-y-1">
                               <div className="flex justify-between items-start">
-                                 <div className="bg-primary/5 text-primary font-mono text-xs px-3 py-1 rounded-lg font-black">{hist.folio}</div>
-                                 <div className="flex items-center gap-1 text-[8px] font-black text-slate-300 uppercase">
-                                    <Calendar className="h-3 w-3" /> {hist.fecha}
+                                 <div className="bg-primary/5 text-primary font-mono text-xs px-4 py-1.5 rounded-xl font-black border border-primary/10 shadow-sm">{hist.folio}</div>
+                                 <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
+                                    <Calendar className="h-3.5 w-3.5" /> {hist.fecha}
                                  </div>
                               </div>
                               <div>
-                                 <h4 className="text-[11px] font-black text-slate-800 uppercase leading-none">{hist.schoolName}</h4>
-                                 <p className="text-[9px] font-bold text-slate-400 mt-1">{hist.cct}</p>
+                                 <h4 className="text-[13px] font-black text-slate-800 uppercase leading-none tracking-tight">{hist.schoolName}</h4>
+                                 <p className="text-[10px] font-bold text-slate-400 mt-1.5 flex items-center gap-2">
+                                   <Badge variant="outline" className="text-[8px] border-slate-200">{hist.cct}</Badge>
+                                   {hist.oficina?.replace("Oficina de ", "")}
+                                 </p>
                               </div>
-                              <div className="bg-slate-50 p-3 rounded-2xl">
-                                 <p className="text-[10px] font-semibold text-slate-600 line-clamp-2 italic">"{hist.servicio}"</p>
+                              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
+                                 <p className="text-[11px] font-semibold text-slate-600 italic leading-relaxed">"{hist.servicio}"</p>
                               </div>
-                              <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                                 <div className="flex items-center gap-2">
-                                    <UserCog className="h-3 w-3 text-accent" />
-                                    <span className="text-[9px] font-black text-slate-500 uppercase">{hist.tecnico}</span>
+                              <div className="flex justify-between items-center pt-3 border-t border-slate-50">
+                                 <div className="flex items-center gap-2.5">
+                                    <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center">
+                                      <UserCog className="h-4 w-4 text-accent" />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">{hist.tecnico}</span>
                                  </div>
-                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                 <div className="flex items-center gap-2 text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    <span className="text-[8px] font-black uppercase">Finalizado</span>
+                                 </div>
                               </div>
                            </div>
                          )) : (
-                           <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center gap-4">
-                              <History className="h-16 w-16" />
-                              <p className="text-sm font-black uppercase tracking-widest">Sin registros concluidos el día de hoy</p>
+                           <div className="col-span-full py-40 text-center opacity-30 flex flex-col items-center gap-6">
+                              <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center">
+                                <History className="h-12 w-12" />
+                              </div>
+                              <p className="text-base font-black uppercase tracking-[0.3em] text-slate-400">Sin registros concluidos el día de hoy</p>
                            </div>
                          )}
                       </div>
@@ -955,7 +975,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documento Digital</DialogDescription>
             </div>
             <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
-               <Printer className="h-5 w-5" /> Imprimir
+               <Printer className="h-4 w-4" /> Imprimir
             </Button>
           </DialogHeader>
           <div className="flex-1 bg-slate-800 p-1">
