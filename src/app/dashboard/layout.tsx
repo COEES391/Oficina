@@ -69,7 +69,7 @@ export default function DashboardLayout({
   }
 
   const allMenuItems = [
-    { id: 'bitacora-atres', name: 'Bitácora SOLICITUDES', path: '/dashboard/bitacora-atres', icon: <History className="h-5 w-5" /> },
+    { id: 'bitacora-atres', name: 'Bitácora ATRES', path: '/dashboard/bitacora-atres', icon: <History className="h-5 w-5" /> },
     { id: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },

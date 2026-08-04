@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { type AppUser } from '@/lib/planning-data'
 
 const SECTIONS = [
-  { id: 'bitacora-atres', name: 'Bitácora SOLICITUDES' },
+  { id: 'bitacora-atres', name: 'Bitácora ATRES' },
   { id: 'planeacion', name: 'PLANEACIÓN' },
   { id: 'soporte', name: 'Soporte Técnico' },
   { id: 'capacitacion', name: 'Capacitación' },
