@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -172,22 +173,22 @@ export default function BitacoraAtresPage() {
     <div className="space-y-3 animate-in fade-in duration-700 w-full max-w-full overflow-hidden px-1">
       {/* ALERTA OPERATIVA ULTRA-COMPACTA */}
       {pendingCount > 0 && (
-        <div className="bg-rose-600 text-white p-1.5 rounded-lg shadow-lg flex flex-row items-center justify-between gap-2 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300">
-           <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-white/20 flex items-center justify-center animate-pulse">
-                <Bell className="h-3 w-3 text-white" />
+        <div className="max-w-2xl mx-auto bg-rose-600 text-white p-1 rounded-lg shadow-lg flex flex-row items-center justify-between gap-2 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300 mb-2">
+           <div className="flex items-center gap-2 pl-2">
+              <div className="h-5 w-5 rounded bg-white/20 flex items-center justify-center animate-pulse">
+                <Bell className="h-2.5 w-2.5 text-white" />
               </div>
               <div>
-                <h3 className="text-[9px] font-black uppercase tracking-widest leading-none">Nueva Alerta Operativa</h3>
-                <p className="text-[7px] font-bold uppercase opacity-80 mt-0.5">Existen {pendingCount} folios PENDIENTES.</p>
+                <h3 className="text-[8px] font-black uppercase tracking-widest leading-none">Alerta Operativa</h3>
+                <p className="text-[6px] font-bold uppercase opacity-80 mt-0.5">{pendingCount} folios PENDIENTES</p>
               </div>
            </div>
-           <div className="flex gap-1.5">
+           <div className="flex gap-1.5 pr-1">
              <Button 
                 onClick={() => setSearchTerm('pendiente')} 
                 className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded shadow-sm border-none transition-all active:scale-95"
              >
-                Atender Solicitudes
+                Atender
              </Button>
              <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-6 w-6 p-0 rounded"><X className="h-3 w-3" /></Button>
            </div>
