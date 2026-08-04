@@ -180,7 +180,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const syncFormalRequests = useCallback(() => {
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
-    setAttendanceHistory(bitacora.filter(b => b.status === 'atendido'))
+    
+    // Unified history sync
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
+    const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
+    
+    const mappedHistory: BitacoraEntry[] = todayAtres.map((p: any) => {
+      // Find extra info in bitacora if exists
+      const inBitacora = bitacora.find(b => p.id.startsWith(b.folio));
+      return {
+        id: p.id,
+        folio: p.id.split('-')[0],
+        cct: p.cct || inBitacora?.cct || '',
+        schoolName: p.schoolName || inBitacora?.schoolName || '',
+        servicio: p.observaciones || inBitacora?.servicio || '',
+        oficina: p.oficinaRegionalAtencion || inBitacora?.oficina || '',
+        fecha: p.date,
+        tecnico: p.tecnicos || inBitacora?.tecnico || '',
+        status: 'atendido',
+        tipo: 'FORMAL'
+      };
+    });
+    
+    setAttendanceHistory(mappedHistory)
   }, [])
 
   const syncQueue = useCallback(() => {
@@ -230,9 +253,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'atres_support_queue') syncQueue()
-      if (e.key === 'atres_bitacora') syncFormalRequests()
+      if (e.key === 'atres_bitacora' || e.key === 'programs_full_v24') {
+        syncFormalRequests()
+        updateAttendedCount()
+      }
       if (activeChatId && e.key === `atres_chat_${activeChatId}`) syncChat()
-      if (e.key === 'programs_full_v24' && !isPublic) updateAttendedCount()
     };
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
@@ -585,9 +610,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               </div>
                               <div className="space-y-2">
                                  <h4 className="text-[13px] font-black text-slate-800 uppercase leading-none tracking-tight">{hist.schoolName}</h4>
-                                 <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                                 <div className="text-[10px] font-bold text-slate-400 mt-1.5 flex items-center gap-2">
                                    <Badge variant="outline" className="text-[8px] border-slate-200">{hist.cct}</Badge>
-                                   {hist.oficina?.replace("Oficina de ", "")}
+                                   <span className="truncate">{hist.oficina?.replace("Oficina de ", "")}</span>
                                  </div>
                               </div>
                               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
@@ -663,9 +688,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
-                        <Label className="text-[11px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3">
+                        <div className="text-[11px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3">
                           <User className="h-5 w-5 text-primary" /> Datos del Solicitante
-                        </Label>
+                        </div>
                         <div className="space-y-4">
                            <div>
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Docente / Coordinador:</p>
@@ -679,9 +704,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
 
                      <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
-                        <Label className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
+                        <div className="text-[11px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3">
                           <Tag className="h-5 w-5 text-accent" /> Clasificación Técnica
-                        </Label>
+                        </div>
                         <div className="space-y-4">
                            <Badge variant="outline" className="bg-white text-xs font-black uppercase border-accent text-accent px-4 py-1">{selectedFormal.helpTopic || 'GENERAL'}</Badge>
                            <div className="p-4 bg-white rounded-2xl border shadow-sm">
@@ -692,9 +717,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
 
                   <div className="bg-white p-8 rounded-[2rem] shadow-2xl border-2 border-primary/5 space-y-6">
-                     <Label className="text-[11px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3">
+                     <div className="text-[11px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3">
                        <FileBox className="h-6 w-6 text-primary" /> Expediente Digital Recibido
-                     </Label>
+                     </div>
                      
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {selectedFormal.pdfData ? (
@@ -779,7 +804,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
                   return (
-                    <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-4 duration-500", isMe ? "justify-end" : "justify-start")}>
+                    <div key={`${activeChatId}-msg-${i}`} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-4 duration-500", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-4 max-w-[80%]", isMe ? "flex-row-reverse" : "flex-row")}>
                         <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xl border-4 border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
                           {msg.role === 'user' ? <GraduationCap className="h-5 w-5" /> : msg.role === 'tech' ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
@@ -916,7 +941,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Estatus del Folio:</p>
                         <h4 className="text-xl font-black text-primary font-mono">{trackedTicket.id || trackedTicket.folio}</h4>
                      </div>
-                     <Badge className={cn("text-[10px] font-black uppercase py-1.5 px-4 rounded-full shadow-md", trackedTicket.displayStatus === 'Atendida' ? 'bg-emerald-500' : 'bg-amber-500')}>
+                     <Badge className={cn("text-[10px] font-black uppercase py-1.5 px-4 rounded-full shadow-md", trackedTicket.displayStatus === 'Atendida' ? 'bg-emerald-50' : 'bg-amber-500')}>
                         {trackedTicket.displayStatus}
                      </Badge>
                   </div>
@@ -956,7 +981,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio</Label><div className="h-10 bg-slate-100 rounded-xl flex items-center px-4 font-mono font-black text-primary shadow-inner text-sm">{selectedRequest?.ticketNumber || selectedFormal?.folio}</div></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio</Label><div className="h-10 bg-slate-100 rounded-xl flex items-center px-4 font-mono font-black text-primary shadow-inner text-sm">{activeChatId}</div></div>
             </div>
             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado</Label><Textarea placeholder="Describa brevemente las acciones técnicas..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner resize-none focus:bg-white transition-all" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>

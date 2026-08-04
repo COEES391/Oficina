@@ -182,24 +182,23 @@ export default function BitacoraAtresPage() {
   return (
     <div className="space-y-3 animate-in fade-in duration-700 w-full">
       {pendingCount > 0 && (
-        <div className="bg-rose-600 text-white p-1.5 rounded-lg shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300">
+        <div className="bg-rose-600 text-white p-1 rounded-lg shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300 max-w-sm ml-auto">
            <div className="flex items-center gap-2 pl-2">
-              <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
-                <Bell className="h-3.5 w-3.5 text-white" />
+              <div className="h-5 w-5 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
+                <Bell className="h-3 w-3 text-white" />
               </div>
               <div>
-                <p className="text-[7px] font-black uppercase opacity-90 tracking-widest leading-none">{pendingCount} SOLICITUDES PENDIENTES</p>
-                <h4 className="text-[8px] font-black uppercase mt-0.5 leading-none">Nueva Alerta Operativa</h4>
+                <p className="text-[7px] font-black uppercase opacity-90 tracking-widest leading-none">{pendingCount} PENDIENTES</p>
               </div>
            </div>
-           <div className="flex gap-2 pr-2">
+           <div className="flex gap-2 pr-1">
              <Button 
                 onClick={() => setSearchTerm('pendiente')} 
                 className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded-lg shadow-md border-none transition-all active:scale-95"
              >
-                ATENDER SOLICITUDES
+                ATENDER
              </Button>
-             <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-6 w-6 p-0 rounded-full"><X className="h-3 w-3" /></Button>
+             <Button variant="ghost" onClick={() => setSearchTerm('')} className="text-white hover:bg-white/10 h-5 w-5 p-0 rounded-full"><X className="h-3 w-3" /></Button>
            </div>
         </div>
       )}
@@ -207,9 +206,9 @@ export default function BitacoraAtresPage() {
       <div className="flex flex-col md:flex-row justify-between items-end gap-3">
         <div className="space-y-1">
           <h2 className="text-xl font-black tracking-tight text-primary uppercase leading-none">Bitácora de Solicitudes ATRES</h2>
-          <p className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-1.5">
+          <div className="text-[8px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-1.5">
             <History className="h-3 w-3 text-accent" /> Control Histórico de Atención Institucional
-          </p>
+          </div>
         </div>
         
         <Button onClick={downloadExcel} variant="outline" className="h-8 px-4 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[8px] gap-2 hover:bg-emerald-50 shadow-md">
@@ -280,9 +279,9 @@ export default function BitacoraAtresPage() {
                     </div>
                   </TableCell>
                   <TableCell className="py-1">
-                    <p className="text-[9px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[280px]">
+                    <div className="text-[9px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[280px]">
                       {r.servicio}
-                    </p>
+                    </div>
                   </TableCell>
                   <TableCell className="text-center py-1">
                     <div className="flex items-center justify-center gap-1.5">
