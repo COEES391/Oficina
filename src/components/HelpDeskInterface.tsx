@@ -89,7 +89,8 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 1 * 1024 * 1024; // 1MB limit to avoid localStorage quota issues
+// Aggressive file size limit for localStorage (500KB)
+const FILE_SIZE_LIMIT = 500 * 1024; 
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -237,17 +238,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const safeSaveBitacora = (entries: BitacoraEntry[]) => {
+  // ROBUST STORAGE MANAGEMENT
+  const safeSaveBitacora = (entries: BitacoraEntry[]): boolean => {
     try {
       localStorage.setItem('atres_bitacora', JSON.stringify(entries));
       return true;
     } catch (e) {
       if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        console.warn('Quota exceeded, purging old entries...');
-        if (entries.length > 2) {
+        console.warn('Quota exceeded. Purging oldest entries...');
+        if (entries.length > 1) {
+          // Circular Buffer: remove oldest entry and retry
           const reduced = [...entries];
-          const removeCount = Math.max(1, Math.floor(reduced.length / 2));
-          reduced.splice(-removeCount); // Remove oldest 50%
+          reduced.pop(); 
           return safeSaveBitacora(reduced);
         }
       }
@@ -274,7 +276,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           chatKey: sessionKey
         };
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
-        window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue', newValue: JSON.stringify([...currentQueue, newReq]), storageArea: localStorage }));
       }
     }
 
@@ -283,9 +284,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const currentMessages = JSON.parse(localStorage.getItem(historyKey) || '[]')
     const updatedMessages = [...currentMessages, newMessage]
     
-    localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
-    setMessages(updatedMessages)
-    window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
+    try {
+      localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
+      setMessages(updatedMessages)
+      window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
+    } catch (e) {
+      toast({ variant: "destructive", title: "Chat Lleno", description: "No hay espacio para más mensajes con archivos." });
+    }
     input && setInput('')
   }
 
@@ -303,7 +308,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado grande", description: "El límite es de 1MB por seguridad." });
+      toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 500KB para evitar errores de memoria." });
       return;
     }
     const reader = new FileReader();
@@ -350,11 +355,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let pdfContent, excelContent;
       
       if (pdfFile) {
-        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF demasiado grande (Límite 1MB).");
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF excede los 500KB permitidos.");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel demasiado grande (Límite 1MB).");
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel excede los 500KB permitidos.");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -383,7 +388,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
       const saved = safeSaveBitacora([bitacoraEntry, ...currentBitacora]);
 
-      if (!saved) throw new Error("Error de almacenamiento local persistente.");
+      if (!saved) throw new Error("Error crítico de memoria persistente.");
 
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: localStorage.getItem('atres_bitacora'), storageArea: localStorage }));
 
@@ -430,7 +435,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: JSON.stringify(updatedBitacora), storageArea: localStorage }));
     
     setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null); syncQueue(); syncFormalRequests(); updateAttendedCount();
-    toast({ title: "Atención Registrada en ATRES" });
+    toast({ title: "Atención Registrada" });
   }
 
   const getFileIcon = (type: string) => {
@@ -587,7 +592,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                      <div className="lg:col-span-2 space-y-6">
-                        {/* Datos del Solicitante */}
                         <div className="bg-white p-5 rounded-[2rem] shadow-xl border border-slate-100 space-y-4">
                            <Label className="text-[10px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3 border-b pb-2">
                              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm"><User className="h-4 w-4" /></div>
@@ -605,7 +609,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            </div>
                         </div>
 
-                        {/* Detalle del Problema */}
                         <div className="bg-white p-5 rounded-[2rem] shadow-xl border border-slate-100 space-y-4">
                            <Label className="text-[10px] font-black uppercase text-accent tracking-[0.2em] flex items-center gap-3 border-b pb-2">
                              <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-sm"><MessageSquare className="h-4 w-4" /></div>
@@ -624,7 +627,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
 
                      <div className="space-y-6">
-                        {/* Resumen Plantel */}
                         <div className="bg-primary p-5 rounded-[2rem] shadow-xl border-4 border-white flex flex-col gap-2 relative overflow-hidden group">
                            <div className="absolute -top-4 -right-4 opacity-10 group-hover:rotate-12 transition-transform duration-700"><School className="h-24 w-24" /></div>
                            <div>
@@ -634,7 +636,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            <p className="text-[10px] font-bold text-white/80 uppercase leading-tight line-clamp-2">{selectedFormal.schoolName}</p>
                         </div>
 
-                        {/* Expediente Digital */}
                         <div className="bg-white p-5 rounded-[2rem] shadow-xl border border-primary/5 space-y-4">
                            <Label className="text-[10px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-3 border-b pb-2">
                              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm"><FileBox className="h-4 w-4" /></div>
@@ -648,11 +649,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                       <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-rose-600 border border-rose-50"><FileText className="h-6 w-6" /></div>
                                       <div className="flex-1 min-w-0">
                                          <p className="text-[10px] font-black text-slate-800 uppercase truncate">Reporte Técnico</p>
-                                         <p className="text-[8px] font-bold text-rose-400 uppercase">Documento PDF</p>
+                                         <p className="text-[8px] font-bold text-rose-400 uppercase">PDF</p>
                                       </div>
                                    </div>
                                    <div className="flex flex-col gap-2">
-                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-9 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/95 transition-all gap-2 shadow-xl border border-white/20"><Eye className="h-4 w-4" /> VISTA PREVIA</Button>
+                                      <Button onClick={() => setPdfToPreview(selectedFormal.pdfData!)} className="w-full h-9 rounded-xl text-[9px] font-black uppercase bg-primary text-white hover:bg-primary/95 transition-all gap-2 shadow-xl"><Eye className="h-4 w-4" /> VISTA PREVIA</Button>
                                       <div className="grid grid-cols-2 gap-2">
                                         <Button variant="outline" onClick={() => downloadFile(selectedFormal.pdfData!, selectedFormal.pdfName || 'solicitud.pdf')} className="h-9 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all shadow-md"><Download className="h-4 w-4" /></Button>
                                         <Button variant="outline" onClick={() => printFile(selectedFormal.pdfData!)} className="h-9 rounded-xl text-[8px] font-black uppercase border-rose-200 text-rose-600 bg-white hover:bg-rose-600 hover:text-white transition-all shadow-md"><Printer className="h-4 w-4" /></Button>
@@ -662,7 +663,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               ) : (
                                 <div className="p-6 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
                                   <FileText className="h-6 w-6 text-slate-300" />
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">SIN PDF ANEXO</p>
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">SIN PDF</p>
                                 </div>
                               )}
 
@@ -671,16 +672,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                    <div className="flex items-center gap-3">
                                       <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg text-emerald-600 border border-emerald-50"><FileSpreadsheet className="h-6 w-6" /></div>
                                       <div className="flex-1 min-w-0">
-                                         <p className="text-[10px] font-black text-slate-800 uppercase truncate">Base de Datos</p>
-                                         <p className="text-[8px] font-bold text-emerald-400 uppercase">Anexo Excel</p>
+                                         <p className="text-[10px] font-black text-slate-800 uppercase truncate">Base Excel</p>
+                                         <p className="text-[8px] font-bold text-emerald-400 uppercase">Libro de Trabajo</p>
                                       </div>
                                    </div>
-                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName || 'base.xlsx')} className="w-full h-10 rounded-xl text-[9px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-2 shadow-md"><Download className="h-4 w-4" /> DESCARGAR BASE</Button>
+                                   <Button variant="outline" size="sm" onClick={() => downloadFile(selectedFormal.excelData!, selectedFormal.excelName || 'base.xlsx')} className="w-full h-10 rounded-xl text-[9px] font-black uppercase border-emerald-200 text-emerald-600 bg-white hover:bg-emerald-600 hover:text-white transition-all gap-2 shadow-md"><Download className="h-4 w-4" /> DESCARGAR</Button>
                                 </div>
                               ) : (
                                 <div className="p-6 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 text-center opacity-40 flex flex-col items-center gap-2">
                                   <FileSpreadsheet className="h-6 w-6 text-slate-300" />
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">SIN EXCEL ANEXO</p>
+                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">SIN EXCEL</p>
                                 </div>
                               )}
                            </div>
@@ -703,7 +704,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <div className="flex items-center gap-1.5 shrink-0">
                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                       <p className="text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest">CANAL SEGURO</p>
+                       <p className="text-[7px] md:text-[8px] font-black text-emerald-600 uppercase tracking-widest">EN LÍNEA</p>
                     </div>
                     {activeChatId && <Badge className="text-[7px] md:text-[8px] font-mono bg-[#B38E5D] text-white px-2 h-4 rounded-lg border-none">{activeChatId}</Badge>}
                     {isPublic && (
@@ -756,7 +757,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <footer className="p-4 md:p-6 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0 relative z-10">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
-                  <Input placeholder={isPublic ? "DESCRIBA SU DUDA O FALLA TÉCNICA..." : "ESCRIBA LA RESPUESTA OFICIAL..."} className="h-12 rounded-xl bg-white border-2 border-slate-100 px-6 pr-12 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-xs transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+                  <Input placeholder={isPublic ? "DESCRIPCIÓN DE LA FALLA..." : "RESPUESTA OFICIAL..."} className="h-12 rounded-xl bg-white border-2 border-slate-100 px-6 pr-12 font-semibold shadow-inner focus:ring-4 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-xs transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
                   <button onClick={() => fileInputRef.current?.click()} className="absolute right-4 top-2.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-lg hover:bg-slate-50"><Paperclip className="h-4 w-4" /></button>
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 </div>
@@ -767,18 +768,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* DIÁLOGOS DE SOLICITUD Y SEGUIMIENTO */}
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><FilePlus className="h-16 w-16" /></div>
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3 relative z-10 leading-none">SOLICITUD DE SERVICIO</DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-widest mt-2 relative z-10">Complete el formulario técnico oficial.</DialogDescription>
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3 relative z-10 leading-none">NUEVA SOLICITUD</DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[9px] uppercase tracking-widest mt-2 relative z-10">Formulario técnico oficial.</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
              <div className="max-w-[420px] mx-auto space-y-5">
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Información del Solicitante</h4>
+                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Identificación</h4>
                   <div className="space-y-2">
                     <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
                     <Input placeholder="PATERNO MATERNO NOMBRES..." className="h-10 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
@@ -789,7 +789,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <Input placeholder="ejemplo@desysa.edu.mx" className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Tema de Ayuda</Label>
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Tema</Label>
                       <Select value={helpTopic} onValueChange={val => setHelpTopic(val)} >
                         <SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
                         <SelectContent>
@@ -803,27 +803,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Datos del Servicio Técnico</h4>
+                  <h4 className="text-[10px] font-black uppercase text-accent border-b pb-1">Datos Técnicos</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label><Input placeholder="15DES0000X" className="h-10 bg-slate-50 border-none rounded-xl text-xs font-mono font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
-                    <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Detalle Breve</Label><Input placeholder="DESCRIBA LA NECESIDAD..." className="h-10 bg-slate-50 border-none rounded-xl text-xs font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
+                    <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT</Label><Input placeholder="15DES0000X" className="h-10 bg-slate-50 border-none rounded-xl text-xs font-mono font-black uppercase" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} /></div>
+                    <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Asunto</Label><Input placeholder="RESUMEN..." className="h-10 bg-slate-50 border-none rounded-xl text-xs font-semibold" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} /></div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 mt-2">
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
                         <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Subir Solicitud PDF (Máx 1MB)"}</span></div>
-                        <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} title="Subir PDF" />
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Subir PDF (Máx 500KB)"}</span></div>
+                        <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                     </div>
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
                         <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Subir Base Excel (Máx 1MB)"}</span></div>
-                        <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} title="Subir Excel" />
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Subir Excel (Máx 500KB)"}</span></div>
+                        <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                     </div>
                   </div>
                 </div>
              </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-11 px-10 text-[10px]">ENVIAR</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -831,24 +831,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <DialogContent className="sm:max-w-[380px] rounded-[2rem] border-none shadow-2xl p-8 overflow-hidden bg-white text-center">
             <DialogHeader className="flex flex-col items-center">
               <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto mb-4" />
-              <DialogTitle className="text-lg font-black text-slate-800 uppercase tracking-tight">Solicitud Registrada</DialogTitle>
+              <DialogTitle className="text-lg font-black text-slate-800 uppercase tracking-tight">Recibida</DialogTitle>
               <DialogDescription className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-1 mb-6">
-                  Su solicitud ha sido recibida correctamente en la Bitácora de Solicitudes.
+                  Su folio ha sido registrado correctamente.
               </DialogDescription>
             </DialogHeader>
             <div className="bg-slate-50 p-5 rounded-[1.5rem] border-2 border-primary/10 shadow-inner mb-6">
-               <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-1">FOLIO DE SEGUIMIENTO</p>
+               <p className="text-[8px] font-black text-primary uppercase tracking-[0.3em] mb-1">FOLIO COEES</p>
                <h4 className="text-2xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
             </div>
-            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-12 rounded-xl shadow-xl">ENTENDIDO</Button>
+            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-12 rounded-xl">ENTENDIDO</Button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isTrackTicketDialogOpen} onOpenChange={setIsTrackTicketDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-6 overflow-hidden bg-white">
           <DialogHeader>
-            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO COEES</DialogTitle>
-            <DialogDescription className="text-[9px] font-bold uppercase text-slate-400">Verifique el estatus de su folio institucional.</DialogDescription>
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><Search className="h-4 w-4" /> SEGUIMIENTO</DialogTitle>
+            <DialogDescription className="text-[9px] font-bold uppercase text-slate-400">Verifique el estatus de su folio.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
              <div className="flex gap-2">
@@ -872,12 +872,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-4 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#B38E5D]" /> CONCLUIR SERVICIO</DialogTitle>
-            <DialogDescription className="text-white/60 text-[8px] font-bold uppercase tracking-widest mt-1">Registre el cierre oficial de la atención técnica.</DialogDescription>
+            <DialogTitle className="uppercase font-black text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-accent" /> CONCLUIR</DialogTitle>
+            <DialogDescription className="text-white/60 text-[8px] font-bold uppercase tracking-widest mt-1">Registre el cierre oficial.</DialogDescription>
           </DialogHeader>
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Plantel Atendido</Label>
+              <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Plantel</Label>
               <div className="relative">
                  <Input placeholder="CCT O NOMBRE..." className="h-8 bg-slate-50 border-none rounded-lg text-[10px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
                  {finishSearchTerm.length > 2 && (
@@ -890,15 +890,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                  )}
               </div>
-              {finishForm.cct && <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-2"><div className="h-5 w-5 rounded bg-emerald-100 flex items-center justify-center text-emerald-600"><CheckCircle2 className="h-3 w-3" /></div><div className="flex-1 min-w-0"><h4 className="text-[9px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
+              {finishForm.cct && <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[9px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">OFICINA</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-8 bg-slate-50 border-none rounded-lg text-[9px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-lg">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO COEES</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[9px]">{selectedRequest?.ticketNumber || selectedFormal?.folio}</div></div>
+              <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">FOLIO</Label><div className="h-8 bg-slate-100 rounded-lg flex items-center px-3 font-mono font-black text-primary shadow-inner text-[9px]">{selectedRequest?.ticketNumber || selectedFormal?.folio}</div></div>
             </div>
-            <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen Operativo</Label><Textarea placeholder="ACCIONES REALIZADAS..." className="h-20 bg-slate-50 border-none rounded-lg p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
+            <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary pl-1">Resumen</Label><Textarea placeholder="ACCIONES..." className="h-20 bg-slate-50 border-none rounded-lg p-3 text-[10px] font-semibold shadow-inner resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>
-          <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-9 px-6 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[9px] gap-2"><Save className="h-4 w-4" /> REGISTRAR ATENCIÓN FINAL</Button></DialogFooter>
+          <DialogFooter className="p-3 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-9 px-6 text-[9px] font-black uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-10 px-8 text-[9px] gap-2"><Save className="h-4 w-4" /> REGISTRAR CIERRE</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -907,19 +907,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <DialogHeader className="p-5 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="uppercase font-black text-white text-lg flex items-center gap-3">
-                <FileText className="h-5 w-5 text-accent" /> VISOR OFICIAL COEES
+                <FileText className="h-5 w-5 text-accent" /> VISOR COEES
               </DialogTitle>
-              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Documento de Solicitud de Servicio Técnico</DialogDescription>
+              <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest">Expediente Digital</DialogDescription>
             </div>
             <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[9px] uppercase h-9 px-5 rounded-lg gap-2 shadow-xl">
-               <Printer className="h-3.5 w-3.5" /> Imprimir Documento
+               <Printer className="h-3.5 w-3.5" /> Imprimir
             </Button>
           </DialogHeader>
           <div className="flex-1 bg-slate-800 p-1">
              <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
           </div>
           <DialogFooter className="p-3 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-9 px-8 font-black uppercase text-[9px]">CERRAR VISOR</Button>
+             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-9 px-8 font-black uppercase text-[9px]">CERRAR</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
