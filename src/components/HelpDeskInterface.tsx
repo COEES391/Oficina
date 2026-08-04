@@ -89,7 +89,6 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-// Aggressive file size limit for localStorage (500KB)
 const FILE_SIZE_LIMIT = 500 * 1024; 
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
@@ -238,18 +237,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // ROBUST STORAGE MANAGEMENT
   const safeSaveBitacora = (entries: BitacoraEntry[]): boolean => {
     try {
       localStorage.setItem('atres_bitacora', JSON.stringify(entries));
       return true;
     } catch (e) {
       if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        console.warn('Quota exceeded. Purging oldest entries...');
-        if (entries.length > 1) {
-          // Circular Buffer: remove oldest entry and retry
-          const reduced = [...entries];
-          reduced.pop(); 
+        if (entries.length > 2) {
+          const reduced = entries.slice(0, Math.floor(entries.length * 0.8));
           return safeSaveBitacora(reduced);
         }
       }
@@ -289,7 +284,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(updatedMessages)
       window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
     } catch (e) {
-      toast({ variant: "destructive", title: "Chat Lleno", description: "No hay espacio para más mensajes con archivos." });
+      toast({ variant: "destructive", title: "Memoria insuficiente", description: "Elimine mensajes anteriores o use archivos más pequeños." });
     }
     input && setInput('')
   }
@@ -308,7 +303,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 500KB para evitar errores de memoria." });
+      toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 500KB permitido." });
       return;
     }
     const reader = new FileReader();
@@ -355,11 +350,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let pdfContent, excelContent;
       
       if (pdfFile) {
-        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF excede los 500KB permitidos.");
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF excede los 500KB.");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel excede los 500KB permitidos.");
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel excede los 500KB.");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -388,7 +383,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const currentBitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
       const saved = safeSaveBitacora([bitacoraEntry, ...currentBitacora]);
 
-      if (!saved) throw new Error("Error crítico de memoria persistente.");
+      if (!saved) throw new Error("Error crítico de almacenamiento.");
 
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora', newValue: localStorage.getItem('atres_bitacora'), storageArea: localStorage }));
 
@@ -398,7 +393,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setPdfFile(null); setExcelFile(null);
       setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error al enviar", description: e.message });
+      toast({ variant: "destructive", title: "Falla de Memoria", description: "El dispositivo no tiene espacio. Se intentó purgar registros antiguos." });
     }
   }
 

@@ -157,9 +157,8 @@ export default function BitacoraAtresPage() {
       return true;
     } catch (e) {
       if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        if (entries.length > 1) {
-          const reduced = [...entries];
-          reduced.pop(); 
+        if (entries.length > 2) {
+          const reduced = entries.slice(0, Math.floor(entries.length * 0.8));
           return safeSaveBitacora(reduced);
         }
       }
