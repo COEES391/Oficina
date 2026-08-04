@@ -55,7 +55,8 @@ import {
   FileBox,
   User,
   History,
-  Library
+  Library,
+  Calendar
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -103,6 +104,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [attendanceHistory, setAttendanceHistory] = useState<BitacoraEntry[]>([])
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null)
   const [selectedFormal, setSelectedFormal] = useState<BitacoraEntry | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
   const [techName, setTechName] = useState('')
   const [mounted, setMounted] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
@@ -319,7 +321,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleTrackFolio = () => {
     if (!trackFolioInput) return;
-    const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const inBitacora = JSON.parse(localStorage.getItem('atres_bitacora') || '[]').find((b: any) => b.folio === trackFolioInput.toUpperCase());
     if (inBitacora) { setTrackedTicket({ ...inBitacora, id: inBitacora.folio, displayStatus: inBitacora.status === 'atendido' ? 'Atendida' : 'En Proceso' }); return; }
     toast({ variant: "destructive", title: "Folio no encontrado" });
@@ -473,17 +474,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
            ) : (
              <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                <div className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden shrink-0">
-                  <div className="absolute -right-2 -top-2 opacity-10 rotate-12"><Activity className="h-16 w-16" /></div>
+                <div 
+                  onClick={() => { setShowHistory(true); setSelectedFormal(null); setSelectedRequest(null); }}
+                  className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all group"
+                >
+                  <div className="absolute -right-2 -top-2 opacity-10 rotate-12 group-hover:rotate-45 transition-transform"><Activity className="h-16 w-16" /></div>
                   <p className="text-[10px] font-black uppercase opacity-60 tracking-widest">Servicios de Hoy</p>
-                  <div className="flex items-end gap-2 mt-1">
-                      <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
-                      <Target className="h-4 w-4 mb-1 text-accent" />
+                  <div className="flex items-end justify-between mt-1">
+                      <div className="flex items-end gap-2">
+                        <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
+                        <Target className="h-4 w-4 mb-1 text-accent" />
+                      </div>
+                      <Badge variant="secondary" className="bg-white/20 text-white border-none text-[8px] font-black uppercase px-2 h-5">VER LISTA</Badge>
                   </div>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0">
-                   <div className="space-y-3 flex flex-col h-[30%] overflow-hidden">
+                   <div className="space-y-3 flex flex-col h-[40%] overflow-hidden">
                      <Label className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between">
                        Solicitudes Pendientes
                        <Badge className="bg-primary text-white text-[10px] px-2 h-5 rounded-full">{formalRequests.length}</Badge>
@@ -491,7 +498,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
                          {formalRequests.map(req => (
-                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                           <button key={req.id} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
                                <span className={cn("text-[11px] font-black truncate max-w-[140px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
@@ -503,7 +510,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </ScrollArea>
                    </div>
 
-                   <div className="space-y-3 flex flex-col h-[25%] overflow-hidden">
+                   <div className="space-y-3 flex flex-col h-[30%] overflow-hidden">
                      <Label className="text-[11px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between">
                        Mesa Operativa
                        <Badge className="bg-accent text-white text-[10px] px-2 h-5 rounded-full">{queue.length}</Badge>
@@ -511,7 +518,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
                          {queue.map(req => (
-                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                           <button key={req.ticketNumber} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                <span className={cn("text-[11px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'LIVE CHAT' : 'REMOTO'}</span>
@@ -523,26 +530,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </ScrollArea>
                    </div>
 
-                   <div className="space-y-3 flex flex-col h-[25%] overflow-hidden">
-                     <Label className="text-[11px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center gap-2">
-                       <History className="h-4 w-4" /> Bitácora de Atención
-                     </Label>
-                     <ScrollArea className="flex-1">
-                       <div className="space-y-2 pr-3">
-                         {attendanceHistory.slice(0, 10).map(hist => (
-                           <div key={hist.id} className="p-2.5 rounded-xl border border-slate-50 bg-slate-50/50 flex flex-col">
-                             <div className="flex justify-between items-start">
-                               <span className="text-[8px] font-black text-slate-400">{hist.fecha}</span>
-                               <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                             </div>
-                             <span className="text-[10px] font-black text-slate-600 uppercase truncate">{hist.schoolName}</span>
-                           </div>
-                         ))}
-                       </div>
-                     </ScrollArea>
-                   </div>
-
-                   <div className="space-y-3 flex flex-col h-[20%] overflow-hidden">
+                   <div className="space-y-3 flex flex-col h-[30%] overflow-hidden">
                      <Label className="text-[11px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center gap-2">
                        <Library className="h-4 w-4" /> Biblioteca Técnica
                      </Label>
@@ -557,12 +545,70 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
-        {!isPublic && !selectedRequest && !selectedFormal ? (
+        {!isPublic && showHistory ? (
+          <div className="flex-1 flex flex-col p-8 animate-in fade-in slide-in-from-right duration-500 overflow-hidden">
+             <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-6">
+                <div className="flex justify-between items-center border-b pb-4">
+                   <div className="space-y-1">
+                      <h2 className="text-2xl font-black text-primary uppercase flex items-center gap-3">
+                        <History className="h-8 w-8 text-accent" /> Servicios Atendidos Hoy
+                      </h2>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Listado oficial de atenciones concluidas en el Centro Operativo.
+                      </p>
+                   </div>
+                   <Button variant="outline" onClick={() => setShowHistory(false)} className="h-10 px-6 rounded-xl font-black text-[10px] uppercase gap-2 border-slate-200">
+                     <X className="h-4 w-4" /> CERRAR VISTA
+                   </Button>
+                </div>
+
+                <div className="flex-1 border rounded-[2.5rem] bg-slate-50/50 shadow-inner overflow-hidden">
+                   <ScrollArea className="h-full">
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {attendanceHistory.length > 0 ? attendanceHistory.map(hist => (
+                           <div key={hist.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group">
+                              <div className="flex justify-between items-start">
+                                 <div className="bg-primary/5 text-primary font-mono text-xs px-3 py-1 rounded-lg font-black">{hist.folio}</div>
+                                 <div className="flex items-center gap-1 text-[8px] font-black text-slate-300 uppercase">
+                                    <Calendar className="h-3 w-3" /> {hist.fecha}
+                                 </div>
+                              </div>
+                              <div>
+                                 <h4 className="text-[11px] font-black text-slate-800 uppercase leading-none">{hist.schoolName}</h4>
+                                 <p className="text-[9px] font-bold text-slate-400 mt-1">{hist.cct}</p>
+                              </div>
+                              <div className="bg-slate-50 p-3 rounded-2xl">
+                                 <p className="text-[10px] font-semibold text-slate-600 line-clamp-2 italic">"{hist.servicio}"</p>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                                 <div className="flex items-center gap-2">
+                                    <UserCog className="h-3 w-3 text-accent" />
+                                    <span className="text-[9px] font-black text-slate-500 uppercase">{hist.tecnico}</span>
+                                 </div>
+                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                              </div>
+                           </div>
+                         )) : (
+                           <div className="col-span-full py-32 text-center opacity-30 flex flex-col items-center gap-4">
+                              <History className="h-16 w-16" />
+                              <p className="text-sm font-black uppercase tracking-widest">Sin registros concluidos el día de hoy</p>
+                           </div>
+                         )}
+                      </div>
+                   </ScrollArea>
+                </div>
+             </div>
+          </div>
+        ) : !isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6">
             <div className="h-24 w-24 rounded-[3rem] bg-slate-50 shadow-inner flex items-center justify-center text-primary/10 animate-pulse"><MessageSquare className="h-12 w-12" /></div>
             <div className="space-y-2">
               <h3 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Panel de Analista</h3>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em] max-w-xs mx-auto">Seleccione una solicitud activa para iniciar la gestión técnica.</p>
+            </div>
+            <div className="pt-4 flex flex-col items-center gap-2 opacity-50">
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">O haga clic en servicios de hoy para ver la bitácora</p>
+               <Activity className="h-5 w-5 text-primary animate-bounce" />
             </div>
           </div>
         ) : !isPublic && selectedFormal ? (
