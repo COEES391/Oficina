@@ -181,19 +181,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
     
-    // Unified history sync
+    // Unified history sync - ensuring all records are shown
     const today = format(new Date(), 'yyyy-MM-dd');
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
     
-    const mappedHistory: BitacoraEntry[] = todayAtres.map((p: any) => {
+    const mappedHistory: BitacoraEntry[] = todayAtres.map((p: any, idx: number) => {
       // Find extra info in bitacora if exists
       const inBitacora = bitacora.find(b => p.id.startsWith(b.folio));
       return {
-        id: p.id,
-        folio: p.id.split('-')[0],
+        id: p.id || `HIST-${idx}`,
+        folio: p.id?.split('-')[0] || inBitacora?.folio || 'S/F',
         cct: p.cct || inBitacora?.cct || '',
-        schoolName: p.schoolName || inBitacora?.schoolName || '',
+        schoolName: p.schoolName || inBitacora?.schoolName || 'PLANTEL NO IDENTIFICADO',
         servicio: p.observaciones || inBitacora?.servicio || '',
         oficina: p.oficinaRegionalAtencion || inBitacora?.oficina || '',
         fecha: p.date,
@@ -222,7 +222,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (history) {
       setMessages(JSON.parse(history))
     } else {
-      const initial: Message[] = [{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy?', timestamp: Date.now() }]
+      const initial: Message[] = [{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: Date.now() }]
       setMessages(initial)
       localStorage.setItem(historyKey, JSON.stringify(initial))
     }
@@ -306,6 +306,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           chatKey: sessionKey
         };
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
+      }
+
+      // Keyword Trigger Logic: Office or Windows
+      const lowerInput = input.toLowerCase();
+      if (lowerInput.includes('office') || lowerInput.includes('windows')) {
+        setIsRemoteHelpRequested(true);
+        // Automatic Bot Reply
+        setTimeout(() => {
+          const botResponse: Message = {
+            role: 'bot',
+            content: 'He detectado que tienes un problema relacionado con Office o Windows. Para brindarte una mejor atención técnica, he activado el panel de "Apoyo Remoto" a tu izquierda. Por favor, descarga AnyDesk, localiza tu ID de 9 dígitos y solicítame el soporte para que un analista se conecte a tu equipo.',
+            timestamp: Date.now()
+          };
+          const historyKey = `atres_chat_${updatedActiveChatId}`
+          const current = JSON.parse(localStorage.getItem(historyKey) || '[]')
+          const updated = [...current, botResponse]
+          localStorage.setItem(historyKey, JSON.stringify(updated))
+          setMessages(updated)
+          window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updated), storageArea: localStorage }))
+        }, 1000);
       }
     }
 
