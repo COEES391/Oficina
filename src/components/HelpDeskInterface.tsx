@@ -89,7 +89,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 1.5 * 1024 * 1024; // 1.5MB to be safe with Base64
+const FILE_SIZE_LIMIT = 1 * 1024 * 1024; // 1MB limit to avoid localStorage quota issues
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -237,16 +237,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Helper to save with auto-cleanup of oldest entries if quota is exceeded
   const safeSaveBitacora = (entries: BitacoraEntry[]) => {
     try {
       localStorage.setItem('atres_bitacora', JSON.stringify(entries));
       return true;
     } catch (e) {
       if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        if (entries.length > 5) {
+        console.warn('Quota exceeded, purging old entries...');
+        if (entries.length > 2) {
           const reduced = [...entries];
-          reduced.splice(-10); // Purge oldest 10 entries to make space
+          const removeCount = Math.max(1, Math.floor(reduced.length / 2));
+          reduced.splice(-removeCount); // Remove oldest 50%
           return safeSaveBitacora(reduced);
         }
       }
@@ -302,7 +303,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado grande", description: "El límite es de 1.5MB para proteger el sistema." });
+      toast({ variant: "destructive", title: "Archivo demasiado grande", description: "El límite es de 1MB por seguridad." });
       return;
     }
     const reader = new FileReader();
@@ -349,11 +350,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let pdfContent, excelContent;
       
       if (pdfFile) {
-        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF demasiado grande. Límite: 1.5MB.");
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("PDF demasiado grande (Límite 1MB).");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel demasiado grande. Límite: 1.5MB.");
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("Excel demasiado grande (Límite 1MB).");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -810,12 +811,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="grid grid-cols-1 gap-3 mt-2">
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
                         <FileText className={cn("h-4 w-4", pdfFile ? "text-rose-600" : "text-rose-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Subir Solicitud PDF (Máx 1.5MB)"}</span></div>
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "1. Subir Solicitud PDF (Máx 1MB)"}</span></div>
                         <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} title="Subir PDF" />
                     </div>
                     <div className={cn("flex items-center gap-3 bg-slate-50 rounded-xl p-3 border-2 border-dashed h-12 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
                         <FileSpreadsheet className={cn("h-4 w-4", excelFile ? "text-emerald-600" : "text-emerald-400")} />
-                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Subir Base Excel (Máx 1.5MB)"}</span></div>
+                        <div className="flex-1 min-w-0"><span className={cn("text-[8px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "2. Subir Base Excel (Máx 1MB)"}</span></div>
                         <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} title="Subir Excel" />
                     </div>
                   </div>
