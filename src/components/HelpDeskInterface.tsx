@@ -145,6 +145,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const keys = Object.keys(localStorage);
     const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
     chatKeys.forEach(k => localStorage.removeItem(k));
+    const sessionKeys = keys.filter(k => k.startsWith('atres_user_counter_'));
+    sessionKeys.forEach(k => localStorage.removeItem(k));
   }, []);
 
   const generateTurnSessionId = useCallback(() => {
@@ -272,11 +274,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         return true;
       } catch (e) {
         attempts++;
-        purgeOldChats();
         if (bitacora.length > 5) {
-          bitacora = bitacora.slice(0, bitacora.length - 2);
+          bitacora = bitacora.slice(0, bitacora.length - 5);
         } else if (bitacora.length > 1) {
-          bitacora = bitacora.slice(0, 1);
+          bitacora = bitacora.slice(0, bitacora.length - 1);
         } else {
           return false;
         }
@@ -285,8 +286,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return false;
   }
 
-  const handleSendMessage = async (fileData?: { data: string, name: string, type: string }) => {
-    if (!input.trim() && !fileData) return
+  const handleSendMessage = async (msgData?: { content?: string, fileData?: { data: string, name: string, type: string } }) => {
+    const textToSend = msgData?.content ?? input;
+    if (!textToSend.trim() && !msgData?.fileData) return
     let updatedActiveChatId = activeChatId || sessionKey;
 
     if (isPublic) {
@@ -306,7 +308,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
       }
 
-      const lowerInput = input.toLowerCase();
+      const lowerInput = textToSend.toLowerCase();
       if (lowerInput.includes('office') || lowerInput.includes('windows')) {
         setIsRemoteHelpRequested(true);
         setTimeout(() => {
@@ -325,7 +327,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }
     }
 
-    const newMessage: Message = { role: isPublic ? 'user' : 'tech', content: input, timestamp: Date.now(), senderName: !isPublic ? techName : undefined, fileData: fileData?.data, fileName: fileData?.name, fileType: fileData?.type }
+    const newMessage: Message = { 
+      role: isPublic ? 'user' : 'tech', 
+      content: textToSend, 
+      timestamp: Date.now(), 
+      senderName: !isPublic ? techName : undefined, 
+      fileData: msgData?.fileData?.data, 
+      fileName: msgData?.fileData?.name, 
+      fileType: msgData?.fileData?.type 
+    }
     const historyKey = `atres_chat_${updatedActiveChatId}`
     const currentMessages = JSON.parse(localStorage.getItem(historyKey) || '[]')
     const updatedMessages = [...currentMessages, newMessage]
@@ -339,24 +349,39 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       localStorage.setItem(historyKey, JSON.stringify(purged));
       setMessages(purged);
     }
-    input && setInput('')
+    !msgData?.content && setInput('')
   }
 
   const handleRequestRemoteSupport = () => {
-    if (remoteId.length < 9) { toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese su ID de 9 dígitos." }); return; }
+    if (remoteId.length < 9) { 
+      toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese su ID de 9 dígitos." }); 
+      return; 
+    }
     const turn = generateTurnSessionId();
-    const newReq: SupportRequest = { remoteId, ticketNumber: turn, timestamp: Date.now(), status: 'pending', requestType: 'remote', chatKey: sessionKey }
-    const rawQueue = localStorage.getItem('atres_support_queue'); const currentQueue = JSON.parse(rawQueue || '[]');
+    const newReq: SupportRequest = { 
+      remoteId, 
+      ticketNumber: turn, 
+      timestamp: Date.now(), 
+      status: 'pending', 
+      requestType: 'remote', 
+      chatKey: sessionKey 
+    }
+    const rawQueue = localStorage.getItem('atres_support_queue'); 
+    const currentQueue = JSON.parse(rawQueue || '[]');
     localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
     setActiveTicketNumber(turn);
-    toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}` });
+
+    // Enviar el ID al chat para que el técnico lo vea
+    handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
+    
+    toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}. El ID ha sido enviado al técnico.` });
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 400KB permitido para asegurar el guardado." }); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => handleSendMessage({ data: ev.target?.result as string, name: file.name, type: file.type })
+    reader.onload = (ev) => handleSendMessage({ fileData: { data: ev.target?.result as string, name: file.name, type: file.type } })
     reader.readAsDataURL(file); e.target.value = '';
   }
 
@@ -819,6 +844,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">En Línea</div>
                     </div>
                     {activeChatId && <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5 px-2">{activeChatId}</Badge>}
+                    {selectedRequest?.remoteId && <Badge className="bg-primary text-white text-[9px] font-mono uppercase px-3 shadow-md">REMOTO ID: {selectedRequest.remoteId}</Badge>}
                     {isPublic && (
                       <div className="flex gap-2 ml-2">
                          <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-[#B38E5D] hover:bg-[#a67d4a] px-4 h-9 rounded-xl shadow-lg transition-all text-white font-black uppercase text-[9px] tracking-widest">
