@@ -36,29 +36,19 @@ import {
   FileText,
   FileSpreadsheet,
   FileCode,
-  Plus,
   ArrowRightCircle,
   Clock,
   Activity,
   Monitor,
-  ShieldCheck,
-  Circle,
-  School,
   X,
   Target,
   FilePlus,
   Search,
-  Mail,
   Tag,
-  Headset,
   Printer,
-  Eye,
   FileBox,
   User,
-  History,
-  Library,
-  Calendar,
-  AlertTriangle
+  History
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -194,7 +184,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
     
     const mappedHistory: BitacoraEntry[] = todayAtres.map((p: any, idx: number) => {
-      const inBitacora = bitacora.find(b => p.id.startsWith(b.folio));
+      const inBitacora = bitacora.find(b => p.id?.startsWith(b.folio));
       return {
         id: p.id || `HIST-${idx}`,
         folio: p.id?.split('-')[0] || inBitacora?.folio || 'S/F',
@@ -520,9 +510,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="mt-6 space-y-4">
                     <div className="space-y-2">
                       <Label className="text-[9px] font-black uppercase text-white/60 pl-1">ID de 9 Dígitos</Label>
-                      <Input placeholder="000 000 000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 font-mono text-center text-xl h-12 rounded-2xl" value={remoteId} onChange={e => setRemoteId(e.target.value.replace(/\D/g,''))} maxLength={9} />
+                      <Input 
+                        placeholder="000 000 000" 
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/30 font-mono text-center text-xl h-12 rounded-2xl" 
+                        value={remoteId} 
+                        onChange={e => setRemoteId(e.target.value.replace(/\D/g,''))} 
+                        maxLength={9} 
+                      />
                     </div>
-                    <Button onClick={handleRequestRemoteSupport} className="w-full bg-white text-[#9f2241] hover:bg-[#f8f8f8] font-black uppercase text-[11px] h-12 rounded-2xl shadow-xl transition-all">Solicitar Soporte</Button>
+                    <Button 
+                      onClick={handleRequestRemoteSupport} 
+                      disabled={remoteId.length < 9}
+                      className={cn(
+                        "w-full bg-white text-[#9f2241] hover:bg-[#f8f8f8] font-black uppercase text-[11px] h-12 rounded-2xl shadow-xl transition-all",
+                        remoteId.length < 9 && "opacity-50 grayscale cursor-not-allowed"
+                      )}
+                    >
+                      Solicitar Soporte
+                    </Button>
                   </div>
                 </div>
 
@@ -633,14 +638,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                               <div className="flex justify-between items-start">
                                  <div className="bg-primary/5 text-primary font-mono text-xs px-4 py-1.5 rounded-xl font-black border border-primary/10 shadow-sm">{hist.folio}</div>
                                  <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
-                                    <Calendar className="h-3.5 w-3.5" /> {hist.fecha}
+                                    <Clock className="h-3.5 w-3.5" /> {hist.fecha}
                                  </div>
                               </div>
                               <div className="space-y-2">
                                  <h4 className="text-[13px] font-black text-slate-800 uppercase leading-none tracking-tight">{hist.schoolName}</h4>
-                                 <div className="text-[10px] font-bold text-slate-400 mt-1.5 flex items-center gap-2">
+                                 <div className="mt-1.5 flex items-center gap-2">
                                    <Badge variant="outline" className="text-[8px] border-slate-200">{hist.cct}</Badge>
-                                   <span className="truncate">{hist.oficina?.replace("Oficina de ", "")}</span>
+                                   <div className="text-[10px] font-bold text-slate-400 truncate">{hist.oficina?.replace("Oficina de ", "")}</div>
                                  </div>
                               </div>
                               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
@@ -938,10 +943,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                   <AlertTriangle className="h-4 w-4 text-blue-600" />
-                   <p className="text-[9px] font-black uppercase text-blue-700 leading-tight">Máximo 400KB por archivo para garantizar la seguridad del sistema.</p>
-                </div>
              </div>
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="h-12 px-8 text-xs font-black uppercase text-slate-400">Cancelar</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-12 px-12 text-xs">Enviar Solicitud</Button></DialogFooter>
@@ -1001,7 +1002,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><ShieldCheck className="h-6 w-6 text-accent" /> Concluir Turno</DialogTitle>
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-accent" /> Concluir Turno</DialogTitle>
             <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Cierre oficial del folio operativo.</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
