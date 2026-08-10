@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -151,18 +152,26 @@ export default function BitacoraAtresPage() {
   }
 
   const safeSaveBitacora = (entries: BitacoraEntry[]): boolean => {
-    try {
-      localStorage.setItem('atres_bitacora', JSON.stringify(entries));
-      return true;
-    } catch (e) {
-      if (e instanceof DOMException && (e.code === 22 || e.name === 'QuotaExceededError')) {
-        if (entries.length > 2) {
-          const reduced = entries.slice(0, Math.floor(entries.length * 0.8));
-          return safeSaveBitacora(reduced);
+    let currentEntries = [...entries];
+    let attempts = 0;
+
+    while (attempts < 15) {
+      try {
+        localStorage.setItem('atres_bitacora', JSON.stringify(currentEntries));
+        return true;
+      } catch (e) {
+        attempts++;
+        // Purgar espacio si falla (Eliminar 20% más antiguos)
+        if (currentEntries.length > 5) {
+          currentEntries = currentEntries.slice(0, Math.floor(currentEntries.length * 0.8));
+        } else if (currentEntries.length > 1) {
+          currentEntries = currentEntries.slice(0, currentEntries.length - 1);
+        } else {
+          return false;
         }
       }
-      return false;
     }
+    return false;
   }
 
   const saveEdits = () => {
@@ -174,6 +183,8 @@ export default function BitacoraAtresPage() {
       setIsEditDialogOpen(false);
       setEditingRecord(null);
       toast({ title: "Registro actualizado" });
+    } else {
+      toast({ variant: "destructive", title: "Falla de memoria", description: "No se pudo guardar el cambio debido al tamaño de los adjuntos." });
     }
   }
 
@@ -182,14 +193,14 @@ export default function BitacoraAtresPage() {
   return (
     <div className="space-y-3 animate-in fade-in duration-700 w-full">
       {pendingCount > 0 && (
-        <div className="bg-rose-600 text-white p-0.5 rounded-lg shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300 max-w-xs ml-auto">
-           <div className="flex items-center gap-2 pl-2">
-              <div className="h-4 w-4 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
-                <Bell className="h-2.5 w-2.5 text-white" />
+        <div className="bg-rose-600 text-white p-1 rounded-2xl shadow-lg flex flex-row items-center justify-between gap-4 animate-in slide-in-from-top duration-500 ring-1 ring-rose-300 max-w-sm ml-auto">
+           <div className="flex items-center gap-2 pl-3">
+              <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center animate-pulse">
+                <Bell className="h-3 w-3 text-white" />
               </div>
-              <p className="text-[7px] font-black uppercase opacity-90 tracking-widest leading-none">{pendingCount} PENDIENTES</p>
+              <p className="text-[8px] font-black uppercase opacity-90 tracking-widest leading-none">{pendingCount} PENDIENTES</p>
            </div>
-           <div className="flex gap-1.5 pr-1">
+           <div className="flex gap-2 pr-1">
              <Button 
                 onClick={() => setSearchTerm('pendiente')} 
                 className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-5.5 px-3 rounded-lg shadow-md border-none transition-all active:scale-95"
@@ -241,83 +252,83 @@ export default function BitacoraAtresPage() {
         <div className="overflow-x-auto w-full">
           <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
-              <TableRow className="h-10">
-                <TableHead className="w-12 text-[9px] font-black uppercase text-center pl-4">Status</TableHead>
-                <TableHead className="w-24 text-[9px] font-black uppercase text-center text-primary">Folio</TableHead>
-                <TableHead className="w-28 text-[9px] font-black uppercase">Fecha</TableHead>
-                <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Plantel</TableHead>
-                <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Resumen Operativo</TableHead>
-                <TableHead className="w-28 text-[9px] font-black uppercase text-center">Analista</TableHead>
-                <TableHead className="w-24 text-[9px] font-black uppercase text-center">Docs</TableHead>
-                {isAdmin && <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-20">Acción</TableHead>}
+              <TableRow className="h-8">
+                <TableHead className="w-10 text-[8px] font-black uppercase text-center pl-4">Status</TableHead>
+                <TableHead className="w-20 text-[8px] font-black uppercase text-center text-primary">Folio</TableHead>
+                <TableHead className="w-24 text-[8px] font-black uppercase">Fecha</TableHead>
+                <TableHead className="min-w-[150px] text-[8px] font-black uppercase">Plantel</TableHead>
+                <TableHead className="min-w-[180px] text-[8px] font-black uppercase">Resumen Operativo</TableHead>
+                <TableHead className="w-24 text-[8px] font-black uppercase text-center">Analista</TableHead>
+                <TableHead className="w-20 text-[8px] font-black uppercase text-center">Docs</TableHead>
+                {isAdmin && <TableHead className="text-right text-[8px] font-black uppercase pr-6 w-16">Acción</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRecords.length > 0 ? filteredRecords.map((r, idx) => (
-                <TableRow key={`${r.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-14 group">
-                  <TableCell className="pl-4 text-center py-1">
+                <TableRow key={`${r.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-12 group">
+                  <TableCell className="pl-4 text-center py-0.5">
                     <TrafficLight status={r.status} />
                   </TableCell>
-                  <TableCell className="text-center py-1">
-                    <span className="font-mono font-black text-[10px] text-primary">{r.folio}</span>
+                  <TableCell className="text-center py-0.5">
+                    <span className="font-mono font-black text-[9px] text-primary">{r.folio}</span>
                   </TableCell>
-                  <TableCell className="py-1">
+                  <TableCell className="py-0.5">
                     <div className="flex items-center gap-1">
-                       <Calendar className="h-3 w-3 text-accent opacity-50" />
-                       <span className="text-[9px] font-bold text-slate-500">{r.fecha}</span>
+                       <Calendar className="h-2.5 w-2.5 text-accent opacity-50" />
+                       <span className="text-[8px] font-bold text-slate-500">{r.fecha}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-1">
+                  <TableCell className="py-0.5">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate max-w-[200px]">{r.schoolName}</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                         <Badge variant="outline" className="bg-primary/5 text-primary text-[7px] font-black border-none h-3.5 px-1.5">{r.cct}</Badge>
-                         <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{r.oficina?.replace("Oficina de ", "")}</span>
+                      <span className="text-[9px] font-black text-slate-700 uppercase leading-none truncate max-w-[160px]">{r.schoolName}</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                         <Badge variant="outline" className="bg-primary/5 text-primary text-[7px] font-black border-none h-3 px-1">{r.cct}</Badge>
+                         <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[80px]">{r.oficina?.replace("Oficina de ", "")}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-1">
-                    <div className="text-[9px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[280px]">
+                  <TableCell className="py-0.5">
+                    <div className="text-[8px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[200px]">
                       {r.servicio}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center py-1">
-                    <div className="flex items-center justify-center gap-1.5">
-                       <UserCheck className="h-3 w-3 text-emerald-600 opacity-50" />
-                       <span className="text-[9px] font-black text-slate-700 uppercase truncate max-w-[100px]">{r.tecnico}</span>
+                  <TableCell className="text-center py-0.5">
+                    <div className="flex items-center justify-center gap-1">
+                       <UserCheck className="h-2.5 w-2.5 text-emerald-600 opacity-50" />
+                       <span className="text-[8px] font-black text-slate-700 uppercase truncate max-w-[80px]">{r.tecnico}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-1">
-                     <div className="flex items-center justify-center gap-1.5">
+                  <TableCell className="py-0.5">
+                     <div className="flex items-center justify-center gap-1">
                         {r.pdfData ? (
                           <div className="flex gap-0.5">
-                             <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => setPdfToPreview(r.pdfData!)} title="Ver PDF">
-                                <Eye className="h-3.5 w-3.5" />
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => setPdfToPreview(r.pdfData!)} title="Ver PDF">
+                                <Eye className="h-3 w-3" />
                              </Button>
-                             <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => downloadFile(r.pdfData!, r.pdfName || 'solicitud.pdf')} title="Bajar PDF">
-                                <Download className="h-3.5 w-3.5" />
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => downloadFile(r.pdfData!, r.pdfName || 'solicitud.pdf')} title="Bajar PDF">
+                                <Download className="h-3 w-3" />
                              </Button>
                           </div>
                         ) : (
-                          <span className="text-[7px] font-black text-slate-300 uppercase italic">Sin PDF</span>
+                          <span className="text-[7px] font-black text-slate-300 uppercase italic">S/PDF</span>
                         )}
                         {r.excelData ? (
-                           <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg" onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} title="Bajar Excel">
-                              <FileSpreadsheet className="h-3.5 w-3.5" />
+                           <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg" onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} title="Bajar Excel">
+                              <FileSpreadsheet className="h-3 w-3" />
                            </Button>
                         ) : (
-                          <span className="text-[7px] font-black text-slate-300 uppercase italic ml-1">Sin XL</span>
+                          <span className="text-[7px] font-black text-slate-300 uppercase italic">S/XL</span>
                         )}
                      </div>
                   </TableCell>
                   {isAdmin && (
-                    <TableCell className="text-right pr-6 py-1">
-                      <div className="flex justify-end gap-1">
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEdit(r)}>
-                            <Pencil className="h-3.5 w-3.5" />
+                    <TableCell className="text-right pr-6 py-0.5">
+                      <div className="flex justify-end gap-0.5">
+                         <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEdit(r)}>
+                            <Pencil className="h-3 w-3" />
                          </Button>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(r.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                         <Button variant="ghost" size="icon" className="h-6 w-6 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="h-3 w-3" />
                          </Button>
                       </div>
                     </TableCell>

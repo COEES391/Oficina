@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -56,7 +57,8 @@ import {
   User,
   History,
   Library,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -91,7 +93,8 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 500 * 1024; // 500KB strict
+// Límite estricto para evitar QuotaExceededError (LocalStorage es de 5MB máximo compartido)
+const FILE_SIZE_LIMIT = 400 * 1024; // 400KB
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -170,6 +173,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `COEES-${nextCounter.toString().padStart(5, '0')}`;
   }
 
+  const purgeSpace = () => {
+    // Eliminar chats viejos (más de 24 horas) para liberar espacio de LocalStorage
+    const keys = Object.keys(localStorage);
+    const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
+    chatKeys.forEach(k => localStorage.removeItem(k));
+    console.log("Sistema COEES: Espacio purgado (Chats antiguos eliminados)");
+  }
+
   const updateAttendedCount = useCallback(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
@@ -181,13 +192,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
     
-    // Unified history sync - ensuring all records are shown
     const today = format(new Date(), 'yyyy-MM-dd');
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
     
     const mappedHistory: BitacoraEntry[] = todayAtres.map((p: any, idx: number) => {
-      // Find extra info in bitacora if exists
       const inBitacora = bitacora.find(b => p.id.startsWith(b.folio));
       return {
         id: p.id || `HIST-${idx}`,
@@ -268,19 +277,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [messages])
 
   const safeSaveNewEntry = (newEntry: BitacoraEntry): boolean => {
-    const rawBitacora = localStorage.getItem('atres_bitacora') || '[]';
-    let bitacora: BitacoraEntry[] = JSON.parse(rawBitacora);
+    let bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]');
     bitacora = [newEntry, ...bitacora];
 
-    while (bitacora.length > 0) {
+    let attempts = 0;
+    while (attempts < 10) {
       try {
         localStorage.setItem('atres_bitacora', JSON.stringify(bitacora));
         return true;
       } catch (e) {
-        if (bitacora.length > 1) {
-          bitacora = bitacora.slice(0, bitacora.length - 1);
+        attempts++;
+        // Si falla el guardado, purgamos espacio de chats viejos y los 5 registros más antiguos de la bitácora
+        purgeSpace();
+        if (bitacora.length > 5) {
+          bitacora = bitacora.slice(0, bitacora.length - 2);
+        } else if (bitacora.length > 1) {
+          bitacora = bitacora.slice(0, 1); // Quedarnos solo con el nuevo si es necesario
         } else {
-          return false;
+          return false; // Ni el nuevo cabe solo
         }
       }
     }
@@ -308,11 +322,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
       }
 
-      // Keyword Trigger Logic: Office or Windows
       const lowerInput = input.toLowerCase();
       if (lowerInput.includes('office') || lowerInput.includes('windows')) {
         setIsRemoteHelpRequested(true);
-        // Automatic Bot Reply
         setTimeout(() => {
           const botResponse: Message = {
             role: 'bot',
@@ -358,7 +370,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 500KB permitido." }); return; }
+    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 400KB permitido para asegurar el guardado." }); return; }
     const reader = new FileReader();
     reader.onload = (ev) => handleSendMessage({ data: ev.target?.result as string, name: file.name, type: file.type })
     reader.readAsDataURL(file); e.target.value = '';
@@ -385,11 +397,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Datos Incompletos", description: "Todos los campos son obligatorios." });
       return;
     }
+    
     try {
       const folio = generateSequentialFolio();
-      let pdfContent, excelContent;
-      if (pdfFile) pdfContent = await readFileAsDataURL(pdfFile);
-      if (excelFile) excelContent = await readFileAsDataURL(excelFile);
+      let pdfContent = "";
+      let excelContent = "";
+      
+      if (pdfFile) {
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("El PDF excede los 400KB.");
+        pdfContent = await readFileAsDataURL(pdfFile);
+      }
+      if (excelFile) {
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("El Excel excede los 400KB.");
+        excelContent = await readFileAsDataURL(excelFile);
+      }
       
       const school = schoolsDirectory.find(s => s.cct === ticketCct.toUpperCase());
       const bitacoraEntry: BitacoraEntry = {
@@ -403,9 +424,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         tecnico: "POR ASIGNAR",
         tipo: 'FORMAL',
         status: 'pendiente',
-        pdfData: pdfContent,
+        pdfData: pdfContent || undefined,
         pdfName: pdfFile?.name,
-        excelData: excelContent,
+        excelData: excelContent || undefined,
         excelName: excelFile?.name,
         requesterName: requesterName,
         requesterEmail: requesterEmail,
@@ -414,14 +435,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       };
 
       const saved = safeSaveNewEntry(bitacoraEntry);
-      if (!saved) throw new Error("Memoria insuficiente");
+      if (!saved) throw new Error("Falla de memoria: Intente con archivos más pequeños.");
 
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
       resetRequestForm();
+      
+      // Notificar al Centro Operativo a través del storage
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora' }));
+      
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e.message });
+      toast({ variant: "destructive", title: "Error de Envío", description: e.message });
     }
   }
 
@@ -911,14 +936,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className={cn("flex items-center gap-4 bg-slate-50 rounded-2xl p-4 border-2 border-dashed h-16 relative transition-all", pdfFile ? "border-rose-400 bg-rose-50" : "border-slate-200")}>
                       <FileText className={cn("h-6 w-6", pdfFile ? "text-rose-600" : "text-rose-400")} />
-                      <div className="flex-1 min-w-0"><span className={cn("text-[9px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Reporte Oficial (PDF)"}</span></div>
+                      <div className="flex-1 min-w-0">
+                        <span className={cn("text-[9px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Reporte Oficial (PDF)"}</span>
+                        {pdfFile && pdfFile.size > FILE_SIZE_LIMIT && (
+                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 400KB</span>
+                        )}
+                      </div>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
                   </div>
                   <div className={cn("flex items-center gap-4 bg-slate-50 rounded-2xl p-4 border-2 border-dashed h-16 relative transition-all", excelFile ? "border-emerald-400 bg-emerald-50" : "border-slate-200")}>
                       <FileSpreadsheet className={cn("h-6 w-6", excelFile ? "text-emerald-600" : "text-emerald-400")} />
-                      <div className="flex-1 min-w-0"><span className={cn("text-[9px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Base de Datos (Excel)"}</span></div>
+                      <div className="flex-1 min-w-0">
+                        <span className={cn("text-[9px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Base de Datos (Excel)"}</span>
+                        {excelFile && excelFile.size > FILE_SIZE_LIMIT && (
+                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 400KB</span>
+                        )}
+                      </div>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
                   </div>
+                </div>
+                <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                   <AlertTriangle className="h-4 w-4 text-blue-600" />
+                   <p className="text-[9px] font-black uppercase text-blue-700 leading-tight">Máximo 400KB por archivo para garantizar la seguridad del sistema.</p>
                 </div>
              </div>
           </div>
@@ -1018,18 +1057,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </DialogTitle>
               <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documento Digital</DialogDescription>
             </div>
-            <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
-               <Printer className="h-4 w-4" /> Imprimir
-            </Button>
+            <div className="flex gap-4">
+               <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
+                  <Printer className="h-4 w-4" /> Imprimir
+               </Button>
+               <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20"><X className="h-5 w-5" /></Button>
+            </div>
           </DialogHeader>
           <div className="flex-1 bg-slate-800 p-1">
              <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
           </div>
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar</Button>
+             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar Visor</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   )
 }
+
