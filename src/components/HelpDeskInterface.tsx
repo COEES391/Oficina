@@ -93,7 +93,6 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-// Límite estricto para evitar QuotaExceededError (LocalStorage es de 5MB máximo compartido)
 const FILE_SIZE_LIMIT = 400 * 1024; // 400KB
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
@@ -152,6 +151,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
+  const purgeOldChats = useCallback(() => {
+    const keys = Object.keys(localStorage);
+    const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
+    // Si hay muchos chats o estamos limpiando para el usuario público
+    chatKeys.forEach(k => localStorage.removeItem(k));
+    console.log("Sistema COEES: Memoria de chats purgada con éxito.");
+  }, []);
+
   const generateTurnSessionId = useCallback(() => {
     const now = new Date();
     const dateStr = format(now, 'yyyyMMdd');
@@ -171,14 +178,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const nextCounter = lastCounter + 1;
     localStorage.setItem(counterKey, nextCounter.toString());
     return `COEES-${nextCounter.toString().padStart(5, '0')}`;
-  }
-
-  const purgeSpace = () => {
-    // Eliminar chats viejos (más de 24 horas) para liberar espacio de LocalStorage
-    const keys = Object.keys(localStorage);
-    const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
-    chatKeys.forEach(k => localStorage.removeItem(k));
-    console.log("Sistema COEES: Espacio purgado (Chats antiguos eliminados)");
   }
 
   const updateAttendedCount = useCallback(() => {
@@ -239,19 +238,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   useEffect(() => {
     if (isPublic) {
-      let sKey = sessionStorage.getItem('atres_session_id')
-      if (!sKey) {
-        sKey = generateTurnSessionId()
-        sessionStorage.setItem('atres_session_id', sKey)
-      }
+      // Forzar chat nuevo para el usuario público siempre al cargar
+      purgeOldChats();
+      const sKey = generateTurnSessionId()
       setSessionKey(sKey)
+      sessionStorage.setItem('atres_session_id', sKey)
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
       updateAttendedCount();
       syncFormalRequests();
     }
-  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests])
+  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests, purgeOldChats])
 
   useEffect(() => {
     setMounted(true)
@@ -281,20 +279,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     bitacora = [newEntry, ...bitacora];
 
     let attempts = 0;
-    while (attempts < 10) {
+    while (attempts < 15) {
       try {
         localStorage.setItem('atres_bitacora', JSON.stringify(bitacora));
         return true;
       } catch (e) {
         attempts++;
-        // Si falla el guardado, purgamos espacio de chats viejos y los 5 registros más antiguos de la bitácora
-        purgeSpace();
+        purgeOldChats(); // Limpiar chats si hay falla de memoria
         if (bitacora.length > 5) {
           bitacora = bitacora.slice(0, bitacora.length - 2);
         } else if (bitacora.length > 1) {
-          bitacora = bitacora.slice(0, 1); // Quedarnos solo con el nuevo si es necesario
+          bitacora = bitacora.slice(0, 1);
         } else {
-          return false; // Ni el nuevo cabe solo
+          return false;
         }
       }
     }
@@ -441,8 +438,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
       resetRequestForm();
-      
-      // Notificar al Centro Operativo a través del storage
       window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora' }));
       
     } catch (e: any) {
@@ -1023,7 +1018,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Identificar Plantel</Label>
+              <div className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Identificar Plantel</div>
               <div className="relative">
                  <Input placeholder="CCT O NOMBRE..." className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
                  {finishSearchTerm.length > 2 && (
@@ -1075,4 +1070,3 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     </div>
   )
 }
-
