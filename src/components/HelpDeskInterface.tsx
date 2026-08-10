@@ -154,9 +154,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const purgeOldChats = useCallback(() => {
     const keys = Object.keys(localStorage);
     const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
-    // Si hay muchos chats o estamos limpiando para el usuario público
     chatKeys.forEach(k => localStorage.removeItem(k));
-    console.log("Sistema COEES: Memoria de chats purgada con éxito.");
   }, []);
 
   const generateTurnSessionId = useCallback(() => {
@@ -238,7 +236,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   useEffect(() => {
     if (isPublic) {
-      // Forzar chat nuevo para el usuario público siempre al cargar
       purgeOldChats();
       const sKey = generateTurnSessionId()
       setSessionKey(sKey)
@@ -285,7 +282,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         return true;
       } catch (e) {
         attempts++;
-        purgeOldChats(); // Limpiar chats si hay falla de memoria
+        purgeOldChats();
         if (bitacora.length > 5) {
           bitacora = bitacora.slice(0, bitacora.length - 2);
         } else if (bitacora.length > 1) {
@@ -605,15 +602,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </ScrollArea>
                    </div>
                 </div>
-                
-                <div className="mt-auto space-y-3 shrink-0">
-                  <Label className="text-[11px] font-black uppercase text-slate-400 border-b-2 border-slate-100 pb-1 flex items-center gap-2">
-                    <Library className="h-4 w-4" /> Biblioteca
-                  </Label>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center opacity-60">
-                     <p className="text-[9px] font-black uppercase text-slate-400">Sin Archivos Recientes</p>
-                  </div>
-                </div>
              </div>
            )}
         </div>
@@ -733,7 +721,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         </div>
                         <div className="space-y-4">
                            <div>
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Docente / Coordinador:</p>
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Servidor Público:</p>
                               <p className="text-sm font-black text-slate-700 uppercase">{selectedFormal.requesterName || 'N/A'}</p>
                            </div>
                            <div>
