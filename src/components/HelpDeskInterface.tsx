@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -48,7 +47,8 @@ import {
   Printer,
   FileBox,
   User,
-  History
+  History,
+  Circle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -83,7 +83,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 400 * 1024; // 400KB
+const FILE_SIZE_LIMIT = 400 * 1024; // 400KB para evitar QuotaExceeded
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -141,12 +141,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
+  // Purga agresiva de chats antiguos para liberar espacio local
   const purgeOldChats = useCallback(() => {
     const keys = Object.keys(localStorage);
     const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
     chatKeys.forEach(k => localStorage.removeItem(k));
-    const sessionKeys = keys.filter(k => k.startsWith('atres_user_counter_'));
-    sessionKeys.forEach(k => localStorage.removeItem(k));
   }, []);
 
   const generateTurnSessionId = useCallback(() => {
@@ -181,6 +180,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
     
+    // Sincronización real con la base maestra de programas para el historial de hoy
     const today = format(new Date(), 'yyyy-MM-dd');
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
@@ -228,7 +228,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   useEffect(() => {
     if (isPublic) {
-      purgeOldChats();
+      purgeOldChats(); // Limpiar chats anteriores cada vez que inicia sesión pública
       const sKey = generateTurnSessionId()
       setSessionKey(sKey)
       sessionStorage.setItem('atres_session_id', sKey)
@@ -308,13 +308,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
       }
 
+      // MONITOR DE PALABRAS CLAVE PARA ACTIVACIÓN DE APOYO REMOTO
       const lowerInput = textToSend.toLowerCase();
-      if (lowerInput.includes('office') || lowerInput.includes('windows')) {
+      if (lowerInput.includes('office') || lowerInput.includes('windows') || lowerInput.includes('controlador') || lowerInput.includes('driver') || lowerInput.includes('impresora') || lowerInput.includes('imprimir')) {
         setIsRemoteHelpRequested(true);
         setTimeout(() => {
           const botResponse: Message = {
             role: 'bot',
-            content: 'He detectado que tienes un problema relacionado con Office o Windows. Para brindarte una mejor atención técnica, he activado el panel de "Apoyo Remoto" a tu izquierda. Por favor, descarga AnyDesk, localiza tu ID de 9 dígitos y solicítame el soporte para que un analista se conecte a tu equipo.',
+            content: 'He detectado que tienes una incidencia técnica relacionada con software o periféricos. Para brindarte una mejor atención técnica, he activado el panel de "Apoyo Remoto" a tu izquierda. Por favor, descarga AnyDesk, localiza tu ID de 9 dígitos y solicítame el soporte para que un analista se conecte a tu equipo.',
             timestamp: Date.now()
           };
           const historyKey = `atres_chat_${updatedActiveChatId}`
@@ -345,6 +346,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages(updatedMessages)
       window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
     } catch (e) {
+      // Purga recursiva si el chat llena el espacio
       const purged = updatedMessages.slice(Math.floor(updatedMessages.length / 2));
       localStorage.setItem(historyKey, JSON.stringify(purged));
       setMessages(purged);
@@ -357,21 +359,53 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "ID Inválido", description: "Ingrese su ID de 9 dígitos." }); 
       return; 
     }
+    
     const turn = generateTurnSessionId();
-    const newReq: SupportRequest = { 
-      remoteId, 
-      ticketNumber: turn, 
-      timestamp: Date.now(), 
-      status: 'pending', 
-      requestType: 'remote', 
-      chatKey: sessionKey 
-    }
     const rawQueue = localStorage.getItem('atres_support_queue'); 
-    const currentQueue = JSON.parse(rawQueue || '[]');
-    localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
+    let currentQueue = JSON.parse(rawQueue || '[]');
+    
+    // EVITAR DOBLE SOLICITUD: Buscar si la sesión ya existe en la cola
+    const existingIndex = currentQueue.findIndex((r: any) => r.chatKey === sessionKey);
+    
+    if (existingIndex !== -1) {
+      // Actualizar la solicitud existente en lugar de crear una nueva
+      const oldTicketNumber = currentQueue[existingIndex].ticketNumber;
+      
+      currentQueue[existingIndex] = {
+        ...currentQueue[existingIndex],
+        remoteId,
+        ticketNumber: turn,
+        requestType: 'remote',
+        timestamp: Date.now()
+      };
+
+      // Mover el historial de chat para no perder la conversación
+      if (oldTicketNumber !== turn) {
+        const oldHistoryKey = `atres_chat_${oldTicketNumber}`;
+        const newHistoryKey = `atres_chat_${turn}`;
+        const history = localStorage.getItem(oldHistoryKey);
+        if (history) {
+          localStorage.setItem(newHistoryKey, history);
+          localStorage.removeItem(oldHistoryKey);
+        }
+      }
+    } else {
+      // Si no existe, crear nueva (caso poco común porque handleSendMessage suele crearla antes)
+      const newReq: SupportRequest = { 
+        remoteId, 
+        ticketNumber: turn, 
+        timestamp: Date.now(), 
+        status: 'pending', 
+        requestType: 'remote', 
+        chatKey: sessionKey 
+      }
+      currentQueue.push(newReq);
+    }
+    
+    localStorage.setItem('atres_support_queue', JSON.stringify(currentQueue));
     setActiveTicketNumber(turn);
 
-    // Enviar el ID al chat para que el técnico lo vea
+    // Enviar el ID al chat para que el técnico lo vea directamente
     handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
     
     toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}. El ID ha sido enviado al técnico.` });
@@ -565,7 +599,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         { step: "3", text: "Péguelo en el campo superior." },
                         { step: "4", text: "Haga clic en 'Solicitar Soporte'." }
                       ].map((item, idx) => (
-                        <div key={idx} className="flex gap-4 items-start">
+                        <div key={`guide-${idx}`} className="flex gap-4 items-start">
                           <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center text-[9px] font-black text-[#9f2241] shadow-sm shrink-0">{item.step}</div>
                           <div className="text-[10px] font-bold text-slate-600 leading-tight uppercase pt-0.5">{item.text}</div>
                         </div>
@@ -593,14 +627,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0">
                    <div className="space-y-3 flex flex-col h-[50%] overflow-hidden">
-                     <Label className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between">
+                     <div className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between">
                        Solicitudes de Servicio
                        <Badge className="bg-primary text-white text-[10px] px-2 h-5 rounded-full">{formalRequests.length}</Badge>
-                     </Label>
+                     </div>
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
                          {formalRequests.map((req, idx) => (
-                           <button key={`${req.id}-${idx}`} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                           <button key={`formal-${req.id}-${idx}`} onClick={() => { setSelectedFormal(req); setSelectedRequest(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedFormal?.id === req.id ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
                                <span className={cn("text-[11px] font-black truncate max-w-[140px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
@@ -613,14 +647,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    </div>
 
                    <div className="space-y-3 flex flex-col h-[50%] overflow-hidden">
-                     <Label className="text-[11px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between">
+                     <div className="text-[11px] font-black uppercase text-accent border-b-2 border-primary/10 pb-1 flex items-center justify-between">
                        Mesa Operativa (Live)
                        <Badge className="bg-accent text-white text-[10px] px-2 h-5 rounded-full">{queue.length}</Badge>
-                     </Label>
+                     </div>
                      <ScrollArea className="flex-1">
                        <div className="space-y-2 pr-3">
                          {queue.map((req, idx) => (
-                           <button key={`${req.ticketNumber}-${idx}`} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
+                           <button key={`queue-${req.ticketNumber}-${idx}`} onClick={() => { setSelectedRequest(req); setSelectedFormal(null); setShowHistory(false); }} className={cn("w-full p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between group", selectedRequest?.ticketNumber === req.ticketNumber ? "bg-accent border-accent shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50 shadow-sm")}>
                              <div className="flex flex-col">
                                <span className={cn("text-[9px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                <span className={cn("text-[11px] font-black", selectedRequest?.ticketNumber === req.ticketNumber ? "text-white" : "text-slate-700")}>{req.requestType === 'chat' ? 'LIVE CHAT' : 'REMOTO'}</span>
@@ -659,7 +693,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <ScrollArea className="h-full">
                       <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                          {attendanceHistory.length > 0 ? attendanceHistory.map((hist, idx) => (
-                           <div key={`${hist.id}-${idx}`} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col gap-4 group hover:-translate-y-1">
+                           <div key={`hist-${hist.id}-${idx}`} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col gap-4 group hover:-translate-y-1">
                               <div className="flex justify-between items-start">
                                  <div className="bg-primary/5 text-primary font-mono text-xs px-4 py-1.5 rounded-xl font-black border border-primary/10 shadow-sm">{hist.folio}</div>
                                  <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
@@ -1039,7 +1073,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  {finishSearchTerm.length > 2 && (
                   <div className="absolute left-0 right-0 top-11 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-xl shadow-2xl divide-y z-50">
                     {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                      <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
+                      <div key={`finish-school-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
                         <div className="flex flex-col"><span className="text-[11px] font-black uppercase">{s.nombre}</span><span className="text-[8px] font-mono text-slate-400">{s.cct}</span></div>
                       </div>
                     ))}
@@ -1049,7 +1083,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 shadow-sm animate-in zoom-in-95"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={off} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio</Label><div className="h-10 bg-slate-100 rounded-xl flex items-center px-4 font-mono font-black text-primary shadow-inner text-sm">{activeChatId}</div></div>
             </div>
             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado</Label><Textarea placeholder="Describa brevemente las acciones técnicas..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner resize-none focus:bg-white transition-all" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
