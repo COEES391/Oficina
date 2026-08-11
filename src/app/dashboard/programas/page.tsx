@@ -74,6 +74,12 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
+const ESTATUS_OPCIONES = [
+  "ACTIVA",
+  "INACTIVA",
+  "SUSPENDIDA"
+]
+
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -138,7 +144,8 @@ export default function ProgramsPage() {
       funcion: '',
       dominio: DOMINIOS[0],
       valle: '',
-      departamento: ''
+      departamento: '',
+      estatus: 'ACTIVA'
     };
     setFormData(prev => ({
       ...prev,
@@ -245,6 +252,7 @@ export default function ProgramsPage() {
         'Función': row.funcion,
         'Valle': row.valle,
         'Departamento': row.departamento,
+        'Estatus': row.estatus || 'ACTIVA',
         'Fecha Registro': row.parentRecord.date
       }));
     } else {
@@ -302,7 +310,7 @@ export default function ProgramsPage() {
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
             if (isCensoTab) {
-              f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '' }];
+              f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }];
             }
             setFormData(f); 
             setEditingId(null); 
@@ -371,6 +379,7 @@ export default function ProgramsPage() {
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">Función</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Valle</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[130px]">Departamento</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[100px]">Estatus</TableHead>
                     </>
                   ) : (
                     <>
@@ -401,6 +410,16 @@ export default function ProgramsPage() {
                       </TableCell>
                       <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
                       <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
+                      <TableCell>
+                         <Badge variant="outline" className={cn(
+                           "text-[8px] font-black uppercase py-0.5 px-2 rounded-full", 
+                           row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 
+                           row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' :
+                           'border-rose-200 text-rose-700 bg-rose-50'
+                         )}>
+                           {row.estatus || 'ACTIVA'}
+                         </Badge>
+                      </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
@@ -482,6 +501,7 @@ export default function ProgramsPage() {
                               <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
                               <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
                               <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
+                              <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Estatus</TableHead>
                               <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -555,6 +575,26 @@ export default function ProgramsPage() {
                                         value={ast.departamento} 
                                         onChange={e => updateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} 
                                     />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Select value={ast.estatus || 'ACTIVA'} onValueChange={v => updateAssistantField(idx, 'estatus', v)}>
+                                        <SelectTrigger className={cn(
+                                          "h-9 text-[10px] font-black uppercase border-2",
+                                          ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : 
+                                          ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' :
+                                          'border-rose-200 text-rose-700 bg-rose-50'
+                                        )}>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                          {ESTATUS_OPCIONES.map(e => (
+                                            <SelectItem key={`est-${e}`} value={e} className={cn(
+                                              "text-[10px] font-black",
+                                              e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600'
+                                            )}>{e}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                    </Select>
                                   </TableCell>
                                   <TableCell className="p-2 sticky right-0 bg-white shadow-l">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
