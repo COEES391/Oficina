@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet, GraduationCap, CheckCircle2 } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet, GraduationCap, CheckCircle2, ListFilter, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 
@@ -51,6 +51,7 @@ export default function BaseParticipantesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [participants, setParticipants] = useState<ParticipantInfo[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -185,6 +186,13 @@ export default function BaseParticipantesPage() {
     
     toast({ title: "Exportación Exitosa", description: "El archivo se ha descargado correctamente." })
   };
+
+  const handleEditFromResults = (p: ParticipantInfo) => {
+    setFormData(p);
+    setEditingId(p.id);
+    setIsResultsDialogOpen(false);
+    setIsDialogOpen(true);
+  }
 
   if (!mounted) return null
 
@@ -373,19 +381,29 @@ export default function BaseParticipantesPage() {
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Personal:</span>
           </div>
           
-          <div className="relative flex-1 w-full">
+          <div className="relative flex-1 w-full group">
             <Input 
               placeholder="Buscar por RFC, CURP, Nombre o CCT..." 
-              className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
+              className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 pr-4 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
           </div>
 
-          <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
-            Participantes: {filteredParticipants.length}
-          </Badge>
+          <div className="flex items-center gap-3">
+             <Button 
+                onClick={() => searchTerm && setIsResultsDialogOpen(true)} 
+                disabled={!searchTerm}
+                className="btn-institutional h-12 px-6 rounded-xl shadow-md text-[10px] gap-2 disabled:opacity-50"
+              >
+               <ListFilter className="h-4 w-4" /> Ver Resultados en Ventana ({filteredParticipants.length})
+             </Button>
+             <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
+               Total: {participants.length}
+             </Badge>
+          </div>
         </div>
       </Card>
 
@@ -486,6 +504,109 @@ export default function BaseParticipantesPage() {
           </Table>
         </div>
       </Card>
+
+      {/* Ventana Emergente de Resultados de Búsqueda */}
+      <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
+        <DialogContent className="sm:max-w-[1200px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
+                <Search className="h-7 w-7 text-accent" /> Resultados de Búsqueda
+              </DialogTitle>
+              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                Coincidencias encontradas para: <span className="text-primary font-black">"{searchTerm.toUpperCase()}"</span>
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-4">
+               <Badge className="bg-primary text-white font-black px-4 h-8 rounded-xl shadow-lg uppercase text-[10px]">
+                 {filteredParticipants.length} Registros Encontrados
+               </Badge>
+               <Button variant="ghost" size="icon" onClick={() => setIsResultsDialogOpen(false)} className="rounded-full h-10 w-10 hover:bg-slate-200">
+                  <X className="h-5 w-5" />
+               </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden p-6">
+             <ScrollArea className="h-full border-2 border-slate-100 rounded-[2rem] shadow-inner bg-white">
+                <Table>
+                   <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b shadow-sm">
+                      <TableRow>
+                         <TableHead className="text-[9px] font-black uppercase pl-8 py-4">Servidor Público</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">RFC / CURP</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">Función</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">Seguimiento Académico</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">CCT de Origen</TableHead>
+                         <TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead>
+                      </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                      {filteredParticipants.map((p, idx) => (
+                        <TableRow key={`res-${p.id}-${idx}`} className="hover:bg-slate-50 transition-colors h-16 group">
+                           <TableCell className="pl-8 py-4">
+                              <div className="flex items-center gap-3">
+                                 <div className="h-10 w-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                                    <Users className="h-5 w-5" />
+                                 </div>
+                                 <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-slate-700 uppercase leading-none">{p.paterno} {p.materno} {p.nombres}</span>
+                                    <span className="text-[8px] font-bold text-muted-foreground mt-1 uppercase">{p.municipio}</span>
+                                 </div>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="font-mono text-[9px] font-black text-primary leading-none">{p.rfc}</span>
+                                 <span className="font-mono text-[8px] font-bold text-accent mt-1">{p.curp}</span>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-none px-3">
+                                 {p.funcion}
+                              </Badge>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex flex-col gap-1.5">
+                                 <div className="text-[8px] font-bold text-slate-500 uppercase truncate max-w-[120px]">{p.cursosAcreditados || 'SIN CURSOS'}</div>
+                                 <div className="flex items-center gap-2">
+                                    {p.constancia === 'SI' ? <Badge className="bg-emerald-50 text-emerald-700 text-[7px] font-black h-4">SÍ</Badge> : <Badge variant="outline" className="text-[7px] h-4">NO</Badge>}
+                                    <span className="text-[8px] font-black text-primary">{p.cicloEscolar}</span>
+                                 </div>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="text-[10px] font-black text-primary leading-none">{p.cct}</span>
+                                 <span className="text-[8px] font-bold text-muted-foreground truncate max-w-[150px] uppercase mt-1">{p.nombreCT}</span>
+                              </div>
+                           </TableCell>
+                           <TableCell className="text-right pr-10">
+                              <div className="flex justify-end gap-1.5">
+                                 <Button variant="outline" size="sm" onClick={() => handleEditFromResults(p)} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
+                                    <Pencil className="h-3.5 w-3.5" /> Editar
+                                 </Button>
+                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                    <Trash2 className="h-4 w-4" />
+                                 </Button>
+                              </div>
+                           </TableCell>
+                        </TableRow>
+                      ))}
+                   </TableBody>
+                </Table>
+             </ScrollArea>
+          </div>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-between items-center shrink-0">
+             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">
+               Fin de resultados • Sistema de Auditoría COEES 2026
+             </p>
+             <Button variant="secondary" onClick={() => setIsResultsDialogOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase shadow-lg">
+               Cerrar Diálogo de Búsqueda
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
