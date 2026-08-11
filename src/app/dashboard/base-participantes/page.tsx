@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useMemo, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -10,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2 } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import * as XLSX from 'xlsx'
 
 type ParticipantInfo = {
   id: string;
@@ -142,6 +144,40 @@ export default function BaseParticipantesPage() {
     toast({ title: "Registro eliminado" })
   }
 
+  const downloadExcel = () => {
+    if (participants.length === 0) {
+      toast({ variant: "destructive", title: "Sin datos", description: "No hay registros para exportar." })
+      return
+    }
+
+    const dataToExport = participants.map(p => ({
+      'Paterno': p.paterno,
+      'Materno': p.materno,
+      'Nombre(s)': p.nombres,
+      'RFC': p.rfc,
+      'CURP': p.curp,
+      'Función': p.funcion,
+      'Correo Electrónico': p.email,
+      'CCT Adscripción': p.cct,
+      'Nombre CT': p.nombreCT,
+      'Municipio': p.municipio,
+      'ZE': p.zonaEscolar,
+      'Sector': p.sector,
+      'Región': p.region,
+      'Valle': p.valle,
+      'Modalidad': p.modalidad
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Base de Participantes");
+    
+    const fileName = `Base_Participantes_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    
+    toast({ title: "Exportación Exitosa", description: "El archivo se ha descargado correctamente." })
+  };
+
   if (!mounted) return null
 
   return (
@@ -154,134 +190,144 @@ export default function BaseParticipantesPage() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setFormData(initialFormState);
-            setEditingId(null);
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
-              <UserPlus className="h-5 w-5 mr-2" /> Nuevo Participante
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
-            <DialogHeader className="p-8 pb-4">
-              <DialogTitle className="uppercase font-black text-primary text-2xl">
-                {editingId ? 'Editar Participante' : 'Alta de Participante'}
-              </DialogTitle>
-              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
-                Ingrese los datos oficiales del servidor público para su seguimiento en el sistema.
-              </DialogDescription>
-            </DialogHeader>
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={downloadExcel} 
+            variant="outline" 
+            className="h-12 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md"
+          >
+            <FileSpreadsheet className="h-5 w-5" /> Exportar a Excel
+          </Button>
 
-            <ScrollArea className="flex-1 px-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                <div className="md:col-span-2 border-b border-slate-100 pb-2">
-                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                     <BadgeCheck className="h-4 w-4" /> Datos de Identidad
-                   </h3>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">RFC (13 Caracteres)</Label>
-                  <Input maxLength={13} className="font-mono font-black uppercase h-11" value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CURP (18 Caracteres)</Label>
-                  <Input maxLength={18} className="font-mono font-black uppercase h-11 border-primary/20" value={formData.curp} onChange={e => setFormData({...formData, curp: e.target.value.toUpperCase()})} placeholder="INGRESAR CURP..." />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Correo Electrónico</Label>
-                  <Input type="email" className="h-11 border-primary/10" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="ejemplo@desysa.edu.mx" />
-                </div>
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-primary">Género</Label>
-                   <Select value={formData.genero} onValueChange={(val: any) => setFormData({...formData, genero: val})}>
-                      <SelectTrigger className="h-11 font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                      <SelectContent>
-                         <SelectItem value="MASCULINO">MASCULINO</SelectItem>
-                         <SelectItem value="FEMENINO">FEMENINO</SelectItem>
-                      </SelectContent>
-                   </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Paterno</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.paterno} onChange={e => setFormData({...formData, paterno: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Materno</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.materno} onChange={e => setFormData({...formData, materno: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre(s)</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value.toUpperCase()})} />
-                </div>
-
-                <div className="md:col-span-2 border-b border-slate-100 pb-2 mt-4">
-                   <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                     <Building2 className="h-4 w-4" /> Adscripción Laboral
-                   </h3>
-                </div>
-
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-primary">Función</Label>
-                   <Select value={formData.funcion} onValueChange={val => setFormData({...formData, funcion: val})}>
-                      <SelectTrigger className="h-11 font-bold uppercase"><SelectValue placeholder="ELEGIR FUNCIÓN..." /></SelectTrigger>
-                      <SelectContent>
-                         {FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
-                      </SelectContent>
-                   </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CCT Adscripción</Label>
-                  <Input maxLength={10} className="font-mono font-black uppercase h-11 border-primary/20" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
-                </div>
-
-                {formData.cct.length === 10 && (
-                   <div className="md:col-span-2 bg-slate-50 p-6 rounded-2xl border-2 border-primary/5 animate-in zoom-in-95">
-                      <div className="flex items-center gap-4 mb-4">
-                         <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><School className="h-5 w-5" /></div>
-                         <div>
-                            <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Plantel Identificado</p>
-                            <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.nombreCT}</h4>
-                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-slate-400 uppercase">Municipio</p>
-                            <p className="text-[10px] font-bold text-slate-700">{formData.municipio}</p>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-slate-400 uppercase">ZE</p>
-                            <p className="text-[10px] font-bold text-slate-700">{formData.zonaEscolar}</p>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-slate-400 uppercase">Sector</p>
-                            <p className="text-[10px] font-bold text-slate-700">{formData.sector}</p>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-slate-400 uppercase">Región</p>
-                            <p className="text-[10px] font-bold text-slate-700">{formData.region}</p>
-                         </div>
-                      </div>
-                   </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            <DialogFooter className="p-8 border-t bg-slate-50">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
-              <Button onClick={handleSave} className="btn-institutional h-12 px-12 rounded-xl text-xs">
-                {editingId ? 'Actualizar Datos' : 'Registrar Participante'}
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setFormData(initialFormState);
+              setEditingId(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
+                <UserPlus className="h-5 w-5 mr-2" /> Nuevo Participante
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+              <DialogHeader className="p-8 pb-4">
+                <DialogTitle className="uppercase font-black text-primary text-2xl">
+                  {editingId ? 'Editar Participante' : 'Alta de Participante'}
+                </DialogTitle>
+                <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Ingrese los datos oficiales del servidor público para su seguimiento en el sistema.
+                </DialogDescription>
+              </DialogHeader>
+
+              <ScrollArea className="flex-1 px-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                  <div className="md:col-span-2 border-b border-slate-100 pb-2">
+                     <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                       <BadgeCheck className="h-4 w-4" /> Datos de Identidad
+                     </h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">RFC (13 Caracteres)</Label>
+                    <Input maxLength={13} className="font-mono font-black uppercase h-11" value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">CURP (18 Caracteres)</Label>
+                    <Input maxLength={18} className="font-mono font-black uppercase h-11 border-primary/20" value={formData.curp} onChange={e => setFormData({...formData, curp: e.target.value.toUpperCase()})} placeholder="INGRESAR CURP..." />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Correo Electrónico</Label>
+                    <Input type="email" className="h-11 border-primary/10" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="ejemplo@desysa.edu.mx" />
+                  </div>
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-primary">Género</Label>
+                     <Select value={formData.genero} onValueChange={(val: any) => setFormData({...formData, genero: val})}>
+                        <SelectTrigger className="h-11 font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="MASCULINO">MASCULINO</SelectItem>
+                           <SelectItem value="FEMENINO">FEMENINO</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Apellido Paterno</Label>
+                    <Input className="font-bold uppercase h-11" value={formData.paterno} onChange={e => setFormData({...formData, paterno: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Apellido Materno</Label>
+                    <Input className="font-bold uppercase h-11" value={formData.materno} onChange={e => setFormData({...formData, materno: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Nombre(s)</Label>
+                    <Input className="font-bold uppercase h-11" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value.toUpperCase()})} />
+                  </div>
+
+                  <div className="md:col-span-2 border-b border-slate-100 pb-2 mt-4">
+                     <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                       <Building2 className="h-4 w-4" /> Adscripción Laboral
+                     </h3>
+                  </div>
+
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-primary">Función</Label>
+                     <Select value={formData.funcion} onValueChange={val => setFormData({...formData, funcion: val})}>
+                        <SelectTrigger className="h-11 font-bold uppercase"><SelectValue placeholder="ELEGIR FUNCIÓN..." /></SelectTrigger>
+                        <SelectContent>
+                           {FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
+                        </SelectContent>
+                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">CCT Adscripción</Label>
+                    <Input maxLength={10} className="font-mono font-black uppercase h-11 border-primary/20" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
+                  </div>
+
+                  {formData.cct.length === 10 && (
+                     <div className="md:col-span-2 bg-slate-50 p-6 rounded-2xl border-2 border-primary/5 animate-in zoom-in-95">
+                        <div className="flex items-center gap-4 mb-4">
+                           <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><School className="h-5 w-5" /></div>
+                           <div>
+                              <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">Plantel Identificado</p>
+                              <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.nombreCT}</h4>
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                           <div className="space-y-1">
+                              <p className="text-[8px] font-black text-slate-400 uppercase">Municipio</p>
+                              <p className="text-[10px] font-bold text-slate-700">{formData.municipio}</p>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-[8px] font-black text-slate-400 uppercase">ZE</p>
+                              <p className="text-[10px] font-bold text-slate-700">{formData.zonaEscolar}</p>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-[8px] font-black text-slate-400 uppercase">Sector</p>
+                              <p className="text-[10px] font-bold text-slate-700">{formData.sector}</p>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-[8px] font-black text-slate-400 uppercase">Región</p>
+                              <p className="text-[10px] font-bold text-slate-700">{formData.region}</p>
+                           </div>
+                        </div>
+                     </div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              <DialogFooter className="p-8 border-t bg-slate-50">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
+                <Button onClick={handleSave} className="btn-institutional h-12 px-12 rounded-xl text-xs">
+                  {editingId ? 'Actualizar Datos' : 'Registrar Participante'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
