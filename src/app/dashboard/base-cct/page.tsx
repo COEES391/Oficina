@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList, Pencil, User, Phone } from "lucide-react"
+import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList, Pencil, User, Phone, FileSpreadsheet } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import * as XLSX from 'xlsx'
 
 export default function BaseCctPage() {
   const { toast } = useToast()
@@ -56,6 +57,46 @@ export default function BaseCctPage() {
       return cctMatch || nameMatch || dirMatch || telMatch || munMatch;
     });
   }, [searchTerm, schools]);
+
+  const downloadExcel = () => {
+    if (filteredSchools.length === 0) {
+      toast({ variant: "destructive", title: "Sin datos", description: "No hay registros para exportar." })
+      return
+    }
+
+    const dataToExport = filteredSchools.map(s => ({
+      'Región': s.region,
+      'Valle': s.valle,
+      'Municipio': s.municipio,
+      'CCT': s.cct,
+      'Turno': s.turno,
+      'Nombre del Plantel': s.nombre,
+      'Director(a)': s.director,
+      'Teléfono': s.telefono,
+      'Modalidad': s.modalidad,
+      'Zona Escolar': s.zonaEscolar,
+      'Sector': s.sector,
+      'Alumnos': s.alumnos,
+      'Hombres': s.hombres,
+      'Mujeres': s.mujeres,
+      'Grupos': s.grupos,
+      'Maestros': s.maestros,
+      'Administrativos': s.administrativos,
+      'Aulas Existentes': s.aulasExistentes,
+      'Aulas en Uso': s.aulasEnUso,
+      'Domicilio': s.domicilio,
+      'Localidad': s.localidad
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Base Maestra CCT");
+    
+    const fileName = `Base_Maestra_CCT_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    
+    toast({ title: "Exportación Exitosa", description: "El catálogo de CCT se ha descargado correctamente." })
+  };
 
   const handleEdit = (school: SchoolInfo) => {
     setFormData(school)
@@ -111,160 +152,170 @@ export default function BaseCctPage() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) {
-            setFormData(initialFormState);
-            setEditingId(null);
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
-              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
-            <DialogHeader className="p-8 pb-4">
-              <DialogTitle className="uppercase font-black text-primary text-2xl">
-                {editingId ? 'Editar Centro de Trabajo' : 'Alta de Centro de Trabajo'}
-              </DialogTitle>
-              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
-                Ingrese los datos estadísticos, geográficos y de contacto del plantel federalizado.
-              </DialogDescription>
-            </DialogHeader>
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={downloadExcel} 
+            variant="outline" 
+            className="h-12 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md"
+          >
+            <FileSpreadsheet className="h-5 w-5" /> Exportar a Excel
+          </Button>
 
-            <ScrollArea className="flex-1 px-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6">
-                <div className="md:col-span-3 border-b border-slate-100 pb-2">
-                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                    <LayoutGrid className="h-4 w-4" /> Identificación Institucional
-                  </h3>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Caracteres)</Label>
-                  <Input maxLength={10} className="font-mono uppercase h-11 border-primary/10" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Centro de Trabajo</Label>
-                  <Input className="font-bold h-11 border-primary/10" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value.toUpperCase()})} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
-                  <Select value={formData.turno} onValueChange={val => setFormData({...formData, turno: val})}>
-                    <SelectTrigger className="h-11 border-primary/10 font-bold uppercase"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MATUTINO">MATUTINO</SelectItem>
-                      <SelectItem value="VESPERTINO">VESPERTINO</SelectItem>
-                      <SelectItem value="DISCONTINUO">DISCONTINUO</SelectItem>
-                      <SelectItem value="NOCTURNO">NOCTURNO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Servicio Educativo</Label>
-                  <Input className="h-11 border-primary/10" value={formData.servicioEducativo} onChange={e => setFormData({...formData, servicioEducativo: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">DSR</Label>
-                  <Input className="h-11 border-primary/10" value={formData.dsr} onChange={e => setFormData({...formData, dsr: e.target.value})} />
-                </div>
-
-                <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
-                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                    <User className="h-4 w-4" /> Información de Contacto y Referencia
-                  </h3>
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Director(a)</Label>
-                  <Input className="font-bold h-11 border-primary/10" value={formData.director} onChange={e => setFormData({...formData, director: e.target.value.toUpperCase()})} placeholder="NOMBRE COMPLETO..." />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Teléfono de Contacto</Label>
-                  <Input className="font-mono h-11 border-primary/10" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} placeholder="10 DÍGITOS..." />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
-                  <Input className="h-11 border-primary/10" value={formData.domicilio} onChange={e => setFormData({...formData, domicilio: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
-                  <Input className="h-11 border-primary/10" value={formData.localidad} onChange={e => setFormData({...formData, localidad: e.target.value})} />
-                </div>
-
-                <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
-                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                    <MapPin className="h-4 w-4" /> Ubicación y Jurisdicción
-                  </h3>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
-                  <Input className="h-11 border-primary/10" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={formData.valle} onValueChange={val => setFormData({...formData, valle: val})}>
-                    <SelectTrigger className="h-11 border-primary/10 font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MEXICO">MEXICO</SelectItem>
-                      <SelectItem value="TOLUCA">TOLUCA</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
-                  <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
-                </div>
-
-                <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
-                  <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
-                    <Building2 className="h-4 w-4" /> Datos Estadísticos e Infraestructura
-                  </h3>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Hombres</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.hombres} onChange={e => setFormData({...formData, hombres: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Mujeres</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.mujeres} onChange={e => setFormData({...formData, mujeres: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Grupos</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.grupos} onChange={e => setFormData({...formData, grupos: parseInt(e.target.value) || 0})} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Maestros</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.maestros} onChange={e => setFormData({...formData, maestros: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Administrativos</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.administrativos} onChange={e => setFormData({...formData, administrativos: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Aulas Existentes</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.aulasExistentes} onChange={e => setFormData({...formData, aulasExistentes: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Aulas en Uso</Label>
-                  <Input type="number" className="h-11 border-primary/10" value={formData.aulasEnUso} onChange={e => setFormData({...formData, aulasEnUso: parseInt(e.target.value) || 0})} />
-                </div>
-              </div>
-            </ScrollArea>
-
-            <DialogFooter className="p-8 border-t bg-slate-50/50">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
-              <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">
-                {editingId ? 'Actualizar Plantel' : 'Guardar Plantel'}
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+              setFormData(initialFormState);
+              setEditingId(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
+                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+              <DialogHeader className="p-8 pb-4">
+                <DialogTitle className="uppercase font-black text-primary text-2xl">
+                  {editingId ? 'Editar Centro de Trabajo' : 'Alta de Centro de Trabajo'}
+                </DialogTitle>
+                <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Ingrese los datos estadísticos, geográficos y de contacto del plantel federalizado.
+                </DialogDescription>
+              </DialogHeader>
+
+              <ScrollArea className="flex-1 px-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-6">
+                  <div className="md:col-span-3 border-b border-slate-100 pb-2">
+                    <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                      <LayoutGrid className="h-4 w-4" /> Identificación Institucional
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Caracteres)</Label>
+                    <Input maxLength={10} className="font-mono uppercase h-11 border-primary/10" value={formData.cct} onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Nombre del Centro de Trabajo</Label>
+                    <Input className="font-bold h-11 border-primary/10" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value.toUpperCase()})} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                    <Select value={formData.turno} onValueChange={val => setFormData({...formData, turno: val})}>
+                      <SelectTrigger className="h-11 border-primary/10 font-bold uppercase"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MATUTINO">MATUTINO</SelectItem>
+                        <SelectItem value="VESPERTINO">VESPERTINO</SelectItem>
+                        <SelectItem value="DISCONTINUO">DISCONTINUO</SelectItem>
+                        <SelectItem value="NOCTURNO">NOCTURNO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Servicio Educativo</Label>
+                    <Input className="h-11 border-primary/10" value={formData.servicioEducativo} onChange={e => setFormData({...formData, servicioEducativo: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">DSR</Label>
+                    <Input className="h-11 border-primary/10" value={formData.dsr} onChange={e => setFormData({...formData, dsr: e.target.value})} />
+                  </div>
+
+                  <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
+                    <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                      <User className="h-4 w-4" /> Información de Contacto y Referencia
+                    </h3>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Nombre del Director(a)</Label>
+                    <Input className="font-bold h-11 border-primary/10" value={formData.director} onChange={e => setFormData({...formData, director: e.target.value.toUpperCase()})} placeholder="NOMBRE COMPLETO..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Teléfono de Contacto</Label>
+                    <Input className="font-mono h-11 border-primary/10" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} placeholder="10 DÍGITOS..." />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
+                    <Input className="h-11 border-primary/10" value={formData.domicilio} onChange={e => setFormData({...formData, domicilio: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
+                    <Input className="h-11 border-primary/10" value={formData.localidad} onChange={e => setFormData({...formData, localidad: e.target.value})} />
+                  </div>
+
+                  <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
+                    <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                      <MapPin className="h-4 w-4" /> Ubicación y Jurisdicción
+                    </h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
+                    <Input className="h-11 border-primary/10" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value.toUpperCase()})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                    <Select value={formData.valle} onValueChange={val => setFormData({...formData, valle: val})}>
+                      <SelectTrigger className="h-11 border-primary/10 font-bold"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MEXICO">MEXICO</SelectItem>
+                        <SelectItem value="TOLUCA">TOLUCA</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                    <Input className="h-11 border-primary/10" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
+                  </div>
+
+                  <div className="md:col-span-3 border-b border-slate-100 pb-2 mt-4">
+                    <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                      <Building2 className="h-4 w-4" /> Datos Estadísticos e Infraestructura
+                    </h3>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Hombres</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.hombres} onChange={e => setFormData({...formData, hombres: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Mujeres</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.mujeres} onChange={e => setFormData({...formData, mujeres: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Grupos</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.grupos} onChange={e => setFormData({...formData, grupos: parseInt(e.target.value) || 0})} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Maestros</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.maestros} onChange={e => setFormData({...formData, maestros: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Administrativos</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.administrativos} onChange={e => setFormData({...formData, administrativos: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Aulas Existentes</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.aulasExistentes} onChange={e => setFormData({...formData, aulasExistentes: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Aulas en Uso</Label>
+                    <Input type="number" className="h-11 border-primary/10" value={formData.aulasEnUso} onChange={e => setFormData({...formData, aulasEnUso: parseInt(e.target.value) || 0})} />
+                  </div>
+                </div>
+              </ScrollArea>
+
+              <DialogFooter className="p-8 border-t bg-slate-50/50">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
+                <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">
+                  {editingId ? 'Actualizar Plantel' : 'Guardar Plantel'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
