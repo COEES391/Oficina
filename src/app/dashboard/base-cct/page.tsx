@@ -11,7 +11,23 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import { Database, Search, School, Users, GraduationCap, PlusCircle, LayoutGrid, MapPin, Building2, ClipboardList, Pencil, User, Phone, FileSpreadsheet } from "lucide-react"
+import { 
+  Database, 
+  Search, 
+  School, 
+  Users, 
+  PlusCircle, 
+  LayoutGrid, 
+  MapPin, 
+  Building2, 
+  ClipboardList, 
+  Pencil, 
+  User, 
+  Phone, 
+  FileSpreadsheet,
+  ListFilter,
+  X
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 
@@ -20,6 +36,7 @@ export default function BaseCctPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [schools, setSchools] = useState<SchoolInfo[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -102,6 +119,11 @@ export default function BaseCctPage() {
     setFormData(school)
     setEditingId(`${school.cct}-${school.turno}`)
     setIsDialogOpen(true)
+  }
+
+  const handleEditFromResults = (school: SchoolInfo) => {
+    handleEdit(school);
+    setIsResultsDialogOpen(false);
   }
 
   const handleSave = () => {
@@ -325,19 +347,29 @@ export default function BaseCctPage() {
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
           </div>
           
-          <div className="relative flex-1 w-full">
+          <div className="relative flex-1 w-full group">
             <Input 
               placeholder="Buscar por CCT, Escuela, Director o Teléfono..." 
-              className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
+              className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 pr-4 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
           </div>
 
-          <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
-            Registros: {filteredSchools.length}
-          </Badge>
+          <div className="flex items-center gap-3">
+             <Button 
+                onClick={() => searchTerm && setIsResultsDialogOpen(true)} 
+                disabled={!searchTerm}
+                className="btn-institutional h-12 px-6 rounded-xl shadow-md text-[10px] gap-2 disabled:opacity-50"
+              >
+               <ListFilter className="h-4 w-4" /> Ver Resultados en Ventana ({filteredSchools.length})
+             </Button>
+             <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
+               Registros: {schools.length}
+             </Badge>
+          </div>
         </div>
       </Card>
 
@@ -360,7 +392,7 @@ export default function BaseCctPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSchools.length > 0 ? filteredSchools.map((s, idx) => (
+              {filteredSchools.length > 0 ? filteredSchools.slice(0, 100).map((s, idx) => (
                 <TableRow key={`${s.cct}-${s.turno}-${idx}`} className="hover:bg-slate-50 transition-colors group">
                   <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
                   <TableCell>
@@ -423,6 +455,102 @@ export default function BaseCctPage() {
           </Table>
         </div>
       </Card>
+
+      {/* Ventana Emergente de Resultados de Búsqueda de CCT */}
+      <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
+        <DialogContent className="sm:max-w-[1200px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
+                <Search className="h-7 w-7 text-accent" /> Resultados Catálogo CCT
+              </DialogTitle>
+              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
+                Coincidencias encontradas para: <span className="text-primary font-black">"{searchTerm.toUpperCase()}"</span>
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-4">
+               <Badge className="bg-primary text-white font-black px-4 h-8 rounded-xl shadow-lg uppercase text-[10px]">
+                 {filteredSchools.length} Registros Encontrados
+               </Badge>
+               <Button variant="ghost" size="icon" onClick={() => setIsResultsDialogOpen(false)} className="rounded-full h-10 w-10 hover:bg-slate-200">
+                  <X className="h-5 w-5" />
+               </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden p-6">
+             <ScrollArea className="h-full border-2 border-slate-100 rounded-[2rem] shadow-inner bg-white">
+                <Table>
+                   <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b shadow-sm">
+                      <TableRow>
+                         <TableHead className="text-[9px] font-black uppercase pl-8 py-4">Centro de Trabajo</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">CCT / Turno</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">Ubicación Geográfica</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase">Director(a)</TableHead>
+                         <TableHead className="text-[9px] font-black uppercase text-center">Estadística</TableHead>
+                         <TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead>
+                      </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                      {filteredSchools.map((s, idx) => (
+                        <TableRow key={`res-cct-${s.cct}-${s.turno}-${idx}`} className="hover:bg-slate-50 transition-colors h-16 group">
+                           <TableCell className="pl-8 py-4">
+                              <div className="flex items-center gap-3">
+                                 <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                                    <School className="h-5 w-5" />
+                                 </div>
+                                 <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate max-w-[200px]">{s.nombre}</span>
+                                    <span className="text-[8px] font-bold text-muted-foreground mt-1 uppercase">{s.servicioEducativo}</span>
+                                 </div>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="font-mono text-[10px] font-black text-primary leading-none">{s.cct}</span>
+                                 <Badge variant="outline" className="text-[7px] font-black uppercase border-slate-200 mt-1 h-4 w-fit px-1">{s.turno}</Badge>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex flex-col">
+                                 <span className="text-[9px] font-black text-slate-600 uppercase">{s.municipio}</span>
+                                 <span className="text-[8px] font-bold text-accent uppercase mt-0.5">{s.region} • Valle {s.valle}</span>
+                              </div>
+                           </TableCell>
+                           <TableCell>
+                              <div className="flex items-center gap-2">
+                                 <User className="h-3 w-3 text-slate-300" />
+                                 <span className="text-[9px] font-bold uppercase text-slate-600">{s.director}</span>
+                              </div>
+                           </TableCell>
+                           <TableCell className="text-center">
+                              <div className="flex flex-col items-center gap-1">
+                                 <span className="text-[10px] font-black text-primary">{s.alumnos} Alums</span>
+                                 <span className="text-[8px] font-bold text-slate-400">{s.grupos} Gpos</span>
+                              </div>
+                           </TableCell>
+                           <TableCell className="text-right pr-10">
+                              <Button variant="outline" size="sm" onClick={() => handleEditFromResults(s)} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
+                                 <Pencil className="h-3.5 w-3.5" /> Editar Plantel
+                              </Button>
+                           </TableCell>
+                        </TableRow>
+                      ))}
+                   </TableBody>
+                </Table>
+             </ScrollArea>
+          </div>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-between items-center shrink-0">
+             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">
+               Fin de resultados • Sistema de Auditoría COEES 2026
+             </p>
+             <Button variant="secondary" onClick={() => setIsResultsDialogOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase shadow-lg">
+               Cerrar Búsqueda
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
