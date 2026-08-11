@@ -416,9 +416,6 @@ export default function ProgramsPage() {
                       <Users className="h-5 w-5 text-primary" />
                       <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
                     </div>
-                    <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md">
-                      <Plus className="h-4 w-4" /> Añadir Usuario
-                    </Button>
                   </div>
 
                   <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[150px]">
