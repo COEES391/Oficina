@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -228,10 +229,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   useEffect(() => {
     if (isPublic) {
-      purgeOldChats(); // Limpiar chats anteriores cada vez que inicia sesión pública
-      const sKey = generateTurnSessionId()
-      setSessionKey(sKey)
-      sessionStorage.setItem('atres_session_id', sKey)
+      // PERSISTENCIA DE SESIÓN: Si ya existe un ID en sessionStorage, no generar uno nuevo
+      const existingSession = sessionStorage.getItem('atres_session_id');
+      if (existingSession) {
+        setSessionKey(existingSession);
+        // Verificar si ya tiene un ticket remoto activo
+        const rawQueue = localStorage.getItem('atres_support_queue');
+        const currentQueue: SupportRequest[] = JSON.parse(rawQueue || '[]');
+        const myReq = currentQueue.find(r => r.chatKey === existingSession);
+        if (myReq && myReq.requestType === 'remote') {
+          setActiveTicketNumber(myReq.ticketNumber);
+        }
+      } else {
+        purgeOldChats(); 
+        const sKey = generateTurnSessionId()
+        setSessionKey(sKey)
+        sessionStorage.setItem('atres_session_id', sKey)
+      }
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name')
       if (savedTechName) setTechName(savedTechName)
@@ -248,6 +262,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       syncFormalRequests()
     }
     const handleStorageChange = (e: StorageEvent) => {
+      // Reaccionar instantáneamente a cambios en otros tabs (Analista <-> Usuario)
       if (e.key === 'atres_support_queue') syncQueue()
       if (e.key === 'atres_bitacora' || e.key === 'programs_full_v24') {
         syncFormalRequests()
@@ -306,6 +321,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           chatKey: sessionKey
         };
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
+        // Notificar al analista
+        window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue' }));
       }
 
       // MONITOR DE PALABRAS CLAVE PARA ACTIVACIÓN DE APOYO REMOTO
@@ -344,9 +361,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     try {
       localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
       setMessages(updatedMessages)
+      // DISPARADOR DE COMUNICACIÓN: Notificar a la otra ventana sobre el nuevo mensaje
       window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
     } catch (e) {
-      // Purga recursiva si el chat llena el espacio
       const purged = updatedMessages.slice(Math.floor(updatedMessages.length / 2));
       localStorage.setItem(historyKey, JSON.stringify(purged));
       setMessages(purged);
@@ -364,13 +381,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const rawQueue = localStorage.getItem('atres_support_queue'); 
     let currentQueue = JSON.parse(rawQueue || '[]');
     
-    // EVITAR DOBLE SOLICITUD: Buscar si la sesión ya existe en la cola
     const existingIndex = currentQueue.findIndex((r: any) => r.chatKey === sessionKey);
     
     if (existingIndex !== -1) {
-      // Actualizar la solicitud existente en lugar de crear una nueva
       const oldTicketNumber = currentQueue[existingIndex].ticketNumber;
-      
       currentQueue[existingIndex] = {
         ...currentQueue[existingIndex],
         remoteId,
@@ -379,7 +393,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         timestamp: Date.now()
       };
 
-      // Mover el historial de chat para no perder la conversación
       if (oldTicketNumber !== turn) {
         const oldHistoryKey = `atres_chat_${oldTicketNumber}`;
         const newHistoryKey = `atres_chat_${turn}`;
@@ -390,7 +403,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }
       }
     } else {
-      // Si no existe, crear nueva (caso poco común porque handleSendMessage suele crearla antes)
       const newReq: SupportRequest = { 
         remoteId, 
         ticketNumber: turn, 
@@ -403,11 +415,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     
     localStorage.setItem('atres_support_queue', JSON.stringify(currentQueue));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue' }));
     setActiveTicketNumber(turn);
 
-    // Enviar el ID al chat para que el técnico lo vea directamente
     handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
-    
     toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}. El ID ha sido enviado al técnico.` });
   }
 
@@ -537,6 +548,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
 
     setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null); syncQueue(); syncFormalRequests(); updateAttendedCount();
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'atres_bitacora' }));
     toast({ title: "Atención Finalizada" });
   }
 
@@ -802,7 +815,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <div className="space-y-4">
                            <Badge variant="outline" className="bg-white text-xs font-black uppercase border-accent text-accent px-4 py-1">{selectedFormal.helpTopic || 'GENERAL'}</Badge>
                            <div className="p-4 bg-white rounded-2xl border shadow-sm">
-                              <p className="text-[11px] font-semibold text-slate-600 leading-relaxed uppercase">{selectedFormal.ticketDetail || selectedFormal.servicio}</p>
+                              <p className="text-[11px] font-semibold text-slate-600 italic leading-relaxed uppercase">{selectedFormal.ticketDetail || selectedFormal.servicio}</p>
                            </div>
                         </div>
                      </div>

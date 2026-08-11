@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -89,10 +90,13 @@ function HelpDeskAccessCard() {
   const { toast } = useToast()
 
   useEffect(() => {
+    // CAPTURA DINÁMICA DEL ORIGEN: Esto asegura que los links funcionen en cualquier hosting
     setOrigin(window.location.origin)
   }, [])
 
   if (!origin) return null
+
+  const publicUrl = `${origin}/helpdesk`
 
   return (
     <Card className="executive-card p-3 bg-[#9f2241] text-white border-none shadow-xl relative overflow-hidden group max-w-2xl animate-in slide-in-from-top duration-500">
@@ -103,7 +107,7 @@ function HelpDeskAccessCard() {
         <div className="h-16 w-16 bg-white p-1 rounded-xl shadow-lg flex items-center justify-center shrink-0">
           <div className="relative h-14 w-14">
             <Image 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${origin}/helpdesk`} 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(publicUrl)}`} 
               alt="QR Mesa de Ayuda" 
               fill
               className="rounded-md"
@@ -119,12 +123,12 @@ function HelpDeskAccessCard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="bg-white/10 backdrop-blur-md px-3 h-8 rounded-lg border border-white/20 flex-1 flex items-center overflow-hidden">
-              <p className="text-[8px] font-mono font-black truncate text-white/90">{origin}/helpdesk</p>
+              <p className="text-[8px] font-mono font-black truncate text-white/90">{publicUrl}</p>
             </div>
             <Button 
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText(`${origin}/helpdesk`);
+                navigator.clipboard.writeText(publicUrl);
                 toast({ title: "Copiado", description: "Enlace listo para compartir." });
               }}
               className="bg-[#B38E5D] hover:bg-[#a67d4a] text-white font-black uppercase text-[8px] h-8 px-3 rounded-lg shadow-lg transition-all active:scale-95 shrink-0"
