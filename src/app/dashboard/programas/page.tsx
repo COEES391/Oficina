@@ -470,11 +470,15 @@ export default function ProgramsPage() {
                                         </Select>
                                      </TableCell>
                                      <TableCell className="p-2">
-                                        <Input 
-                                           readOnly 
-                                           className="h-9 text-center text-[10px] font-black bg-slate-100 border-none text-slate-500" 
-                                           value={ast.valle || '-'} 
-                                        />
+                                        <Select value={ast.valle} onValueChange={v => updateAssistantField(idx, 'valle', v)}>
+                                           <SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200">
+                                              <SelectValue placeholder="VALLE..." />
+                                           </SelectTrigger>
+                                           <SelectContent className="rounded-xl">
+                                              <SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem>
+                                              <SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem>
+                                           </SelectContent>
+                                        </Select>
                                      </TableCell>
                                      <TableCell className="p-2">
                                         <Input 
