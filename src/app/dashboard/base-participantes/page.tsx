@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2 } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, Fingerprint } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 type ParticipantInfo = {
   id: string;
   rfc: string;
+  curp: string;
   nombres: string;
   paterno: string;
   materno: string;
@@ -50,7 +51,7 @@ export default function BaseParticipantesPage() {
   const [mounted, setMounted] = useState(false)
 
   const initialFormState: ParticipantInfo = {
-    id: '', rfc: '', nombres: '', paterno: '', materno: '', genero: '',
+    id: '', rfc: '', curp: '', nombres: '', paterno: '', materno: '', genero: '',
     funcion: '', email: '', cct: '', nombreCT: '', municipio: '', valle: '',
     region: '', zonaEscolar: '', sector: '', modalidad: ''
   }
@@ -68,10 +69,11 @@ export default function BaseParticipantesPage() {
     const term = searchTerm.toUpperCase();
     return participants.filter(p => {
       const rfcMatch = (p.rfc || '').toUpperCase().includes(term);
+      const curpMatch = (p.curp || '').toUpperCase().includes(term);
       const nameMatch = `${p.nombres} ${p.paterno} ${p.materno}`.toUpperCase().includes(term);
       const cctMatch = (p.cct || '').toUpperCase().includes(term);
       const schoolMatch = (p.nombreCT || '').toUpperCase().includes(term);
-      return rfcMatch || nameMatch || cctMatch || schoolMatch;
+      return rfcMatch || curpMatch || nameMatch || cctMatch || schoolMatch;
     });
   }, [searchTerm, participants]);
 
@@ -101,10 +103,16 @@ export default function BaseParticipantesPage() {
       return
     }
 
+    if (formData.curp && formData.curp.length !== 18) {
+      toast({ variant: "destructive", title: "CURP Inválida", description: "La CURP debe tener exactamente 18 caracteres." })
+      return
+    }
+
     const participantToSave: ParticipantInfo = {
       ...formData,
       id: editingId || `PART-${Date.now()}`,
       rfc: formData.rfc.toUpperCase(),
+      curp: formData.curp.toUpperCase(),
       nombres: formData.nombres.toUpperCase(),
       paterno: formData.paterno.toUpperCase(),
       materno: formData.materno.toUpperCase(),
@@ -181,21 +189,13 @@ export default function BaseParticipantesPage() {
                   <Input maxLength={13} className="font-mono font-black uppercase h-11" value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Correo Electrónico</Label>
-                  <Input type="email" className="h-11 border-primary/10" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="ejemplo@desysa.edu.mx" />
+                  <Label className="text-[10px] font-black uppercase text-primary">CURP (18 Caracteres)</Label>
+                  <Input maxLength={18} className="font-mono font-black uppercase h-11 border-primary/20" value={formData.curp} onChange={e => setFormData({...formData, curp: e.target.value.toUpperCase()})} placeholder="INGRESAR CURP..." />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Paterno</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.paterno} onChange={e => setFormData({...formData, paterno: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Materno</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.materno} onChange={e => setFormData({...formData, materno: e.target.value.toUpperCase()})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre(s)</Label>
-                  <Input className="font-bold uppercase h-11" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value.toUpperCase()})} />
+                  <Label className="text-[10px] font-black uppercase text-primary">Correo Electrónico</Label>
+                  <Input type="email" className="h-11 border-primary/10" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="ejemplo@desysa.edu.mx" />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-primary">Género</Label>
@@ -206,6 +206,19 @@ export default function BaseParticipantesPage() {
                          <SelectItem value="FEMENINO">FEMENINO</SelectItem>
                       </SelectContent>
                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Paterno</Label>
+                  <Input className="font-bold uppercase h-11" value={formData.paterno} onChange={e => setFormData({...formData, paterno: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Apellido Materno</Label>
+                  <Input className="font-bold uppercase h-11" value={formData.materno} onChange={e => setFormData({...formData, materno: e.target.value.toUpperCase()})} />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre(s)</Label>
+                  <Input className="font-bold uppercase h-11" value={formData.nombres} onChange={e => setFormData({...formData, nombres: e.target.value.toUpperCase()})} />
                 </div>
 
                 <div className="md:col-span-2 border-b border-slate-100 pb-2 mt-4">
@@ -280,7 +293,7 @@ export default function BaseParticipantesPage() {
           
           <div className="relative flex-1 w-full">
             <Input 
-              placeholder="Buscar por RFC, Nombre o CCT..." 
+              placeholder="Buscar por RFC, CURP, Nombre o CCT..." 
               className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -301,7 +314,7 @@ export default function BaseParticipantesPage() {
               <TableRow>
                 <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre Completo</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Identificador (RFC)</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">RFC / CURP</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Función / Puesto</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[200px]">CCT de Adscripción</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
@@ -325,7 +338,12 @@ export default function BaseParticipantesPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono font-black text-[10px] text-primary">{p.rfc}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-mono font-black text-[9px] text-primary">{p.rfc}</span>
+                      <span className="font-mono font-bold text-[8px] text-accent">{p.curp}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                      <Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-none">
                         {p.funcion}
