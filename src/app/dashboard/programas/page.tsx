@@ -83,7 +83,7 @@ const ESTATUS_OPCIONES = [
   "SUSPENDIDA"
 ]
 
-// Componente para mostrar el acceso externo (Liga y QR)
+// Componente optimizado para mostrar el acceso externo de forma compacta
 function HelpDeskAccessCard() {
   const [origin, setOrigin] = useState('')
   const { toast } = useToast()
@@ -95,40 +95,41 @@ function HelpDeskAccessCard() {
   if (!origin) return null
 
   return (
-    <Card className="executive-card p-6 bg-[#9f2241] text-white border-none shadow-2xl relative overflow-hidden group">
-      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-        <QrCode className="h-32 w-32" />
+    <Card className="executive-card p-3 bg-[#9f2241] text-white border-none shadow-xl relative overflow-hidden group max-w-2xl animate-in slide-in-from-top duration-500">
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+        <QrCode className="h-16 w-16" />
       </div>
-      <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-        <div className="h-32 w-32 bg-white p-2 rounded-2xl shadow-2xl flex items-center justify-center shrink-0">
-          <div className="relative h-28 w-28">
+      <div className="flex items-center gap-4 relative z-10">
+        <div className="h-16 w-16 bg-white p-1 rounded-xl shadow-lg flex items-center justify-center shrink-0">
+          <div className="relative h-14 w-14">
             <Image 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${origin}/helpdesk`} 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${origin}/helpdesk`} 
               alt="QR Mesa de Ayuda" 
               fill
-              className="rounded-lg"
+              className="rounded-md"
             />
           </div>
         </div>
-        <div className="flex-1 space-y-4 text-center md:text-left">
+        <div className="flex-1 min-w-0 space-y-2">
           <div>
-            <h3 className="text-xl font-black uppercase tracking-tight">Vínculo de Atención para Usuarios</h3>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mt-1">
-              PROPORCIONE ESTE ENLACE O QR A DOCENTES Y COORDINADORES PARA QUE PUEDAN ACCEDER A LA MESA DE AYUDA DESDE CUALQUIER EQUIPO.
+            <h3 className="text-[10px] font-black uppercase tracking-wider leading-none">Acceso Mesa de Ayuda ATRES</h3>
+            <p className="text-[7px] font-bold uppercase tracking-widest text-white/60 mt-1 truncate">
+              Vínculo oficial para atención técnica a usuarios externos
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 flex-1 w-full sm:w-auto overflow-hidden">
-              <p className="text-[10px] font-mono font-black truncate">{origin}/helpdesk</p>
+          <div className="flex items-center gap-2">
+            <div className="bg-white/10 backdrop-blur-md px-3 h-8 rounded-lg border border-white/20 flex-1 flex items-center overflow-hidden">
+              <p className="text-[8px] font-mono font-black truncate text-white/90">{origin}/helpdesk</p>
             </div>
             <Button 
+              size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(`${origin}/helpdesk`);
-                toast({ title: "Enlace Copiado", description: "El vínculo ha sido copiado al portapapeles." });
+                toast({ title: "Copiado", description: "Enlace listo para compartir." });
               }}
-              className="bg-[#B38E5D] hover:bg-[#a67d4a] text-white font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-xl transition-all"
+              className="bg-[#B38E5D] hover:bg-[#a67d4a] text-white font-black uppercase text-[8px] h-8 px-3 rounded-lg shadow-lg transition-all active:scale-95 shrink-0"
             >
-              <Copy className="h-4 w-4 mr-2" /> Copiar Enlace Oficial
+              <Copy className="h-3 w-3 mr-1" /> Copiar Link
             </Button>
           </div>
         </div>
@@ -422,9 +423,9 @@ export default function ProgramsPage() {
         </div>
       </Card>
 
-      {/* Tarjeta de acceso público y QR para ATRES */}
+      {/* Tarjeta de acceso público compacta para ATRES */}
       {activeTab === 'ATRES' && (
-        <div className="mt-4 animate-in slide-in-from-top-4 duration-500">
+        <div className="mt-4">
           <HelpDeskAccessCard />
         </div>
       )}
