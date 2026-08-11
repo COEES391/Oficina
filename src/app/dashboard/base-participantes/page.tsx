@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet, GraduationCap } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet, GraduationCap, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 
@@ -121,9 +121,9 @@ export default function BaseParticipantesPage() {
       nombres: formData.nombres.toUpperCase(),
       paterno: formData.paterno.toUpperCase(),
       materno: formData.materno.toUpperCase(),
-      email: formData.email.toLowerCase(),
-      cursosAcreditados: formData.cursosAcreditados.toUpperCase(),
-      cicloEscolar: formData.cicloEscolar.toUpperCase()
+      email: (formData.email || '').toLowerCase(),
+      cursosAcreditados: (formData.cursosAcreditados || '').toUpperCase(),
+      cicloEscolar: (formData.cicloEscolar || '').toUpperCase()
     }
 
     let updated;
@@ -395,11 +395,14 @@ export default function BaseParticipantesPage() {
             <TableHeader className="bg-slate-50/50 border-b">
               <TableRow>
                 <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre Completo</TableHead>
+                <TableHead className="text-[10px] font-black uppercase min-w-[200px]">Nombre Completo</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">RFC</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">CURP</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Función / Puesto</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[200px]">CCT de Adscripción</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">Función</TableHead>
+                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Cursos Acreditados</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-center">Constancia</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-center">Ciclo</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">CCT de Adscripción</TableHead>
                 <TableHead className="text-[10px] font-bold text-slate-500 uppercase">Municipio</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acciones</TableHead>
               </TableRow>
@@ -415,9 +418,11 @@ export default function BaseParticipantesPage() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-slate-700 uppercase leading-none">{p.paterno} {p.materno} {p.nombres}</span>
-                        <span className="text-[8px] text-muted-foreground font-bold flex items-center gap-1 mt-1">
-                           <Mail className="h-2.5 w-2.5" /> {p.email}
-                        </span>
+                        {p.email && (
+                          <span className="text-[8px] text-muted-foreground font-bold flex items-center gap-1 mt-1">
+                             <Mail className="h-2.5 w-2.5" /> {p.email}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -433,10 +438,25 @@ export default function BaseParticipantesPage() {
                      </Badge>
                   </TableCell>
                   <TableCell>
+                     <div className="text-[9px] font-bold text-slate-600 uppercase leading-tight max-w-[150px] truncate" title={p.cursosAcreditados}>
+                        {p.cursosAcreditados || 'SIN REGISTRO'}
+                     </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {p.constancia === 'SI' ? (
+                       <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-none text-[8px] font-black h-5">SÍ <CheckCircle2 className="h-2 w-2 ml-1" /></Badge>
+                    ) : (
+                       <Badge variant="outline" className="text-[8px] font-black border-slate-200 text-slate-400 h-5">NO</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                     <span className="text-[9px] font-black text-primary">{p.cicloEscolar || '-'}</span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                        <div className="flex flex-col">
                           <span className="text-[10px] font-black text-primary leading-none">{p.cct}</span>
-                          <span className="text-[8px] text-muted-foreground font-bold uppercase truncate max-w-[180px] mt-1">{p.nombreCT}</span>
+                          <span className="text-[8px] text-muted-foreground font-bold uppercase truncate max-w-[150px] mt-1">{p.nombreCT}</span>
                        </div>
                     </div>
                   </TableCell>
@@ -454,7 +474,7 @@ export default function BaseParticipantesPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-24 opacity-30">
+                  <TableCell colSpan={11} className="text-center py-24 opacity-30">
                     <div className="flex flex-col items-center gap-3">
                        <Users className="h-10 w-10 text-slate-300" />
                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros de participantes disponibles</p>
