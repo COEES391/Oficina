@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
@@ -34,9 +33,9 @@ import {
   FilePlus,
   FileBox,
   FileText,
-  FileSpreadsheet,
-  Download,
-  Printer
+  User,
+  History,
+  Circle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -245,7 +244,9 @@ export default function ProgramsPage() {
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md flex-1 sm:flex-none" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
-            if (activeTab === 'Cuentas Institucionales') f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '' }];
+            if (activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') {
+              f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '' }];
+            }
             setFormData(f); 
             setEditingId(null); 
             setIsDialogOpen(true); 
@@ -254,255 +255,285 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchTerm(''); }} className="space-y-4">
-        <TabsList className="w-full justify-start h-11 bg-white/60 border border-slate-200 p-1 rounded-xl shadow-sm gap-1 overflow-x-auto no-scrollbar">
-          {PROGRAM_RUBROS.map(rubro => (<TabsTrigger key={`tab-${rubro}`} value={rubro} className="h-full px-5 text-[10px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all whitespace-nowrap">{rubro}</TabsTrigger>))}
-        </TabsList>
+      <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
+        <div className="flex flex-col md:flex-row items-end gap-4">
+           <div className="flex-1 w-full space-y-1">
+              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Seleccionar Módulo Institucional</Label>
+              <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
+                {PROGRAM_RUBROS.map(rubro => (
+                  <button 
+                    key={`rubro-${rubro}`} 
+                    onClick={() => { setActiveTab(rubro); setSearchTerm(''); }}
+                    className={cn(
+                      "px-5 h-10 text-[10px] font-black uppercase rounded-xl transition-all whitespace-nowrap border shadow-sm",
+                      activeTab === rubro 
+                        ? "bg-primary text-white border-primary shadow-primary/20" 
+                        : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
+                    )}
+                  >
+                    {rubro}
+                  </button>
+                ))}
+              </div>
+           </div>
+           
+           <div className="relative flex-1 w-full md:max-w-[300px]">
+              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
+              <div className="relative">
+                <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              </div>
+           </div>
 
-        <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
-          <div className="flex flex-col md:flex-row items-end gap-4">
-             <div className="relative flex-1 w-full min-w-0">
-                <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
-                <div className="relative">
-                  <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                </div>
-             </div>
-             <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                <div className="space-y-1 min-w-[200px]">
-                  <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
-                  <Select value={officeFilter} onValueChange={setOficinaFilter}>
-                    <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>
-                      {REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-             </div>
-          </div>
-        </Card>
+           <div className="min-w-[200px] w-full md:w-auto">
+              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
+              <Select value={officeFilter} onValueChange={setOficinaFilter}>
+                <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>
+                  {REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
+                </SelectContent>
+              </Select>
+           </div>
+        </div>
+      </Card>
 
-        <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
-          <div className="overflow-x-auto w-full">
-            <Table className="w-full">
-              <TableHeader className="bg-slate-50 border-b">
-                 <TableRow className="h-12">
-                    <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
-                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
-                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[150px]">Identificación del Plantel</TableHead>
-                    <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Estatus</TableHead>
-                    <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-slate-400 w-24">Acción</TableHead>
-                  </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
-                  <TableRow key={`${rec.id}-${idx}`} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
-                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                    <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.id || rec.cct}</TableCell>
-                    <TableCell className="py-2">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span>
-                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                       <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )) : (<TableRow><TableCell colSpan={10} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </Tabs>
+      <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
+        <div className="overflow-x-auto w-full">
+          <Table className="w-full">
+            <TableHeader className="bg-slate-50 border-b">
+               <TableRow className="h-12">
+                  <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[150px]">Identificación del Plantel</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Estatus</TableHead>
+                  <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-slate-400 w-24">Acción</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
+                <TableRow key={`${rec.id}-${idx}`} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
+                  <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                  <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.id || rec.cct}</TableCell>
+                  <TableCell className="py-2">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span>
+                      <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                     <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <div className="flex justify-end gap-1">
+                      <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )) : (<TableRow><TableCell colSpan={10} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1200px] rounded-[2rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[1250px] rounded-[2rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0">
              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
                 <Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}
              </DialogTitle>
              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                Administración de datos técnicos y auditoría para el módulo institucional.
+                Administración de datos técnicos y censo de personal para el módulo institucional.
              </DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue={(activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') ? 'asistentes' : 'auditoria'} className="flex-1 flex flex-col overflow-hidden">
-             <div className="px-6 border-b bg-white">
-               <TabsList className="bg-transparent h-12 p-0 gap-8">
-                 {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
-                   <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Censo de Personal</TabsTrigger>
-                 )}
-                 <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Auditoría Técnica</TabsTrigger>
-               </TabsList>
-             </div>
-             
-             <div className="flex-1 overflow-hidden">
-                <TabsContent value="auditoria" className="h-full m-0 p-6">
-                   <ScrollArea className="h-full">
-                      <div className="space-y-6 pb-8">
-                         <div className="p-6 bg-slate-50 rounded-2xl border-2 border-primary/5 space-y-4 shadow-inner relative">
-                            <Label className="text-[10px] font-black uppercase text-primary flex items-center gap-3 pl-1"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label>
-                            <Input placeholder="TECLEAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 text-xs font-black uppercase px-6 shadow-sm" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); if (e.target.value.length === 10) handleCctChange(e.target.value); }} />
-                            {dialogSearchTerm.length > 2 && (
-                               <div className="absolute left-6 right-6 top-24 max-h-56 overflow-auto bg-white border border-slate-100 rounded-xl shadow-2xl z-50 divide-y">
-                                  {schoolsDirectory.filter(s => (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())).slice(0, 10).map(s => (
-                                     <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFormData({...formData, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle, region: s.region, modalidad: s.modalidad, zonaEscolar: s.zonaEscolar, sector: s.sector}); setDialogSearchTerm(''); }}>
-                                        <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[9px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
-                                        <Badge variant="secondary" className="text-[8px] font-black uppercase bg-primary/10 text-primary">{s.modalidad}</Badge>
-                                     </div>
-                                  ))}
-                               </div>
-                            )}
-                         </div>
+          
+          <div className="flex-1 overflow-hidden bg-white">
+            <ScrollArea className="h-full">
+              <div className="p-8 space-y-10">
+                {/* Sección 1: Identificación (Antigua Auditoría Técnica) */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                    <School className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-black uppercase text-primary">Identificación del Centro de Trabajo</h3>
+                  </div>
 
-                         <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                               <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
-                               <Input className="h-11 rounded-lg bg-white border-slate-200 font-mono text-xs font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="md:col-span-2 p-6 bg-slate-50 rounded-2xl border-2 border-primary/5 space-y-4 shadow-inner relative">
+                        <Label className="text-[10px] font-black uppercase text-primary flex items-center gap-3 pl-1"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label>
+                        <Input placeholder="TECLEAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 text-xs font-black uppercase px-6 shadow-sm" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); if (e.target.value.length === 10) handleCctChange(e.target.value); }} />
+                        {dialogSearchTerm.length > 2 && (
+                          <div className="absolute left-6 right-6 top-24 max-h-56 overflow-auto bg-white border border-slate-100 rounded-xl shadow-2xl z-50 divide-y">
+                              {schoolsDirectory.filter(s => (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())).slice(0, 10).map(s => (
+                                <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFormData({...formData, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle, region: s.region, modalidad: s.modalidad, zonaEscolar: s.zonaEscolar, sector: s.sector}); setDialogSearchTerm(''); }}>
+                                    <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[9px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
+                                    <Badge variant="secondary" className="text-[8px] font-black uppercase bg-primary/10 text-primary">{s.modalidad}</Badge>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                        {formData.cct && (
+                          <div className="mt-4 p-4 bg-white rounded-xl border border-primary/10 flex items-center gap-4 animate-in zoom-in-95">
+                            <div className="h-10 w-10 bg-emerald-50 text-emerald-600 flex items-center justify-center rounded-lg shadow-sm"><CheckCircle2 className="h-6 w-6" /></div>
+                            <div>
+                              <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p>
+                              <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4>
                             </div>
-                            <div className="space-y-2">
-                               <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Oficina Regional</Label>
-                               <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                                  <SelectTrigger className="h-11 rounded-lg bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                                  <SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={`off-item-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
-                               </Select>
-                            </div>
-                         </div>
+                          </div>
+                        )}
+                    </div>
 
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1 flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Diagnóstico y Observaciones</Label>
-                            <Textarea className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico de la auditoría..." />
-                         </div>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
+                          <Input className="h-11 rounded-lg bg-white border-slate-200 font-mono text-xs font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                       </div>
-                   </ScrollArea>
-                </TabsContent>
+                      <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Oficina Regional</Label>
+                          <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
+                              <SelectTrigger className="h-11 rounded-lg bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                              <SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={`off-item-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
+                          </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                <TabsContent value="asistentes" className="h-full m-0 p-6 flex flex-col">
-                   <div className="flex justify-between items-center mb-4">
+                {/* Sección 2: Censo de Personal (Antigua pestaña asistentes) */}
+                {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
                       <div className="flex items-center gap-3">
-                         <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><Users className="h-5 w-5" /></div>
-                         <div>
-                            <h4 className="text-sm font-black uppercase text-primary leading-none">Censo de Personal del Módulo</h4>
-                            <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Captura de usuarios para cuentas institucionales o biblioteca digital.</p>
-                         </div>
+                        <Users className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
                       </div>
                       <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md">
-                         <Plus className="h-4 w-4" /> Añadir Usuario
+                        <Plus className="h-4 w-4" /> Añadir Usuario
                       </Button>
-                   </div>
+                    </div>
 
-                   <div className="flex-1 border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner">
+                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[300px]">
                       <ScrollArea className="h-full">
-                         <Table>
-                            <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
-                               <TableRow>
-                                  <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                  <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                  <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
-                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
-                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
-                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
-                                  <TableHead className="min-w-[100px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                  <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
-                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                               {(formData.asistentes || []).map((ast, idx) => (
-                                  <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
-                                     <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                     <TableCell className="p-2">
-                                        <Input 
-                                           placeholder="APELLIDOS NOMBRE..." 
-                                           className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" 
-                                           value={ast.nombreUsuario} 
-                                           onChange={e => updateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} 
-                                        />
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <Input 
-                                           placeholder="15DES0000X" 
-                                           className="h-9 text-[10px] font-mono font-black uppercase" 
-                                           value={ast.cct} 
-                                           onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} 
-                                           maxLength={10} 
-                                        />
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <div className="relative group">
-                                           <Input 
-                                              placeholder="usuario.ejemplo" 
-                                              className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-8" 
-                                              value={ast.correo} 
-                                              onChange={e => updateAssistantField(idx, 'correo', e.target.value.toLowerCase())} 
-                                           />
-                                           <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-accent opacity-40" />
-                                        </div>
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <Select value={ast.funcion} onValueChange={v => updateAssistantField(idx, 'funcion', v)}>
-                                           <SelectTrigger className="h-9 text-[10px] font-bold uppercase">
-                                              <SelectValue placeholder="FUNCIÓN..." />
-                                           </SelectTrigger>
-                                           <SelectContent className="rounded-xl">
-                                              {FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
-                                           </SelectContent>
-                                        </Select>
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
-                                           <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
-                                              <SelectValue />
-                                           </SelectTrigger>
-                                           <SelectContent className="rounded-xl">
-                                              {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
-                                           </SelectContent>
-                                        </Select>
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <Select value={ast.valle} onValueChange={v => updateAssistantField(idx, 'valle', v)}>
-                                           <SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200">
-                                              <SelectValue placeholder="VALLE..." />
-                                           </SelectTrigger>
-                                           <SelectContent className="rounded-xl">
-                                              <SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem>
-                                              <SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem>
-                                           </SelectContent>
-                                        </Select>
-                                     </TableCell>
-                                     <TableCell className="p-2">
-                                        <Input 
-                                           placeholder="OFICINA / DEPTO..." 
-                                           className="h-9 text-[10px] font-bold uppercase border-slate-200" 
-                                           value={ast.departamento} 
-                                           onChange={e => updateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} 
-                                        />
-                                     </TableCell>
-                                     <TableCell className="p-2 sticky right-0 bg-white shadow-l">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
-                                           <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                     </TableCell>
-                                  </TableRow>
-                               ))}
-                            </TableBody>
-                         </Table>
-                         <ScrollBar orientation="horizontal" />
+                        <Table>
+                          <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
+                              <TableRow>
+                                <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
+                                <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
+                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
+                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
+                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
+                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
+                                <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {(formData.asistentes || []).map((ast, idx) => (
+                                <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
+                                    <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                                    <TableCell className="p-2">
+                                      <Input 
+                                          placeholder="APELLIDOS NOMBRE..." 
+                                          className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" 
+                                          value={ast.nombreUsuario} 
+                                          onChange={e => updateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} 
+                                      />
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Input 
+                                          placeholder="15DES0000X" 
+                                          className="h-9 text-[10px] font-mono font-black uppercase" 
+                                          value={ast.cct} 
+                                          onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} 
+                                          maxLength={10} 
+                                      />
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <div className="relative group">
+                                          <Input 
+                                            placeholder="usuario.ejemplo" 
+                                            className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-8" 
+                                            value={ast.correo} 
+                                            onChange={e => updateAssistantField(idx, 'correo', e.target.value.toLowerCase())} 
+                                          />
+                                          <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-accent opacity-40" />
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.funcion} onValueChange={v => updateAssistantField(idx, 'funcion', v)}>
+                                          <SelectTrigger className="h-9 text-[10px] font-bold uppercase">
+                                            <SelectValue placeholder="FUNCIÓN..." />
+                                          </SelectTrigger>
+                                          <SelectContent className="rounded-xl">
+                                            {FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
+                                          </SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
+                                          <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent className="rounded-xl">
+                                            {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
+                                          </SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.valle} onValueChange={v => updateAssistantField(idx, 'valle', v)}>
+                                          <SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200">
+                                            <SelectValue placeholder="VALLE..." />
+                                          </SelectTrigger>
+                                          <SelectContent className="rounded-xl">
+                                            <SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem>
+                                            <SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem>
+                                          </SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Input 
+                                          placeholder="OFICINA / DEPTO..." 
+                                          className="h-9 text-[10px] font-bold uppercase border-slate-200" 
+                                          value={ast.departamento} 
+                                          onChange={e => updateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} 
+                                      />
+                                    </TableCell>
+                                    <TableCell className="p-2 sticky right-0 bg-white shadow-l">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
+                                          <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                        <ScrollBar orientation="horizontal" />
                       </ScrollArea>
-                   </div>
-                </TabsContent>
-             </div>
-          </Tabs>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sección 3: Diagnóstico Final (Ex-Auditoría Técnica parte baja) */}
+                <div className="space-y-4 pt-6">
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                    <Info className="h-5 w-5 text-primary" />
+                    <h3 className="text-sm font-black uppercase text-primary">Diagnóstico y Observaciones Técnicas</h3>
+                  </div>
+                  <Textarea 
+                    className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" 
+                    value={formData.observaciones} 
+                    onChange={e => setFormData({...formData, observaciones: e.target.value})} 
+                    placeholder="Detalle técnico de la auditoría o acuerdos del módulo..." 
+                  />
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+
           <DialogFooter className="p-6 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">Cancelar</Button>
              <Button onClick={handleSave} className="btn-institutional h-11 px-10 text-[10px]">Guardar Cambios</Button>
