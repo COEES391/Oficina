@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useMemo, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -11,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, FileSpreadsheet, GraduationCap } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 
@@ -33,6 +32,9 @@ type ParticipantInfo = {
   zonaEscolar: string;
   sector: string;
   modalidad: string;
+  cursosAcreditados: string;
+  constancia: 'SI' | 'NO' | '';
+  cicloEscolar: string;
 }
 
 const FUNCIONES = [
@@ -55,7 +57,8 @@ export default function BaseParticipantesPage() {
   const initialFormState: ParticipantInfo = {
     id: '', rfc: '', curp: '', nombres: '', paterno: '', materno: '', genero: '',
     funcion: '', email: '', cct: '', nombreCT: '', municipio: '', valle: '',
-    region: '', zonaEscolar: '', sector: '', modalidad: ''
+    region: '', zonaEscolar: '', sector: '', modalidad: '',
+    cursosAcreditados: '', constancia: '', cicloEscolar: ''
   }
 
   const [formData, setFormData] = useState<ParticipantInfo>(initialFormState)
@@ -118,7 +121,9 @@ export default function BaseParticipantesPage() {
       nombres: formData.nombres.toUpperCase(),
       paterno: formData.paterno.toUpperCase(),
       materno: formData.materno.toUpperCase(),
-      email: formData.email.toLowerCase()
+      email: formData.email.toLowerCase(),
+      cursosAcreditados: formData.cursosAcreditados.toUpperCase(),
+      cicloEscolar: formData.cicloEscolar.toUpperCase()
     }
 
     let updated;
@@ -157,6 +162,9 @@ export default function BaseParticipantesPage() {
       'RFC': p.rfc,
       'CURP': p.curp,
       'Función': p.funcion,
+      'Cursos Acreditados': p.cursosAcreditados,
+      'Constancia': p.constancia,
+      'Ciclo Escolar': p.cicloEscolar,
       'Correo Electrónico': p.email,
       'CCT Adscripción': p.cct,
       'Nombre CT': p.nombreCT,
@@ -211,7 +219,7 @@ export default function BaseParticipantesPage() {
                 <UserPlus className="h-5 w-5 mr-2" /> Nuevo Participante
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
+            <DialogContent className="sm:max-w-[800px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
               <DialogHeader className="p-8 pb-4">
                 <DialogTitle className="uppercase font-black text-primary text-2xl">
                   {editingId ? 'Editar Participante' : 'Alta de Participante'}
@@ -316,6 +324,34 @@ export default function BaseParticipantesPage() {
                         </div>
                      </div>
                   )}
+
+                  <div className="md:col-span-2 border-b border-slate-100 pb-2 mt-4">
+                     <h3 className="text-[11px] font-black uppercase text-accent flex items-center gap-2">
+                       <GraduationCap className="h-4 w-4" /> Seguimiento Académico y Ciclo
+                     </h3>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Cursos Acreditados</Label>
+                    <Input className="font-bold uppercase h-11" value={formData.cursosAcreditados} onChange={e => setFormData({...formData, cursosAcreditados: e.target.value.toUpperCase()})} placeholder="EJ: TICCAD 2026, INTRODUCCIÓN A LA IA..." />
+                  </div>
+
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-primary">Constancia / Diploma</Label>
+                     <Select value={formData.constancia} onValueChange={(val: any) => setFormData({...formData, constancia: val})}>
+                        <SelectTrigger className="h-11 font-bold"><SelectValue placeholder="¿CUENTA CON DOCUMENTO?..." /></SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="SI">SÍ (ACREDITADO)</SelectItem>
+                           <SelectItem value="NO">NO (PENDIENTE)</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary">Ciclo Escolar</Label>
+                    <Input className="font-black uppercase h-11 border-primary/20" value={formData.cicloEscolar} onChange={e => setFormData({...formData, cicloEscolar: e.target.value.toUpperCase()})} placeholder="EJ: 2025-2026" />
+                  </div>
+
                 </div>
               </ScrollArea>
 
