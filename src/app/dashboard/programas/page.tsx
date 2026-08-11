@@ -33,7 +33,6 @@ import {
   Mail,
   FilePlus,
   FileBox,
-  FileText,
   User,
   History,
   Circle
@@ -166,32 +165,68 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
+    const recordToSave = { ...formData };
+    
+    // Si es un censo, podemos intentar derivar un CCT general del primer asistente si no hay uno
+    if (!recordToSave.cct && recordToSave.asistentes && recordToSave.asistentes.length > 0) {
+      const first = recordToSave.asistentes[0];
+      recordToSave.cct = first.cct;
+      const school = schoolsDirectory.find(s => s.cct === first.cct);
+      if (school) {
+        recordToSave.schoolName = school.nombre;
+        recordToSave.municipio = school.municipio;
+        recordToSave.valle = school.valle;
+      }
+    }
+
     const updated = editingId 
-      ? records.map(r => r.id === editingId ? formData : r) 
-      : [{...formData, id: formData.id || `SOL-${Date.now()}`}, ...records];
+      ? records.map(r => r.id === editingId ? recordToSave : r) 
+      : [{...recordToSave, id: recordToSave.id || `SOL-${Date.now()}`}, ...records];
+    
     setRecords(updated)
     localStorage.setItem('programs_full_v24', JSON.stringify(updated))
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    toast({ title: "Registro guardado" })
+    toast({ title: "Censo guardado correctamente" })
   }
+
+  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'Biblioteca Digital', 'ATRES'].includes(activeTab), [activeTab]);
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
     if (searchTerm) {
       const term = searchTerm.toUpperCase();
-      filtered = filtered.filter(r => (r.cct || '').toUpperCase().includes(term) || (r.schoolName || '').toUpperCase().includes(term));
+      filtered = filtered.filter(r => 
+        (r.cct || '').toUpperCase().includes(term) || 
+        (r.schoolName || '').toUpperCase().includes(term) ||
+        (r.asistentes || []).some(ast => (ast.nombreUsuario || '').toUpperCase().includes(term) || (ast.cct || '').toUpperCase().includes(term))
+      );
     }
     if (officeFilter !== 'all') {
       filtered = filtered.filter(r => r.oficinaRegionalAtencion === officeFilter);
     }
-    return [...filtered].sort((a, b) => {
-       const dateA = a.date || '';
-       const dateB = b.date || '';
-       return dateB.localeCompare(dateA);
-    });
+    return [...filtered].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [records, activeTab, searchTerm, officeFilter]);
+
+  const displayRows = useMemo(() => {
+    if (isCensoTab) {
+      const flatList: any[] = [];
+      filteredRecords.forEach(rec => {
+        if (rec.asistentes && rec.asistentes.length > 0) {
+          rec.asistentes.forEach(ast => {
+            flatList.push({
+              ...ast,
+              id: rec.id, // ID del registro padre para identificarlo
+              parentRecord: rec
+            });
+          });
+        }
+      });
+      return flatList;
+    }
+    return filteredRecords;
+  }, [filteredRecords, isCensoTab]);
 
   if (!mounted) return null
 
@@ -217,12 +252,13 @@ export default function ProgramsPage() {
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md flex-1 sm:flex-none" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
-            if (activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') {
+            if (isCensoTab) {
               f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '' }];
             }
             setFormData(f); 
             setEditingId(null); 
             setIsDialogOpen(true); 
+            setSearchTerm('');
           }} className="btn-institutional h-10 px-8 rounded-xl shadow-md text-[10px] flex-1 sm:flex-none"><PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro</Button>
         </div>
       </div>
@@ -252,21 +288,23 @@ export default function ProgramsPage() {
            <div className="relative flex-1 w-full md:max-w-[300px]">
               <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
               <div className="relative">
-                <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Input placeholder="CCT, PLANTEL O USUARIO..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               </div>
            </div>
 
-           <div className="min-w-[200px] w-full md:w-auto">
-              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
-              <Select value={officeFilter} onValueChange={setOficinaFilter}>
-                <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>
-                  {REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
-                </SelectContent>
-              </Select>
-           </div>
+           {!isCensoTab && (
+             <div className="min-w-[200px] w-full md:w-auto">
+                <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
+                <Select value={officeFilter} onValueChange={setOficinaFilter}>
+                  <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>
+                    {REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+             </div>
+           )}
         </div>
       </Card>
 
@@ -276,34 +314,82 @@ export default function ProgramsPage() {
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
                   <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">{activeTab === 'ATRES' ? 'Folio' : 'CCT'}</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[150px]">Identificación del Plantel</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Estatus</TableHead>
+                  {isCensoTab ? (
+                    <>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[180px]">Nombre del Usuario</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">CCT</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[140px]">Correo / Dominio</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">Función</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Valle</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[130px]">Departamento</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">CCT</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[150px]">Identificación del Plantel</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[90px]">Estatus</TableHead>
+                    </>
+                  )}
                   <TableHead className="text-right text-[9px] font-black uppercase pr-6 text-slate-400 w-24">Acción</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
-                <TableRow key={`${rec.id}-${idx}`} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
-                  <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                  <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.id || rec.cct}</TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span>
-                      <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                     <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )) : (<TableRow><TableCell colSpan={10} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
+              {displayRows.length > 0 ? displayRows.map((row, idx) => {
+                if (isCensoTab) {
+                  return (
+                    <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
+                      <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                      <TableCell className="font-black text-[10px] text-slate-700 uppercase">{row.nombreUsuario}</TableCell>
+                      <TableCell className="font-black text-[10px] text-primary tracking-tight font-mono">{row.cct}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                           <span className="text-[9px] font-bold text-slate-600">{row.correo}</span>
+                           <span className="text-[8px] font-black text-accent uppercase">@{row.dominio}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                         <Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200">{row.funcion}</Badge>
+                      </TableCell>
+                      <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
+                      <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => { 
+                            const updated = records.filter(r => r.id !== row.id);
+                            setRecords(updated); 
+                            localStorage.setItem('programs_full_v24', JSON.stringify(updated)); 
+                            toast({ title: "Registro eliminado" });
+                          }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                
+                const rec = row as ProgramStatus;
+                return (
+                  <TableRow key={`${rec.id}-${idx}`} className="hover:bg-primary/[0.01] transition-all border-b border-slate-50 h-14 group">
+                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                    <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.id || rec.cct}</TableCell>
+                    <TableCell className="py-2">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                       <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (<TableRow><TableCell colSpan={10} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
             </TableBody>
           </Table>
         </div>
@@ -327,119 +413,117 @@ export default function ProgramsPage() {
             <ScrollArea className="h-full">
               <div className="p-8 space-y-10">
                 {/* Sección: Censo de Personal */}
-                {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
-                      </div>
-                      <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md">
-                        <Plus className="h-4 w-4" /> Añadir Usuario
-                      </Button>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
                     </div>
-
-                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[300px]">
-                      <ScrollArea className="h-full">
-                        <Table>
-                          <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
-                              <TableRow>
-                                <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
-                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
-                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {(formData.asistentes || []).map((ast, idx) => (
-                                <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
-                                    <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                    <TableCell className="p-2">
-                                      <Input 
-                                          placeholder="APELLIDOS NOMBRE..." 
-                                          className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" 
-                                          value={ast.nombreUsuario} 
-                                          onChange={e => updateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} 
-                                      />
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <Input 
-                                          placeholder="15DES0000X" 
-                                          className="h-9 text-[10px] font-mono font-black uppercase" 
-                                          value={ast.cct} 
-                                          onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} 
-                                          maxLength={10} 
-                                      />
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <div className="relative group">
-                                          <Input 
-                                            placeholder="usuario.ejemplo" 
-                                            className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-8" 
-                                            value={ast.correo} 
-                                            onChange={e => updateAssistantField(idx, 'correo', e.target.value.toLowerCase())} 
-                                          />
-                                          <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-accent opacity-40" />
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <Select value={ast.funcion} onValueChange={v => updateAssistantField(idx, 'funcion', v)}>
-                                          <SelectTrigger className="h-9 text-[10px] font-bold uppercase">
-                                            <SelectValue placeholder="FUNCIÓN..." />
-                                          </SelectTrigger>
-                                          <SelectContent className="rounded-xl">
-                                            {FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
-                                          </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
-                                          <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent className="rounded-xl">
-                                            {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
-                                          </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <Select value={ast.valle} onValueChange={v => updateAssistantField(idx, 'valle', v)}>
-                                          <SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200">
-                                            <SelectValue placeholder="VALLE..." />
-                                          </SelectTrigger>
-                                          <SelectContent className="rounded-xl">
-                                            <SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem>
-                                            <SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem>
-                                          </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <Input 
-                                          placeholder="OFICINA / DEPTO..." 
-                                          className="h-9 text-[10px] font-bold uppercase border-slate-200" 
-                                          value={ast.departamento} 
-                                          onChange={e => updateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} 
-                                      />
-                                    </TableCell>
-                                    <TableCell className="p-2 sticky right-0 bg-white shadow-l">
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
-                                          <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </TableCell>
-                                </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
-                        <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
-                    </div>
+                    <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md">
+                      <Plus className="h-4 w-4" /> Añadir Usuario
+                    </Button>
                   </div>
-                )}
+
+                  <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[300px]">
+                    <ScrollArea className="h-full">
+                      <Table>
+                        <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
+                            <TableRow>
+                              <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
+                              <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                              <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
+                              <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
+                              <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
+                              <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
+                              <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                              <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
+                              <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(formData.asistentes || []).map((ast, idx) => (
+                              <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
+                                  <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                                  <TableCell className="p-2">
+                                    <Input 
+                                        placeholder="APELLIDOS NOMBRE..." 
+                                        className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" 
+                                        value={ast.nombreUsuario} 
+                                        onChange={e => updateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} 
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input 
+                                        placeholder="15DES0000X" 
+                                        className="h-9 text-[10px] font-mono font-black uppercase" 
+                                        value={ast.cct} 
+                                        onChange={e => updateAssistantField(idx, 'cct', e.target.value.toUpperCase())} 
+                                        maxLength={10} 
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <div className="relative group">
+                                        <Input 
+                                          placeholder="usuario.ejemplo" 
+                                          className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-8" 
+                                          value={ast.correo} 
+                                          onChange={e => updateAssistantField(idx, 'correo', e.target.value.toLowerCase())} 
+                                        />
+                                        <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-accent opacity-40" />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Select value={ast.funcion} onValueChange={v => updateAssistantField(idx, 'funcion', v)}>
+                                        <SelectTrigger className="h-9 text-[10px] font-bold uppercase">
+                                          <SelectValue placeholder="FUNCIÓN..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                          {FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
+                                        <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                          {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Select value={ast.valle} onValueChange={v => updateAssistantField(idx, 'valle', v)}>
+                                        <SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200">
+                                          <SelectValue placeholder="VALLE..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl">
+                                          <SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem>
+                                          <SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input 
+                                        placeholder="OFICINA / DEPTO..." 
+                                        className="h-9 text-[10px] font-bold uppercase border-slate-200" 
+                                        value={ast.departamento} 
+                                        onChange={e => updateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} 
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2 sticky right-0 bg-white shadow-l">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                  </div>
+                </div>
 
                 {/* Sección: Diagnóstico Final */}
                 <div className="space-y-4 pt-6">
