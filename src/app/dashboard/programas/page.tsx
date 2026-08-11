@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -167,7 +166,6 @@ export default function ProgramsPage() {
   const handleSave = () => {
     const recordToSave = { ...formData };
     
-    // Si es un censo, podemos intentar derivar un CCT general del primer asistente si no hay uno
     if (!recordToSave.cct && recordToSave.asistentes && recordToSave.asistentes.length > 0) {
       const first = recordToSave.asistentes[0];
       recordToSave.cct = first.cct;
@@ -217,7 +215,7 @@ export default function ProgramsPage() {
           rec.asistentes.forEach(ast => {
             flatList.push({
               ...ast,
-              id: rec.id, // ID del registro padre para identificarlo
+              id: rec.id,
               parentRecord: rec
             });
           });
@@ -316,7 +314,7 @@ export default function ProgramsPage() {
                   <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4 text-slate-400">#</TableHead>
                   {isCensoTab ? (
                     <>
-                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[180px]">Nombre del Usuario</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[180px]">Usuario</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">CCT</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest min-w-[140px]">Correo / Dominio</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary tracking-widest w-[110px]">Función</TableHead>
@@ -411,8 +409,7 @@ export default function ProgramsPage() {
           
           <div className="flex-1 overflow-hidden bg-white">
             <ScrollArea className="h-full">
-              <div className="p-8 space-y-10">
-                {/* Sección: Censo de Personal */}
+              <div className="p-8 space-y-6">
                 <div className="space-y-6">
                   <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
                     <div className="flex items-center gap-3">
@@ -424,7 +421,7 @@ export default function ProgramsPage() {
                     </Button>
                   </div>
 
-                  <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[300px]">
+                  <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[150px]">
                     <ScrollArea className="h-full">
                       <Table>
                         <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
@@ -525,8 +522,7 @@ export default function ProgramsPage() {
                   </div>
                 </div>
 
-                {/* Sección: Diagnóstico Final */}
-                <div className="space-y-4 pt-6">
+                <div className="space-y-4">
                   <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
                     <Info className="h-5 w-5 text-primary" />
                     <h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3>
