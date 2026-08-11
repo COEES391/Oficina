@@ -19,6 +19,7 @@ const SECTIONS = [
   { id: 'capacitacion', name: 'Capacitación' },
   { id: 'programas', name: 'Programas' },
   { id: 'base-cct', name: 'BASE CCT' },
+  { id: 'base-participantes', name: 'BASE PARTICIPANTES' },
   { id: 'usuarios', name: 'Usuarios' },
 ]
 

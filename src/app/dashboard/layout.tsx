@@ -22,7 +22,7 @@ import {
   Monitor,
   ShieldCheck,
   Database,
-  Users as UsersIcon
+  Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
@@ -55,7 +55,7 @@ export default function DashboardLayout({
           name: rfc === 'COEES' ? 'Administrador Maestro' : 'Admin Editorial',
           password: '',
           role: 'admin',
-          privileges: ['bitacora-atres', 'planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+          privileges: ['bitacora-atres', 'planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
         })
       } else if (user) {
         setCurrentUser(user)
@@ -75,7 +75,8 @@ export default function DashboardLayout({
     { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
     { id: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
     { id: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
-    { id: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <UsersIcon className="h-5 w-5" /> },
+    { id: 'base-participantes', name: 'BASE PARTICIPANTES', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
+    { id: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
   ]
 
   const allowedMenuItems = useMemo(() => {
