@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -84,7 +85,6 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
-  const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [pendingCount, setPendingRequestsCount] = useState(0)
 
   const initialFormState: ProgramStatus = {
@@ -130,28 +130,6 @@ export default function ProgramsPage() {
     return () => window.removeEventListener('storage', handleStorageEvent)
   }, [syncData])
 
-  const handleCctChange = (val: string) => {
-    const cleanVal = val.toUpperCase();
-    setFormData(prev => ({ ...prev, cct: cleanVal }));
-    if (cleanVal.length === 10) {
-      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal);
-      if (school) {
-        setFormData(prev => ({
-          ...prev,
-          cct: school.cct,
-          schoolName: school.nombre,
-          zonaEscolar: school.zonaEscolar,
-          sector: school.sector,
-          modalidad: school.modalidad,
-          municipio: school.municipio,
-          valle: school.valle,
-          region: school.region,
-          email: `${school.cct.toLowerCase()}@desysa.gob.mx`
-        }));
-      }
-    }
-  }
-
   const handleAddAssistant = () => {
     const newAssistant = {
       nombreUsuario: '',
@@ -188,10 +166,6 @@ export default function ProgramsPage() {
   }
 
   const handleSave = () => {
-    if (!formData.cct) {
-      toast({ variant: "destructive", title: "Datos Incompletos", description: "El CCT es obligatorio." });
-      return;
-    }
     const updated = editingId 
       ? records.map(r => r.id === editingId ? formData : r) 
       : [{...formData, id: formData.id || `SOL-${Date.now()}`}, ...records];
@@ -200,7 +174,6 @@ export default function ProgramsPage() {
     setIsDialogOpen(false)
     setEditingId(null)
     setFormData(initialFormState)
-    setDialogSearchTerm('')
     toast({ title: "Registro guardado" })
   }
 
@@ -250,7 +223,6 @@ export default function ProgramsPage() {
             setFormData(f); 
             setEditingId(null); 
             setIsDialogOpen(true); 
-            setDialogSearchTerm(''); 
           }} className="btn-institutional h-10 px-8 rounded-xl shadow-md text-[10px] flex-1 sm:flex-none"><PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro</Button>
         </div>
       </div>
@@ -347,62 +319,14 @@ export default function ProgramsPage() {
                 <Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}
              </DialogTitle>
              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                Administración de datos técnicos y censo de personal para el módulo institucional.
+                Captura de censo de personal para el módulo institucional.
              </DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden bg-white">
             <ScrollArea className="h-full">
               <div className="p-8 space-y-10">
-                {/* Sección 1: Identificación (Antigua Auditoría Técnica) */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
-                    <School className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-black uppercase text-primary">Identificación del Centro de Trabajo</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2 p-6 bg-slate-50 rounded-2xl border-2 border-primary/5 space-y-4 shadow-inner relative">
-                        <Label className="text-[10px] font-black uppercase text-primary flex items-center gap-3 pl-1"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label>
-                        <Input placeholder="TECLEAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 text-xs font-black uppercase px-6 shadow-sm" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); if (e.target.value.length === 10) handleCctChange(e.target.value); }} />
-                        {dialogSearchTerm.length > 2 && (
-                          <div className="absolute left-6 right-6 top-24 max-h-56 overflow-auto bg-white border border-slate-100 rounded-xl shadow-2xl z-50 divide-y">
-                              {schoolsDirectory.filter(s => (s.nombre || '').toUpperCase().includes(dialogSearchTerm.toUpperCase()) || (s.cct || '').toUpperCase().includes(dialogSearchTerm.toUpperCase())).slice(0, 10).map(s => (
-                                <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors group" onClick={() => { setFormData({...formData, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle, region: s.region, modalidad: s.modalidad, zonaEscolar: s.zonaEscolar, sector: s.sector}); setDialogSearchTerm(''); }}>
-                                    <div className="flex flex-col"><span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span><span className="text-[9px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
-                                    <Badge variant="secondary" className="text-[8px] font-black uppercase bg-primary/10 text-primary">{s.modalidad}</Badge>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                        {formData.cct && (
-                          <div className="mt-4 p-4 bg-white rounded-xl border border-primary/10 flex items-center gap-4 animate-in zoom-in-95">
-                            <div className="h-10 w-10 bg-emerald-50 text-emerald-600 flex items-center justify-center rounded-lg shadow-sm"><CheckCircle2 className="h-6 w-6" /></div>
-                            <div>
-                              <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p>
-                              <h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
-                          <Input className="h-11 rounded-lg bg-white border-slate-200 font-mono text-xs font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Oficina Regional</Label>
-                          <Select value={formData.oficinaRegionalAtencion} onValueChange={(val) => setFormData({...formData, oficinaRegionalAtencion: val})}>
-                              <SelectTrigger className="h-11 rounded-lg bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                              <SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={`off-item-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent>
-                          </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sección 2: Censo de Personal (Antigua pestaña asistentes) */}
+                {/* Sección: Censo de Personal */}
                 {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
                   <div className="space-y-6">
                     <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
@@ -517,17 +441,17 @@ export default function ProgramsPage() {
                   </div>
                 )}
 
-                {/* Sección 3: Diagnóstico Final (Ex-Auditoría Técnica parte baja) */}
+                {/* Sección: Diagnóstico Final */}
                 <div className="space-y-4 pt-6">
                   <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
                     <Info className="h-5 w-5 text-primary" />
-                    <h3 className="text-sm font-black uppercase text-primary">Diagnóstico y Observaciones Técnicas</h3>
+                    <h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3>
                   </div>
                   <Textarea 
                     className="min-h-[140px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" 
                     value={formData.observaciones} 
                     onChange={e => setFormData({...formData, observaciones: e.target.value})} 
-                    placeholder="Detalle técnico de la auditoría o acuerdos del módulo..." 
+                    placeholder="Detalle técnico o acuerdos del módulo..." 
                   />
                 </div>
               </div>
