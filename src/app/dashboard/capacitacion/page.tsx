@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -37,7 +36,7 @@ type AssistantEntry = {
 }
 
 const FUNCIONES = [
-  "ADMINISTRATIVO",
+  "PAAE",
   "DOCENTE",
   "DIRECTIVO",
   "JEFE DE ENSEÑANZA",
@@ -54,7 +53,7 @@ export default function TrainingPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedSedeInfo, setSelectedSedeInfo] = useState<SchoolInfo | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [officeFilter, setOfficeFilter] = useState('all')
+  const [officeFilter, setOficinaFilter] = useState('all')
   
   const initialCourseData = {
     id: '',
@@ -623,7 +622,7 @@ export default function TrainingPage() {
            </div>
 
            <div className="flex items-center gap-4 w-full md:w-auto">
-              <Select value={officeFilter} onValueChange={setOfficeFilter}>
+              <Select value={officeFilter} onValueChange={setOficinaFilter}>
                 <SelectTrigger className="h-12 w-full md:w-[240px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
                    <div className="flex items-center gap-2">
                      <Building2 className="h-4 w-4 text-primary" />
@@ -676,7 +675,7 @@ export default function TrainingPage() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-black text-xs text-slate-700 uppercase tracking-tight">{record.cursoNombre}</span>
-                        <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{record.cursoGrupo}</span>
+                        <span className="text-[9px] font-muted-foreground font-black uppercase tracking-widest mt-1">{record.cursoGrupo}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-bold uppercase text-slate-600">
@@ -689,7 +688,7 @@ export default function TrainingPage() {
                     <TableCell>
                        <div className="flex flex-col">
                           <span className="text-[10px] font-black text-primary">{record.asistenteCCT}</span>
-                          <span className="text-[9px] text-muted-foreground font-bold truncate max-w-[180px] uppercase">{record.asistenteNombreCT}</span>
+                          <span className="text-[9px] font-muted-foreground font-bold truncate max-w-[180px] uppercase">{record.asistenteNombreCT}</span>
                        </div>
                     </TableCell>
                     <TableCell className="text-center">

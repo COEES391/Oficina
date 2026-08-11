@@ -34,7 +34,7 @@ type ParticipantInfo = {
 }
 
 const FUNCIONES = [
-  "ADMINISTRATIVO",
+  "PAAE",
   "DOCENTE",
   "DIRECTIVO",
   "JEFE DE ENSEÑANZA",
@@ -376,8 +376,7 @@ export default function BaseParticipantesPage() {
                        <Users className="h-10 w-10 text-slate-300" />
                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros de participantes disponibles</p>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </TableRow>
               )}
             </TableBody>
           </Table>
