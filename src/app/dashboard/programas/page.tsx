@@ -14,7 +14,6 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
-import Image from 'next/image'
 import { 
   PlusCircle, 
   Pencil, 
@@ -22,22 +21,22 @@ import {
   Target,
   Search,
   Trash2,
-  Monitor,
   School,
   CalendarDays,
   Headset,
-  Copy,
-  ExternalLink,
-  Check,
-  QrCode,
+  CheckCircle2,
+  Tag,
   Info,
-  Globe,
   Building2,
-  Share2,
   Users,
   Plus,
   Mail,
-  UserCheck
+  FilePlus,
+  FileBox,
+  FileText,
+  FileSpreadsheet,
+  Download,
+  Printer
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -88,40 +87,18 @@ export default function ProgramsPage() {
   const [officeFilter, setOficinaFilter] = useState('all')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [pendingCount, setPendingRequestsCount] = useState(0)
-  const [copied, setCopied] = useState(false)
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
-    latitud: '', longitud: '',
-    tecnicos: '',
-    tipoIncidencia: 'mantenimiento',
     oficinaRegionalAtencion: '',
-    numeroOficio: '',
-    alumnosBeneficiados: 0,
-    docentesBeneficiados: 0,
-    serviciosMC: 0,
-    serviciosMP: 0,
-    reportPdf: '',
-    evidencePhotos: [],
     mantenimientoDetalle: {
       equipoTecnologico: '',
       equipoTecnologicoOtro: '',
       equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
       fallaIdentificada: '',
       servicioRealizado: ''
-    },
-    edusatDetalle: {
-      micropak: [],
-      antena: [],
-      decodificadorAcciones: [],
-      cableado: [],
-      preventivo: [],
-      numCensal: '',
-      numSerie: '',
-      calidadSeñal: '',
-      materiales: Array(8).fill({ material: '', cantidad: '', actividades: '' })
     }
   }
 
@@ -153,16 +130,6 @@ export default function ProgramsPage() {
     window.addEventListener('storage', handleStorageEvent)
     return () => window.removeEventListener('storage', handleStorageEvent)
   }, [syncData])
-
-  const publicUrl = mounted ? `${window.location.origin}/helpdesk` : '';
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicUrl)}`;
-
-  const copyPublicLink = () => {
-    navigator.clipboard.writeText(publicUrl)
-    setCopied(true)
-    toast({ title: "Enlace Copiado", description: "La liga de la Mesa de Ayuda está lista para compartir." })
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const handleCctChange = (val: string) => {
     const cleanVal = val.toUpperCase();
@@ -211,7 +178,6 @@ export default function ProgramsPage() {
     const updated = [...(formData.asistentes || [])];
     updated[index] = { ...updated[index], [field]: value };
     
-    // Si cambia el CCT, autocompletar Valle si es posible
     if (field === 'cct' && value.length === 10) {
       const school = schoolsDirectory.find(s => s.cct.toUpperCase() === value.toUpperCase());
       if (school) {
@@ -262,7 +228,10 @@ export default function ProgramsPage() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
-          <div className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-accent" /><p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p></div>
+          <div className="flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5 text-accent" />
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
@@ -294,10 +263,22 @@ export default function ProgramsPage() {
           <div className="flex flex-col md:flex-row items-end gap-4">
              <div className="relative flex-1 w-full min-w-0">
                 <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
-                <div className="relative"><Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /></div>
+                <div className="relative">
+                  <Input placeholder="CCT O PLANTEL..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase shadow-inner w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                </div>
              </div>
              <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                <div className="space-y-1 min-w-[200px]"><Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label><Select value={officeFilter} onValueChange={setOficinaFilter}><SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger><SelectContent><SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>{REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1 min-w-[200px]">
+                  <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Oficina Regional</Label>
+                  <Select value={officeFilter} onValueChange={setOficinaFilter}>
+                    <SelectTrigger className="h-10 w-full rounded-xl border-primary/5 bg-white text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="TODAS" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-[9px] font-black uppercase">TODAS LAS OFICINAS</SelectItem>
+                      {REGIONAL_OFFICES.map(off => <SelectItem key={`off-filter-${off}`} value={off} className="text-[9px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
              </div>
           </div>
         </Card>
@@ -328,7 +309,12 @@ export default function ProgramsPage() {
                     <TableCell>
                        <Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge>
                     </TableCell>
-                    <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button><button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button></div></TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => { setFormData({...initialFormState, ...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => { setRecords(records.filter(r => r.id !== rec.id)); localStorage.setItem('programs_full_v24', JSON.stringify(records.filter(r => r.id !== rec.id))); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 )) : (<TableRow><TableCell colSpan={10} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
               </TableBody>
@@ -350,8 +336,15 @@ export default function ProgramsPage() {
                 Administración de datos técnicos y auditoría para el módulo institucional.
              </DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue="auditoria" className="flex-1 flex flex-col overflow-hidden">
-             <div className="px-6 border-b bg-white"><TabsList className="bg-transparent h-12 p-0 gap-8"><TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Auditoría Técnica</TabsTrigger>{(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (<TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Censo de Personal</TabsTrigger>)}</TabsList></div>
+          <Tabs defaultValue={(activeTab === 'Cuentas Institucionales' || activeTab === 'Biblioteca Digital' || activeTab === 'ATRES') ? 'asistentes' : 'auditoria'} className="flex-1 flex flex-col overflow-hidden">
+             <div className="px-6 border-b bg-white">
+               <TabsList className="bg-transparent h-12 p-0 gap-8">
+                 {(activeTab === 'Biblioteca Digital' || activeTab === 'Cuentas Institucionales' || activeTab === 'ATRES') && (
+                   <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Censo de Personal</TabsTrigger>
+                 )}
+                 <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary px-2 py-4 text-xs font-black uppercase tracking-wider">Auditoría Técnica</TabsTrigger>
+               </TabsList>
+             </div>
              
              <div className="flex-1 overflow-hidden">
                 <TabsContent value="auditoria" className="h-full m-0 p-6">
@@ -416,9 +409,9 @@ export default function ProgramsPage() {
                                   <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
                                   <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
                                   <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
-                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo (Prefijo)</TableHead>
-                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
+                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
                                   <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
+                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
                                   <TableHead className="min-w-[100px] text-[9px] font-black uppercase text-center">Valle</TableHead>
                                   <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
                                   <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
@@ -457,22 +450,22 @@ export default function ProgramsPage() {
                                         </div>
                                      </TableCell>
                                      <TableCell className="p-2">
-                                        <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
-                                           <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
-                                              <SelectValue />
-                                           </SelectTrigger>
-                                           <SelectContent className="rounded-xl">
-                                              {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
-                                           </SelectContent>
-                                        </Select>
-                                     </TableCell>
-                                     <TableCell className="p-2">
                                         <Select value={ast.funcion} onValueChange={v => updateAssistantField(idx, 'funcion', v)}>
                                            <SelectTrigger className="h-9 text-[10px] font-bold uppercase">
                                               <SelectValue placeholder="FUNCIÓN..." />
                                            </SelectTrigger>
                                            <SelectContent className="rounded-xl">
                                               {FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}
+                                           </SelectContent>
+                                        </Select>
+                                     </TableCell>
+                                     <TableCell className="p-2">
+                                        <Select value={ast.dominio} onValueChange={v => updateAssistantField(idx, 'dominio', v)}>
+                                           <SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200">
+                                              <SelectValue />
+                                           </SelectTrigger>
+                                           <SelectContent className="rounded-xl">
+                                              {DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}
                                            </SelectContent>
                                         </Select>
                                      </TableCell>
