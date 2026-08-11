@@ -317,7 +317,7 @@ export default function BaseParticipantesPage() {
                 <TableHead className="text-[10px] font-black uppercase">RFC / CURP</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Función / Puesto</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[200px]">CCT de Adscripción</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                <TableHead className="text-[10px] font-bold text-slate-500 uppercase">Municipio</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -376,7 +376,8 @@ export default function BaseParticipantesPage() {
                        <Users className="h-10 w-10 text-slate-300" />
                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros de participantes disponibles</p>
                     </div>
-                  </TableRow>
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
