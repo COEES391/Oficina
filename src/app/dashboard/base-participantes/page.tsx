@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory } from "@/lib/schools-directory"
-import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2, Fingerprint } from "lucide-react"
+import { Search, UserPlus, Users, Pencil, Trash2, School, Mail, BadgeCheck, Building2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 type ParticipantInfo = {
@@ -314,7 +314,8 @@ export default function BaseParticipantesPage() {
               <TableRow>
                 <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre Completo</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">RFC / CURP</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">RFC</TableHead>
+                <TableHead className="text-[10px] font-black uppercase">CURP</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Función / Puesto</TableHead>
                 <TableHead className="text-[10px] font-black uppercase min-w-[200px]">CCT de Adscripción</TableHead>
                 <TableHead className="text-[10px] font-bold text-slate-500 uppercase">Municipio</TableHead>
@@ -323,7 +324,7 @@ export default function BaseParticipantesPage() {
             </TableHeader>
             <TableBody>
               {filteredParticipants.length > 0 ? filteredParticipants.map((p, idx) => (
-                <TableRow key={p.id} className="hover:bg-slate-50 transition-colors group">
+                <TableRow key={`${p.id}-${idx}`} className="hover:bg-slate-50 transition-colors group">
                   <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -339,10 +340,10 @@ export default function BaseParticipantesPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-mono font-black text-[9px] text-primary">{p.rfc}</span>
-                      <span className="font-mono font-bold text-[8px] text-accent">{p.curp}</span>
-                    </div>
+                    <span className="font-mono font-black text-[9px] text-primary">{p.rfc}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono font-bold text-[9px] text-accent">{p.curp}</span>
                   </TableCell>
                   <TableCell>
                      <Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-none">
@@ -371,7 +372,7 @@ export default function BaseParticipantesPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-24 opacity-30">
+                  <TableCell colSpan={8} className="text-center py-24 opacity-30">
                     <div className="flex flex-col items-center gap-3">
                        <Users className="h-10 w-10 text-slate-300" />
                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros de participantes disponibles</p>
