@@ -13,6 +13,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
 import { schoolsDirectory } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
+import Image from 'next/image'
 import { 
   PlusCircle, 
   Pencil, 
@@ -35,7 +36,9 @@ import {
   User,
   History,
   Circle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  QrCode,
+  Copy
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -79,6 +82,60 @@ const ESTATUS_OPCIONES = [
   "INACTIVA",
   "SUSPENDIDA"
 ]
+
+// Componente para mostrar el acceso externo (Liga y QR)
+function HelpDeskAccessCard() {
+  const [origin, setOrigin] = useState('')
+  const { toast } = useToast()
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
+  if (!origin) return null
+
+  return (
+    <Card className="executive-card p-6 bg-[#9f2241] text-white border-none shadow-2xl relative overflow-hidden group">
+      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+        <QrCode className="h-32 w-32" />
+      </div>
+      <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+        <div className="h-32 w-32 bg-white p-2 rounded-2xl shadow-2xl flex items-center justify-center shrink-0">
+          <div className="relative h-28 w-28">
+            <Image 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${origin}/helpdesk`} 
+              alt="QR Mesa de Ayuda" 
+              fill
+              className="rounded-lg"
+            />
+          </div>
+        </div>
+        <div className="flex-1 space-y-4 text-center md:text-left">
+          <div>
+            <h3 className="text-xl font-black uppercase tracking-tight">Vínculo de Atención para Usuarios</h3>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mt-1">
+              PROPORCIONE ESTE ENLACE O QR A DOCENTES Y COORDINADORES PARA QUE PUEDAN ACCEDER A LA MESA DE AYUDA DESDE CUALQUIER EQUIPO.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 flex-1 w-full sm:w-auto overflow-hidden">
+              <p className="text-[10px] font-mono font-black truncate">{origin}/helpdesk</p>
+            </div>
+            <Button 
+              onClick={() => {
+                navigator.clipboard.writeText(`${origin}/helpdesk`);
+                toast({ title: "Enlace Copiado", description: "El vínculo ha sido copiado al portapapeles." });
+              }}
+              className="bg-[#B38E5D] hover:bg-[#a67d4a] text-white font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-xl transition-all"
+            >
+              <Copy className="h-4 w-4 mr-2" /> Copiar Enlace Oficial
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -364,6 +421,13 @@ export default function ProgramsPage() {
            )}
         </div>
       </Card>
+
+      {/* Tarjeta de acceso público y QR para ATRES */}
+      {activeTab === 'ATRES' && (
+        <div className="mt-4 animate-in slide-in-from-top-4 duration-500">
+          <HelpDeskAccessCard />
+        </div>
+      )}
 
       <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
         <div className="overflow-x-auto w-full">
