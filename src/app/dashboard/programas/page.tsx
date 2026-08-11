@@ -34,12 +34,14 @@ import {
   FileBox,
   User,
   History,
-  Circle
+  Circle,
+  FileSpreadsheet
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import { format } from 'date-fns'
+import * as XLSX from 'xlsx'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -226,6 +228,48 @@ export default function ProgramsPage() {
     return filteredRecords;
   }, [filteredRecords, isCensoTab]);
 
+  const downloadExcel = () => {
+    if (displayRows.length === 0) {
+      toast({ variant: "destructive", title: "Sin datos", description: "No hay registros para exportar." })
+      return
+    }
+
+    let dataToExport: any[] = [];
+
+    if (isCensoTab) {
+      dataToExport = displayRows.map((row: any) => ({
+        'Nombre del Usuario': row.nombreUsuario,
+        'CCT': row.cct,
+        'Correo': row.correo,
+        'Dominio': row.dominio,
+        'Función': row.funcion,
+        'Valle': row.valle,
+        'Departamento': row.departamento,
+        'Fecha Registro': row.parentRecord.date
+      }));
+    } else {
+      dataToExport = filteredRecords.map((rec: ProgramStatus) => ({
+        'ID/Folio': rec.id,
+        'CCT': rec.cct,
+        'Nombre del Plantel': rec.schoolName,
+        'Municipio': rec.municipio,
+        'Valle': rec.valle,
+        'Estatus': rec.status,
+        'Fecha': rec.date,
+        'Observaciones': rec.observaciones
+      }));
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte_COEES");
+    
+    const fileName = `Reporte_${activeTab.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    
+    toast({ title: "Exportación Exitosa", description: "El reporte se ha descargado correctamente." })
+  };
+
   if (!mounted) return null
 
   return (
@@ -247,6 +291,13 @@ export default function ProgramsPage() {
               </Button>
             </div>
           )}
+          <Button 
+            onClick={downloadExcel} 
+            variant="outline" 
+            className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md flex-1 sm:flex-none"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Exportar a Excel
+          </Button>
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md flex-1 sm:flex-none" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
