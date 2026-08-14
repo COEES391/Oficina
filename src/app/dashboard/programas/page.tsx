@@ -53,7 +53,10 @@ import {
   Copy,
   PieChart,
   LayoutDashboard,
-  CheckSquare
+  CheckSquare,
+  ChevronRight,
+  TrendingUp,
+  ClipboardCheck
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -403,53 +406,6 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      {isBibliotecaTab && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top-4 duration-700">
-           <Card className="executive-card p-6 border-l-8 border-l-primary flex flex-col justify-center">
-              <div className="flex justify-between items-start mb-4">
-                 <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Atención Biblioteca Digital</p>
-                    <h3 className="text-3xl font-black text-slate-800">{filteredRecords.length} <span className="text-xs text-slate-400">Escuelas</span></h3>
-                 </div>
-                 <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                    <LayoutDashboard className="h-6 w-6" />
-                 </div>
-              </div>
-              <div className="space-y-2">
-                 <div className="flex justify-between text-[8px] font-black uppercase">
-                    <span>Avance Meta 2026</span>
-                    <span>{Math.min(100, Math.round((filteredRecords.length / 150) * 100))}%</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${Math.min(100, (filteredRecords.length / 150) * 100)}%` }} />
-                 </div>
-              </div>
-           </Card>
-
-           <Card className="executive-card md:col-span-2 p-4">
-              <div className="flex items-center gap-3 mb-4 px-2">
-                 <CheckSquare className="h-5 w-5 text-accent" />
-                 <h4 className="text-[11px] font-black uppercase text-primary tracking-widest">Avance de Fases por Centro de Trabajo</h4>
-              </div>
-              <div className="h-[180px] w-full">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardData}>
-                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                       <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                       <Bar dataKey="progreso" radius={[4, 4, 0, 0]} barSize={30}>
-                          {dashboardData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.progreso === 100 ? '#621132' : '#B38E5D'} />
-                          ))}
-                       </Bar>
-                    </BarChart>
-                 </ResponsiveContainer>
-              </div>
-           </Card>
-        </div>
-      )}
-
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
         <div className="flex flex-col md:flex-row items-end gap-4">
            <div className="flex-1 w-full space-y-1">
@@ -473,90 +429,188 @@ export default function ProgramsPage() {
 
       {activeTab === 'ATRES' && <HelpDeskAccessCard />}
 
-      <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
-        <div className="overflow-x-auto w-full">
-          <Table className="w-full">
-            <TableHeader className="bg-slate-50 border-b">
-               <TableRow className="h-12">
-                  <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
-                  {isCensoTab ? (
-                    <>
-                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[180px]">Usuario</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[140px]">Correo / Dominio</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">Función</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[90px]">Valle</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[130px]">Departamento</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
-                    </>
-                  ) : isBibliotecaTab ? (
-                    <>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Nombre del Plantel</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary text-center">Fases</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary text-center">Avance %</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary text-center">Equipos</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary text-center">Personal</TableHead>
-                    </>
-                  ) : (
-                    <>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
-                    </>
-                  )}
-                  <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-24">Acción</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayRows.length > 0 ? displayRows.map((row, idx) => {
-                if (isCensoTab) {
-                  return (
-                    <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
-                      <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                      <TableCell className="font-black text-[10px] text-slate-700 uppercase">{row.nombreUsuario}</TableCell>
-                      <TableCell className="font-black text-[10px] text-primary tracking-tight font-mono">{row.cct}</TableCell>
-                      <TableCell><div className="flex flex-col"><span className="text-[9px] font-bold text-slate-600">{row.correo}</span><span className="text-[8px] font-black text-accent uppercase">@{row.dominio}</span></div></TableCell>
-                      <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200">{row.funcion}</Badge></TableCell>
-                      <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
-                      <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
-                      <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase", row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}>{row.estatus || 'ACTIVA'}</Badge></TableCell>
-                      <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
-                    </TableRow>
-                  );
-                }
-                
-                if (isBibliotecaTab) {
+      {isBibliotecaTab ? (
+        <div className="space-y-6 animate-in slide-in-from-top-4 duration-700">
+           {/* Dashboard Matriz Superior */}
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="executive-card p-6 border-l-8 border-l-primary flex flex-col justify-center">
+                 <div className="flex justify-between items-start mb-4">
+                    <div className="space-y-1">
+                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Supervisión Biblioteca Digital</p>
+                       <h3 className="text-3xl font-black text-slate-800">{filteredRecords.length} <span className="text-xs text-slate-400">Escuelas</span></h3>
+                    </div>
+                    <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
+                       <ClipboardCheck className="h-6 w-6" />
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <div className="flex justify-between text-[8px] font-black uppercase">
+                       <span>Avance Meta 2026</span>
+                       <span>{Math.min(100, Math.round((filteredRecords.length / 150) * 100))}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                       <div className="h-full bg-primary" style={{ width: `${Math.min(100, (filteredRecords.length / 150) * 100)}%` }} />
+                    </div>
+                 </div>
+              </Card>
+
+              <Card className="executive-card md:col-span-3 p-4">
+                 <div className="flex items-center gap-3 mb-4 px-2">
+                    <TrendingUp className="h-5 w-5 text-accent" />
+                    <h4 className="text-[11px] font-black uppercase text-primary tracking-widest">Avance Comparativo por Centro de Trabajo</h4>
+                 </div>
+                 <div className="h-[140px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={dashboardData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
+                          <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
+                          <Bar dataKey="progreso" radius={[4, 4, 0, 0]} barSize={25}>
+                             {dashboardData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.progreso === 100 ? '#621132' : '#B38E5D'} />
+                             ))}
+                          </Bar>
+                       </BarChart>
+                    </ResponsiveContainer>
+                 </div>
+              </Card>
+           </div>
+
+           {/* Matriz de Seguimiento Estilo Excel (Imagen Referencia) */}
+           <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
+              <div className="bg-primary p-4 flex items-center justify-between">
+                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
+                    <LayoutDashboard className="h-5 w-5 text-accent" /> BD Supervisión Escolar COEES 2026
+                 </h3>
+                 <Badge className="bg-white/20 text-white border-none font-black text-[9px]">VISTA MATRICIAL ACTIVA</Badge>
+              </div>
+              <div className="overflow-x-auto">
+                 <Table className="border-collapse">
+                    <TableHeader>
+                       <TableRow className="bg-slate-50 border-b-2 border-slate-200">
+                          <TableHead className="min-w-[320px] font-black uppercase text-[10px] text-slate-800 bg-slate-100/50 sticky left-0 z-20 border-r-2 shadow-r">Fases / Indicadores Técnicos</TableHead>
+                          {filteredRecords.map((rec, idx) => (
+                            <TableHead key={`head-${rec.cct}-${idx}`} className="min-w-[140px] text-center border-l border-slate-100">
+                               <div className="flex flex-col items-center gap-1 py-2">
+                                  <span className={cn("text-[11px] font-black", rec.progress === 100 ? "text-emerald-600" : "text-primary")}>{rec.progress}%</span>
+                                  <span className="text-[10px] font-mono font-black text-slate-700 tracking-tighter">{rec.cct}</span>
+                                  <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all mt-1">
+                                     <Pencil className="h-3 w-3" />
+                                  </button>
+                               </div>
+                            </TableHead>
+                          ))}
+                          {filteredRecords.length === 0 && <TableHead className="p-8 text-center italic text-slate-400 text-xs">Sin datos para la matriz</TableHead>}
+                       </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                       {BIBLIOTECA_FASES.map((fase) => (
+                         <TableRow key={fase.id} className="hover:bg-slate-50/50 border-b border-slate-50 h-12">
+                            <TableCell className="bg-slate-50/80 font-bold text-[10px] text-slate-600 uppercase pl-6 sticky left-0 z-10 border-r shadow-r">
+                               {fase.label}
+                            </TableCell>
+                            {filteredRecords.map((rec, idx) => (
+                              <TableCell key={`cell-${fase.id}-${rec.cct}-${idx}`} className="text-center border-l border-slate-50">
+                                 <div className="flex justify-center">
+                                    {(rec.bibliotecaFases as any)?.[fase.id] ? (
+                                      <div className="h-5 w-5 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                                         <CheckCircle2 className="h-3.5 w-3.5" />
+                                      </div>
+                                    ) : (
+                                      <div className="h-5 w-5 rounded-lg border-2 border-slate-100 bg-slate-50/50" />
+                                    )}
+                                 </div>
+                              </TableCell>
+                            ))}
+                         </TableRow>
+                       ))}
+                       
+                       {/* Campos Inferiores de Estadística */}
+                       <TableRow className="bg-primary/[0.02] border-t-2 border-primary/10">
+                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Fecha de Atención</TableCell>
+                          {filteredRecords.map((rec, idx) => (
+                            <TableCell key={`date-${idx}`} className="text-center font-bold text-[9px] text-slate-500 border-l border-slate-50 uppercase">{rec.date}</TableCell>
+                          ))}
+                       </TableRow>
+                       <TableRow className="bg-primary/[0.02]">
+                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Total de Personal Capacitado</TableCell>
+                          {filteredRecords.map((rec, idx) => (
+                            <TableCell key={`pers-${idx}`} className="text-center font-black text-xs text-slate-700 border-l border-slate-50">{rec.bibliotecaFases?.personalCapacitado || 0}</TableCell>
+                          ))}
+                       </TableRow>
+                       <TableRow className="bg-primary/[0.02]">
+                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Total de Equipos Habilitados</TableCell>
+                          {filteredRecords.map((rec, idx) => (
+                            <TableCell key={`equip-${idx}`} className="text-center font-black text-xs text-slate-700 border-l border-slate-50">{rec.bibliotecaFases?.equiposHabilitados || 0}</TableCell>
+                          ))}
+                       </TableRow>
+                    </TableBody>
+                 </Table>
+              </div>
+           </Card>
+        </div>
+      ) : (
+        <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
+          <div className="overflow-x-auto w-full">
+            <Table className="w-full">
+              <TableHeader className="bg-slate-50 border-b">
+                 <TableRow className="h-12">
+                    <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
+                    {isCensoTab ? (
+                      <>
+                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[180px]">Usuario</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[140px]">Correo / Dominio</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">Función</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[90px]">Valle</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[130px]">Departamento</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                      </>
+                    ) : (
+                      <>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                      </>
+                    )}
+                    <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-24">Acción</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayRows.length > 0 ? displayRows.map((row, idx) => {
+                  if (isCensoTab) {
+                    return (
+                      <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
+                        <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                        <TableCell className="font-black text-[10px] text-slate-700 uppercase">{row.nombreUsuario}</TableCell>
+                        <TableCell className="font-black text-[10px] text-primary tracking-tight font-mono">{row.cct}</TableCell>
+                        <TableCell><div className="flex flex-col"><span className="text-[9px] font-bold text-slate-600">{row.correo}</span><span className="text-[8px] font-black text-accent uppercase">@{row.dominio}</span></div></TableCell>
+                        <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200">{row.funcion}</Badge></TableCell>
+                        <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
+                        <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
+                        <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase", row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}>{row.estatus || 'ACTIVA'}</Badge></TableCell>
+                        <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
+                      </TableRow>
+                    );
+                  }
+                  
                   const rec = row as ProgramStatus;
                   return (
-                    <TableRow key={`lib-${rec.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-16 group">
+                    <TableRow key={`${rec.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
                       <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                      <TableCell className="font-black text-[10px] text-primary font-mono">{rec.cct}</TableCell>
-                      <TableCell><div className="flex flex-col"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[200px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-slate-400 uppercase">{rec.municipio}</span></div></TableCell>
-                      <TableCell className="text-center"><div className="flex justify-center gap-0.5">{[1,2,3,4,5,6,7].map(f => <div key={`f-${f}`} className={cn("h-3 w-3 rounded-sm border", (rec.bibliotecaFases as any)?.[`fase${f}`] ? "bg-emerald-500 border-emerald-600" : "bg-slate-100 border-slate-200")} />)}</div></TableCell>
-                      <TableCell className="text-center"><Badge className={cn("text-[10px] font-black", rec.progress === 100 ? "bg-emerald-600" : "bg-primary")}>{rec.progress}%</Badge></TableCell>
-                      <TableCell className="text-center font-black text-xs text-slate-600">{rec.bibliotecaFases?.equiposHabilitados || 0}</TableCell>
-                      <TableCell className="text-center font-black text-xs text-slate-600">{rec.bibliotecaFases?.personalCapacitado || 0}</TableCell>
-                      <TableCell className="text-right pr-6"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></TableCell>
+                      <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
+                      <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
+                      <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
+                      <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
                     </TableRow>
                   );
-                }
-
-                const rec = row as ProgramStatus;
-                return (
-                  <TableRow key={`${rec.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
-                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                    <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
-                    <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
-                    <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
-                    <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
-                  </TableRow>
-                );
-              }) : (<TableRow><TableCell colSpan={12} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+                }) : (<TableRow><TableCell colSpan={12} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
@@ -574,7 +628,7 @@ export default function ProgramsPage() {
           
           <div className="flex-1 overflow-hidden bg-white">
             <ScrollArea className="h-full">
-              <div className="p-8 space-y-8">
+              <div className="p-8 space-y-6">
                 {/* Identificación del Plantel (Universal) */}
                 <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4">
                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
@@ -610,7 +664,7 @@ export default function ProgramsPage() {
                 </div>
 
                 {isBibliotecaTab ? (
-                  <div className="space-y-8 animate-in fade-in duration-500">
+                  <div className="space-y-6 animate-in fade-in duration-500">
                     <div className="space-y-4">
                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
                           <CheckSquare className="h-5 w-5 text-primary" />
