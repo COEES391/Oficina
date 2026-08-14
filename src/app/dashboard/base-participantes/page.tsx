@@ -106,7 +106,12 @@ export default function BaseParticipantesPage() {
   useEffect(() => {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('participants_master_v1') || '[]')
-    setParticipants(stored)
+    // Migración para registros antiguos que no tengan el campo certificates
+    const migrated = stored.map((p: any) => ({
+      ...p,
+      certificates: p.certificates || []
+    }))
+    setParticipants(migrated)
   }, [])
 
   const filteredParticipants = useMemo(() => {
@@ -161,7 +166,7 @@ export default function BaseParticipantesPage() {
       }
       setFormData(prev => ({
         ...prev,
-        certificates: [...prev.certificates, newCert]
+        certificates: [...(prev.certificates || []), newCert]
       }))
       toast({ title: "Constancia añadida al expediente" })
     }
@@ -172,7 +177,7 @@ export default function BaseParticipantesPage() {
   const removeCertificate = (id: string) => {
     setFormData(prev => ({
       ...prev,
-      certificates: prev.certificates.filter(c => c.id !== id)
+      certificates: (prev.certificates || []).filter(c => c.id !== id)
     }))
   }
 
@@ -192,7 +197,8 @@ export default function BaseParticipantesPage() {
       materno: formData.materno.toUpperCase(),
       email: (formData.email || '').toLowerCase(),
       cursosAcreditados: (formData.cursosAcreditados || '').toUpperCase(),
-      cicloEscolar: (formData.cicloEscolar || '').toUpperCase()
+      cicloEscolar: (formData.cicloEscolar || '').toUpperCase(),
+      certificates: formData.certificates || []
     }
 
     let updated;
@@ -419,7 +425,7 @@ export default function BaseParticipantesPage() {
                     </div>
 
                     <div className="space-y-2">
-                       {formData.certificates.map((cert) => (
+                       {(formData.certificates || []).map((cert) => (
                          <div key={cert.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm animate-in slide-in-from-left">
                             <div className="flex items-center gap-3">
                                <div className="h-8 w-8 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center shadow-inner">
@@ -435,7 +441,7 @@ export default function BaseParticipantesPage() {
                             </Button>
                          </div>
                        ))}
-                       {formData.certificates.length === 0 && (
+                       {(!formData.certificates || formData.certificates.length === 0) && (
                          <p className="text-[9px] font-bold text-slate-400 uppercase text-center py-4 border rounded-xl border-slate-50 italic">Sin documentos adjuntos en este expediente</p>
                        )}
                     </div>
@@ -604,11 +610,11 @@ export default function BaseParticipantesPage() {
           <div className="flex-1 flex overflow-hidden">
              <div className="w-[300px] border-r bg-slate-50 flex flex-col shrink-0">
                 <div className="p-4 bg-slate-100/50 border-b flex items-center justify-between">
-                   <span className="text-[10px] font-black uppercase text-slate-500">Documentos ({selectedParticipant?.certificates.length || 0})</span>
+                   <span className="text-[10px] font-black uppercase text-slate-500">Documentos ({selectedParticipant?.certificates?.length || 0})</span>
                 </div>
                 <ScrollArea className="flex-1">
                    <div className="p-3 space-y-2">
-                      {selectedParticipant?.certificates.map((cert) => (
+                      {selectedParticipant?.certificates?.map((cert) => (
                         <button key={cert.id} onClick={() => setPdfToPreview(cert.data)} className={cn("w-full p-4 rounded-2xl border text-left transition-all group relative overflow-hidden", pdfToPreview === cert.data ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-white hover:shadow-md")}>
                            <div className="flex items-center gap-3 relative z-10">
                               <FileText className={cn("h-5 w-5", pdfToPreview === cert.data ? "text-white" : "text-rose-500")} />
