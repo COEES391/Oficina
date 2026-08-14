@@ -31,7 +31,8 @@ import {
   Eye, 
   Printer, 
   FilePlus2,
-  FolderOpen
+  FolderOpen,
+  AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -106,7 +107,6 @@ export default function BaseParticipantesPage() {
   useEffect(() => {
     setMounted(true)
     const stored = JSON.parse(localStorage.getItem('participants_master_v1') || '[]')
-    // Migración para registros antiguos que no tengan el campo certificates
     const migrated = stored.map((p: any) => ({
       ...p,
       certificates: p.certificates || []
@@ -152,7 +152,11 @@ export default function BaseParticipantesPage() {
     if (!file) return
 
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "El PDF excede los 400KB recomendados." })
+      toast({ 
+        variant: "destructive", 
+        title: "Archivo demasiado pesado", 
+        description: "El PDF excede los 400KB permitidos para seguridad del sistema." 
+      })
       return
     }
 
@@ -216,7 +220,7 @@ export default function BaseParticipantesPage() {
       setEditingId(null)
       toast({ title: initialFormState.id ? "Participante Actualizado" : "Participante Registrado" })
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño de los PDFs. Intente reduciendo el peso de los archivos." })
+      toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño acumulado de los PDFs. Intente reduciendo el peso de los archivos." })
     }
   }
 
@@ -412,16 +416,22 @@ export default function BaseParticipantesPage() {
                   </div>
 
                   <div className="md:col-span-2 space-y-4">
-                    <div className="p-6 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 group hover:border-primary/40 transition-all">
+                    <div className="p-6 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 group hover:border-primary/40 transition-all relative">
                        <div className="h-12 w-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                           <Upload className="h-6 w-6" />
                        </div>
                        <div className="text-center">
                           <p className="text-[10px] font-black uppercase text-slate-700">Subir Constancia en PDF</p>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Haga clic o arrastre el archivo aquí (Máx. 400KB)</p>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center justify-center gap-2">
+                             Haga clic o arrastre el archivo aquí <Badge variant="outline" className="bg-rose-50 text-rose-600 border-rose-200 text-[7px] px-1 h-4">MÁX. 400KB</Badge>
+                          </p>
                        </div>
                        <Input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-                       <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase">Seleccionar Archivo</Button>
+                       <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar Archivo</Button>
+                       
+                       <div className="absolute top-2 right-2 opacity-30">
+                          <AlertCircle className="h-4 w-4 text-primary" />
+                       </div>
                     </div>
 
                     <div className="space-y-2">
