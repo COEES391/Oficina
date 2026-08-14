@@ -231,6 +231,13 @@ export default function TrainingPage() {
     toast({ title: "Registro exitoso", description: `Se han guardado ${newRecords.length} registros de capacitación.` })
   }
 
+  const handleDelete = (id: string) => {
+    const updated = records.filter(r => r.id !== id)
+    setRecords(updated)
+    localStorage.setItem('training_records_full', JSON.stringify(updated))
+    toast({ title: "Registro eliminado", description: "El asistente ha sido retirado de la base de capacitación." })
+  }
+
   const resetForm = () => {
     const today = format(new Date(), 'yyyy-MM-dd')
     setCourseData({
@@ -697,9 +704,14 @@ export default function TrainingPage() {
                        </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <Button variant="ghost" size="icon" className="h-10 w-10 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" onClick={() => handleEdit(record)}>
-                        <Pencil className="h-5 w-5" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" onClick={() => handleEdit(record)}>
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" onClick={() => handleDelete(record.id)}>
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )) : (

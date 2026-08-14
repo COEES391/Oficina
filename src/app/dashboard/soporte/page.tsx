@@ -25,6 +25,7 @@ import {
   Search, 
   Eye, 
   Pencil, 
+  Trash2,
   School, 
   Tv, 
   Radio, 
@@ -379,6 +380,13 @@ export default function SupportPage() {
     resetForm()
     setEditingTicketId(null)
     toast({ title: "Cambios guardados con éxito" })
+  }
+
+  const handleDeleteTicket = (id: string) => {
+    const updated = tickets.filter(t => t.id !== id);
+    setTickets(updated);
+    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    toast({ title: "Registro eliminado", description: "El reporte de soporte ha sido purgado." });
   }
 
   const resetForm = () => {
@@ -1396,9 +1404,14 @@ export default function SupportPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-right pr-8">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
-                     <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" onClick={() => handleDeleteTicket(t.id)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

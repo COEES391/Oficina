@@ -22,6 +22,7 @@ import {
   Building2, 
   ClipboardList, 
   Pencil, 
+  Trash2,
   User, 
   Phone, 
   FileSpreadsheet,
@@ -119,6 +120,13 @@ export default function BaseCctPage() {
     setFormData(school)
     setEditingId(`${school.cct}-${school.turno}`)
     setIsDialogOpen(true)
+  }
+
+  const handleDelete = (cct: string, turno: string) => {
+    const updated = schools.filter(s => !(s.cct === cct && s.turno === turno))
+    setSchools(updated)
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated))
+    toast({ title: "Registro eliminado", description: `Se ha quitado ${cct} de la base maestra.` })
   }
 
   const handleEditFromResults = (school: SchoolInfo) => {
@@ -436,9 +444,14 @@ export default function BaseCctPage() {
                   <TableCell className="text-center font-black text-primary text-[11px]">{s.alumnos}</TableCell>
                   <TableCell className="text-center font-black text-slate-600 text-[11px]">{s.grupos}</TableCell>
                   <TableCell className="text-right pr-8">
-                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
-                        <Pencil className="h-4 w-4" />
-                     </Button>
+                     <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" onClick={() => handleDelete(s.cct, s.turno)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                     </div>
                   </TableCell>
                 </TableRow>
               )) : (
@@ -530,9 +543,14 @@ export default function BaseCctPage() {
                               </div>
                            </TableCell>
                            <TableCell className="text-right pr-10">
-                              <Button variant="outline" size="sm" onClick={() => handleEditFromResults(s)} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
-                                 <Pencil className="h-3.5 w-3.5" /> Editar Plantel
-                              </Button>
+                              <div className="flex justify-end gap-1.5">
+                                 <Button variant="outline" size="sm" onClick={() => handleEditFromResults(s)} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
+                                    <Pencil className="h-3.5 w-3.5" /> Editar
+                                 </Button>
+                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(s.cct, s.turno)} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                    <Trash2 className="h-4 w-4" />
+                                 </Button>
+                              </div>
                            </TableCell>
                         </TableRow>
                       ))}
