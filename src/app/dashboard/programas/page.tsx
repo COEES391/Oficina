@@ -297,6 +297,28 @@ export default function ProgramsPage() {
     toast({ title: "Cambios guardados correctamente" })
   }
 
+  const handleDeleteRow = (recordId: string, assistantIndex?: number) => {
+    const updated = records.map(r => {
+      if (r.id === recordId) {
+        if (assistantIndex !== undefined && r.asistentes) {
+          const newAsistentes = r.asistentes.filter((_, idx) => idx !== assistantIndex);
+          return { ...r, asistentes: newAsistentes };
+        }
+        return null; // Registro completo marcado para eliminación
+      }
+      return r;
+    }).filter(r => {
+      if (r === null) return false;
+      // Si eliminamos todos los usuarios de un registro de censo, eliminamos el registro
+      if (['Cuentas Institucionales', 'ATRES'].includes(r.name) && r.asistentes && r.asistentes.length === 0) return false;
+      return true;
+    }) as ProgramStatus[];
+
+    setRecords(updated);
+    localStorage.setItem('programs_full_v24', JSON.stringify(updated));
+    toast({ title: "Registro eliminado con éxito" });
+  };
+
   const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES'].includes(activeTab), [activeTab]);
   const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
 
@@ -330,8 +352,8 @@ export default function ProgramsPage() {
       const flatList: any[] = [];
       filteredRecords.forEach(rec => {
         if (rec.asistentes && rec.asistentes.length > 0) {
-          rec.asistentes.forEach(ast => {
-            flatList.push({ ...ast, id: rec.id, parentRecord: rec });
+          rec.asistentes.forEach((ast, astIdx) => {
+            flatList.push({ ...ast, id: rec.id, parentRecord: rec, assistantIndex: astIdx });
           });
         }
       });
@@ -488,9 +510,14 @@ export default function ProgramsPage() {
                                <div className="flex flex-col items-center gap-1 py-2">
                                   <span className={cn("text-[11px] font-black", rec.progress === 100 ? "text-emerald-600" : "text-primary")}>{rec.progress}%</span>
                                   <span className="text-[10px] font-mono font-black text-slate-700 tracking-tighter">{rec.cct}</span>
-                                  <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all mt-1">
-                                     <Pencil className="h-3.5 w-3.5" />
-                                  </button>
+                                  <div className="flex gap-1 mt-1">
+                                    <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all">
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button onClick={() => handleDeleteRow(rec.id)} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:border-rose-600 transition-all">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
                                </div>
                             </TableHead>
                           ))}
@@ -579,7 +606,16 @@ export default function ProgramsPage() {
                         <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
                         <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
                         <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase", row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}>{row.estatus || 'ACTIVA'}</Badge></TableCell>
-                        <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
+                        <TableCell className="text-right pr-6">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => handleDeleteRow(row.id, row.assistantIndex)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     );
                   }
@@ -590,7 +626,16 @@ export default function ProgramsPage() {
                       <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
                       <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
                       <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
-                      <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button></div></TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => handleDeleteRow(rec.id)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 }) : (<TableRow><TableCell colSpan={12} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
