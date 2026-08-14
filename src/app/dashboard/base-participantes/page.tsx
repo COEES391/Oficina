@@ -155,7 +155,7 @@ export default function BaseParticipantesPage() {
       toast({ 
         variant: "destructive", 
         title: "Archivo demasiado pesado", 
-        description: "El PDF excede los 400KB permitidos para seguridad del sistema." 
+        description: "El PDF excede los 400KB permitidos por seguridad." 
       })
       return
     }
@@ -422,9 +422,9 @@ export default function BaseParticipantesPage() {
                        </div>
                        <div className="text-center">
                           <p className="text-[10px] font-black uppercase text-slate-700">Subir Constancia en PDF</p>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center justify-center gap-2">
+                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center justify-center gap-2">
                              Haga clic o arrastre el archivo aquí <Badge variant="outline" className="bg-rose-50 text-rose-600 border-rose-200 text-[7px] px-1 h-4">MÁX. 400KB</Badge>
-                          </p>
+                          </div>
                        </div>
                        <Input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar Archivo</Button>
