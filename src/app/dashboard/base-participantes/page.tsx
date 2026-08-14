@@ -214,7 +214,7 @@ export default function BaseParticipantesPage() {
       setIsDialogOpen(false)
       setFormData(initialFormState)
       setEditingId(null)
-      toast({ title: editingId ? "Participante Actualizado" : "Participante Registrado" })
+      toast({ title: initialFormState.id ? "Participante Actualizado" : "Participante Registrado" })
     } catch (e) {
       toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño de los PDFs. Intente reduciendo el peso de los archivos." })
     }
@@ -594,15 +594,15 @@ export default function BaseParticipantesPage() {
       {/* Visor de Expediente Digital */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[3rem] h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-slate-900 text-white shrink-0 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><FolderOpen className="h-24 w-24" /></div>
+          <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><FolderOpen className="h-24 w-24 text-white" /></div>
              <div className="space-y-1 relative z-10">
                 <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4">
                   Expediente Digital: {selectedParticipant?.nombres} {selectedParticipant?.paterno}
                 </DialogTitle>
                 <div className="flex items-center gap-3 mt-2">
-                   <Badge className="bg-primary text-white font-mono text-[10px] px-3">{selectedParticipant?.rfc}</Badge>
-                   <Badge variant="outline" className="border-white/20 text-white/60 font-black uppercase text-[9px]">{selectedParticipant?.cct}</Badge>
+                   <Badge className="bg-white/20 text-white font-mono text-[10px] px-3 border-none">{selectedParticipant?.rfc}</Badge>
+                   <Badge variant="outline" className="border-white/20 text-white/80 font-black uppercase text-[9px]">{selectedParticipant?.cct}</Badge>
                 </div>
              </div>
           </DialogHeader>
@@ -617,7 +617,7 @@ export default function BaseParticipantesPage() {
                       {selectedParticipant?.certificates?.map((cert) => (
                         <button key={cert.id} onClick={() => setPdfToPreview(cert.data)} className={cn("w-full p-4 rounded-2xl border text-left transition-all group relative overflow-hidden", pdfToPreview === cert.data ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-white hover:shadow-md")}>
                            <div className="flex items-center gap-3 relative z-10">
-                              <FileText className={cn("h-5 w-5", pdfToPreview === cert.data ? "text-white" : "text-rose-500")} />
+                              <FileText className={cn("h-5 w-5", pdfToPreview === cert.data ? "text-white" : "text-primary")} />
                               <div className="flex flex-col min-w-0">
                                  <span className={cn("text-[10px] font-black uppercase truncate", pdfToPreview === cert.data ? "text-white" : "text-slate-700")}>{cert.name}</span>
                                  <span className={cn("text-[8px] font-bold", pdfToPreview === cert.data ? "text-white/60" : "text-slate-400")}>{cert.date}</span>
@@ -636,7 +636,7 @@ export default function BaseParticipantesPage() {
                 </ScrollArea>
              </div>
 
-             <div className="flex-1 bg-slate-800 p-2 flex flex-col relative">
+             <div className="flex-1 bg-primary/5 p-2 flex flex-col relative">
                 {pdfToPreview ? (
                   <>
                     <iframe src={pdfToPreview} className="w-full h-full rounded-2xl bg-white shadow-2xl border-none" title="PDF Preview" />
@@ -651,16 +651,16 @@ export default function BaseParticipantesPage() {
                   </>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                     <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center animate-pulse"><Eye className="h-10 w-10 text-white/10" /></div>
-                     <p className="text-white/30 text-[11px] font-black uppercase tracking-[0.3em]">Seleccione un documento del listado <br /> para su visualización técnica</p>
+                     <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center animate-pulse"><Eye className="h-10 w-10 text-primary/10" /></div>
+                     <p className="text-primary/30 text-[11px] font-black uppercase tracking-[0.3em]">Seleccione un documento del listado <br /> para su visualización técnica</p>
                   </div>
                 )}
              </div>
           </div>
 
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-between items-center">
-             <p className="text-[9px] font-black uppercase text-slate-400">Dirección de Educación Secundaria • Servicios de Apoyo</p>
-             <Button variant="outline" onClick={() => { setIsViewerOpen(false); setPdfToPreview(null); }} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-300">Cerrar Visor</Button>
+             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Dirección de Educación Secundaria • Servicios de Apoyo</p>
+             <Button onClick={() => { setIsViewerOpen(false); setPdfToPreview(null); }} className="btn-institutional h-12 px-10 text-[10px] shadow-lg">Cerrar Visor</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
