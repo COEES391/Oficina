@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -14,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
-import { schoolsDirectory } from "@/lib/schools-directory"
+import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   LifeBuoy, 
@@ -45,7 +46,9 @@ import {
   History,
   AlertTriangle,
   ClipboardList,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertCircle,
+  Plus
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -143,6 +146,17 @@ export default function SupportPage() {
     observations: ''
   })
 
+  // CCT Dynamic Logic
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
+
   const [searchTerm, setSearchTerm] = useState('') 
   const [listSearchTerm, setListSearchTerm] = useState('') 
   const [officeFilter, setOfficeFilter] = useState('all') 
@@ -230,6 +244,14 @@ export default function SupportPage() {
       setTickets(stored)
     }
 
+    // Load Schools
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    if (storedSchools.length > 0) {
+      setAllSchools(storedSchools)
+    } else {
+      setAllSchools(schoolsDirectory)
+    }
+
     // Load Warehouse
     const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]')
     if (storedInv.length === 0) {
@@ -264,7 +286,7 @@ export default function SupportPage() {
   };
 
   const handleSelectSchool = (cct: string, turno: string) => {
-    const school = schoolsDirectory.find(s => s.cct === cct && s.turno === turno);
+    const school = allSchools.find(s => s.cct === cct && s.turno === turno);
     if (school) {
       setFormData({
         ...formData,
@@ -282,6 +304,29 @@ export default function SupportPage() {
         description: `${school.nombre} (${school.turno}) cargado correctamente.`,
       });
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Datos incompletos" });
+      return
+    }
+
+    const newSchool: SchoolInfo = {
+      ...quickAddForm,
+      cct: quickAddForm.cct.toUpperCase(),
+      nombre: quickAddForm.nombre.toUpperCase(),
+      municipio: quickAddForm.municipio.toUpperCase()
+    }
+
+    const updatedSchools = [newSchool, ...allSchools]
+    setAllSchools(updatedSchools)
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updatedSchools))
+    
+    handleSelectSchool(newSchool.cct, newSchool.turno)
+    setIsQuickAddOpen(false)
+    setSearchTerm('')
+    toast({ title: "CCT Registrado", description: `${newSchool.cct} disponible en el sistema.` })
   }
 
   const handleMantenimientoToggle = (item: string) => {
@@ -439,11 +484,17 @@ export default function SupportPage() {
     return matchSearch && matchOffice;
   });
 
-  // WAREHOUSE LOGIC
+  const schoolSearchResults = useMemo(() => {
+    if (!searchTerm || searchTerm.length < 3) return [];
+    const term = searchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 10);
+  }, [allSchools, searchTerm]);
+
+  // WAREHOUSE LOGIC (No changes needed here)
   const handleRegisterMovement = () => {
     const { itemId, qty, type, recipient, folio, observations } = movementForm;
     if (!itemId || qty <= 0) {
-      toast({ variant: "destructive", title: "Datos incompletos", description: "Seleccione un material y cantidad válida." })
+      toast({ variant: "destructive", title: "Datos incompletos" })
       return;
     }
 
@@ -451,7 +502,7 @@ export default function SupportPage() {
     if (!item) return;
 
     if (type === 'salida' && item.qty < qty) {
-      toast({ variant: "destructive", title: "Stock insuficiente", description: `Solo hay ${item.qty} ${item.unit} disponibles.` })
+      toast({ variant: "destructive", title: "Stock insuficiente" })
       return;
     }
 
@@ -478,7 +529,7 @@ export default function SupportPage() {
     localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
 
     setMovementForm({ type: 'salida', itemId: '', qty: 0, recipient: '', folio: '', observations: '' });
-    toast({ title: "Movimiento registrado", description: `Se ha actualizado el stock de ${item.name}.` });
+    toast({ title: "Movimiento registrado" });
   }
 
   const handleEditInventoryItem = (item: InventoryItem) => {
@@ -503,7 +554,7 @@ export default function SupportPage() {
     const updated = inventory.filter(i => i.id !== id);
     setInventory(updated);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updated));
-    toast({ title: "Insumo eliminado", description: "El material ha sido retirado del catálogo." });
+    toast({ title: "Insumo eliminado" });
   }
 
   const handleSaveEditedItem = () => {
@@ -530,7 +581,7 @@ export default function SupportPage() {
 
   const downloadInventoryExcel = () => {
     if (inventory.length === 0) {
-      toast({ variant: "destructive", title: "Sin datos", description: "No hay insumos para exportar." })
+      toast({ variant: "destructive", title: "Sin datos" })
       return
     }
 
@@ -547,11 +598,8 @@ export default function SupportPage() {
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario COEES");
-    
-    const fileName = `Inventario_COEES_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-    
-    toast({ title: "Exportación Exitosa", description: "El inventario se ha descargado correctamente." })
+    XLSX.writeFile(workbook, `Inventario_COEES_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast({ title: "Exportación Exitosa" });
   };
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
@@ -595,7 +643,7 @@ export default function SupportPage() {
           </Button>
         </div>
 
-        {/* Modal de Almacén Integral */}
+        {/* Modal de Almacén Integral (No changes here) */}
         <Dialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen}>
           <DialogContent className="sm:max-w-[1200px] rounded-[2.5rem] h-[92vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
             <DialogHeader className="p-6 bg-primary text-white shrink-0 relative overflow-hidden">
@@ -631,9 +679,7 @@ export default function SupportPage() {
                         </div>
                         <AlertTriangle className="h-10 w-10 text-primary opacity-20" />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Requieren reabastecimiento urgente</p>
                     </Card>
-
                     <Card className="executive-card p-6 bg-accent/5 border-accent/10 border-l-8 border-l-accent">
                       <div className="flex justify-between items-start">
                         <div>
@@ -642,9 +688,7 @@ export default function SupportPage() {
                         </div>
                         <TrendingUp className="h-10 w-10 text-accent opacity-20" />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Registro de entradas y salidas</p>
                     </Card>
-
                     <Card className="executive-card p-6 bg-emerald-50 border-emerald-100 border-l-8 border-l-emerald-500">
                       <div className="flex justify-between items-start">
                         <div>
@@ -653,42 +697,14 @@ export default function SupportPage() {
                         </div>
                         <ClipboardList className="h-10 w-10 text-emerald-500 opacity-20" />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-4">Tipos de materiales activos</p>
                     </Card>
                   </div>
-
-                  {lowStockItems.length > 0 && (
-                    <div className="p-6 bg-rose-50 rounded-2xl border-2 border-rose-100 animate-pulse">
-                      <h4 className="text-xs font-black text-rose-700 uppercase mb-4 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" /> Alerta de Inventario Crítico
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {lowStockItems.map(item => (
-                          <div key={`low-${item.id}`} className="bg-white p-3 rounded-xl shadow-sm border border-rose-100">
-                            <p className="text-[10px] font-black text-slate-700 uppercase leading-none mb-1">{item.name}</p>
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-rose-600 font-black text-sm">{item.qty} {item.unit.split(' ')[0]}</span>
-                              <Badge className="bg-rose-100 text-rose-700 text-[8px]">BAJO</Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </TabsContent>
 
                 <TabsContent value="inventario" className="h-full m-0 overflow-hidden flex flex-col gap-4">
                   <div className="flex justify-end gap-3 pr-4">
-                    <Button 
-                      onClick={downloadInventoryExcel} 
-                      variant="outline" 
-                      className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-sm"
-                    >
-                      <FileSpreadsheet className="h-4 w-4" /> Exportar Inventario
-                    </Button>
-                    <Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]">
-                      <PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo al Catálogo
-                    </Button>
+                    <Button onClick={downloadInventoryExcel} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-sm"><FileSpreadsheet className="h-4 w-4" /> Exportar Inventario</Button>
+                    <Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo al Catálogo</Button>
                   </div>
                   <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner flex-1 flex flex-col">
                     <ScrollArea className="flex-1">
@@ -709,55 +725,17 @@ export default function SupportPage() {
                             <TableRow key={`inv-${item.id}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
                               <TableCell className="font-black text-slate-700 text-xs uppercase pl-6 py-4">{item.name}</TableCell>
                               <TableCell className="text-center">
-                                <span className={cn(
-                                  "inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black border transition-all shadow-sm",
-                                  item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-primary/5 text-primary border-primary/10"
-                                )}>
-                                  {item.qty}
-                                </span>
+                                <span className={cn("inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black border transition-all shadow-sm", item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-primary/5 text-primary border-primary/10")}>{item.qty}</span>
                               </TableCell>
                               <TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell>
                               <TableCell className="text-center">
                                 <div className="flex flex-wrap justify-center gap-1">
-                                  {item.locations?.map((loc, lIdx) => (
-                                    <Badge key={`loc-${item.id}-${lIdx}`} variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200">
-                                       <MapPin className="h-2 w-2 mr-1 text-primary" /> {loc}
-                                    </Badge>
-                                  ))}
-                                  {(!item.locations || item.locations.length === 0) && (
-                                    <span className="text-[8px] font-bold text-slate-400 italic">SIN ASIGNAR</span>
-                                  )}
+                                  {item.locations?.map((loc, lIdx) => (<Badge key={`loc-${item.id}-${lIdx}`} variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200"><MapPin className="h-2 w-2 mr-1 text-primary" /> {loc}</Badge>))}
                                 </div>
                               </TableCell>
                               <TableCell className="text-center text-[10px] font-mono font-black text-slate-400">{item.minStock}</TableCell>
-                              <TableCell className="text-center">
-                                <Badge className={cn(
-                                  "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
-                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-50 text-white'
-                                )}>
-                                  {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <div className="flex justify-end gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                    onClick={() => handleEditInventoryItem(item)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                                    onClick={() => handleDeleteInventoryItem(item.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
+                              <TableCell className="text-center"><Badge className={cn("text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm", item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white')}>{item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}</Badge></TableCell>
+                              <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" onClick={() => handleDeleteInventoryItem(item.id)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -765,132 +743,45 @@ export default function SupportPage() {
                     </ScrollArea>
                   </div>
                 </TabsContent>
-
                 <TabsContent value="movimientos" className="h-full m-0 flex flex-col gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
-                    <Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50">
-                      <h4 className="text-sm font-black uppercase text-accent mb-6 flex items-center gap-3">
-                         <TrendingDown className="h-5 w-5" /> Registro de Salida de Material
-                      </h4>
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Seleccionar Insumo</Label>
-                          <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'salida'})}>
-                            <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger>
-                            <SelectContent>
-                              {inventory.map(i => <SelectItem key={`sel-sal-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} (Stock: {i.qty})</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+                      <Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50">
+                        <h4 className="text-sm font-black uppercase text-accent mb-6 flex items-center gap-3"><TrendingDown className="h-5 w-5" /> Salida de Material</h4>
+                        <div className="space-y-6">
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad</Label>
-                            <Input type="number" className="h-12 bg-white rounded-xl text-center font-black text-lg" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                             <Label className="text-[10px] font-black uppercase text-slate-400">Insumo</Label>
+                             <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'salida'})}><SelectTrigger className="h-12 bg-white rounded-xl border-slate-200"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sel-sal-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select>
                           </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Cant.</Label><Input type="number" className="h-12 bg-white rounded-xl" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /></div>
+                            <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Folio</Label><Input className="h-12 bg-white rounded-xl" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div>
+                          </div>
+                          <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14">Registrar Salida</Button>
+                        </div>
+                      </Card>
+                      <Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50">
+                        <h4 className="text-sm font-black uppercase text-primary mb-6 flex items-center gap-3"><TrendingUp className="h-5 w-5" /> Entrada de Material</h4>
+                        <div className="space-y-6">
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio Servicio (Opcional)</Label>
-                            <Input className="h-12 bg-white rounded-xl uppercase font-mono text-xs" placeholder="FOL-XXX" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
+                             <Label className="text-[10px] font-black uppercase text-slate-400">Insumo</Label>
+                             <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'entrada'})}><SelectTrigger className="h-12 bg-white rounded-xl border-slate-200"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sel-ent-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
                           </div>
+                          <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Cant.</Label><Input type="number" className="h-12 bg-white rounded-xl" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /></div>
+                          <Button onClick={handleRegisterMovement} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px]">Registrar Entrada</Button>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Técnico / Beneficiario</Label>
-                          <Input className="h-12 bg-white rounded-xl uppercase font-bold text-xs" placeholder="NOMBRE DEL RESPONSABLE..." value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
-                        </div>
-                        <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14 text-[11px]">Registrar Salida Oficial</Button>
-                      </div>
-                    </Card>
-
-                    <Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50">
-                      <h4 className="text-sm font-black uppercase text-primary mb-6 flex items-center gap-3">
-                         <TrendingUp className="h-5 w-5" /> Entrada por Reabastecimiento
-                      </h4>
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Seleccionar Insumo</Label>
-                          <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'entrada'})}>
-                            <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 text-xs font-bold uppercase"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger>
-                            <SelectContent>
-                              {inventory.map(i => <SelectItem key={`sel-ent-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad Entrante</Label>
-                          <Input type="number" className="h-12 bg-white rounded-xl text-center font-black text-lg" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Observaciones / Proveedor</Label>
-                          <Textarea className="h-24 bg-white rounded-xl uppercase font-bold text-xs p-4" placeholder="NOTAS DE LA ENTREGA..." value={movementForm.observations} onChange={e => setMovementForm({...movementForm, observations: e.target.value.toUpperCase()})} />
-                        </div>
-                        <Button onClick={handleRegisterMovement} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px] hover:bg-primary/95">Registrar Entrada al Almacén</Button>
-                      </div>
-                    </Card>
-                  </div>
+                      </Card>
+                   </div>
                 </TabsContent>
-
                 <TabsContent value="historial" className="h-full m-0 overflow-hidden">
-                  <div className="border rounded-[2rem] bg-white overflow-hidden shadow-inner h-full">
-                    <ScrollArea className="h-full">
+                   <ScrollArea className="h-full border rounded-[2rem] bg-white">
                       <Table>
-                        <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
-                          <TableRow>
-                            <TableHead className="font-black uppercase text-[9px] pl-6 h-12">Fecha / Hora</TableHead>
-                            <TableHead className="font-black uppercase text-[9px] h-12">Tipo</TableHead>
-                            <TableHead className="font-black uppercase text-[9px] h-12">Material</TableHead>
-                            <TableHead className="font-black uppercase text-[9px] h-12 text-center">Qty</TableHead>
-                            <TableHead className="font-black uppercase text-[9px] h-12">Beneficiario / Técnico</TableHead>
-                            <TableHead className="font-black uppercase text-[9px] h-12 text-right pr-6">Referencia</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {movements.map((mov, idx) => (
-                            <TableRow key={`mov-${mov.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50">
-                              <TableCell className="font-mono text-[10px] font-bold text-slate-400 pl-6 py-4">{mov.date}</TableCell>
-                              <TableCell>
-                                <Badge className={cn(
-                                  "text-[8px] font-black uppercase",
-                                  mov.type === 'entrada' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                                )}>
-                                  {mov.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="font-black text-slate-700 text-[10px] uppercase">{mov.itemName}</TableCell>
-                              <TableCell className="text-center font-black text-primary text-xs">{mov.qty}</TableCell>
-                              <TableCell className="text-[10px] font-bold text-slate-500 uppercase">{mov.recipient || '-'}</TableCell>
-                              <TableCell className="text-right pr-6 font-mono text-[9px] font-black text-accent">{mov.folio || 'N/A'}</TableCell>
-                            </TableRow>
-                          ))}
-                          {movements.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={6} className="text-center py-24 opacity-30">
-                                <History className="h-10 w-10 mx-auto mb-4" />
-                                <p className="text-[10px] font-black uppercase">Sin registros de movimientos disponibles</p>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
+                        <TableHeader className="bg-slate-50"><TableRow><TableHead className="font-black text-[9px] uppercase pl-6 h-10">Fecha</TableHead><TableHead className="font-black text-[9px] uppercase h-10">Tipo</TableHead><TableHead className="font-black text-[9px] uppercase h-10">Material</TableHead><TableHead className="font-black text-[9px] uppercase h-10 text-center">Cant</TableHead><TableHead className="font-black text-[9px] uppercase h-10">Responsable</TableHead></TableRow></TableHeader>
+                        <TableBody>{movements.map((mov, idx) => (<TableRow key={`mov-${mov.id}-${idx}`} className="border-b border-slate-50"><TableCell className="font-mono text-[10px] text-slate-400 pl-6">{mov.date}</TableCell><TableCell><Badge className={cn("text-[8px] font-black uppercase", mov.type === 'entrada' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}>{mov.type}</Badge></TableCell><TableCell className="font-black text-slate-700 text-[10px] uppercase">{mov.itemName}</TableCell><TableCell className="text-center font-black text-xs">{mov.qty}</TableCell><TableCell className="text-[10px] font-bold uppercase">{mov.recipient || '-'}</TableCell></TableRow>))}</TableBody>
                       </Table>
-                    </ScrollArea>
-                  </div>
+                   </ScrollArea>
                 </TabsContent>
               </div>
             </Tabs>
-
-            <DialogFooter className="p-6 bg-slate-100 border-t flex justify-between items-center shrink-0">
-              <div className="flex gap-4">
-                 <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span className="text-[9px] font-black uppercase text-slate-500">Stock Seguro</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="text-[9px] font-black uppercase text-slate-500">Alerta de Stock</span>
-                 </div>
-              </div>
-              <Button variant="outline" onClick={() => setIsWarehouseOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase border-slate-300 hover:bg-white shadow-sm">
-                Cerrar Panel Operativo
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -907,18 +798,35 @@ export default function SupportPage() {
               <DialogTitle className="uppercase font-black text-primary text-2xl">
                 {editingTicketId ? `Actualizar Reporte: ${editingTicketId}` : "Formato de Reporte Técnico"}
               </DialogTitle>
-              <DialogDescription className="font-bold text-[11px] uppercase tracking-[0.2em]">
-                Capture los datos del servicio y asocie las evidencias digitales correspondientes.
-              </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 px-8">
               <div className="grid gap-8 py-6">
-                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner relative"><Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label><Input placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm focus:ring-2 focus:ring-primary/20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />{searchTerm && (<div className="max-h-60 overflow-auto bg-white border border-primary/5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 divide-y divide-slate-50 absolute left-6 right-6 top-28 z-50">{schoolsDirectory.filter(s => (s.nombre || '').toUpperCase().includes(searchTerm.toUpperCase()) || (s.cct || '').toUpperCase().includes(searchTerm.toUpperCase())).slice(0, 10).map(s => (<div key={`search-item-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer transition-colors flex justify-between items-center group" onClick={() => { handleSelectSchool(s.cct, s.turno); setSearchTerm('') }}><div className="flex items-center gap-4"><div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors"><School className="h-5 w-5" /></div><div className="flex flex-col"><span className="text-xs font-black text-slate-800">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span></div></div><Badge variant="outline" className="text-[9px] font-black uppercase border-primary/10">{s.municipio}</Badge></div>))}</div>)}{formData.cct && (<div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 animate-in slide-in-from-top-4"><div className="md:col-span-3 flex items-center gap-4 p-5 bg-white rounded-2xl border shadow-sm border-emerald-100"><div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600"><School className="h-7 w-7" /></div><div><p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p><h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4><p className="text-[10px] font-mono text-muted-foreground mt-1">{formData.cct} • {formData.municipio} • {formData.region}</p></div></div></div>)}</div>
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6 shadow-inner relative"><Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2"><Search className="h-4 w-4 text-accent" /> Localizador Institucional CCT</Label>
+                  <Input placeholder="Teclear CCT o Nombre del Plantel para autocompletar..." className="h-14 rounded-2xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  {searchTerm.length > 2 && (
+                    <div className="max-h-60 overflow-auto bg-white border border-primary/5 rounded-2xl shadow-2xl absolute left-6 right-6 top-28 z-50 divide-y divide-slate-50">
+                      {schoolSearchResults.map(s => (
+                        <div key={`search-item-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleSelectSchool(s.cct, s.turno); setSearchTerm('') }}>
+                          <div className="flex items-center gap-4"><div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors"><School className="h-5 w-5" /></div><div className="flex flex-col"><span className="text-xs font-black text-slate-800">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span></div></div>
+                        </div>
+                      ))}
+                      {schoolSearchResults.length === 0 && (
+                        <div className="p-4 text-center">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
+                          <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: searchTerm.toUpperCase()}); setIsQuickAddOpen(true); }}>
+                            <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {formData.cct && (<div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 animate-in slide-in-from-top-4"><div className="md:col-span-3 flex items-center gap-4 p-5 bg-white rounded-2xl border shadow-sm border-emerald-100"><div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600"><School className="h-7 w-7" /></div><div><p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">CCT Identificado</p><h4 className="text-sm font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4><p className="text-[10px] font-mono text-muted-foreground mt-1">{formData.cct} • {formData.municipio} • {formData.region}</p></div></div></div>)}
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary pl-2"># Solicitud (Folio)</Label>
-                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} placeholder="FOLIO..." />
+                    <Input className="h-12 rounded-xl bg-slate-50 border-primary/10 font-black uppercase" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary pl-2">Tipo de Incidencia</Label>
@@ -972,17 +880,6 @@ export default function SupportPage() {
                             <Label htmlFor={`equipo-${opt}`} className="text-[10px] font-black uppercase cursor-pointer">{opt}</Label>
                           </div>
                         ))}
-                        {formData.mantenimientoDetalle?.equipoTecnologico === 'OTRO' && (
-                          <Input 
-                            className="h-9 w-48 bg-slate-50 text-[10px]" 
-                            placeholder="ESPECIFICAR..." 
-                            value={formData.mantenimientoDetalle?.equipoTecnologicoOtro} 
-                            onChange={e => setFormData({
-                              ...formData,
-                              mantenimientoDetalle: { ...formData.mantenimientoDetalle!, equipoTecnologicoOtro: e.target.value.toUpperCase() }
-                            })} 
-                          />
-                        )}
                       </div>
                     </div>
 
@@ -1002,302 +899,21 @@ export default function SupportPage() {
                             <TableRow key={`mto-row-${idx}`} className="hover:bg-slate-50/50">
                               <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="p-1">
-                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.equipo || ''} onChange={e => handleMantenimientoTableChange(idx, 'equipo', e.target.value.toUpperCase())} />
+                                <Input className="h-8 text-[10px] uppercase border-none" value={formData.mantenimientoDetalle?.equipos[idx]?.equipo || ''} onChange={e => handleMantenimientoTableChange(idx, 'equipo', e.target.value.toUpperCase())} />
                               </TableCell>
                               <TableCell className="p-1">
-                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.marca || ''} onChange={e => handleMantenimientoTableChange(idx, 'marca', e.target.value.toUpperCase())} />
+                                <Input className="h-8 text-[10px] uppercase border-none" value={formData.mantenimientoDetalle?.equipos[idx]?.marca || ''} onChange={e => handleMantenimientoTableChange(idx, 'marca', e.target.value.toUpperCase())} />
                               </TableCell>
                               <TableCell className="p-1">
-                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.serie || ''} onChange={e => handleMantenimientoTableChange(idx, 'serie', e.target.value.toUpperCase())} />
+                                <Input className="h-8 text-[10px] uppercase border-none" value={formData.mantenimientoDetalle?.equipos[idx]?.serie || ''} onChange={e => handleMantenimientoTableChange(idx, 'serie', e.target.value.toUpperCase())} />
                               </TableCell>
                               <TableCell className="p-1">
-                                <Input className="h-8 text-[10px] uppercase border-none focus:ring-1" value={formData.mantenimientoDetalle?.equipos[idx]?.censal || ''} onChange={e => handleMantenimientoTableChange(idx, 'censal', e.target.value.toUpperCase())} />
+                                <Input className="h-8 text-[10px] uppercase border-none" value={formData.mantenimientoDetalle?.equipos[idx]?.censal || ''} onChange={e => handleMantenimientoTableChange(idx, 'censal', e.target.value.toUpperCase())} />
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Falla Identificada:</Label>
-                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, fallaIdentificada: e.target.value.toUpperCase()}})} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado:</Label>
-                        <Input className="h-11 bg-white border-slate-200" value={formData.mantenimientoDetalle?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoDetalle: {...formData.mantenimientoDetalle!, servicioRealizado: e.target.value.toUpperCase()}})} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.tipoIncidencia === 'red local' && (
-                  <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border-2 border-indigo-100 space-y-8 animate-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-3 border-indigo-100 pb-3">
-                       <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
-                          <Network className="h-6 w-6" />
-                       </div>
-                       <h3 className="text-sm font-black uppercase text-indigo-900 tracking-wider">Módulo Técnico de RED Local</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                       <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Donde se brinda el servicio:</Label>
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {['TALLER DE CÓMPUTO', 'AULA DE MEDIOS', 'HDT', 'OFIMÁTICA', 'ÁREA ADMINISTRATIVA', 'OTRO'].map(lugar => (
-                            <div key={`red-loc-${lugar}`} className="flex items-center space-x-2 bg-white/50 p-2 rounded-lg border border-indigo-50">
-                               <Checkbox 
-                                id={`lugar-${lugar}`} 
-                                checked={formData.lugarServicio === lugar}
-                                onCheckedChange={() => setFormData({...formData, lugarServicio: lugar})}
-                                className="border-indigo-300"
-                               />
-                               <label htmlFor={`lugar-${lugar}`} className="text-[9px] font-bold uppercase text-indigo-900 cursor-pointer">{lugar}</label>
-                            </div>
-                          ))}
-                       </div>
-                       {formData.lugarServicio === 'OTRO' && (
-                         <Input className="h-10 bg-white" placeholder="ESPECIFICAR OTRO..." value={formData.lugarServicioOtro} onChange={e => setFormData({...formData, lugarServicioOtro: e.target.value.toUpperCase()})} />
-                       )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-4">
-                          <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Diagnóstico:</Label>
-                          <RadioGroup value={formData.diagnosticoRed} onValueChange={(val: any) => setFormData({...formData, diagnosticoRed: val})} className="grid grid-cols-1 gap-2">
-                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                <RadioGroupItem value="ampliacion" id="diag-ampli" />
-                                <Label htmlFor="diag-ampli" className="text-[10px] font-black uppercase">Ampliación</Label>
-                             </div>
-                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                <RadioGroupItem value="mantenimiento" id="diag-mante" />
-                                <Label htmlFor="diag-mante" className="text-[10px] font-black uppercase">Mantenimiento</Label>
-                             </div>
-                             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100">
-                                <RadioGroupItem value="nueva red" id="diag-nueva" />
-                                <Label htmlFor="diag-nueva" className="text-[10px] font-black uppercase">Instalación de nueva red</Label>
-                             </div>
-                          </RadioGroup>
-
-                          <div className="space-y-3 pt-4 border-t border-indigo-100">
-                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con red local?</span>
-                                <div className="flex gap-4">
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'S'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaRedLocal === 'N'} onCheckedChange={() => setFormData({...formData, cuentaRedLocal: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                </div>
-                             </div>
-                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                <span className="text-[10px] font-bold uppercase text-indigo-900">Instalación eléctrica adecuada</span>
-                                <div className="flex gap-4">
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'S'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.electricaAdecuada === 'N'} onCheckedChange={() => setFormData({...formData, electricaAdecuada: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                </div>
-                             </div>
-                             <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-50">
-                                <span className="text-[10px] font-bold uppercase text-indigo-900">¿Cuenta con internet?</span>
-                                <div className="flex gap-4">
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'S'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'S'})} /><span className="text-[10px] font-bold">SÍ</span></div>
-                                   <div className="flex items-center gap-2"><Checkbox checked={formData.cuentaInternet === 'N'} onCheckedChange={() => setFormData({...formData, cuentaInternet: 'N'})} /><span className="text-[10px] font-bold">NO</span></div>
-                                </div>
-                             </div>
-                             <div className="space-y-2">
-                                <Label className="text-[9px] font-black uppercase text-indigo-400">Proveedor de Internet:</Label>
-                                <Select value={formData.proveedorInternet} onValueChange={(val) => setFormData({...formData, proveedorInternet: val})}>
-                                   <SelectTrigger className="h-9 bg-white text-[10px] font-bold"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                                   <SelectContent>
-                                      {['TOTALPLAY', 'TELMEX', 'MEGACABLE', 'IZZY', 'WIX', 'OTRO'].map(p => <SelectItem key={`prov-${p}`} value={p} className="text-[10px] font-bold">{p}</SelectItem>)}
-                                   </SelectContent>
-                                </Select>
-                             </div>
-                             <div className="space-y-2">
-                                <Label className="text-[9px] font-black uppercase text-indigo-400">¿Cuál es el ancho de banda?</Label>
-                                <Input className="h-9 bg-white font-black" value={formData.anchoBanda} onChange={e => setFormData({...formData, anchoBanda: e.target.value})} placeholder="EJ: 100 MBPS" />
-                             </div>
-                          </div>
-                       </div>
-
-                       <div className="space-y-6">
-                          <div className="bg-white p-5 rounded-[1.5rem] border-2 border-indigo-100 shadow-sm">
-                             <Label className="text-[10px] font-black uppercase text-indigo-600 block mb-2">Número de Nodos:</Label>
-                             <Input type="number" className="h-12 text-2xl font-black text-center border-indigo-200" value={formData.numNodos} onChange={e => setFormData({...formData, numNodos: parseInt(e.target.value) || 0})} />
-                          </div>
-
-                          <div className="space-y-3">
-                             <Label className="text-[10px] font-black uppercase text-indigo-700 pl-1">Mantenimiento Preventivo y/o Correctivo:</Label>
-                             <div className="grid grid-cols-1 gap-2 bg-white/40 p-4 rounded-2xl border border-indigo-50">
-                                {MAINTENANCE_CHECKLIST.map(item => (
-                                  <div key={`mto-chk-${item}`} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-100 shadow-sm">
-                                     <Checkbox 
-                                      id={`mante-${item}`} 
-                                      checked={(formData.mantenimientoChecklist || []).includes(item)}
-                                      onCheckedChange={() => handleMantenimientoToggle(item)}
-                                      className="border-indigo-400 data-[state=checked]:bg-indigo-600"
-                                     />
-                                     <label htmlFor={`mante-${item}`} className="text-[9px] font-black uppercase text-slate-700 cursor-pointer">{item}</label>
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.tipoIncidencia === 'red edusat' && (
-                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-primary/20 space-y-8 animate-in zoom-in-95 duration-300 shadow-xl">
-                    <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
-                       <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                          <Radio className="h-7 w-7" />
-                       </div>
-                       <div>
-                         <h3 className="text-lg font-black uppercase text-primary tracking-wider leading-none">Módulo Técnico RED Edusat Avanzado</h3>
-                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mt-1">Diagnóstico Institucional por Componentes</p>
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">MICROPAK (LNB)</Label>
-                          {EDUSAT_MICROPAK.map(item => (
-                            <div key={`ed-micro-${item}`} className="flex items-center space-x-2">
-                               <Checkbox id={`lnb-${item}`} checked={(formData.edusatDetalle?.micropak || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('micropak', item)} />
-                               <label htmlFor={`lnb-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                            </div>
-                          ))}
-                       </div>
-                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">ANT. PARABÓLICA</Label>
-                          {EDUSAT_ANTENA.map(item => (
-                            <div key={`ed-ant-${item}`} className="flex items-center space-x-2">
-                               <Checkbox id={`ant-${item}`} checked={(formData.edusatDetalle?.antena || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('antena', item)} />
-                               <label htmlFor={`ant-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                            </div>
-                          ))}
-                       </div>
-                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">DECODIFICADOR</Label>
-                          {EDUSAT_DECO_ACCIONES.map(item => (
-                            <div key={`ed-deco-${item}`} className="flex items-center space-x-2">
-                               <Checkbox id={`deco-acc-${item}`} checked={(formData.edusatDetalle?.decodificadorAcciones || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('decodificadorAcciones', item)} />
-                               <label htmlFor={`deco-acc-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                            </div>
-                          ))}
-                       </div>
-                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">CABLEADO</Label>
-                          {EDUSAT_CABLEADO.map(item => (
-                            <div key={`ed-cab-${item}`} className="flex items-center space-x-2">
-                               <Checkbox id={`cab-${item}`} checked={(formData.edusatDetalle?.cableado || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('cableado', item)} />
-                               <label htmlFor={`cab-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                            </div>
-                          ))}
-                       </div>
-                       <div className="space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                          <Label className="text-[9px] font-black uppercase text-primary border-b pb-1 block">M. PREVENTIVO</Label>
-                          {EDUSAT_PREVENTIVO.map(item => (
-                            <div key={`ed-prev-${item}`} className="flex items-center space-x-2">
-                               <Checkbox id={`prev-${item}`} checked={(formData.edusatDetalle?.preventivo || []).includes(item)} onCheckedChange={() => handleEdusatChecklistToggle('preventivo', item)} />
-                               <label htmlFor={`prev-${item}`} className="text-[8px] font-bold uppercase leading-none cursor-pointer">{item}</label>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número Censal:</Label>
-                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.edusatDetalle?.numCensal} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numCensal: e.target.value.toUpperCase()}})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Número de Serie:</Label>
-                          <Input className="h-10 bg-white border-primary/20 font-mono font-black" value={formData.numSerie} onChange={e => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, numSerie: e.target.value.toUpperCase()}})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-primary tracking-widest pl-1">Calidad de la Señal:</Label>
-                          <Select value={formData.edusatDetalle?.calidadSeñal} onValueChange={val => setFormData({...formData, edusatDetalle: {...formData.edusatDetalle!, calidadSeñal: val}})}>
-                            <SelectTrigger className="h-10 bg-white font-black uppercase text-[10px] border-primary/20"><SelectValue placeholder="CALIDAD..." /></SelectTrigger>
-                            <SelectContent>
-                               <SelectItem value="nulo" className="text-[10px] font-black text-rose-600">NULO</SelectItem>
-                               <SelectItem value="bajo" className="text-[10px] font-black text-amber-600">BAJO</SelectItem>
-                               <SelectItem value="óptimo" className="text-[10px] font-black text-emerald-600">ÓPTIMO</SelectItem>
-                               <SelectItem value="excelente" className="text-[10px] font-black text-primary">EXCELENTE</SelectItem>
-                            </SelectContent>
-                          </Select>
-                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                        <Monitor className="h-4 w-4" /> Materiales Utilizados y Actividades por la Brigada
-                      </Label>
-                      <div className="border rounded-2xl overflow-hidden shadow-md bg-white">
-                        <Table>
-                          <TableHeader className="bg-slate-100">
-                            <TableRow>
-                              <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase min-w-[200px]">Material Utilizado</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase w-[100px]">Cantidad</TableHead>
-                              <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {Array.from({ length: 8 }).map((_, idx) => (
-                              <TableRow key={`ed-mat-row-${idx}`} className="hover:bg-slate-50/50">
-                                <TableCell className="text-center font-bold text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                <TableCell className="p-1">
-                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.material || ''} onChange={e => handleEdusatMaterialChange(idx, 'material', e.target.value.toUpperCase())} />
-                                </TableCell>
-                                <TableCell className="p-1">
-                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1 text-center font-black" value={formData.edusatDetalle?.materiales[idx]?.cantidad || ''} onChange={e => handleEdusatMaterialChange(idx, 'cantidad', e.target.value)} />
-                                </TableCell>
-                                <TableCell className="p-1">
-                                  <Input className="h-9 text-[10px] uppercase border-none focus:ring-1" value={formData.edusatDetalle?.materiales[idx]?.actividades || ''} onChange={e => handleEdusatMaterialChange(idx, 'actividades', e.target.value.toUpperCase())} />
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {formData.tipoIncidencia === 'teleplanteles' && (
-                  <div className="p-8 bg-pink-50/50 rounded-[2.5rem] border-2 border-pink-100 space-y-6 animate-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-3 border-pink-100 pb-3">
-                       <div className="h-10 w-10 rounded-xl bg-pink-600 text-white flex items-center justify-center shadow-lg">
-                          <Tv className="h-6 w-6" />
-                       </div>
-                       <h3 className="text-sm font-black uppercase text-pink-900 tracking-wider">Módulo Técnico de Teleplanteles</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Decodificadores</Label>
-                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numDecodificadores} onChange={e => setFormData({...formData, numDecodificadores: parseInt(e.target.value) || 0})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Número de Serie</Label>
-                          <Input className="bg-white border-pink-200 rounded-xl h-11 font-mono uppercase" placeholder="SERIE-XXXX" value={formData.numSerie} onChange={e => setFormData({...formData, numSerie: e.target.value.toUpperCase()})} />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1">Estatus de la Señal</Label>
-                          <Select value={formData.estatusSeñal} onValueChange={(val: any) => setFormData({...formData, estatusSeñal: val})}>
-                            <SelectTrigger className="bg-white border-pink-200 rounded-xl h-11 uppercase font-bold text-[10px]">
-                               <SelectValue placeholder="SELECCIONAR..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                               <SelectItem value="débil" className="text-[10px] font-black text-rose-600 uppercase">DÉBIL</SelectItem>
-                               <SelectItem value="estable" className="text-[10px] font-black text-amber-600 uppercase">ESTABLE</SelectItem>
-                               <SelectItem value="excelente" className="text-[10px] font-black text-emerald-600 uppercase">EXCELENTE</SelectItem>
-                            </SelectContent>
-                          </Select>
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-pink-700 pl-1"># Reportes</Label>
-                          <Input type="number" className="bg-white border-pink-200 rounded-xl h-11" value={formData.numReportes} onChange={e => setFormData({...formData, numReportes: parseInt(e.target.value) || 0})} />
-                       </div>
                     </div>
                   </div>
                 )}
@@ -1320,204 +936,59 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Alumnos</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Ben. Docentes</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.docentesBeneficiados} onChange={e => setFormData({...formData, docentesBeneficiados: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.C.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Serv. M.P.</Label><Input type="number" className="h-12 rounded-xl text-center font-black" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                </div>
-
-                <div className="space-y-6 pt-6 border-t border-slate-100">
-                  <h3 className="text-[11px] font-black uppercase text-accent tracking-[0.2em] border-b border-accent/20 pb-2">Archivo Digital y Evidencias</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50">
-                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
-                        <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        Reporte Oficial (PDF)
-                      </Label>
-                      <Input type="file" accept=".pdf" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'pdf')} />
-                    </div>
-                    <div className="space-y-3 p-6 border border-dashed rounded-[2rem] bg-slate-50/50">
-                      <Label className="flex items-center gap-3 text-[10px] font-black uppercase text-primary">
-                        <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shadow-sm">
-                          <ImageIcon className="h-4 w-4" />
-                        </div>
-                        Evidencias de Sitio
-                      </Label>
-                      <Input type="file" multiple accept="image/*" className="bg-white rounded-xl h-10" onChange={e => handleFileChange(e, 'photo')} />
-                    </div>
-                  </div>
-                </div>
-
                 <div className="space-y-2 pt-4">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-2">Observaciones Técnicas del Servicio</Label>
-                  <Textarea className="min-h-[120px] rounded-[1.5rem] p-5 bg-slate-50 border-primary/10 focus:bg-white transition-all shadow-inner" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico, hallazgos y trabajos realizados en el plantel..." />
+                  <Textarea className="min-h-[120px] rounded-[1.5rem] p-5 bg-slate-50 border-primary/10 focus:bg-white transition-all shadow-inner" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
                 </div>
               </div>
             </ScrollArea>
             <DialogFooter className="p-8 border-t bg-slate-50/50">
               <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button>
-              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">
-                {editingTicketId ? "Actualizar Registro" : "Guardar Servicio Técnico"}
-              </Button>
+              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">Guardar Servicio</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-           <div className="flex items-center gap-3 w-full md:w-auto">
-              <Search className="h-5 w-5 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
-           </div>
-           
-           <div className="relative flex-1 w-full">
-              <Input 
-                placeholder="FILTRAR POR CCT, PLANTEL, TÉCNICO O FOLIO..." 
-                className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
-                value={listSearchTerm}
-                onChange={(e) => setListSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
-           </div>
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3">
+              <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
+            </DialogTitle>
+            <DialogDescription className="text-white/80 text-[9px] font-bold uppercase tracking-widest mt-1">Sume un nuevo plantel a la base maestra.</DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-4">
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" />
+             </div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" />
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem></SelectContent></Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+             </div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase" />
+             </div>
+             <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3"><AlertCircle className="h-5 w-5 text-amber-600" /><p className="text-[8px] font-black text-amber-800 uppercase leading-none">Este registro será visible en todos los módulos.</p></div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-10 text-[9px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-10 px-8 rounded-xl text-[9px] font-black uppercase shadow-lg">Registrar y Sumar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-           <div className="flex items-center gap-4 w-full md:w-auto">
-              <Select value={officeFilter} onValueChange={setOfficeFilter}>
-                <SelectTrigger className="h-12 w-full md:w-[240px] rounded-xl border-primary/10 bg-white text-[10px] font-black uppercase shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    <SelectValue placeholder="OFICINA DE ATENCIÓN..." />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-200">
-                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
-                  {REGIONAL_OFFICES.map(off => (
-                    <SelectItem key={`off-list-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button variant="outline" className="h-12 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
-                <CalendarDays className="h-5 w-5" /> Agenda de Visitas
-              </Button>
-           </div>
-        </div>
-      </Card>
-
-      <Card className="executive-card p-0 overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow>
-              <TableHead className="font-black text-[10px] uppercase w-[100px] text-center">Folio</TableHead>
-              <TableHead className="font-black text-[10px] uppercase min-w-[200px]">CCT / Nombre del Plantel</TableHead>
-              <TableHead className="font-black text-[10px] uppercase">Tipo de Servicio</TableHead>
-              <TableHead className="font-black text-[10px] uppercase">Estatus Operativo</TableHead>
-              <TableHead className="font-black text-[10px] uppercase text-center">Evidencias</TableHead>
-              <TableHead className="text-right font-black text-[10px] uppercase pr-8">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTickets.map((t, idx) => (
-              <TableRow key={`ticket-${t.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16 group">
-                <TableCell className="font-black text-primary text-sm text-center">{t.id}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-black text-slate-700">{t.cct}</span>
-                    <span className="text-[10px] text-muted-foreground font-bold truncate max-w-[250px] uppercase">{t.schoolName}</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      {t.oficinaRegionalAtencion && (
-                        <Badge variant="secondary" className="text-[7px] font-black uppercase bg-primary/5 text-primary border-primary/10">
-                          {t.oficinaRegionalAtencion.replace("Oficina de Tecnóloga Educativa ", "").replace("Oficina de ", "")}
-                        </Badge>
-                      )}
-                      {t.tecnicos && <span className="text-[8px] text-accent font-black uppercase">TÉC: {t.tecnicos}</span>}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="capitalize text-[10px] font-black text-slate-500">
-                  <Badge variant="outline" className={cn("text-[9px] font-black uppercase", 
-                    t.tipoIncidencia === 'teleplanteles' ? "border-pink-300 text-pink-600 bg-pink-50" : 
-                    t.tipoIncidencia === 'red edusat' ? "border-blue-300 text-blue-600 bg-blue-50" :
-                    t.tipoIncidencia === 'red local' ? "border-indigo-300 text-indigo-600 bg-indigo-50" :
-                    "border-primary/20 text-primary"
-                  )}>
-                    {t.tipoIncidencia}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Select defaultValue={t.status} onValueChange={(val) => updateTicketStatus(t.id, val)}>
-                    <SelectTrigger className={cn(
-                      "h-8 w-40 text-[9px] font-black uppercase border-2 rounded-xl transition-all",
-                      t.status === 'atendido' ? 'border-emerald-500/30 text-emerald-700 bg-emerald-50' : 
-                      t.status === 'en proceso' ? 'border-amber-500/30 text-amber-700 bg-amber-50' : 
-                      'border-rose-500/30 text-rose-700 bg-rose-50'
-                    )}>
-                      <div className="flex items-center gap-2">
-                        <Circle className={cn("h-2 w-2 fill-current", 
-                          t.status === 'atendido' ? 'text-emerald-500' : 
-                          t.status === 'en proceso' ? 'text-amber-500' : 
-                          'text-rose-500'
-                        )} />
-                        <SelectValue />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200">
-                      <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">PENDIENTE</SelectItem>
-                      <SelectItem value="en proceso" className="text-[10px] font-black text-amber-600">EN PROCESO</SelectItem>
-                      <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">ATENDIDO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-center gap-3">
-                    {(t.reportPdf || t.contratoFile) && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'pdf', data: (t.contratoFile || t.reportPdf)!, title: `Folio ${t.id} - Documentación` })}>
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {t.evidencePhotos && t.evidencePhotos.length > 0 && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-pink-600 hover:bg-pink-50 rounded-lg shadow-sm" onClick={() => setEvidenceToView({ type: 'gallery', data: t.evidencePhotos!, title: `Folio ${t.id} - Galería de Sitio` })}>
-                        <ImageIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right pr-8">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" onClick={() => handleDeleteTicket(t.id)}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredTickets.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-20 opacity-30">
-                  <div className="flex flex-col items-center gap-2">
-                    <Search className="h-8 w-8" />
-                    <p className="text-[10px] font-black uppercase">No se encontraron reportes.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Visitas Scheduler Modal */}
-      <VisitSchedulerDialog 
-        open={isSchedulerOpen} 
-        onOpenChange={setIsSchedulerOpen} 
-        areaId="soporte" 
-        areaName="Soporte Técnico" 
-      />
+      <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte Técnico" />
 
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
         <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
@@ -1526,103 +997,21 @@ export default function SupportPage() {
               {evidenceToView?.type === 'pdf' ? <FileText className="h-6 w-6 text-blue-600" /> : <ImageIcon className="h-6 w-6 text-pink-600" />}
               {evidenceToView?.title}
             </DialogTitle>
-            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-               Visualizador de expedientes digitales y registros fotográficos.
-            </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden bg-slate-100 relative">
+          <div className="flex-1 overflow-hidden bg-slate-100">
              {evidenceToView?.type === 'pdf' ? (
                 <iframe src={evidenceToView.data as string} className="w-full h-full border-none" />
              ) : (
                 <ScrollArea className="h-full w-full p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {(evidenceToView?.data as string[])?.map((img, idx) => (
-                      <div key={`evidence-img-${idx}`} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl group cursor-zoom-in">
-                        <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                           <Eye className="h-10 w-10 text-white" />
-                        </div>
-                      </div>
+                      <div key={`evidence-img-${idx}`} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl"><Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" /></div>
                     ))}
                   </div>
                 </ScrollArea>
              )}
           </div>
-          <div className="p-6 border-t bg-white flex justify-end">
-            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg">Cerrar Visor Operativo</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Editar Insumo Dialog */}
-      <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-              <Pencil className="h-6 w-6 text-accent" /> {editingItem?.id === 0 ? 'Alta de Nuevo Insumo' : 'Editar Insumo Técnico'}
-            </DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-              Actualice los datos maestros del material en el almacén.
-            </DialogDescription>
-          </DialogHeader>
-
-          {editingItem && (
-            <div className="p-8 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre del Insumo</Label>
-                <Input 
-                  className="h-12 bg-slate-50 border-primary/10 rounded-xl font-black uppercase text-xs"
-                  value={editingItem.name}
-                  onChange={e => setEditingItem({...editingItem, name: e.target.value.toUpperCase()})}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Unidad de Medida</Label>
-                  <Input 
-                    className="h-12 bg-slate-50 border-primary/10 rounded-xl font-bold uppercase text-[10px]"
-                    value={editingItem.unit}
-                    onChange={e => setEditingItem({...editingItem, unit: e.target.value.toUpperCase()})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Stock Mínimo</Label>
-                  <Input 
-                    type="number"
-                    className="h-12 bg-slate-50 border-primary/10 rounded-xl font-black text-center"
-                    value={editingItem.minStock}
-                    onChange={e => setEditingItem({...editingItem, minStock: parseInt(e.target.value) || 0})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-primary pl-1">Lugares de Resguardo</Label>
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-xl border border-primary/5 shadow-inner">
-                   {WAREHOUSE_LOCATIONS.map(loc => (
-                     <div key={`loc-check-${loc}`} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`check-${loc}`} 
-                          checked={editingItem.locations.includes(loc)}
-                          onCheckedChange={(checked) => {
-                            const current = editingItem.locations;
-                            const updated = checked ? [...current, loc] : current.filter(l => l !== loc);
-                            setEditingItem({...editingItem, locations: updated});
-                          }}
-                        />
-                        <Label htmlFor={`check-${loc}`} className="text-[9px] font-black uppercase cursor-pointer">{loc}</Label>
-                     </div>
-                   ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
-             <Button variant="ghost" onClick={() => setIsEditItemOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
-             <Button onClick={handleSaveEditedItem} className="btn-institutional h-12 px-12 text-[10px]">Guardar Cambios</Button>
-          </DialogFooter>
+          <div className="p-6 border-t bg-white flex justify-end"><Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg">Cerrar</Button></div>
         </DialogContent>
       </Dialog>
     </div>

@@ -24,7 +24,7 @@ import {
   Cell
 } from 'recharts'
 import { programsData, type ProgramStatus } from "@/lib/planning-data"
-import { schoolsDirectory } from "@/lib/schools-directory"
+import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
 import { 
@@ -58,7 +58,8 @@ import {
   ChevronRight,
   TrendingUp,
   ClipboardCheck,
-  X
+  X,
+  AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -180,6 +181,17 @@ export default function ProgramsPage() {
   const [officeFilter, setOficinaFilter] = useState('all')
   const [pendingCount, setPendingRequestsCount] = useState(0)
 
+  // CCT Dynamic Logic
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
+
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
@@ -213,13 +225,21 @@ export default function ProgramsPage() {
     const rawQueue = localStorage.getItem('atres_support_queue')
     const queue = rawQueue ? JSON.parse(rawQueue) : []
     setPendingRequestsCount(queue.length)
+
+    // Sync Schools
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    if (storedSchools.length > 0) {
+      setAllSchools(storedSchools)
+    } else {
+      setAllSchools(schoolsDirectory)
+    }
   }, [])
 
   useEffect(() => {
     setMounted(true)
     syncData()
     const handleStorageEvent = (e: StorageEvent) => {
-      if (e.key === 'atres_support_queue' || e.key === 'programs_full_v24') {
+      if (e.key === 'atres_support_queue' || e.key === 'programs_full_v24' || e.key === 'schools_master_full_v21') {
         syncData()
       }
     }
@@ -231,7 +251,7 @@ export default function ProgramsPage() {
     const cleanValue = value.toUpperCase()
     setFormData(prev => ({ ...prev, cct: cleanValue }))
     if (cleanValue.length === 10) {
-      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+      const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
         setFormData(prev => ({
           ...prev,
@@ -245,6 +265,30 @@ export default function ProgramsPage() {
         }))
       }
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Datos incompletos", description: "CCT, Nombre y Municipio son obligatorios." })
+      return
+    }
+
+    const newSchool: SchoolInfo = {
+      ...quickAddForm,
+      cct: quickAddForm.cct.toUpperCase(),
+      nombre: quickAddForm.nombre.toUpperCase(),
+      municipio: quickAddForm.municipio.toUpperCase()
+    }
+
+    const updatedSchools = [newSchool, ...allSchools]
+    setAllSchools(updatedSchools)
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updatedSchools))
+    
+    // Auto-select in current form
+    handleCctChange(newSchool.cct)
+    setIsQuickAddOpen(false)
+    setDialogSearchTerm('')
+    toast({ title: "CCT Registrado", description: `${newSchool.cct} se ha sumado a la base maestra.` })
   }
 
   const handleUpdateFase = (faseId: keyof NonNullable<ProgramStatus['bibliotecaFases']>, value: boolean) => {
@@ -267,7 +311,7 @@ export default function ProgramsPage() {
     updated[index] = { ...updated[index], [field]: value };
     
     if (field === 'cct' && value.length === 10) {
-      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === value.toUpperCase());
+      const school = allSchools.find(s => s.cct.toUpperCase() === value.toUpperCase());
       if (school) updated[index].valle = school.valle;
     }
     
@@ -295,7 +339,7 @@ export default function ProgramsPage() {
     if (!recordToSave.cct && recordToSave.asistentes && recordToSave.asistentes.length > 0) {
       const first = recordToSave.asistentes[0];
       recordToSave.cct = first.cct;
-      const school = schoolsDirectory.find(s => s.cct === first.cct);
+      const school = allSchools.find(s => s.cct === first.cct);
       if (school) {
         recordToSave.schoolName = school.nombre;
         recordToSave.municipio = school.municipio;
@@ -327,7 +371,6 @@ export default function ProgramsPage() {
       return r;
     }).filter(r => {
       if (r === null) return false;
-      // Si eliminamos todos los usuarios de un registro de censo, eliminamos el registro
       if (['Cuentas Institucionales', 'ATRES'].includes(r.name) && r.asistentes && r.asistentes.length === 0) return false;
       return true;
     }) as ProgramStatus[];
@@ -409,6 +452,12 @@ export default function ProgramsPage() {
     XLSX.writeFile(workbook, `Reporte_${activeTab.replace(/ /g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
     toast({ title: "Exportación Exitosa" });
   };
+
+  const schoolSearchResults = useMemo(() => {
+    if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
+    const term = dialogSearchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
+  }, [allSchools, dialogSearchTerm]);
 
   if (!mounted) return null
 
@@ -699,13 +748,21 @@ export default function ProgramsPage() {
                         <div className="relative">
                             <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/5 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                             {dialogSearchTerm.length > 2 && (
-                              <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-40 overflow-y-auto divide-y">
-                                {schoolsDirectory.filter(s => s.cct.includes(dialogSearchTerm.toUpperCase()) || s.nombre.includes(dialogSearchTerm.toUpperCase())).slice(0, 5).map(s => (
+                              <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
+                                {schoolSearchResults.map(s => (
                                   <div key={`s-diag-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
                                     <span className="text-[10px] font-black uppercase">{s.nombre}</span>
                                     <Badge className="text-[8px] font-mono">{s.cct}</Badge>
                                   </div>
                                 ))}
+                                {schoolSearchResults.length === 0 && (
+                                  <div className="p-4 text-center">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
+                                    <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }}>
+                                      <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             )}
                         </div>
@@ -813,13 +870,21 @@ export default function ProgramsPage() {
                     <div className="relative">
                         <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/5 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                         {dialogSearchTerm.length > 2 && (
-                          <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-40 overflow-y-auto divide-y">
-                            {schoolsDirectory.filter(s => s.cct.includes(dialogSearchTerm.toUpperCase()) || s.nombre.includes(dialogSearchTerm.toUpperCase())).slice(0, 5).map(s => (
-                              <div key={`s-diag-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                          <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
+                            {schoolSearchResults.map(s => (
+                              <div key={`s-diag-general-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
                                 <span className="text-[10px] font-black uppercase">{s.nombre}</span>
                                 <Badge className="text-[8px] font-mono">{s.cct}</Badge>
                               </div>
                             ))}
+                            {schoolSearchResults.length === 0 && (
+                              <div className="p-4 text-center">
+                                <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
+                                <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }}>
+                                  <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )}
                     </div>
@@ -876,6 +941,64 @@ export default function ProgramsPage() {
             )}
           </div>
           <DialogFooter className="p-6 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleSave} className="btn-institutional h-11 px-10 text-[10px]">Guardar Cambios</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3">
+              <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
+            </DialogTitle>
+            <DialogDescription className="text-white/80 text-[9px] font-bold uppercase tracking-widest mt-1">
+              Sume un nuevo plantel a la base maestra del sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-4">
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" />
+             </div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" />
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}>
+                    <SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MATUTINO">MATUTINO</SelectItem>
+                      <SelectItem value="VESPERTINO">VESPERTINO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEXICO">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+             </div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase" />
+             </div>
+             <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <p className="text-[8px] font-black text-amber-800 uppercase leading-none">Este registro será visible en todos los módulos.</p>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-10 text-[9px] font-black uppercase">Cancelar</Button>
+             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-10 px-8 rounded-xl text-[9px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

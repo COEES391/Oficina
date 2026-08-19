@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { schoolsDirectory } from "@/lib/schools-directory"
+import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { 
   Search, 
   UserPlus, 
@@ -32,7 +33,9 @@ import {
   Printer, 
   FilePlus2,
   FolderOpen,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  PlusCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
@@ -94,6 +97,17 @@ export default function BaseParticipantesPage() {
   const [pdfToPreview, setPdfToPreview] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
+  // CCT Dynamic Logic
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
+
   const initialFormState: ParticipantInfo = {
     id: '', rfc: '', curp: '', nombres: '', paterno: '', materno: '', genero: '',
     funcion: '', email: '', cct: '', nombreCT: '', municipio: '', valle: '',
@@ -112,6 +126,14 @@ export default function BaseParticipantesPage() {
       certificates: p.certificates || []
     }))
     setParticipants(migrated)
+
+    // Sync Schools
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    if (storedSchools.length > 0) {
+      setAllSchools(storedSchools)
+    } else {
+      setAllSchools(schoolsDirectory)
+    }
   }, [])
 
   const filteredParticipants = useMemo(() => {
@@ -131,7 +153,7 @@ export default function BaseParticipantesPage() {
     const cleanVal = val.toUpperCase()
     setFormData(prev => ({ ...prev, cct: cleanVal }))
     if (cleanVal.length === 10) {
-      const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanVal)
+      const school = allSchools.find(s => s.cct.toUpperCase() === cleanVal)
       if (school) {
         setFormData(prev => ({
           ...prev,
@@ -143,8 +165,25 @@ export default function BaseParticipantesPage() {
           sector: school.sector,
           modalidad: school.modalidad
         }))
+      } else {
+        // If not found, offer quick add
+        setIsQuickAddOpen(true)
+        setQuickAddForm({...quickAddForm, cct: cleanVal})
       }
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos" }); return;
+    }
+    const newSchool = { ...quickAddForm, cct: quickAddForm.cct.toUpperCase(), nombre: quickAddForm.nombre.toUpperCase(), municipio: quickAddForm.municipio.toUpperCase() };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    toast({ title: "CCT Sumado a la Base Maestra" });
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,7 +257,7 @@ export default function BaseParticipantesPage() {
       setIsDialogOpen(false)
       setFormData(initialFormState)
       setEditingId(null)
-      toast({ title: initialFormState.id ? "Participante Actualizado" : "Participante Registrado" })
+      toast({ title: editingId ? "Participante Actualizado" : "Participante Registrado" })
     } catch (e) {
       toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño acumulado de los PDFs. Intente reduciendo el peso de los archivos." })
     }
@@ -428,10 +467,6 @@ export default function BaseParticipantesPage() {
                        </div>
                        <Input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar Archivo</Button>
-                       
-                       <div className="absolute top-2 right-2 opacity-30">
-                          <AlertCircle className="h-4 w-4 text-primary" />
-                       </div>
                     </div>
 
                     <div className="space-y-2">
@@ -452,7 +487,7 @@ export default function BaseParticipantesPage() {
                          </div>
                        ))}
                        {(!formData.certificates || formData.certificates.length === 0) && (
-                         <p className="text-[9px] font-bold text-slate-400 uppercase text-center py-4 border rounded-xl border-slate-50 italic">Sin documentos adjuntos en este expediente</p>
+                         <p className="text-[9px] font-bold text-slate-400 uppercase text-center py-4 border rounded-xl border-slate-50 italic">Sin documentos adjuntos</p>
                        )}
                     </div>
                   </div>
@@ -494,7 +529,7 @@ export default function BaseParticipantesPage() {
                 disabled={!searchTerm}
                 className="btn-institutional h-12 px-6 rounded-xl shadow-md text-[10px] gap-2 disabled:opacity-50"
               >
-               <ListFilter className="h-4 w-4" /> Ver Resultados en Ventana ({filteredParticipants.length})
+               <ListFilter className="h-4 w-4" /> Ver Resultados ({filteredParticipants.length})
              </Button>
              <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
                Total: {participants.length}
@@ -513,9 +548,7 @@ export default function BaseParticipantesPage() {
                 <TableHead className="text-[10px] font-black uppercase">RFC</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">CURP</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">Función</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Cursos Acreditados</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-center">Exp.</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center">Ciclo</TableHead>
                 <TableHead className="text-[10px] font-black uppercase">CCT de Origen</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acciones</TableHead>
               </TableRow>
@@ -525,76 +558,30 @@ export default function BaseParticipantesPage() {
                 <TableRow key={`${p.id}-${idx}`} className="hover:bg-slate-50 transition-colors group">
                   <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell>
-                    <button 
-                      onClick={() => handleViewCertificates(p)}
-                      className="flex items-center gap-3 text-left hover:scale-[1.02] transition-transform group/btn"
-                    >
+                    <button onClick={() => handleViewCertificates(p)} className="flex items-center gap-3 text-left hover:scale-[1.02] transition-transform group/btn">
                       <div className="h-9 w-9 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover/btn:bg-primary group-hover/btn:text-white transition-colors">
                         <Users className="h-4 w-4" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-none border-b border-transparent group-hover/btn:border-primary group-hover/btn:text-primary transition-all">
-                           {p.paterno} {p.materno} {p.nombres}
-                        </span>
-                        <span className="text-[8px] text-muted-foreground font-bold flex items-center gap-1 mt-1">
-                           <FilePlus2 className="h-2.5 w-2.5" /> Ver Expediente Digital
-                        </span>
+                        <span className="text-[10px] font-black text-slate-700 uppercase leading-none border-b border-transparent group-hover/btn:border-primary group-hover/btn:text-primary transition-all">{p.paterno} {p.materno} {p.nombres}</span>
+                        <span className="text-[8px] text-muted-foreground font-bold flex items-center gap-1 mt-1"><FilePlus2 className="h-2.5 w-2.5" /> Ver Expediente Digital</span>
                       </div>
                     </button>
                   </TableCell>
-                  <TableCell>
-                    <span className="font-mono font-black text-[9px] text-primary">{p.rfc}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono font-bold text-[9px] text-accent">{p.curp}</span>
-                  </TableCell>
-                  <TableCell>
-                     <Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-none px-2">
-                        {p.funcion}
-                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                     <div className="text-[9px] font-bold text-slate-600 uppercase leading-tight max-w-[150px] truncate" title={p.cursosAcreditados}>
-                        {p.cursosAcreditados || 'SIN REGISTRO'}
-                     </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className={cn(
-                      "text-[8px] font-black h-5 border-none shadow-sm",
-                      p.constancia === 'SI' ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-400"
-                    )}>
-                       {p.constancia} {p.constancia === 'SI' && <CheckCircle2 className="h-2 w-2 ml-1" />}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                     <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10">{p.cicloEscolar || '-'}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                       <span className="text-[10px] font-black text-primary leading-none tracking-tighter">{p.cct}</span>
-                       <span className="text-[8px] text-muted-foreground font-bold uppercase truncate max-w-[150px] mt-1">{p.nombreCT}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell><span className="font-mono font-black text-[9px] text-primary">{p.rfc}</span></TableCell>
+                  <TableCell><span className="font-mono font-bold text-[9px] text-accent">{p.curp}</span></TableCell>
+                  <TableCell><Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600">{p.funcion}</Badge></TableCell>
+                  <TableCell className="text-center"><Badge className={cn("text-[8px] font-black h-5", p.constancia === 'SI' ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-400")}>{p.constancia} {p.constancia === 'SI' && <CheckCircle2 className="h-2 w-2 ml-1" />}</Badge></TableCell>
+                  <TableCell><div className="flex flex-col"><span className="text-[10px] font-black text-primary leading-none">{p.cct}</span><span className="text-[8px] text-muted-foreground font-bold uppercase truncate max-w-[150px] mt-1">{p.nombreCT}</span></div></TableCell>
                   <TableCell className="text-right pr-8">
                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(p); setEditingId(p.id); setIsDialogOpen(true); }}>
-                           <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(p.id)}>
-                           <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(p); setEditingId(p.id); setIsDialogOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4" /></Button>
                      </div>
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow>
-                  <TableCell colSpan={11} className="text-center py-24 opacity-30">
-                    <div className="flex flex-col items-center gap-3">
-                       <Users className="h-10 w-10 text-slate-300" />
-                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sin registros de participantes disponibles</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={11} className="text-center py-24 opacity-30 text-[10px] font-black uppercase">Sin registros disponibles</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -604,180 +591,48 @@ export default function BaseParticipantesPage() {
       {/* Visor de Expediente Digital */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[3rem] h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><FolderOpen className="h-24 w-24 text-white" /></div>
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
              <div className="space-y-1 relative z-10">
-                <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4">
-                  Expediente Digital: {selectedParticipant?.nombres} {selectedParticipant?.paterno}
-                </DialogTitle>
+                <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4">Expediente Digital: {selectedParticipant?.nombres} {selectedParticipant?.paterno}</DialogTitle>
                 <div className="flex items-center gap-3 mt-2">
-                   <Badge className="bg-white/20 text-white font-mono text-[10px] px-3 border-none">{selectedParticipant?.rfc}</Badge>
+                   <Badge className="bg-white/20 text-white font-mono text-[10px] px-3">{selectedParticipant?.rfc}</Badge>
                    <Badge variant="outline" className="border-white/20 text-white/80 font-black uppercase text-[9px]">{selectedParticipant?.cct}</Badge>
                 </div>
              </div>
           </DialogHeader>
-
           <div className="flex-1 flex overflow-hidden">
-             <div className="w-[300px] border-r bg-slate-50 flex flex-col shrink-0">
-                <div className="p-4 bg-slate-100/50 border-b flex items-center justify-between">
-                   <span className="text-[10px] font-black uppercase text-slate-500">Documentos ({selectedParticipant?.certificates?.length || 0})</span>
-                </div>
-                <ScrollArea className="flex-1">
-                   <div className="p-3 space-y-2">
-                      {selectedParticipant?.certificates?.map((cert) => (
-                        <button key={cert.id} onClick={() => setPdfToPreview(cert.data)} className={cn("w-full p-4 rounded-2xl border text-left transition-all group relative overflow-hidden", pdfToPreview === cert.data ? "bg-primary border-primary shadow-lg" : "bg-white border-slate-100 hover:bg-white hover:shadow-md")}>
-                           <div className="flex items-center gap-3 relative z-10">
-                              <FileText className={cn("h-5 w-5", pdfToPreview === cert.data ? "text-white" : "text-primary")} />
-                              <div className="flex flex-col min-w-0">
-                                 <span className={cn("text-[10px] font-black uppercase truncate", pdfToPreview === cert.data ? "text-white" : "text-slate-700")}>{cert.name}</span>
-                                 <span className={cn("text-[8px] font-bold", pdfToPreview === cert.data ? "text-white/60" : "text-slate-400")}>{cert.date}</span>
-                              </div>
-                           </div>
-                           {pdfToPreview === cert.data && <div className="absolute right-0 top-0 p-2"><CheckCircle2 className="h-3 w-3 text-white" /></div>}
-                        </button>
-                      ))}
-                      {(!selectedParticipant?.certificates || selectedParticipant.certificates.length === 0) && (
-                        <div className="py-20 text-center opacity-30 flex flex-col items-center gap-2">
-                           <FileText className="h-10 w-10 text-slate-300" />
-                           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sin archivos adjuntos</p>
-                        </div>
-                      )}
-                   </div>
-                </ScrollArea>
+             <div className="w-[280px] border-r bg-slate-50 flex flex-col shrink-0">
+                <div className="p-4 bg-slate-100/50 border-b flex items-center justify-between"><span className="text-[10px] font-black uppercase text-slate-500">Documentos ({selectedParticipant?.certificates?.length || 0})</span></div>
+                <ScrollArea className="flex-1"><div className="p-3 space-y-2">{selectedParticipant?.certificates?.map((cert) => (<button key={cert.id} onClick={() => setPdfToPreview(cert.data)} className={cn("w-full p-4 rounded-2xl border text-left transition-all", pdfToPreview === cert.data ? "bg-primary border-primary text-white shadow-lg" : "bg-white border-slate-100 hover:bg-slate-50")}><div className="flex items-center gap-3"><FileText className={cn("h-5 w-5", pdfToPreview === cert.data ? "text-white" : "text-primary")} /><div className="flex flex-col min-w-0"><span className="text-[10px] font-black uppercase truncate">{cert.name}</span><span className={cn("text-[8px] font-bold", pdfToPreview === cert.data ? "text-white/60" : "text-slate-400")}>{cert.date}</span></div></div></button>))}</div></ScrollArea>
              </div>
-
-             <div className="flex-1 bg-primary/5 p-2 flex flex-col relative">
+             <div className="flex-1 bg-slate-900 p-2 flex flex-col relative">
                 {pdfToPreview ? (
-                  <>
-                    <iframe src={pdfToPreview} className="w-full h-full rounded-2xl bg-white shadow-2xl border-none" title="PDF Preview" />
-                    <div className="absolute top-6 right-6 flex flex-col gap-2">
-                       <Button onClick={() => downloadFile(pdfToPreview, "constancia.pdf")} className="h-10 w-10 rounded-xl bg-primary text-white shadow-2xl hover:scale-110 transition-all p-0">
-                          <Download className="h-5 w-5" />
-                       </Button>
-                       <Button onClick={() => printFile(pdfToPreview)} className="h-10 w-10 rounded-xl bg-accent text-white shadow-2xl hover:scale-110 transition-all p-0">
-                          <Printer className="h-5 w-5" />
-                       </Button>
-                    </div>
-                  </>
+                  <><iframe src={pdfToPreview} className="w-full h-full rounded-2xl bg-white" title="PDF Preview" /><div className="absolute top-6 right-6 flex flex-col gap-2"><Button onClick={() => downloadFile(pdfToPreview, "constancia.pdf")} className="h-10 w-10 rounded-xl bg-primary text-white shadow-2xl hover:scale-110 p-0"><Download className="h-5 w-5" /></Button><Button onClick={() => printFile(pdfToPreview)} className="h-10 w-10 rounded-xl bg-[#B38E5D] text-white shadow-2xl hover:scale-110 p-0"><Printer className="h-5 w-5" /></Button></div></>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                     <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center animate-pulse"><Eye className="h-10 w-10 text-primary/10" /></div>
-                     <p className="text-primary/30 text-[11px] font-black uppercase tracking-[0.3em]">Seleccione un documento del listado <br /> para su visualización técnica</p>
-                  </div>
+                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4"><div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center animate-pulse"><Eye className="h-8 w-8 text-white/10" /></div><p className="text-white/20 text-[10px] font-black uppercase tracking-widest">Seleccione un documento para visualizar</p></div>
                 )}
              </div>
           </div>
-
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-between items-center">
-             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Dirección de Educación Secundaria • Servicios de Apoyo</p>
-             <Button onClick={() => { setIsViewerOpen(false); setPdfToPreview(null); }} className="btn-institutional h-12 px-10 text-[10px] shadow-lg">Cerrar Visor</Button>
-          </DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end shrink-0"><Button onClick={() => { setIsViewerOpen(false); setPdfToPreview(null); }} className="btn-institutional h-12 px-10 text-[10px]">Cerrar Visor</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Ventana Emergente de Resultados de Búsqueda */}
-      <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
-        <DialogContent className="sm:max-w-[1200px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
-            <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-3">
-                <Search className="h-7 w-7 text-accent" /> Resultados de Búsqueda
-              </DialogTitle>
-              <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">
-                Coincidencias encontradas para: <span className="text-primary font-black">"{searchTerm.toUpperCase()}"</span>
-              </DialogDescription>
-            </div>
-            <div className="flex items-center gap-4">
-               <Badge className="bg-primary text-white font-black px-4 h-8 rounded-xl shadow-lg uppercase text-[10px]">
-                 {filteredParticipants.length} Registros Encontrados
-               </Badge>
-               <Button variant="ghost" size="icon" onClick={() => setIsResultsDialogOpen(false)} className="rounded-full h-10 w-10 hover:bg-slate-200">
-                  <X className="h-5 w-5" />
-               </Button>
-            </div>
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
           </DialogHeader>
-
-          <div className="flex-1 overflow-hidden p-6">
-             <ScrollArea className="h-full border-2 border-slate-100 rounded-[2rem] shadow-inner bg-white">
-                <Table>
-                   <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b shadow-sm">
-                      <TableRow>
-                         <TableHead className="text-[9px] font-black uppercase pl-8 py-4">Servidor Público</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase">RFC / CURP</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase">Función</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase">Seguimiento Académico</TableHead>
-                         <TableHead className="text-[9px] font-black uppercase">CCT de Origen</TableHead>
-                         <TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead>
-                      </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                      {filteredParticipants.map((p, idx) => (
-                        <TableRow key={`res-${p.id}-${idx}`} className="hover:bg-slate-50 transition-colors h-16 group">
-                           <TableCell className="pl-8 py-4">
-                              <button 
-                                onClick={() => { setIsResultsDialogOpen(false); handleViewCertificates(p); }}
-                                className="flex items-center gap-3 text-left hover:translate-x-1 transition-transform"
-                              >
-                                 <div className="h-10 w-10 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                                    <Users className="h-5 w-5" />
-                                 </div>
-                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-700 uppercase leading-none">{p.paterno} {p.materno} {p.nombres}</span>
-                                    <span className="text-[8px] font-bold text-primary mt-1 uppercase flex items-center gap-1"><FolderOpen className="h-2.5 w-2.5" /> VER EXPEDIENTE</span>
-                                 </div>
-                              </button>
-                           </TableCell>
-                           <TableCell>
-                              <div className="flex flex-col">
-                                 <span className="font-mono text-[9px] font-black text-primary leading-none">{p.rfc}</span>
-                                 <span className="font-mono text-[8px] font-bold text-accent mt-1">{p.curp}</span>
-                              </div>
-                           </TableCell>
-                           <TableCell>
-                              <Badge variant="secondary" className="text-[8px] font-black uppercase bg-slate-100 text-slate-600 border-none px-3">
-                                 {p.funcion}
-                              </Badge>
-                           </TableCell>
-                           <TableCell>
-                              <div className="flex flex-col gap-1.5">
-                                 <div className="text-[8px] font-bold text-slate-500 uppercase truncate max-w-[120px]">{p.cursosAcreditados || 'SIN CURSOS'}</div>
-                                 <div className="flex items-center gap-2">
-                                    {p.constancia === 'SI' ? <Badge className="bg-emerald-50 text-emerald-700 text-[7px] font-black h-4 px-2">SÍ</Badge> : <Badge variant="outline" className="text-[7px] h-4 px-2">NO</Badge>}
-                                    <span className="text-[8px] font-black text-primary">{p.cicloEscolar}</span>
-                                 </div>
-                              </div>
-                           </TableCell>
-                           <TableCell>
-                              <div className="flex flex-col">
-                                 <span className="text-[10px] font-black text-primary leading-none">{p.cct}</span>
-                                 <span className="text-[8px] font-bold text-muted-foreground truncate max-w-[150px] uppercase mt-1">{p.nombreCT}</span>
-                              </div>
-                           </TableCell>
-                           <TableCell className="text-right pr-10">
-                              <div className="flex justify-end gap-1.5">
-                                 <Button variant="outline" size="sm" onClick={() => { setFormData(p); setEditingId(p.id); setIsResultsDialogOpen(false); setIsDialogOpen(true); }} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
-                                    <Pencil className="h-3.5 w-3.5" /> Editar
-                                 </Button>
-                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
-                                    <Trash2 className="h-4 w-4" />
-                                 </Button>
-                              </div>
-                           </TableCell>
-                        </TableRow>
-                      ))}
-                   </TableBody>
-                </Table>
-             </ScrollArea>
+          <div className="p-8 space-y-4">
+             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" /></div>
+             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" /></div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Turno</Label><Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div>
+             </div>
+             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase" /></div>
           </div>
-
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-between items-center shrink-0">
-             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">
-               Fin de resultados • Sistema de Auditoría COEES 2026
-             </p>
-             <Button variant="secondary" onClick={() => setIsResultsDialogOpen(false)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase shadow-lg">
-               Cerrar Búsqueda
-             </Button>
-          </DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-10 text-[9px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-10 px-8 rounded-xl text-[9px] font-black uppercase shadow-lg">Registrar y Sumar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
