@@ -44,13 +44,15 @@ import {
   TrendingUp,
   History,
   AlertTriangle,
-  ClipboardList
+  ClipboardList,
+  FileSpreadsheet
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
+import * as XLSX from 'xlsx'
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
@@ -526,6 +528,32 @@ export default function SupportPage() {
     setEditingItem(null);
   }
 
+  const downloadInventoryExcel = () => {
+    if (inventory.length === 0) {
+      toast({ variant: "destructive", title: "Sin datos", description: "No hay insumos para exportar." })
+      return
+    }
+
+    const dataToExport = inventory.map(item => ({
+      'Insumo Técnico': item.name,
+      'Stock Actual': item.qty,
+      'Unidad': item.unit,
+      'Min. Sugerido': item.minStock,
+      'Categoría': item.category,
+      'Lugares de Resguardo': item.locations.join(', '),
+      'Estado': item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario COEES");
+    
+    const fileName = `Inventario_COEES_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    
+    toast({ title: "Exportación Exitosa", description: "El inventario se ha descargado correctamente." })
+  };
+
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
 
   if (!mounted) return null;
@@ -650,7 +678,14 @@ export default function SupportPage() {
                 </TabsContent>
 
                 <TabsContent value="inventario" className="h-full m-0 overflow-hidden flex flex-col gap-4">
-                  <div className="flex justify-end pr-4">
+                  <div className="flex justify-end gap-3 pr-4">
+                    <Button 
+                      onClick={downloadInventoryExcel} 
+                      variant="outline" 
+                      className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-sm"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" /> Exportar Inventario
+                    </Button>
                     <Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]">
                       <PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo al Catálogo
                     </Button>
@@ -698,7 +733,7 @@ export default function SupportPage() {
                               <TableCell className="text-center">
                                 <Badge className={cn(
                                   "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
-                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white'
+                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-50 text-white'
                                 )}>
                                   {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
                                 </Badge>
