@@ -484,14 +484,46 @@ export default function SupportPage() {
     setIsEditItemOpen(true);
   }
 
+  const handleAddNewItem = () => {
+    setEditingItem({
+      id: 0,
+      name: '',
+      qty: 0,
+      unit: 'Pieza',
+      minStock: 5,
+      category: 'GENERAL',
+      locations: ['TOLUCA']
+    });
+    setIsEditItemOpen(true);
+  }
+
+  const handleDeleteInventoryItem = (id: number) => {
+    const updated = inventory.filter(i => i.id !== id);
+    setInventory(updated);
+    localStorage.setItem('coees_inventory_v1', JSON.stringify(updated));
+    toast({ title: "Insumo eliminado", description: "El material ha sido retirado del catálogo." });
+  }
+
   const handleSaveEditedItem = () => {
-    if (!editingItem) return;
-    const updatedInventory = inventory.map(i => i.id === editingItem.id ? editingItem : i);
+    if (!editingItem || !editingItem.name) {
+      toast({ variant: "destructive", title: "Datos incompletos" });
+      return;
+    }
+
+    let updatedInventory;
+    if (editingItem.id === 0) {
+      const newId = inventory.length > 0 ? Math.max(...inventory.map(i => i.id)) + 1 : 1;
+      updatedInventory = [...inventory, { ...editingItem, id: newId }];
+      toast({ title: "Insumo registrado" });
+    } else {
+      updatedInventory = inventory.map(i => i.id === editingItem.id ? editingItem : i);
+      toast({ title: "Insumo actualizado" });
+    }
+
     setInventory(updatedInventory);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     setIsEditItemOpen(false);
     setEditingItem(null);
-    toast({ title: "Insumo actualizado", description: `Se guardaron los cambios para ${editingItem.name}.` });
   }
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
@@ -617,8 +649,13 @@ export default function SupportPage() {
                   )}
                 </TabsContent>
 
-                <TabsContent value="inventario" className="h-full m-0 overflow-hidden">
-                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner h-full flex flex-col">
+                <TabsContent value="inventario" className="h-full m-0 overflow-hidden flex flex-col gap-4">
+                  <div className="flex justify-end pr-4">
+                    <Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]">
+                      <PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo al Catálogo
+                    </Button>
+                  </div>
+                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner flex-1 flex flex-col">
                     <ScrollArea className="flex-1">
                       <Table>
                         <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
@@ -629,7 +666,7 @@ export default function SupportPage() {
                             <TableHead className="font-black uppercase text-[10px] text-center">Lugares de Resguardo</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Min. Sugerido</TableHead>
                             <TableHead className="font-black uppercase text-[10px] text-center">Estado</TableHead>
-                            <TableHead className="text-right pr-6"></TableHead>
+                            <TableHead className="text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -661,20 +698,30 @@ export default function SupportPage() {
                               <TableCell className="text-center">
                                 <Badge className={cn(
                                   "text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm",
-                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-50 text-white'
+                                  item.qty <= item.minStock ? 'bg-rose-600 text-white' : 'bg-emerald-500 text-white'
                                 )}>
                                   {item.qty <= item.minStock ? 'Reabastecer' : 'Óptimo'}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right pr-6">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                                  onClick={() => handleEditInventoryItem(item)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
+                                <div className="flex justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg transition-all"
+                                    onClick={() => handleEditInventoryItem(item)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                    onClick={() => handleDeleteInventoryItem(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1405,7 +1452,7 @@ export default function SupportPage() {
                 </TableCell>
                 <TableCell className="text-right pr-8">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg transition-all" onClick={() => handleEdit(t)}>
                         <Pencil className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" onClick={() => handleDeleteTicket(t.id)}>
@@ -1469,6 +1516,78 @@ export default function SupportPage() {
           <div className="p-6 border-t bg-white flex justify-end">
             <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg">Cerrar Visor Operativo</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editar Insumo Dialog */}
+      <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+              <Pencil className="h-6 w-6 text-accent" /> {editingItem?.id === 0 ? 'Alta de Nuevo Insumo' : 'Editar Insumo Técnico'}
+            </DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
+              Actualice los datos maestros del material en el almacén.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingItem && (
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre del Insumo</Label>
+                <Input 
+                  className="h-12 bg-slate-50 border-primary/10 rounded-xl font-black uppercase text-xs"
+                  value={editingItem.name}
+                  onChange={e => setEditingItem({...editingItem, name: e.target.value.toUpperCase()})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Unidad de Medida</Label>
+                  <Input 
+                    className="h-12 bg-slate-50 border-primary/10 rounded-xl font-bold uppercase text-[10px]"
+                    value={editingItem.unit}
+                    onChange={e => setEditingItem({...editingItem, unit: e.target.value.toUpperCase()})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Stock Mínimo</Label>
+                  <Input 
+                    type="number"
+                    className="h-12 bg-slate-50 border-primary/10 rounded-xl font-black text-center"
+                    value={editingItem.minStock}
+                    onChange={e => setEditingItem({...editingItem, minStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary pl-1">Lugares de Resguardo</Label>
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-xl border border-primary/5 shadow-inner">
+                   {WAREHOUSE_LOCATIONS.map(loc => (
+                     <div key={`loc-check-${loc}`} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`check-${loc}`} 
+                          checked={editingItem.locations.includes(loc)}
+                          onCheckedChange={(checked) => {
+                            const current = editingItem.locations;
+                            const updated = checked ? [...current, loc] : current.filter(l => l !== loc);
+                            setEditingItem({...editingItem, locations: updated});
+                          }}
+                        />
+                        <Label htmlFor={`check-${loc}`} className="text-[9px] font-black uppercase cursor-pointer">{loc}</Label>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+             <Button variant="ghost" onClick={() => setIsEditItemOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
+             <Button onClick={handleSaveEditedItem} className="btn-institutional h-12 px-12 text-[10px]">Guardar Cambios</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
