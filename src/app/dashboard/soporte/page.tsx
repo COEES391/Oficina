@@ -254,19 +254,6 @@ export default function SupportPage() {
     setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
   }, [])
 
-  const getNextFolio = (currentTickets: SupportTicket[]) => {
-    const numericIds = currentTickets
-      .map(t => {
-        const match = t.id.match(/\d+/);
-        return match ? parseInt(match[0], 10) : null;
-      })
-      .filter((id): id is number => id !== null);
-    
-    if (numericIds.length === 0) return "100";
-    const maxId = Math.max(...numericIds);
-    return (maxId + 1).toString();
-  };
-
   const handleSelectSchool = (cct: string, turno: string) => {
     const school = allSchools.find(s => s.cct === cct && s.turno === turno);
     if (school) {
@@ -544,10 +531,9 @@ export default function SupportPage() {
 
           <Button 
             onClick={() => {
-              const nextId = getNextFolio(tickets);
               setFormData({
                 ...initialFormState,
-                id: nextId,
+                id: '', // Empty for manual capture
                 fechaEntrada: format(new Date(), 'yyyy-MM-dd')
               });
               setEditingTicketId(null);
