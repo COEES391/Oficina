@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -47,7 +48,8 @@ import {
   LayoutGrid,
   Info,
   ChevronRight,
-  Upload
+  Upload,
+  Layers
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -142,7 +144,12 @@ export default function SupportPage() {
   const [listSearchTerm, setListSearchTerm] = useState('') 
   const [officeFilter, setOfficeFilter] = useState('all') 
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
-  const [evidenceToView, setEvidenceToView] = useState<{ type: 'pdf' | 'gallery', data: string | string[], title: string } | null>(null)
+  const [evidenceToView, setEvidenceToView] = useState<{ 
+    type: 'pdf' | 'gallery' | 'both', 
+    pdfData?: string, 
+    images?: string[], 
+    title: string 
+  } | null>(null)
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
     id: '',
@@ -415,6 +422,29 @@ export default function SupportPage() {
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
 
+  const openEvidenceViewer = (ticket: SupportTicket) => {
+    const hasPdf = !!ticket.reportPdf;
+    const hasImages = ticket.evidencePhotos && ticket.evidencePhotos.length > 0;
+
+    if (!hasPdf && !hasImages) {
+      toast({ title: "Sin evidencias", description: "Este reporte no cuenta con documentos o capturas adjuntas." });
+      return;
+    }
+
+    setEvidenceToView({
+      type: (hasPdf && hasImages) ? 'both' : (hasPdf ? 'pdf' : 'gallery'),
+      pdfData: ticket.reportPdf,
+      images: ticket.evidencePhotos,
+      title: `Evidencia Técnica: ${ticket.schoolName}`
+    });
+  }
+
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) return;
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
+
   if (!mounted) return null;
 
   return (
@@ -483,7 +513,19 @@ export default function SupportPage() {
                 <TableRow key={`${ticket.id}-${idx}`} className="hover:bg-slate-50 transition-colors group h-16">
                   <TableCell className="text-center pl-6"><span className="font-mono font-black text-xs text-primary">#{ticket.id}</span></TableCell>
                   <TableCell><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{ticket.schoolName}</span><span className="text-[9px] font-bold text-muted-foreground mt-1">{ticket.cct} • {ticket.municipio}</span></div></TableCell>
-                  <TableCell><Badge variant="outline" className="text-[9px] font-black uppercase border-slate-200 bg-white">{ticket.tipoIncidencia}</Badge></TableCell>
+                  <TableCell>
+                    <button 
+                      onClick={() => openEvidenceViewer(ticket)}
+                      className="hover:scale-105 transition-transform"
+                    >
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] font-black uppercase border-slate-200 cursor-pointer hover:border-primary transition-colors",
+                        (ticket.reportPdf || (ticket.evidencePhotos && ticket.evidencePhotos.length > 0)) ? "bg-primary/5 text-primary border-primary/20" : "bg-white"
+                      )}>
+                        {ticket.tipoIncidencia}
+                      </Badge>
+                    </button>
+                  </TableCell>
                   <TableCell><span className="text-[10px] font-bold text-slate-500">{ticket.fechaEntrada}</span></TableCell>
                   <TableCell className="text-center">
                     <Select value={ticket.status} onValueChange={(val) => updateTicketStatus(ticket.id, val)}>
@@ -531,7 +573,7 @@ export default function SupportPage() {
                 </TabsContent>
                 <TabsContent value="inventario" className="h-full m-0 overflow-hidden flex flex-col gap-4">
                   <div className="flex justify-end gap-3 pr-4"><Button onClick={downloadInventoryExcel} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-sm"><FileSpreadsheet className="h-4 w-4" /> Exportar Inventario</Button><Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo</Button></div>
-                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner flex-1 flex flex-col"><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10 border-b"><TableRow><TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Stock Actual</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Resguardo</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Min.</TableHead><TableHead className="text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead></TableRow></TableHeader><TableBody>{inventory.map(item => (<TableRow key={`inv-${item.id}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16"><TableCell className="font-black text-slate-700 text-xs uppercase pl-6">{item.name}</TableCell><TableCell className="text-center"><span className={cn("inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black border", item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-primary/5 text-primary border-primary/10")}>{item.qty}</span></TableCell><TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell><TableCell className="text-center"><div className="flex flex-wrap justify-center gap-1">{item.locations?.map((loc, lIdx) => (<Badge key={`loc-${item.id}-${lIdx}`} variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase"><MapPin className="h-2 w-2 mr-1 text-primary" /> {loc}</Badge>))}</div></TableCell><TableCell className="text-center font-mono font-black text-slate-400 text-xs">{item.minStock}</TableCell><TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600" onClick={() => handleDeleteInventoryItem(item.id)}><Trash2 className="h-4 w-4" /></Button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
+                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner flex-1 flex flex-col"><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10 border-b"><TableRow><TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Stock Actual</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Resguardo</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Min.</TableHead><TableHead className="text-right pr-6 font-black uppercase text-[10px]">Acciones</TableHead></TableRow></TableHeader><TableBody>{inventory.map(item => (<TableRow key={`inv-${item.id}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-16"><TableCell className="font-black text-slate-700 text-xs uppercase pl-6">{item.name}</TableCell><TableCell className="text-center"><span className={cn("inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black border", item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-primary/5 text-primary border-primary/10")}>{item.qty}</span></TableCell><TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell><TableCell className="text-center"><div className="flex flex-wrap justify-center gap-1">{item.locations?.map((loc, lIdx) => (<Badge key={`loc-${item.id}-${lIdx}`} variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black uppercase border-slate-200"><MapPin className="h-2 w-2 mr-1 text-primary" /> {loc}</Badge>))}</div></TableCell><TableCell className="text-center font-mono font-black text-slate-400 text-xs">{item.minStock}</TableCell><TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600" onClick={() => handleDeleteInventoryItem(item.id)}><Trash2 className="h-4 w-4" /></Button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
                 </TabsContent>
                 <TabsContent value="movimientos" className="h-full m-0 flex flex-col gap-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1"><Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50"><h4 className="text-sm font-black uppercase text-accent mb-6 flex items-center gap-3"><TrendingDown className="h-5 w-5" /> Salida de Material</h4><div className="space-y-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Insumo</Label><Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'salida'})}><SelectTrigger className="h-12 bg-white rounded-xl border-slate-200"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sel-sal-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Cant.</Label><Input type="number" className="h-12 bg-white rounded-xl" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Folio</Label><Input className="h-12 bg-white rounded-xl" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div></div><Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14">Registrar Salida</Button></div></Card><Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50"><h4 className="text-sm font-black uppercase text-primary mb-6 flex items-center gap-3"><TrendingUp className="h-5 w-5" /> Entrada de Material</h4><div className="space-y-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Insumo</Label><Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val, type: 'entrada'})}><SelectTrigger className="h-12 bg-white rounded-xl border-slate-200"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sel-ent-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Cant.</Label><Input type="number" className="h-12 bg-white rounded-xl" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /></div><Button onClick={handleRegisterMovement} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px]">Registrar Entrada</Button></div></Card></div></TabsContent>
               </div>
@@ -667,11 +709,69 @@ export default function SupportPage() {
 
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte Técnico" />
 
+      {/* Visor de Evidencia Unificado */}
       <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
-          <DialogHeader className="p-8 pb-4 border-b bg-slate-50"><DialogTitle className="uppercase font-black text-primary text-xl flex items-center gap-4">{evidenceToView?.type === 'pdf' ? <FileText className="h-6 w-6 text-blue-600" /> : <ImageIcon className="h-6 w-6 text-pink-600" />}{evidenceToView?.title}</DialogTitle></DialogHeader>
-          <div className="flex-1 overflow-hidden bg-slate-100">{evidenceToView?.type === 'pdf' ? (<iframe src={evidenceToView.data as string} className="w-full h-full border-none" />) : (<ScrollArea className="h-full w-full p-8"><div className="grid grid-cols-1 md:grid-cols-2 gap-8">{(evidenceToView?.data as string[])?.map((img, idx) => (<div key={`evidence-img-${idx}`} className="relative aspect-video rounded-3xl overflow-hidden border-8 border-white shadow-2xl"><Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" /></div>))}</div></ScrollArea>)}</div>
-          <div className="p-6 border-t bg-white flex justify-end"><Button variant="secondary" onClick={() => setEvidenceToView(null)} className="font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg">Cerrar</Button></div>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+              <Layers className="h-7 w-7 text-accent" /> {evidenceToView?.title}
+            </DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Expediente Técnico Digital de Atención</DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50">
+              <TabsList className="bg-transparent h-14 p-0 gap-8">
+                {evidenceToView?.pdfData && (
+                  <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase flex items-center gap-2">
+                    <FileText className="h-4 w-4" /> Reporte PDF
+                  </TabsTrigger>
+                )}
+                {evidenceToView?.images && evidenceToView.images.length > 0 && (
+                  <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" /> Galería PNG ({evidenceToView.images.length})
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-hidden bg-slate-900/5">
+              <TabsContent value="pdf" className="h-full m-0 p-0">
+                {evidenceToView?.pdfData && (
+                  <div className="h-full flex flex-col">
+                    <div className="flex justify-between items-center px-8 py-3 bg-white border-b">
+                      <p className="text-[10px] font-black uppercase text-slate-400">Previsualización de Documento Oficial</p>
+                      <div className="flex gap-2">
+                         <Button onClick={() => evidenceToView.pdfData && printFile(evidenceToView.pdfData)} variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary">
+                            <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
+                         </Button>
+                      </div>
+                    </div>
+                    <iframe src={evidenceToView.pdfData} className="flex-1 w-full border-none bg-white" title="PDF Evidence" />
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="gallery" className="h-full m-0 p-0">
+                <ScrollArea className="h-full">
+                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {evidenceToView?.images?.map((img, idx) => (
+                      <div key={`ev-v-img-${idx}`} className="relative group aspect-video rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl bg-white animate-in zoom-in-95 duration-500">
+                         <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                         <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Badge className="bg-white text-primary font-black uppercase text-[10px] px-4 py-1">Captura {idx + 1}</Badge>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end shrink-0">
+            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase shadow-lg">Cerrar Expediente</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
