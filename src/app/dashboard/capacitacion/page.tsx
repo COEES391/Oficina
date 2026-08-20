@@ -33,7 +33,10 @@ import {
   Upload,
   FileText,
   ImageIcon,
-  Archive
+  Archive,
+  Eye,
+  Printer,
+  Download
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -82,6 +85,12 @@ export default function TrainingPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
   
+  const [evidenceToView, setEvidenceToView] = useState<{ 
+    pdfData?: string, 
+    images?: string[], 
+    title: string 
+  } | null>(null)
+
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -301,7 +310,6 @@ export default function TrainingPage() {
       return
     }
 
-    // OPTIMIZACIÓN: Solo guardamos los archivos en el primer registro para ahorrar espacio local (QuotaExceededError)
     const newRecords: TrainingRecord[] = validAssistants.map((ast, idx) => ({
       ...courseData,
       id: editingId ? (editingId.includes('-') ? editingId.split('-')[0] + `-${idx}-${Date.now()}` : `${editingId}-${idx}-${Date.now()}`) : `${courseData.id}-${idx}-${Date.now()}`,
@@ -320,7 +328,6 @@ export default function TrainingPage() {
       asistenteMunicipio: ast.municipio,
       asistenteRegion: ast.region,
       asistenteValle: ast.valle,
-      // Solo el primer registro guarda la data pesada, los demás apuntan al mismo folio
       reportPdf: idx === 0 ? courseData.reportPdf : '',
       evidencePhotos: idx === 0 ? (courseData.evidencePhotos || []) : [],
       observaciones: courseData.observaciones || '',
@@ -371,7 +378,6 @@ export default function TrainingPage() {
 
   const handleEdit = (record: TrainingRecord) => {
     const folio = record.id.split('-')[0];
-    // Buscamos cualquier registro del mismo grupo que contenga los archivos (usualmente el primero)
     const masterRecord = records.find(r => r.id.startsWith(folio) && (r.reportPdf || (r.evidencePhotos && r.evidencePhotos.length > 0))) || record;
 
     setCourseData({
@@ -436,6 +442,28 @@ export default function TrainingPage() {
 
     setEditingId(record.id)
     setIsDialogOpen(true)
+  }
+
+  const openEvidenceViewer = (record: TrainingRecord) => {
+    const folio = record.id.split('-')[0];
+    const masterRecord = records.find(r => r.id.startsWith(folio) && (r.reportPdf || (r.evidencePhotos && r.evidencePhotos.length > 0))) || record;
+
+    if (!masterRecord.reportPdf && (!masterRecord.evidencePhotos || masterRecord.evidencePhotos.length === 0)) {
+      toast({ title: "Sin evidencias", description: "Este curso no cuenta con archivos adjuntos para auditoría." });
+      return;
+    }
+
+    setEvidenceToView({
+      pdfData: masterRecord.reportPdf,
+      images: masterRecord.evidencePhotos,
+      title: `Evidencia de Capacitación: ${masterRecord.cursoNombre}`
+    });
+  }
+
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) return;
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
   }
 
   const schoolSearchResults = useMemo(() => {
@@ -897,10 +925,13 @@ export default function TrainingPage() {
                   <TableRow key={record.id} className="hover:bg-slate-50 transition-colors group">
                     <TableCell className="font-black text-xs text-primary text-center">#{record.id.split('-')[0]}</TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-black text-xs text-slate-700 uppercase tracking-tight">{record.cursoNombre}</span>
+                      <button 
+                        onClick={() => openEvidenceViewer(record)}
+                        className="flex flex-col text-left hover:scale-[1.02] transition-transform"
+                      >
+                        <span className="font-black text-xs text-slate-700 uppercase tracking-tight group-hover:text-primary transition-colors underline decoration-dotted underline-offset-4 decoration-primary/30">{record.cursoNombre}</span>
                         <span className="text-[9px] font-muted-foreground font-black uppercase tracking-widest mt-1">{record.cursoGrupo}</span>
-                      </div>
+                      </button>
                     </TableCell>
                     <TableCell className="text-xs font-bold uppercase text-slate-600">
                       {record.asistenteNombres} {record.asistentePaterno} {record.asistenteMaterno}
@@ -1031,6 +1062,77 @@ export default function TrainingPage() {
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visor de Evidencia de Capacitación */}
+      <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+                <Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
+                Expediente Digital de Capacitación COEES
+              </DialogDescription>
+            </div>
+            <div className="flex gap-4">
+              {evidenceToView?.pdfData && (
+                <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl">
+                  <Printer className="h-4 w-4" /> Imprimir Reporte
+                </Button>
+              )}
+              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50/50">
+               <TabsList className="bg-transparent h-14 p-0 gap-8">
+                  {evidenceToView?.pdfData && (
+                    <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
+                      <FileText className="h-4 w-4" /> Reporte Oficial PDF
+                    </TabsTrigger>
+                  )}
+                  {evidenceToView?.images && evidenceToView.images.length > 0 && (
+                    <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" /> Galería de Evidencias ({evidenceToView.images.length})
+                    </TabsTrigger>
+                  )}
+               </TabsList>
+            </div>
+            <div className="flex-1 overflow-hidden bg-slate-100/50">
+               <TabsContent value="pdf" className="h-full m-0 p-0">
+                  {evidenceToView?.pdfData ? (
+                    <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" />
+                  ) : (
+                    <div className="h-full flex items-center justify-center opacity-20">
+                      <FileText className="h-20 w-20" />
+                    </div>
+                  )}
+               </TabsContent>
+               <TabsContent value="gallery" className="h-full m-0 overflow-hidden">
+                  <ScrollArea className="h-full p-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {evidenceToView?.images?.map((img, idx) => (
+                           <div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in">
+                              <Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
+                              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Eye className="h-8 w-8 text-white" />
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </ScrollArea>
+               </TabsContent>
+            </div>
+          </Tabs>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+            <Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
