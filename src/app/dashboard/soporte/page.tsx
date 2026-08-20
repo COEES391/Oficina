@@ -66,7 +66,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 400 * 1024; // 400KB
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // Aumentado a 2.0 MB
 
 type InventoryItem = {
   id: number;
@@ -275,7 +275,7 @@ export default function SupportPage() {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
       toast({ variant: "destructive", title: "Faltan datos" }); return;
     }
-    const newSchool = { ...quickAddForm, cct: quickAddForm.cct.toUpperCase(), nombre: quickAddForm.nombre.toUpperCase(), municipio: quickAddForm.municipio.toUpperCase() };
+    const newSchool = { ...quickAddForm, cct: quickAddForm.cct.toUpperCase(), nombre: quickAddForm.nombre.toUpperCase(), municipio: quickAddForm.municipio.toUpperCase(), domicilio: quickAddForm.domicilio.toUpperCase(), localidad: quickAddForm.localidad.toUpperCase(), sector: quickAddForm.sector.toUpperCase(), zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(), modalidad: quickAddForm.modalidad.toUpperCase() };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
@@ -309,7 +309,7 @@ export default function SupportPage() {
     if (!file) return
 
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado grande", description: "El límite es de 400KB." })
+      toast({ variant: "destructive", title: "Archivo demasiado grande", description: "El límite es de 2.0 MB." })
       return
     }
 
@@ -335,7 +335,7 @@ export default function SupportPage() {
   }
 
   const resetForm = () => {
-    setFormData({ ...initialFormState, fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
+    setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
   }
 
   const handleEdit = (ticket: SupportTicket) => {
@@ -639,7 +639,7 @@ export default function SupportPage() {
                          ) : (
                            <>
                               <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
-                              <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 400KB</p></div>
+                              <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 2.0 MB</p></div>
                               <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar</Button>
                            </>
                          )}
@@ -651,7 +651,7 @@ export default function SupportPage() {
                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Galería de Capturas Técnicas (PNG)</Label>
                       <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
                           <ImageIcon className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
-                          <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Máximo 400KB por archivo</p></div>
+                          <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Máximo 2.0 MB por archivo</p></div>
                           <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Añadir Imagen</Button>
                           <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
                       </div>
@@ -682,7 +682,7 @@ export default function SupportPage() {
           </DialogHeader>
           <div className="p-8 space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><input type="text" value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="flex h-12 w-full rounded-xl border border-slate-200 bg-white px-6 font-mono font-black shadow-inner" /></div>
                 <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" /></div>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

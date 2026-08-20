@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -85,7 +86,7 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const FILE_SIZE_LIMIT = 400 * 1024; // 400KB limit for localStorage safety
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // Aumentado a 2.0 MB
 
 export default function BaseParticipantesPage() {
   const { toast } = useToast()
@@ -207,7 +208,7 @@ export default function BaseParticipantesPage() {
       toast({ 
         variant: "destructive", 
         title: "Archivo demasiado pesado", 
-        description: "El PDF excede los 400KB permitidos por seguridad." 
+        description: "El PDF excede los 2.0 MB permitidos." 
       })
       return
     }
@@ -272,7 +273,7 @@ export default function BaseParticipantesPage() {
       setEditingId(null)
       toast({ title: editingId ? "Participante Actualizado" : "Participante Registrado" })
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño acumulado de los PDFs. Intente reduciendo el peso de los archivos." })
+      toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño acumulado de los PDFs." })
     }
   }
 
@@ -475,7 +476,7 @@ export default function BaseParticipantesPage() {
                        <div className="text-center">
                           <div className="text-[10px] font-black uppercase text-slate-700">Subir Constancia en PDF</div>
                           <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center justify-center gap-2">
-                             Haga clic o arrastre el archivo aquí <Badge variant="outline" className="bg-rose-50 text-rose-600 border-rose-200 text-[7px] px-1 h-4">MÁX. 400KB</Badge>
+                             Haga clic o arrastre el archivo aquí <Badge variant="outline" className="bg-rose-50 text-rose-600 border-rose-200 text-[7px] px-1 h-4">MÁX. 2.0MB</Badge>
                           </div>
                        </div>
                        <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
@@ -533,7 +534,7 @@ export default function BaseParticipantesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
           </div>
 
           <div className="flex items-center gap-3">
@@ -641,7 +642,7 @@ export default function BaseParticipantesPage() {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                  <input type="text" value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="flex h-12 w-full rounded-xl border border-slate-200 bg-white px-6 font-mono font-black shadow-inner" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>

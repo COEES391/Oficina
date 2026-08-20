@@ -84,7 +84,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 400 * 1024; // 400KB para evitar QuotaExceeded
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // Aumentado a 2.0 MB
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -424,7 +424,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 400KB permitido para asegurar el guardado." }); return; }
+    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 2.0 MB permitido para asegurar el guardado." }); return; }
     const reader = new FileReader();
     reader.onload = (ev) => handleSendMessage({ fileData: { data: ev.target?.result as string, name: file.name, type: file.type } })
     reader.readAsDataURL(file); e.target.value = '';
@@ -458,11 +458,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       let excelContent = "";
       
       if (pdfFile) {
-        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("El PDF excede los 400KB.");
+        if (pdfFile.size > FILE_SIZE_LIMIT) throw new Error("El PDF excede los 2.0 MB.");
         pdfContent = await readFileAsDataURL(pdfFile);
       }
       if (excelFile) {
-        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("El Excel excede los 400KB.");
+        if (excelFile.size > FILE_SIZE_LIMIT) throw new Error("El Excel excede los 2.0 MB.");
         excelContent = await readFileAsDataURL(excelFile);
       }
       
@@ -697,9 +697,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         Listado oficial de atenciones concluidas en el Centro Operativo.
                       </p>
                    </div>
-                   <Button variant="outline" onClick={() => setShowHistory(false)} className="h-10 px-6 rounded-xl font-black text-[10px] uppercase gap-2 border-slate-200 shadow-sm">
+                   <button onClick={() => setShowHistory(false)} className="flex items-center gap-2 bg-white border border-slate-200 px-6 h-10 rounded-xl font-black text-[10px] uppercase shadow-sm hover:bg-slate-50 transition-all">
                      <X className="h-4 w-4" /> CERRAR VISTA
-                   </Button>
+                   </button>
                 </div>
 
                 <div className="flex-1 border rounded-[2.5rem] bg-white shadow-2xl overflow-hidden">
@@ -1000,7 +1000,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className="flex-1 min-w-0">
                         <span className={cn("text-[9px] font-black uppercase truncate block", pdfFile && "text-rose-700")}>{pdfFile ? pdfFile.name : "Reporte Oficial (PDF)"}</span>
                         {pdfFile && pdfFile.size > FILE_SIZE_LIMIT && (
-                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 400KB</span>
+                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 2.0 MB</span>
                         )}
                       </div>
                       <input type="file" accept=".pdf" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
@@ -1010,7 +1010,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <div className="flex-1 min-w-0">
                         <span className={cn("text-[9px] font-black uppercase truncate block", excelFile && "text-emerald-700")}>{excelFile ? excelFile.name : "Base de Datos (Excel)"}</span>
                         {excelFile && excelFile.size > FILE_SIZE_LIMIT && (
-                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 400KB</span>
+                          <span className="text-[7px] text-rose-500 font-bold uppercase">EXCEDE 2.0 MB</span>
                         )}
                       </div>
                       <input type="file" accept=".xlsx, .xls" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setExcelFile(e.target.files?.[0] || null)} />
@@ -1118,7 +1118,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
                   <Printer className="h-4 w-4" /> Imprimir
                </Button>
-               <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20"><X className="h-5 w-5" /></Button>
+               <button onClick={() => setPdfToPreview(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20 flex items-center justify-center"><X className="h-5 w-5" /></button>
             </div>
           </DialogHeader>
           <div className="flex-1 bg-slate-800 p-1">
