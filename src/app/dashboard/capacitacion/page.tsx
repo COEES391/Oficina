@@ -11,11 +11,29 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { trainingRecords, type TrainingRecord } from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
-import { PlusCircle, GraduationCap, Users, Pencil, Trash2, CheckCircle2, Plus, School, Search, MapPin, LayoutGrid, Info, CalendarDays, Building2 } from "lucide-react"
+import { 
+  PlusCircle, 
+  GraduationCap, 
+  Users, 
+  Pencil, 
+  Trash2, 
+  CheckCircle2, 
+  Plus, 
+  School, 
+  Search, 
+  MapPin, 
+  LayoutGrid, 
+  Info, 
+  CalendarDays, 
+  Building2,
+  X,
+  AlertCircle
+} from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from '@/components/ui/badge'
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
+import { cn } from '@/lib/utils'
 
 type AssistantEntry = {
   paterno: string;
@@ -55,6 +73,18 @@ export default function TrainingPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
   
+  // CCT Dynamic Logic
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [dialogSearchTerm, setDialogSearchTerm] = useState('')
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
+
   const initialCourseData = {
     id: '',
     cursoGrupo: '',
@@ -85,6 +115,14 @@ export default function TrainingPage() {
       localStorage.setItem('training_records_full', JSON.stringify(trainingRecords))
     } else {
       setRecords(stored)
+    }
+
+    // Sync Schools Master
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    if (storedSchools.length > 0) {
+      setAllSchools(storedSchools)
+    } else {
+      setAllSchools(schoolsDirectory)
     }
     
     const today = format(new Date(), 'yyyy-MM-dd')
@@ -125,7 +163,7 @@ export default function TrainingPage() {
     setCourseData(prev => ({ ...prev, cctSede: cleanValue }))
 
     if (cleanValue.length === 10) {
-      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+      const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
         setSelectedSedeInfo(match)
         toast({
@@ -138,6 +176,30 @@ export default function TrainingPage() {
     } else {
       setSelectedSedeInfo(null)
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: quickAddForm.domicilio.toUpperCase(),
+      localidad: quickAddForm.localidad.toUpperCase(),
+      sector: quickAddForm.sector.toUpperCase(),
+      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
+      modalidad: quickAddForm.modalidad.toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctSedeChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm('');
+    toast({ title: "CCT Registrado en Base Maestra" });
   }
 
   const handleAddRow = () => {
@@ -156,7 +218,7 @@ export default function TrainingPage() {
     if (field === 'cct') {
       const cleanValue = value.trim().toUpperCase()
       if (cleanValue.length === 10) {
-        const school = schoolsDirectory.find(s => s.cct.toUpperCase() === cleanValue)
+        const school = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
         if (school) {
           newAssistants[index] = {
             ...newAssistants[index],
@@ -248,6 +310,7 @@ export default function TrainingPage() {
     setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
     setEditingId(null)
     setSelectedSedeInfo(null)
+    setDialogSearchTerm('')
   }
 
   const handleEdit = (record: TrainingRecord) => {
@@ -270,7 +333,7 @@ export default function TrainingPage() {
     })
 
     if (record.cctSede) {
-      const match = schoolsDirectory.find(s => s.cct.toUpperCase() === record.cctSede.toUpperCase())
+      const match = allSchools.find(s => s.cct.toUpperCase() === record.cctSede.toUpperCase())
       if (match) setSelectedSedeInfo(match)
     }
     
@@ -313,6 +376,12 @@ export default function TrainingPage() {
     setEditingId(record.id)
     setIsDialogOpen(true)
   }
+
+  const schoolSearchResults = useMemo(() => {
+    if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
+    const term = dialogSearchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
+  }, [allSchools, dialogSearchTerm]);
 
   if (!mounted) return null
 
@@ -425,17 +494,42 @@ export default function TrainingPage() {
 
                       <div className="space-y-8 pt-8 border-t border-slate-200">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          <div className="md:col-span-2 space-y-2">
+                          <div className="md:col-span-2 space-y-2 relative">
                             <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
-                              <Search className="h-4 w-4" /> CCT Sede (Lugar de Realización)
+                              <Search className="h-4 w-4 text-accent" /> CCT Sede (Lugar de Realización)
                             </Label>
                             <Input 
-                              placeholder="Teclear CCT (10 caracteres) para autocompletar..."
+                              placeholder="Teclear CCT o Nombre del Plantel..."
                               className="font-mono uppercase border-primary/30 h-16 text-2xl shadow-inner bg-white focus:ring-4 focus:ring-primary/10" 
-                              value={courseData.cctSede} 
-                              onChange={e => handleCctSedeChange(e.target.value)} 
-                              maxLength={10}
+                              value={dialogSearchTerm} 
+                              onChange={e => setDialogSearchTerm(e.target.value)} 
                             />
+                            {dialogSearchTerm.length > 2 && (
+                              <div className="absolute top-26 left-0 right-0 max-h-60 overflow-auto bg-white border border-primary/10 rounded-2xl shadow-2xl z-50 divide-y divide-slate-50">
+                                {schoolSearchResults.map(s => (
+                                  <div key={`sede-res-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctSedeChange(s.cct); setDialogSearchTerm(''); }}>
+                                    <div className="flex items-center gap-4">
+                                      <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <School className="h-5 w-5" />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span>
+                                        <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.turno}</span>
+                                      </div>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                  </div>
+                                ))}
+                                {schoolSearchResults.length === 0 && (
+                                  <div className="p-6 text-center">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">CCT no registrado en la base maestra</p>
+                                    <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl border-primary/20 text-primary font-black uppercase text-[9px] gap-2 hover:bg-primary/5 shadow-sm">
+                                      <Plus className="h-4 w-4" /> Alta Rápida de Plantel
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -496,7 +590,7 @@ export default function TrainingPage() {
                              </div>
                              <div>
                                 <h5 className="text-sm font-black uppercase text-slate-500">Esperando CCT de Sede</h5>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Ingrese los 10 dígitos para jalar automáticamente los datos geográficos del plantel.</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Seleccione de la lista para jalar automáticamente los datos geográficos del plantel.</p>
                              </div>
                           </div>
                         )}
@@ -515,7 +609,7 @@ export default function TrainingPage() {
                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm">
                       <CheckCircle2 className="h-6 w-6 text-blue-600" />
                       <p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed tracking-wide">
-                        Sincronización Maestra: Al ingresar el CCT de 10 dígitos de cualquier trabajador, <br /> el sistema jala automáticamente el Nombre C.T., ZE y Sector de origen.
+                        Sincronización Maestra: Al ingresar el CCT de cualquier trabajador, <br /> el sistema jala automáticamente el Nombre C.T., ZE y Sector desde la base actualizada.
                       </p>
                     </div>
                     <Button onClick={handleAddRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md hover:scale-105 transition-all">
@@ -731,6 +825,92 @@ export default function TrainingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3">
+              <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
+            </DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">
+              Sume un nuevo plantel a la base maestra del sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label>
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Modalidad</Label>
+                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
+                    <SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
+                      <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
+                      <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Visitas Scheduler Modal */}
       <VisitSchedulerDialog 
