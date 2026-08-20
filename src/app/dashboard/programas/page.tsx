@@ -1,5 +1,6 @@
+
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -61,7 +62,14 @@ import {
   AlertCircle,
   MapPin,
   Phone,
-  LayoutGrid
+  LayoutGrid,
+  Upload,
+  ImageIcon,
+  FileText,
+  Archive,
+  Eye,
+  Printer,
+  Download
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -115,6 +123,8 @@ const BIBLIOTECA_FASES = [
   { id: 'fase6', label: 'Fase 6: Personal orientado en el uso y manejo de la herramienta' },
   { id: 'fase7', label: 'Fase 7: Envío vía correo al CCT el formulario de seguimiento' },
 ]
+
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
 
 function HelpDeskAccessCard() {
   const [origin, setOrigin] = useState('')
@@ -182,6 +192,15 @@ export default function ProgramsPage() {
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
   const [pendingCount, setPendingRequestsCount] = useState(0)
+  
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  
+  const [evidenceToView, setEvidenceToView] = useState<{ 
+    pdfData?: string, 
+    images?: string[], 
+    title: string 
+  } | null>(null)
 
   // CCT Dynamic Logic
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
@@ -195,10 +214,12 @@ export default function ProgramsPage() {
   })
 
   const initialFormState: ProgramStatus = {
-    id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
+    id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], requestDate: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     oficinaRegionalAtencion: '',
+    reportPdf: '',
+    evidencePhotos: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase5: false, fase6: false, fase7: false,
       personalCapacitado: 0, equiposHabilitados: 0
@@ -298,6 +319,36 @@ export default function ProgramsPage() {
     toast({ title: "CCT Registrado", description: `${newSchool.cct} se ha sumado a la base maestra.` })
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > FILE_SIZE_LIMIT) {
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "El límite es de 2.0 MB." })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (type === 'pdf') {
+        setFormData(prev => ({ ...prev, reportPdf: base64 }))
+      } else {
+        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
+      }
+      toast({ title: "Evidencia añadida" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
+    }))
+  }
+
   const handleUpdateFase = (faseId: keyof NonNullable<ProgramStatus['bibliotecaFases']>, value: boolean) => {
     if (!formData.bibliotecaFases) return;
     const updatedFases = { ...formData.bibliotecaFases, [faseId]: value };
@@ -358,12 +409,16 @@ export default function ProgramsPage() {
       ? records.map(r => r.id === editingId ? recordToSave : r) 
       : [{...recordToSave, id: recordToSave.id || `SOL-${Date.now()}`}, ...records];
     
-    setRecords(updated)
-    localStorage.setItem('programs_full_v24', JSON.stringify(updated))
-    setIsDialogOpen(false)
-    setEditingId(null)
-    setFormData(initialFormState)
-    toast({ title: "Cambios guardados correctamente" })
+    try {
+      localStorage.setItem('programs_full_v24', JSON.stringify(updated))
+      setRecords(updated)
+      setIsDialogOpen(false)
+      setEditingId(null)
+      setFormData(initialFormState)
+      toast({ title: "Cambios guardados correctamente" })
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error de Memoria", description: "Almacenamiento lleno. Reduzca el tamaño de PDF o imágenes." })
+    }
   }
 
   const handleDeleteRow = (recordId: string, assistantIndex?: number) => {
@@ -445,7 +500,7 @@ export default function ProgramsPage() {
     } else if (isBibliotecaTab) {
       dataToExport = filteredRecords.map(r => ({
         'CCT': r.cct, 'Plantel': r.schoolName, 'Progreso %': r.progress, 'Equipos': r.bibliotecaFases?.equiposHabilitados,
-        'Personal': r.bibliotecaFases?.personalCapacitado, 'Fecha': r.date
+        'Personal': r.bibliotecaFases?.personalCapacitado, 'Fecha Solicitud': r.requestDate, 'Fecha Atención': r.date
       }));
     } else {
       dataToExport = filteredRecords.map(rec => ({
@@ -459,6 +514,25 @@ export default function ProgramsPage() {
     XLSX.writeFile(workbook, `Reporte_${activeTab.replace(/ /g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
     toast({ title: "Exportación Exitosa" });
   };
+
+  const openEvidenceViewer = (record: ProgramStatus) => {
+    if (!record.reportPdf && (!record.evidencePhotos || record.evidencePhotos.length === 0)) {
+      toast({ title: "Sin evidencias", description: "Este registro no cuenta con archivos adjuntos." });
+      return;
+    }
+
+    setEvidenceToView({
+      pdfData: record.reportPdf,
+      images: record.evidencePhotos,
+      title: `Evidencia: ${record.schoolName}`
+    });
+  }
+
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) return;
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
 
   const schoolSearchResults = useMemo(() => {
     if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
@@ -512,7 +586,7 @@ export default function ProgramsPage() {
               <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Buscador Operativo</Label>
               <div className="relative">
                 <Input placeholder="CCT, PLANTEL O USUARIO..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
               </div>
            </div>
         </div>
@@ -585,6 +659,9 @@ export default function ProgramsPage() {
                                   <span className={cn("text-[11px] font-black", rec.progress === 100 ? "text-emerald-600" : "text-primary")}>{rec.progress}%</span>
                                   <span className="text-[10px] font-mono font-black text-slate-700 tracking-tighter">{rec.cct}</span>
                                   <div className="flex gap-1 mt-1">
+                                    <button onClick={() => openEvidenceViewer(rec)} className={cn("h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center transition-all", (rec.reportPdf || (rec.evidencePhotos && rec.evidencePhotos.length > 0)) ? "text-emerald-600 border-emerald-200" : "text-slate-300")}>
+                                      <Archive className="h-3.5 w-3.5" />
+                                    </button>
                                     <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all">
                                       <Pencil className="h-3.5 w-3.5" />
                                     </button>
@@ -618,6 +695,12 @@ export default function ProgramsPage() {
                          </TableRow>
                        ))}
                        <TableRow className="bg-primary/[0.02] border-t-2 border-primary/10">
+                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Fecha de Solicitud</TableCell>
+                          {filteredRecords.map((rec, idx) => (
+                            <TableCell key={`req-date-${idx}`} className="text-center font-bold text-[9px] text-accent border-l border-slate-50 uppercase">{rec.requestDate || 'S/D'}</TableCell>
+                          ))}
+                       </TableRow>
+                       <TableRow className="bg-primary/[0.02]">
                           <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Fecha de Atención</TableCell>
                           {filteredRecords.map((rec, idx) => (
                             <TableCell key={`date-${idx}`} className="text-center font-bold text-[9px] text-slate-500 border-l border-slate-50 uppercase">{rec.date}</TableCell>
@@ -787,7 +870,8 @@ export default function ProgramsPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Fecha de Solicitud</Label><Input type="date" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={formData.requestDate} onChange={e => setFormData({...formData, requestDate: e.target.value})} /></div>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Fecha de Atención</Label><Input type="date" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase text-primary pl-1">Personal Capacitado</Label>
@@ -811,6 +895,51 @@ export default function ProgramsPage() {
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
                         <Textarea className="min-h-[120px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico o acuerdos del módulo..." />
+                      </div>
+
+                      <div className="space-y-6 pt-6 border-t-2 border-primary/5">
+                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg"><Archive className="h-6 w-6" /></div><h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia Digital (PDF e imágenes PNG)</h3></div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-4">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Reporte Oficial Escaneado (PDF)</Label>
+                              <div className={cn("p-6 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all relative group", formData.reportPdf ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200 hover:border-primary/40")}>
+                                 {formData.reportPdf ? (
+                                   <div className="flex flex-col items-center gap-3">
+                                      <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600"><FileText className="h-8 w-8" /></div>
+                                      <p className="text-[10px] font-black uppercase text-emerald-700">REPORTE CARGADO</p>
+                                      <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-8 w-8 text-rose-500 hover:bg-rose-100 rounded-full" onClick={() => setFormData(prev => ({...prev, reportPdf: ''}))}><X className="h-4 w-4" /></Button>
+                                   </div>
+                                 ) : (
+                                   <>
+                                      <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
+                                      <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 2.0 MB</p></div>
+                                      <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar</Button>
+                                   </>
+                                 )}
+                                 <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
+                              </div>
+                           </div>
+
+                           <div className="space-y-4">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Galería de Evidencias (PNG)</Label>
+                              <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
+                                  <ImageIcon className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
+                                  <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Máximo 2.0 MB por archivo</p></div>
+                                  <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Añadir Imagen</Button>
+                                  <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-3 mt-4">
+                                 {(formData.evidencePhotos || []).map((img, idx) => (
+                                   <div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group">
+                                      <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                                      <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+                                   </div>
+                                 ))}
+                              </div>
+                           </div>
+                        </div>
                       </div>
                     </TabsContent>
 
@@ -1037,6 +1166,77 @@ export default function ProgramsPage() {
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
              <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
              <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visor de Evidencia */}
+      <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+                <Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
+                Expediente Digital de Programas Técnicos COEES
+              </DialogDescription>
+            </div>
+            <div className="flex gap-4">
+              {evidenceToView?.pdfData && (
+                <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl">
+                  <Printer className="h-4 w-4" /> Imprimir Reporte
+                </Button>
+              )}
+              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50/50">
+               <TabsList className="bg-transparent h-14 p-0 gap-8">
+                  {evidenceToView?.pdfData && (
+                    <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
+                      <FileText className="h-4 w-4" /> Reporte Oficial PDF
+                    </TabsTrigger>
+                  )}
+                  {evidenceToView?.images && evidenceToView.images.length > 0 && (
+                    <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" /> Galería de Evidencias ({evidenceToView.images.length})
+                    </TabsTrigger>
+                  )}
+               </TabsList>
+            </div>
+            <div className="flex-1 overflow-hidden bg-slate-100/50">
+               <TabsContent value="pdf" className="h-full m-0 p-0">
+                  {evidenceToView?.pdfData ? (
+                    <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" />
+                  ) : (
+                    <div className="h-full flex items-center justify-center opacity-20">
+                      <FileText className="h-20 w-20" />
+                    </div>
+                  )}
+               </TabsContent>
+               <TabsContent value="gallery" className="h-full m-0 overflow-hidden">
+                  <ScrollArea className="h-full p-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {evidenceToView?.images?.map((img, idx) => (
+                           <div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in">
+                              <Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
+                              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Eye className="h-8 w-8 text-white" />
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </ScrollArea>
+               </TabsContent>
+            </div>
+          </Tabs>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+            <Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

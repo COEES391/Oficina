@@ -47,6 +47,7 @@ export type ProgramStatus = {
   progress: number;
   status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente';
   date: string;
+  requestDate?: string;
   cct?: string;
   schoolName?: string;
   zonaEscolar?: string;
