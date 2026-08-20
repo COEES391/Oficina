@@ -27,7 +27,8 @@ import {
   CalendarDays, 
   Building2,
   X,
-  AlertCircle
+  AlertCircle,
+  ChevronRight
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
