@@ -257,7 +257,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                       ))}
                       {schoolSearchResults.length === 0 && (
                         <div className="p-3 text-center">
-                          <Button size="sm" variant="ghost" className="h-6 text-[8px] font-black uppercase text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: cctSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }}>
+                          <Button size="sm" variant="ghost" className="h-6 text-[8px] font-black uppercase text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }}>
                             <Plus className="h-3 w-3 mr-1" /> Registrar Nuevo CCT
                           </Button>
                         </div>
@@ -389,6 +389,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                         <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
                         <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
                         <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                        <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -397,7 +398,7 @@ export function VisitSchedulerDialog({ open, onOpenChange, areaId, areaName }: V
                <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
-                    <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem></SelectContent></Select>
+                    <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>

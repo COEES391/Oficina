@@ -170,8 +170,8 @@ export default function BaseParticipantesPage() {
         }))
       } else {
         // If not found, offer quick add
+        setQuickAddForm({...quickAddForm, cct: ''})
         setIsQuickAddOpen(true)
-        setQuickAddForm({...quickAddForm, cct: cleanVal})
       }
     }
   }
@@ -478,7 +478,7 @@ export default function BaseParticipantesPage() {
                              Haga clic o arrastre el archivo aquí <Badge variant="outline" className="bg-rose-50 text-rose-600 border-rose-200 text-[7px] px-1 h-4">MÁX. 400KB</Badge>
                           </div>
                        </div>
-                       <Input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                       <input type="file" accept=".pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar Archivo</Button>
                     </div>
 
@@ -533,7 +533,7 @@ export default function BaseParticipantesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" group-focus-within:text-primary transition-colors" />
           </div>
 
           <div className="flex items-center gap-3">
@@ -688,6 +688,7 @@ export default function BaseParticipantesPage() {
                       <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
                       <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
                       <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -696,7 +697,7 @@ export default function BaseParticipantesPage() {
              <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
-                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem></SelectContent></Select>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
