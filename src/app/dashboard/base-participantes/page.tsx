@@ -273,7 +273,11 @@ export default function BaseParticipantesPage() {
       setEditingId(null)
       toast({ title: editingId ? "Participante Actualizado" : "Participante Registrado" })
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de Memoria", description: "No se pudo guardar por el tamaño acumulado de los PDFs." })
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Memoria", 
+        description: "No se pudo guardar por el tamaño acumulado de los PDFs. Intente eliminar documentos antiguos o subir archivos más pequeños." 
+      })
     }
   }
 
@@ -630,7 +634,6 @@ export default function BaseParticipantesPage() {
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end shrink-0"><Button onClick={() => { setIsViewerOpen(false); setPdfToPreview(null); }} className="btn-institutional h-12 px-10 text-[10px]">Cerrar Visor</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">

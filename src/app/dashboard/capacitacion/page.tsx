@@ -301,6 +301,7 @@ export default function TrainingPage() {
       return
     }
 
+    // OPTIMIZACIÓN: Solo guardamos los archivos en el primer registro para ahorrar espacio local (QuotaExceededError)
     const newRecords: TrainingRecord[] = validAssistants.map((ast, idx) => ({
       ...courseData,
       id: editingId ? (editingId.includes('-') ? editingId.split('-')[0] + `-${idx}-${Date.now()}` : `${editingId}-${idx}-${Date.now()}`) : `${courseData.id}-${idx}-${Date.now()}`,
@@ -319,23 +320,33 @@ export default function TrainingPage() {
       asistenteMunicipio: ast.municipio,
       asistenteRegion: ast.region,
       asistenteValle: ast.valle,
-      reportPdf: courseData.reportPdf,
-      evidencePhotos: courseData.evidencePhotos || [],
+      // Solo el primer registro guarda la data pesada, los demás apuntan al mismo folio
+      reportPdf: idx === 0 ? courseData.reportPdf : '',
+      evidencePhotos: idx === 0 ? (courseData.evidencePhotos || []) : [],
       observaciones: courseData.observaciones || '',
     }))
 
     let updated;
+    const baseFolio = editingId ? editingId.split('-')[0] : courseData.id;
     if (editingId) {
-      updated = [...newRecords, ...records.filter(r => !r.id.startsWith(editingId.split('-')[0]))]
+      updated = [...newRecords, ...records.filter(r => !r.id.startsWith(baseFolio))]
     } else {
       updated = [...newRecords, ...records]
     }
 
-    setRecords(updated)
-    localStorage.setItem('training_records_full', JSON.stringify(updated))
-    setIsDialogOpen(false)
-    resetForm()
-    toast({ title: "Registro exitoso", description: `Se han guardado ${newRecords.length} registros de capacitación.` })
+    try {
+      localStorage.setItem('training_records_full', JSON.stringify(updated))
+      setRecords(updated)
+      setIsDialogOpen(false)
+      resetForm()
+      toast({ title: "Registro exitoso", description: `Se han guardado ${newRecords.length} registros de capacitación.` })
+    } catch (e) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Memoria", 
+        description: "El almacenamiento local está lleno. Intente reducir el número de imágenes o suba un PDF de menor resolución." 
+      })
+    }
   }
 
   const handleDelete = (id: string) => {
@@ -360,6 +371,9 @@ export default function TrainingPage() {
 
   const handleEdit = (record: TrainingRecord) => {
     const folio = record.id.split('-')[0];
+    // Buscamos cualquier registro del mismo grupo que contenga los archivos (usualmente el primero)
+    const masterRecord = records.find(r => r.id.startsWith(folio) && (r.reportPdf || (r.evidencePhotos && r.evidencePhotos.length > 0))) || record;
+
     setCourseData({
       id: folio,
       cursoGrupo: record.cursoGrupo,
@@ -375,8 +389,8 @@ export default function TrainingPage() {
       observaciones: record.observaciones || '',
       alumnosBeneficiados: record.alumnosBeneficiados || 0,
       docentesBeneficiados: record.docentesBeneficiados || 0,
-      reportPdf: record.reportPdf || '',
-      evidencePhotos: record.evidencePhotos || []
+      reportPdf: masterRecord.reportPdf || '',
+      evidencePhotos: masterRecord.evidencePhotos || []
     })
 
     if (record.cctSede) {
@@ -757,7 +771,7 @@ export default function TrainingPage() {
                                 <Input placeholder="13 DÍGITOS" className="h-10 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
                               </TableCell>
                               <TableCell className="p-3">
-                                <Select value={ast.function} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
                                   <SelectTrigger className="h-10 text-[10px] font-bold uppercase">
                                     <SelectValue placeholder="FUNCIÓN..." />
                                   </SelectTrigger>

@@ -296,12 +296,20 @@ export default function SupportPage() {
       updated = [{ ...formData, status: 'pendiente' } as SupportTicket, ...tickets];
     }
 
-    setTickets(updated);
-    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
-    setIsDialogOpen(false);
-    resetForm();
-    setEditingTicketId(null);
-    toast({ title: "Reporte Guardado" });
+    try {
+      localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+      setTickets(updated);
+      setIsDialogOpen(false);
+      resetForm();
+      setEditingTicketId(null);
+      toast({ title: "Reporte Guardado" });
+    } catch (e) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Memoria", 
+        description: "El almacenamiento local está lleno. Intente reducir el tamaño de las evidencias PNG o PDF." 
+      })
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
@@ -672,108 +680,3 @@ export default function SupportPage() {
           <DialogFooter className="p-8 border-t bg-slate-50/50"><Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">Guardar Servicio</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Diálogo de Alta Rápida de CCT */}
-      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
-            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra.</DialogDescription>
-          </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><input type="text" value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="flex h-12 w-full rounded-xl border border-slate-200 bg-white px-6 font-mono font-black shadow-inner" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" /></div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Domicilio</Label><Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label><Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200" /></div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Localidad</Label><Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" /></div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Sector</Label><Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label><Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Modalidad</Label><Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem><SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem><SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem><SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem></SelectContent></Select></div>
-             </div>
-             <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Turno</Label><Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div>
-             </div>
-          </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte Técnico" />
-
-      {/* Visor de Evidencia Unificado */}
-      <Dialog open={!!evidenceToView} onOpenChange={() => setEvidenceToView(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-              <Layers className="h-7 w-7 text-accent" /> {evidenceToView?.title}
-            </DialogTitle>
-            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Expediente Técnico Digital de Atención</DialogDescription>
-          </DialogHeader>
-
-          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b bg-slate-50">
-              <TabsList className="bg-transparent h-14 p-0 gap-8">
-                {evidenceToView?.pdfData && (
-                  <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase flex items-center gap-2">
-                    <FileText className="h-4 w-4" /> Reporte PDF
-                  </TabsTrigger>
-                )}
-                {evidenceToView?.images && evidenceToView.images.length > 0 && (
-                  <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" /> Galería PNG ({evidenceToView.images.length})
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </div>
-
-            <div className="flex-1 overflow-hidden bg-slate-900/5">
-              <TabsContent value="pdf" className="h-full m-0 p-0">
-                {evidenceToView?.pdfData && (
-                  <div className="h-full flex flex-col">
-                    <div className="flex justify-between items-center px-8 py-3 bg-white border-b">
-                      <p className="text-[10px] font-black uppercase text-slate-400">Previsualización de Documento Oficial</p>
-                      <div className="flex gap-2">
-                         <Button onClick={() => evidenceToView.pdfData && printFile(evidenceToView.pdfData)} variant="outline" size="sm" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary">
-                            <Printer className="h-3.5 w-3.5 mr-1" /> Imprimir
-                         </Button>
-                      </div>
-                    </div>
-                    <iframe src={evidenceToView.pdfData} className="flex-1 w-full border-none bg-white" title="PDF Evidence" />
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="gallery" className="h-full m-0 p-0">
-                <ScrollArea className="h-full">
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {evidenceToView?.images?.map((img, idx) => (
-                      <div key={`ev-v-img-${idx}`} className="relative group aspect-video rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl bg-white animate-in zoom-in-95 duration-500">
-                         <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
-                         <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Badge className="bg-white text-primary font-black uppercase text-[10px] px-4 py-1">Captura {idx + 1}</Badge>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-            </div>
-          </Tabs>
-
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end shrink-0">
-            <Button variant="secondary" onClick={() => setEvidenceToView(null)} className="rounded-xl h-12 px-10 text-[10px] font-black uppercase shadow-lg">Cerrar Expediente</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
