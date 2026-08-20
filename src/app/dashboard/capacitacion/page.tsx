@@ -1,5 +1,6 @@
+
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -28,13 +29,20 @@ import {
   Building2,
   X,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Upload,
+  FileText,
+  ImageIcon,
+  Archive
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from '@/components/ui/badge'
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
+
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
 
 type AssistantEntry = {
   paterno: string;
@@ -74,6 +82,9 @@ export default function TrainingPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOficinaFilter] = useState('all')
   
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
   // CCT Dynamic Logic
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
@@ -101,6 +112,8 @@ export default function TrainingPage() {
     observaciones: '',
     alumnosBeneficiados: 0,
     docentesBeneficiados: 0,
+    reportPdf: '',
+    evidencePhotos: [] as string[]
   }
 
   const [courseData, setCourseData] = useState(initialCourseData)
@@ -177,6 +190,36 @@ export default function TrainingPage() {
     } else {
       setSelectedSedeInfo(null)
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > FILE_SIZE_LIMIT) {
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "El límite es de 2.0 MB por archivo." })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (type === 'pdf') {
+        setCourseData(prev => ({ ...prev, reportPdf: base64 }))
+      } else {
+        setCourseData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
+      }
+      toast({ title: "Evidencia cargada" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setCourseData(prev => ({
+      ...prev,
+      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
+    }))
   }
 
   const handleQuickAddCct = () => {
@@ -276,7 +319,8 @@ export default function TrainingPage() {
       asistenteMunicipio: ast.municipio,
       asistenteRegion: ast.region,
       asistenteValle: ast.valle,
-      evidencePhotos: [],
+      reportPdf: courseData.reportPdf,
+      evidencePhotos: courseData.evidencePhotos || [],
       observaciones: courseData.observaciones || '',
     }))
 
@@ -331,6 +375,8 @@ export default function TrainingPage() {
       observaciones: record.observaciones || '',
       alumnosBeneficiados: record.alumnosBeneficiados || 0,
       docentesBeneficiados: record.docentesBeneficiados || 0,
+      reportPdf: record.reportPdf || '',
+      evidencePhotos: record.evidencePhotos || []
     })
 
     if (record.cctSede) {
@@ -601,6 +647,68 @@ export default function TrainingPage() {
                         <Label className="text-[11px] font-black uppercase text-primary tracking-widest pl-2">Observaciones Técnicas y Acuerdos</Label>
                         <Input value={courseData.observaciones} onChange={e => setCourseData({...courseData, observaciones: e.target.value})} className="h-16 bg-slate-50 border-primary/10 rounded-2xl px-6 shadow-inner" placeholder="Notas adicionales sobre la capacitación..." />
                       </div>
+
+                      <div className="space-y-6 pt-6 border-t-2 border-primary/5">
+                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                          <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg">
+                            <Archive className="h-6 w-6" />
+                          </div>
+                          <h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia Digital (PDF e imágenes PNG)</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Reporte de Capacitación (PDF)</Label>
+                            <div className={cn("p-6 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all relative group", courseData.reportPdf ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200 hover:border-primary/40")}>
+                              {courseData.reportPdf ? (
+                                <div className="flex flex-col items-center gap-3">
+                                  <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600">
+                                    <FileText className="h-8 w-8" />
+                                  </div>
+                                  <p className="text-[10px] font-black uppercase text-emerald-700">REPORTE CARGADO</p>
+                                  <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-8 w-8 text-rose-500 hover:bg-rose-100 rounded-full" onClick={() => setCourseData(prev => ({...prev, reportPdf: ''}))}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
+                                  <div className="text-center">
+                                    <p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 2.0 MB</p>
+                                  </div>
+                                  <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar</Button>
+                                </>
+                              )}
+                              <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Galería Fotográfica (PNG)</Label>
+                            <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
+                              <ImageIcon className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
+                              <div className="text-center">
+                                <p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG</p>
+                                <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Máximo 2.0 MB por archivo</p>
+                              </div>
+                              <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Añadir Imagen</Button>
+                              <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-3 mt-4">
+                              {(courseData.evidencePhotos || []).map((img, idx) => (
+                                <div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group">
+                                  <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                                  <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </ScrollArea>
                 </TabsContent>
@@ -649,7 +757,7 @@ export default function TrainingPage() {
                                 <Input placeholder="13 DÍGITOS" className="h-10 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
                               </TableCell>
                               <TableCell className="p-3">
-                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                <Select value={ast.function} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
                                   <SelectTrigger className="h-10 text-[10px] font-bold uppercase">
                                     <SelectValue placeholder="FUNCIÓN..." />
                                   </SelectTrigger>

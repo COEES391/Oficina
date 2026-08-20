@@ -118,7 +118,7 @@ export type ProgramStatus = {
 };
 
 export const programsData: ProgramStatus[] = [];
-export const supportData: SupportTicket[] = [];
+export const supportData: any[] = [];
 export const trainingRecords: TrainingRecord[] = [];
 export type TrainingRecord = {
   id: string;
@@ -147,6 +147,7 @@ export type TrainingRecord = {
   asistenteMunicipio: string;
   asistenteRegion: string;
   asistenteValle: string;
+  reportPdf?: string;
   evidencePhotos: string[];
   observaciones: string;
   alumnosBeneficiados: number;
