@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { 
@@ -585,7 +586,7 @@ export default function SupportPage() {
               </Select>
 
               <Button variant="outline" className="h-12 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-sm" onClick={() => setIsSchedulerOpen(true)}>
-                <CalendarDays className="h-5 w-5" /> Agenda
+                <CalendarDays className="h-4 w-4" /> Agenda
               </Button>
            </div>
         </div>
@@ -1012,4 +1013,3 @@ export default function SupportPage() {
     </div>
   )
 }
-
