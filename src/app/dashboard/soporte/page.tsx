@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -66,7 +65,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // Aumentado a 2.0 MB
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
 
 type InventoryItem = {
   id: number;
@@ -96,11 +95,6 @@ const INITIAL_INVENTORY: InventoryItem[] = [
   { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['TOLUCA'] },
   { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO', locations: ['NEZAHUALCÓYOTL'] },
   { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['NAUCALPAN'] },
-  { id: 6, name: 'Canaleta PVC 20x10', qty: 40, unit: 'Tramo 2m', minStock: 20, category: 'REDES', locations: ['TULTITLAN'] },
-  { id: 7, name: 'Rosetas RJ45 Dobles', qty: 25, unit: 'Pieza', minStock: 10, category: 'REDES', locations: ['TOLUCA'] },
-  { id: 8, name: 'Patch Cord 1.5m / 3m', qty: 45, unit: 'Pieza', minStock: 15, category: 'REDES', locations: ['ECATEPEC'] },
-  { id: 9, name: 'Switch de 8 Puertos Giga', qty: 3, unit: 'Pieza', minStock: 5, category: 'EQUIPOS', locations: ['TULTITLAN'] },
-  { id: 10, name: 'Kit de Herramientas de Red', qty: 5, unit: 'Set', minStock: 2, category: 'HERRAMIENTA', locations: ['NAUCALPAN'] },
 ];
 
 export default function SupportPage() {
@@ -206,17 +200,6 @@ export default function SupportPage() {
       equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
       fallaIdentificada: '',
       servicioRealizado: ''
-    },
-    edusatDetalle: {
-      micropak: [],
-      antena: [],
-      decodificadorAcciones: [],
-      cableado: [],
-      preventivo: [],
-      numCensal: '',
-      numSerie: '',
-      calidadSeñal: '',
-      materiales: Array(8).fill({ material: '', cantidad: '', actividades: '' })
     }
   }
 
@@ -680,3 +663,155 @@ export default function SupportPage() {
           <DialogFooter className="p-8 border-t bg-slate-50/50"><Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); setEditingTicketId(null); }} className="rounded-xl h-14 px-10 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px]">Guardar Servicio</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Visor de Evidencia Técnica */}
+      <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}</DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Auditoría Digital de Soporte Técnico</DialogDescription>
+            </div>
+            <div className="flex gap-4">
+              {evidenceToView?.pdfData && <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir Reporte</Button>}
+              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"><X className="h-5 w-5" /></button>
+            </div>
+          </DialogHeader>
+
+          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50/50">
+               <TabsList className="bg-transparent h-14 p-0 gap-8">
+                  {evidenceToView?.pdfData && <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2"><FileText className="h-4 w-4" /> Reporte Oficial PDF</TabsTrigger>}
+                  {evidenceToView?.images && evidenceToView.images.length > 0 && <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Galería de Capturas ({evidenceToView.images.length})</TabsTrigger>}
+               </TabsList>
+            </div>
+            <div className="flex-1 overflow-hidden bg-slate-100/50">
+               <TabsContent value="pdf" className="h-full m-0 p-0">
+                  {evidenceToView?.pdfData ? <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" /> : <div className="h-full flex items-center justify-center opacity-20"><FileText className="h-20 w-20" /></div>}
+               </TabsContent>
+               <TabsContent value="gallery" className="h-full m-0 overflow-hidden">
+                  <ScrollArea className="h-full p-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {evidenceToView?.images?.map((img, idx) => (
+                           <div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in">
+                              <Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
+                              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div>
+                           </div>
+                        ))}
+                     </div>
+                  </ScrollArea>
+               </TabsContent>
+            </div>
+          </Tabs>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3">
+              <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
+            </DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">
+              Sume un nuevo plantel a la base maestra del sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label>
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Modalidad</Label>
+                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
+                    <SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
+                      <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
+                      <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
+             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Edición de Insumo */}
+      <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-primary text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><Layers className="h-6 w-6 text-accent" /> Insumo de Almacén</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Insumo</Label><Input value={editingItem?.name} onChange={e => setEditingItem(prev => prev ? {...prev, name: e.target.value.toUpperCase()} : null)} className="font-bold border-slate-200" /></div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Stock Mínimo</Label><Input type="number" value={editingItem?.minStock} onChange={e => setEditingItem(prev => prev ? {...prev, minStock: parseInt(e.target.value) || 0} : null)} /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Unidad</Label><Input value={editingItem?.unit} onChange={e => setEditingItem(prev => prev ? {...prev, unit: e.target.value.toUpperCase()} : null)} /></div>
+            </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsEditItemOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleSaveEditedItem} className="btn-institutional h-12 px-10 text-[10px]">Guardar Insumo</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Visitas Scheduler Modal */}
+      <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte Técnico" />
+    </div>
+  );
+}
