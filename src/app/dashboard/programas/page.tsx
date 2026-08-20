@@ -630,9 +630,23 @@ export default function ProgramsPage() {
                           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
                           <YAxis dataKey="progreso" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
                           <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                          <Bar dataKey="progreso" radius={[4, 4, 0, 0]} barSize={25}>
+                          <Bar 
+                            dataKey="progreso" 
+                            radius={[4, 4, 0, 0]} 
+                            barSize={25}
+                            onClick={(data) => {
+                              if (data && data.name) {
+                                const record = filteredRecords.find(r => r.cct === data.name);
+                                if (record) openEvidenceViewer(record);
+                              }
+                            }}
+                          >
                              {dashboardData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.progreso === 100 ? '#621132' : '#B38E5D'} />
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={entry.progreso === 100 ? '#621132' : '#B38E5D'} 
+                                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                                />
                              ))}
                           </Bar>
                        </BarChart>
