@@ -88,7 +88,7 @@ const PROGRAM_RUBROS = [
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa NaucalPAN",
+  "Oficina de Tecnóloga Educativa Naucalpan",
   "Oficina de Tecnóloga Educativa Nezahualcóyotl",
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
@@ -224,13 +224,6 @@ export default function ProgramsPage() {
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase5: false, fase6: false, fase7: false,
       personalCapacitado: 0, equiposHabilitados: 0
-    },
-    mantenimientoDetalle: {
-      equipoTecnologico: '',
-      equipoTecnologicoOtro: '',
-      equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
-      fallaIdentificada: '',
-      servicioRealizado: ''
     }
   }
 
@@ -291,6 +284,30 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: quickAddForm.domicilio.toUpperCase(),
+      localidad: quickAddForm.localidad.toUpperCase(),
+      sector: quickAddForm.sector.toUpperCase(),
+      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
+      modalidad: quickAddForm.modalidad.toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm('');
+    toast({ title: "CCT Registrado en Base Maestra" });
+  }
+
   const handleUpdateFase = (faseId: keyof NonNullable<ProgramStatus['bibliotecaFases']>, value: boolean) => {
     if (!formData.bibliotecaFases) return;
     const updatedFases = { ...formData.bibliotecaFases, [faseId]: value };
@@ -334,6 +351,36 @@ export default function ProgramsPage() {
     });
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > FILE_SIZE_LIMIT) {
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "El límite es de 2.0 MB." })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (type === 'pdf') {
+        setFormData(prev => ({ ...prev, reportPdf: base64 }))
+      } else {
+        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
+      }
+      toast({ title: "Evidencia cargada" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
+    }))
+  }
+
   const handleSave = () => {
     const recordToSave = { ...formData };
     if (!recordToSave.cct && recordToSave.asistentes && recordToSave.asistentes.length > 0) {
@@ -346,10 +393,6 @@ export default function ProgramsPage() {
         recordToSave.valle = school.valle;
       }
     }
-
-    // OPTIMIZACIÓN: Si es un censo con muchos usuarios, la evidencia (PDF/Imágenes) 
-    // solo debe guardarse en el objeto raíz, no replicarse en cada registro 
-    // (aunque aquí ProgramStatus suele ser un solo documento por escuela).
     
     const updated = editingId 
       ? records.map(r => r.id === editingId ? recordToSave : r) 
@@ -812,7 +855,7 @@ export default function ProgramsPage() {
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
                     <TabsContent value="seguimiento" className="p-8 space-y-6 m-0">
-                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4">
+                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
                         <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                             <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
                         </Label>
@@ -981,11 +1024,11 @@ export default function ProgramsPage() {
               <ScrollArea className="h-full">
                 <div className="p-8 space-y-8">
                   <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
+                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
                         <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
                     </Label>
                     <div className="relative">
-                        <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/5 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                        <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                         {dialogSearchTerm.length > 2 && (
                           <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
                             {schoolSearchResults.map(s => (
