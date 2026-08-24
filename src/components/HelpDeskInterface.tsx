@@ -49,11 +49,13 @@ import {
   FileBox,
   User,
   History,
-  Circle
+  Circle,
+  PlusCircle,
+  Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
-import { schoolsDirectory } from '@/lib/schools-directory'
+import { schoolsDirectory, type SchoolInfo } from '@/lib/schools-directory'
 import { format } from 'date-fns'
 import { type BitacoraEntry } from '@/lib/planning-data'
 
@@ -134,6 +136,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   
   const [pdfToPreview, setPdfToPreview] = useState<string | null>(null)
   
+  // Dynamic School States
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -142,7 +155,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
 
-  // Purga agresiva de chats antiguos para liberar espacio local
   const purgeOldChats = useCallback(() => {
     const keys = Object.keys(localStorage);
     const chatKeys = keys.filter(k => k.startsWith('atres_chat_'));
@@ -181,7 +193,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const bitacora: BitacoraEntry[] = JSON.parse(localStorage.getItem('atres_bitacora') || '[]')
     setFormalRequests(bitacora.filter(b => b.status === 'pendiente' || b.status === 'proceso'))
     
-    // Sincronización real con la base maestra de programas para el historial de hoy
     const today = format(new Date(), 'yyyy-MM-dd');
     const progs = JSON.parse(localStorage.getItem('programs_full_v24') || '[]');
     const todayAtres = progs.filter((p: any) => p.name === 'ATRES' && p.date === today);
@@ -227,13 +238,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }, [activeChatId])
 
+  const syncSchools = useCallback(() => {
+    const stored = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    if (stored.length > 0) {
+      setAllSchools(stored)
+    } else {
+      setAllSchools(schoolsDirectory)
+    }
+  }, []);
+
   useEffect(() => {
     if (isPublic) {
-      // PERSISTENCIA DE SESIÓN: Si ya existe un ID en sessionStorage, no generar uno nuevo
       const existingSession = sessionStorage.getItem('atres_session_id');
       if (existingSession) {
         setSessionKey(existingSession);
-        // Verificar si ya tiene un ticket remoto activo
         const rawQueue = localStorage.getItem('atres_support_queue');
         const currentQueue: SupportRequest[] = JSON.parse(rawQueue || '[]');
         const myReq = currentQueue.find(r => r.chatKey === existingSession);
@@ -251,8 +269,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       if (savedTechName) setTechName(savedTechName)
       updateAttendedCount();
       syncFormalRequests();
+      syncSchools();
     }
-  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests, purgeOldChats])
+  }, [isPublic, generateTurnSessionId, updateAttendedCount, syncFormalRequests, purgeOldChats, syncSchools])
 
   useEffect(() => {
     setMounted(true)
@@ -260,19 +279,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     syncChat()
     if (!isPublic) {
       syncFormalRequests()
+      syncSchools()
     }
     const handleStorageChange = (e: StorageEvent) => {
-      // Reaccionar instantáneamente a cambios en otros tabs (Analista <-> Usuario)
       if (e.key === 'atres_support_queue') syncQueue()
       if (e.key === 'atres_bitacora' || e.key === 'programs_full_v24') {
         syncFormalRequests()
         updateAttendedCount()
       }
+      if (e.key === 'schools_master_full_v21') syncSchools()
       if (activeChatId && e.key === `atres_chat_${activeChatId}`) syncChat()
     };
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [syncQueue, syncChat, activeChatId, isPublic, updateAttendedCount, syncFormalRequests])
+  }, [syncQueue, syncChat, activeChatId, isPublic, updateAttendedCount, syncFormalRequests, syncSchools])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' })
@@ -321,11 +341,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           chatKey: sessionKey
         };
         localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
-        // Notificar al analista
         window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue' }));
       }
 
-      // MONITOR DE PALABRAS CLAVE PARA ACTIVACIÓN DE APOYO REMOTO
       const lowerInput = textToSend.toLowerCase();
       if (lowerInput.includes('office') || lowerInput.includes('windows') || lowerInput.includes('controlador') || lowerInput.includes('driver') || lowerInput.includes('impresora') || lowerInput.includes('imprimir')) {
         setIsRemoteHelpRequested(true);
@@ -361,7 +379,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     try {
       localStorage.setItem(historyKey, JSON.stringify(updatedMessages))
       setMessages(updatedMessages)
-      // DISPARADOR DE COMUNICACIÓN: Notificar a la otra ventana sobre el nuevo mensaje
       window.dispatchEvent(new StorageEvent('storage', { key: historyKey, newValue: JSON.stringify(updatedMessages), storageArea: localStorage }))
     } catch (e) {
       const purged = updatedMessages.slice(Math.floor(updatedMessages.length / 2));
@@ -424,7 +441,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 2.0 MB permitido para asegurar el guardado." }); return; }
+    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 2.0 MB permitido." }); return; }
     const reader = new FileReader();
     reader.onload = (ev) => handleSendMessage({ fileData: { data: ev.target?.result as string, name: file.name, type: file.type } })
     reader.readAsDataURL(file); e.target.value = '';
@@ -466,7 +483,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         excelContent = await readFileAsDataURL(excelFile);
       }
       
-      const school = schoolsDirectory.find(s => s.cct === ticketCct.toUpperCase());
+      const school = allSchools.find(s => s.cct === ticketCct.toUpperCase());
       const bitacoraEntry: BitacoraEntry = {
         id: `BIT-${Date.now()}`,
         folio: folio,
@@ -505,6 +522,40 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const resetRequestForm = () => {
     setPdfFile(null); setExcelFile(null);
     setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase(),
+      valle: quickAddForm.valle.toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'schools_master_full_v21' }));
+    
+    setFinishForm({
+      ...finishForm,
+      cct: newSchool.cct,
+      schoolName: newSchool.nombre,
+      municipio: newSchool.municipio,
+      valle: newSchool.valle
+    });
+    
+    setIsQuickAddOpen(false);
+    setFinishSearchTerm('');
+    toast({ title: "CCT Sumado a la Base Maestra" });
   }
 
   const handleFinishConfirm = () => {
@@ -782,8 +833,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            ...finishForm,
                            cct: selectedFormal.cct,
                            schoolName: selectedFormal.schoolName,
-                           municipio: schoolsDirectory.find(s => s.cct === selectedFormal.cct)?.municipio || "",
-                           valle: schoolsDirectory.find(s => s.cct === selectedFormal.cct)?.valle || ""
+                           municipio: allSchools.find(s => s.cct === selectedFormal.cct)?.municipio || "",
+                           valle: allSchools.find(s => s.cct === selectedFormal.cct)?.valle || ""
                         });
                         setIsFinishDialogOpen(true);
                      }} className="btn-institutional h-12 px-10 text-[11px] gap-2 shadow-2xl">
@@ -903,7 +954,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                 </div>
               </div>
-              {!isPublic && selectedRequest && <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl"><CheckCircle2 className="h-5 w-5" /> CONCLUIR</Button>}
+              {!isPublic && (selectedRequest || selectedFormal) && <Button onClick={() => setIsFinishDialogOpen(true)} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl"><CheckCircle2 className="h-5 w-5" /> CONCLUIR</Button>}
             </header>
             <ScrollArea className="flex-1 px-8 py-10">
               <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-8">
@@ -1074,7 +1125,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0">
+          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-accent" /> Concluir Turno</DialogTitle>
             <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Cierre oficial del folio operativo.</DialogDescription>
           </DialogHeader>
@@ -1085,15 +1136,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <Input placeholder="CCT O NOMBRE..." className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
                  {finishSearchTerm.length > 2 && (
                   <div className="absolute left-0 right-0 top-11 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-xl shadow-2xl divide-y z-50">
-                    {schoolsDirectory.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
+                    {allSchools.filter(s => s.cct.includes(finishSearchTerm.toUpperCase()) || s.nombre.includes(finishSearchTerm.toUpperCase())).slice(0, 5).map(s => (
                       <div key={`finish-school-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => { setFinishForm({...finishForm, cct: s.cct, schoolName: s.nombre, municipio: s.municipio, valle: s.valle}); setFinishSearchTerm('') }}>
                         <div className="flex flex-col"><span className="text-[11px] font-black uppercase">{s.nombre}</span><span className="text-[8px] font-mono text-slate-400">{s.cct}</span></div>
                       </div>
                     ))}
+                    <div className="p-3 text-center">
+                       <Button variant="ghost" className="text-[9px] font-black uppercase text-primary w-full h-8 gap-2" onClick={() => { setQuickAddForm({...quickAddForm, cct: finishSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }}>
+                         <PlusCircle className="h-3 w-3" /> Registrar Nuevo CCT
+                       </Button>
+                    </div>
                   </div>
                  )}
               </div>
-              {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 shadow-sm animate-in zoom-in-95"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4></div></div>}
+              {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 shadow-sm animate-in zoom-in-95"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4><p className="text-[8px] font-mono text-emerald-700">{finishForm.cct}</p></div></div>}
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina</Label><Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select></div>
@@ -1102,6 +1158,31 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Servicio Realizado</Label><Textarea placeholder="Describa brevemente las acciones técnicas..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner resize-none focus:bg-white transition-all" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} /></div>
           </div>
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="h-12 px-8 text-xs font-black uppercase text-slate-400">Cancelar</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[11px] gap-2"><Save className="h-5 w-5" /> Registrar Cierre</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[700px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><PlusCircle className="h-6 w-6 text-white" /> Registro Institucional de CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-2">Alta inmediata en la base maestra del sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black h-12" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre Oficial</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black h-12" /></div>
+             </div>
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="h-12" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="h-12 font-bold"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent>
+                  </Select>
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-xs font-black">Cancelar</Button><Button onClick={handleQuickAddCct} className="btn-institutional h-12 px-12">Registrar y Seleccionar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1130,5 +1211,5 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
