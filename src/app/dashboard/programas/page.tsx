@@ -427,7 +427,7 @@ export default function ProgramsPage() {
       return r;
     }).filter(r => {
       if (r === null) return false;
-      if (['Cuentas Institucionales', 'ATRES'].includes(r.name) && r.asistentes && r.asistentes.length === 0) return false;
+      if (['Cuentas Institucionales', 'ATRES', 'Conoce mi Escuela'].includes(r.name) && r.asistentes && r.asistentes.length === 0) return false;
       return true;
     }) as ProgramStatus[];
 
@@ -436,7 +436,7 @@ export default function ProgramsPage() {
     toast({ title: "Registro eliminado" });
   };
 
-  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES'].includes(activeTab), [activeTab]);
+  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES', 'Conoce mi Escuela'].includes(activeTab), [activeTab]);
   const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
   const isGeoposicionTab = useMemo(() => activeTab === 'Geoposición', [activeTab]);
 
@@ -562,7 +562,7 @@ export default function ProgramsPage() {
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
-            if (activeTab !== 'Biblioteca Digital') {
+            if (isCensoTab) {
                f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }];
             }
             setFormData(f); setEditingId(null); setIsDialogOpen(true); setSearchTerm('');
@@ -1100,19 +1100,19 @@ export default function ProgramsPage() {
                       </Button>
                     </div>
                     
-                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[300px] flex flex-col">
+                    <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner min-h-[300px] flex flex-col">
                       <ScrollArea className="flex-1">
-                        <div className="min-w-[1200px]">
+                        <div className="min-w-[1300px]">
                           <Table className="border-collapse w-full">
                             <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
                                 <TableRow>
-                                  <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
-                                  <TableHead className="w-[250px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                  <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4">#</TableHead>
+                                  <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
                                   <TableHead className="w-[130px] text-[9px] font-black uppercase">CCT</TableHead>
-                                  <TableHead className="w-[180px] text-[9px] font-black uppercase">Correo</TableHead>
+                                  <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Correo</TableHead>
                                   <TableHead className="w-[180px] text-[9px] font-black uppercase">Función</TableHead>
                                   <TableHead className="w-[110px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                  <TableHead className="w-[180px] text-[9px] font-black uppercase">Departamento</TableHead>
+                                  <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Departamento</TableHead>
                                   <TableHead className="w-[130px] text-[9px] font-black uppercase">Estatus</TableHead>
                                   <TableHead className="w-14 pr-4"></TableHead>
                                 </TableRow>
@@ -1177,6 +1177,58 @@ export default function ProgramsPage() {
                       </ScrollArea>
                     </div>
                   </div>
+
+                  {activeTab === 'Conoce mi Escuela' && (
+                    <div className="space-y-6 pt-6 border-t-2 border-primary/5">
+                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                           <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg">
+                              <ImageIcon className="h-6 w-6" />
+                           </div>
+                           <h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia de Plantel (3 Fotos JPG)</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-4">
+                              <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
+                                  <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
+                                  <div className="text-center">
+                                    <p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Fotografías</p>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 3 fotos • Máx 2.0 MB cada una</p>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    disabled={(formData.evidencePhotos?.length || 0) >= 3}
+                                    onClick={() => imageInputRef.current?.click()} 
+                                    className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5"
+                                  >
+                                    {(formData.evidencePhotos?.length || 0) >= 3 ? 'Límite alcanzado' : 'Añadir Imagen JPG'}
+                                  </Button>
+                                  <input type="file" accept=".jpg, .jpeg, .png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                              </div>
+                           </div>
+                           
+                           <div className="grid grid-cols-3 gap-3">
+                              {(formData.evidencePhotos || []).map((img, idx) => (
+                                <div key={`photo-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white shadow-xl group animate-in zoom-in-95">
+                                   <Image src={img} alt={`Escuela ${idx + 1}`} fill className="object-cover" />
+                                   <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-6 w-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                      <X className="h-4 w-4" />
+                                   </button>
+                                   <div className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-sm p-1">
+                                      <p className="text-[7px] font-black text-white text-center uppercase">Foto {idx + 1}</p>
+                                   </div>
+                                </div>
+                              ))}
+                              {Array.from({ length: Math.max(0, 3 - (formData.evidencePhotos?.length || 0)) }).map((_, i) => (
+                                <div key={`empty-${i}`} className="aspect-square rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 flex items-center justify-center text-slate-200">
+                                   <ImageIcon className="h-6 w-6" />
+                                </div>
+                              ))}
+                           </div>
+                        </div>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
