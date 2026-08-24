@@ -92,9 +92,13 @@ export type ProgramStatus = {
     fase2: boolean;
     fase3: boolean;
     fase4: boolean;
+    fase4_1: boolean; // 32 bits
+    fase4_2: boolean; // 64 bits
     fase5: boolean;
     fase6: boolean;
     fase7: boolean;
+    fase7_1: boolean; // Cuestionario
+    fase7_formsUrl?: string;
     personalCapacitado: number;
     equiposHabilitados: number;
   };

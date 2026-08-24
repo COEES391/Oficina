@@ -56,7 +56,8 @@ import {
   Download,
   Building2,
   ChevronRight,
-  Archive
+  Archive,
+  Link as LinkIcon
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -214,7 +215,10 @@ export default function ProgramsPage() {
     reportPdf: '',
     evidencePhotos: [],
     bibliotecaFases: {
-      fase1: false, fase2: false, fase3: false, fase4: false, fase5: false, fase6: false, fase7: false,
+      fase1: false, fase2: false, fase3: false, fase4: false, 
+      fase4_1: false, fase4_2: false,
+      fase5: false, fase6: false, fase7: false,
+      fase7_1: false, fase7_formsUrl: '',
       personalCapacitado: 0, equiposHabilitados: 0
     }
   }
@@ -659,18 +663,26 @@ export default function ProgramsPage() {
                           <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Layers className="h-6 w-6 text-primary" /><h3 className="text-sm font-black uppercase text-primary tracking-wider">Seguimiento de Biblioteca Digital</h3></div>
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                             <div className="lg:col-span-2 space-y-4">
-                              <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Fases de Implementación</Label>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                              <div className="bg-[#4a90e2] text-white px-4 py-1.5 rounded-lg inline-block text-[10px] font-black uppercase tracking-widest mb-2 shadow-md">
+                                Fases de Implementación
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-inner">
                                 {[
                                   { id: 'fase1', label: 'Fase 1: Diagnóstico' },
                                   { id: 'fase2', label: 'Fase 2: Conectividad' },
                                   { id: 'fase3', label: 'Fase 3: Mobiliario' },
                                   { id: 'fase4', label: 'Fase 4: Instalación' },
+                                  { id: 'fase4_1', label: '4.1 32 bits', indent: true },
+                                  { id: 'fase4_2', label: '4.2 64 bits', indent: true },
                                   { id: 'fase5', label: 'Fase 5: Capacitación' },
                                   { id: 'fase6', label: 'Fase 6: Puesta en Marcha' },
                                   { id: 'fase7', label: 'Fase 7: Auditoría' },
+                                  { id: 'fase7_1', label: '7.1 Cuestionario', indent: true },
                                 ].map((fase) => (
-                                  <div key={fase.id} className="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                  <div key={fase.id} className={cn(
+                                    "flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm transition-all hover:border-primary/20",
+                                    fase.indent && "ml-6 scale-95 border-l-4 border-l-accent"
+                                  )}>
                                     <Checkbox 
                                       id={fase.id} 
                                       checked={formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] as boolean} 
@@ -682,13 +694,33 @@ export default function ProgramsPage() {
                                         }
                                       })}
                                     />
-                                    <Label htmlFor={fase.id} className="text-[9px] font-black uppercase cursor-pointer leading-tight">{fase.label}</Label>
+                                    <Label htmlFor={fase.id} className="text-[8px] font-black uppercase cursor-pointer leading-tight">{fase.label}</Label>
                                   </div>
                                 ))}
                               </div>
+
+                              {formData.bibliotecaFases?.fase7_1 && (
+                                <div className="mt-4 p-5 bg-white rounded-[2rem] border-2 border-accent/20 shadow-xl animate-in slide-in-from-top-4">
+                                   <Label className="text-[10px] font-black uppercase text-accent flex items-center gap-2 mb-3">
+                                      <LinkIcon className="h-4 w-4" /> Enlace Cuestionario (Forms)
+                                   </Label>
+                                   <Input 
+                                      placeholder="https://forms.gle/..." 
+                                      className="h-12 bg-slate-50 border-none rounded-xl text-[11px] font-bold shadow-inner"
+                                      value={formData.bibliotecaFases?.fase7_formsUrl || ''}
+                                      onChange={e => setFormData({
+                                        ...formData,
+                                        bibliotecaFases: {
+                                          ...formData.bibliotecaFases!,
+                                          fase7_formsUrl: e.target.value
+                                        }
+                                      })}
+                                   />
+                                </div>
+                              )}
                             </div>
 
-                            <div className="space-y-6">
+                            <div className="space-y-6 pt-10">
                               <div className="space-y-2">
                                 <Label className="text-[11px] font-black uppercase text-primary pl-2">Personal Capacitado</Label>
                                 <div className="relative">
@@ -801,10 +833,127 @@ export default function ProgramsPage() {
       </Dialog>
 
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0 relative"><div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="h-24 w-24" /></div><DialogTitle className="uppercase font-black text-2xl relative z-10">Registro Institucional de CCT</DialogTitle></DialogHeader>
-          <ScrollArea className="flex-1"><div className="p-10 space-y-8"><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black h-12 rounded-xl" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black h-12 rounded-xl" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Domicilio</Label><Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="h-12 rounded-xl" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label><Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="h-12 rounded-xl" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="h-12 rounded-xl" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div></div></div></ScrollArea>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-xs font-black text-slate-400">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-[#9f2241] text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button></DialogFooter>
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="h-24 w-24" /></div>
+            <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4 relative z-10">Registro Institucional de CCT</DialogTitle>
+            <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-2 tracking-widest relative z-10">Alta inmediata en la base maestra del sistema.</DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="15DES0000X" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="NOMBRE OFICIAL..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Domicilio (Calle y Número)</Label>
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="CALLE, NÚMERO, COLONIA..." />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Teléfono</Label>
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="10 DÍGITOS..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Localidad</Label>
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Modalidad</Label>
+                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
+                      <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
+                      <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MATUTINO" className="text-[10px] font-bold">MATUTINO</SelectItem>
+                      <SelectItem value="VESPERTINO" className="text-[10px] font-bold">VESPERTINO</SelectItem>
+                      <SelectItem value="MIXTO" className="text-[10px] font-bold">MIXTO</SelectItem>
+                      <SelectItem value="DISCONTINUO" className="text-[10px] font-bold">DISCONTINUO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEXICO" className="text-[10px] font-bold">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA" className="text-[10px] font-bold">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-[#9f2241] text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!evidenceToView} onOpenChange={() => setPdfToPreview(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+                <FileText className="h-6 w-6 text-accent" /> VISOR COEES
+              </DialogTitle>
+              <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documento Digital</DialogDescription>
+            </div>
+            <div className="flex gap-4">
+               <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
+                  <Printer className="h-4 w-4" /> Imprimir
+               </Button>
+               <button onClick={() => setPdfToPreview(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20 flex items-center justify-center"><X className="h-5 w-5" /></button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 bg-slate-800 p-1">
+             <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
+          </div>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar Visor</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
