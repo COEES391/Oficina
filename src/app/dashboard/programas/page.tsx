@@ -287,7 +287,7 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); return;
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
@@ -436,7 +436,7 @@ export default function ProgramsPage() {
     toast({ title: "Registro eliminado" });
   };
 
-  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES', 'Geoposición'].includes(activeTab), [activeTab]);
+  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES'].includes(activeTab), [activeTab]);
   const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
   const isGeoposicionTab = useMemo(() => activeTab === 'Geoposición', [activeTab]);
 
