@@ -87,14 +87,6 @@ const PROGRAM_RUBROS = [
   'ATRES'
 ];
 
-const REGIONAL_OFFICES = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
-  "Oficina de COEES Tultitlan"
-];
-
 const DOMINIOS = [
   'desysa.edu',
   'desysa.gob.mx',
@@ -986,34 +978,38 @@ export default function ProgramsPage() {
 
                       <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner">
                         <ScrollArea className="h-full">
-                          <Table>
-                            <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
-                                <TableRow>
-                                  <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                  <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                  <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT Origen</TableHead>
-                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Función</TableHead>
-                                  <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                  <TableHead className="w-16"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {(formData.asistentes || []).map((ast, idx) => (
-                                  <TableRow key={`ast-lib-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
-                                      <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                      <TableCell className="p-2"><Input placeholder="APELLIDOS NOMBRE..." className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} /></TableCell>
-                                      <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[10px] font-mono font-black uppercase" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
-                                      <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-9 text-[10px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-lib-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
-                                      <TableCell className="p-2"><Input value={ast.valle} readOnly className="h-9 text-center text-[10px] bg-slate-50 border-none font-black text-slate-500" /></TableCell>
-                                      <TableCell className="p-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                      </TableCell>
+                          <div className="min-w-[1500px]">
+                            <Table>
+                              <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
+                                  <TableRow>
+                                    <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
+                                    <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                    <TableHead className="min-w-[140px] text-[9px] font-black uppercase">CCT Origen</TableHead>
+                                    <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Función</TableHead>
+                                    <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                                    <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Departamento</TableHead>
+                                    <TableHead className="w-16"></TableHead>
                                   </TableRow>
-                                ))}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                  {(formData.asistentes || []).map((ast, idx) => (
+                                    <TableRow key={`ast-lib-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
+                                        <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
+                                        <TableCell className="p-2"><Input placeholder="APELLIDOS NOMBRE..." className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} /></TableCell>
+                                        <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[10px] font-mono font-black uppercase" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
+                                        <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-9 text-[10px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-lib-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
+                                        <TableCell className="p-2"><Input value={ast.valle} readOnly className="h-9 text-center text-[10px] bg-slate-50 border-none font-black text-slate-500" /></TableCell>
+                                        <TableCell className="p-2"><Input placeholder="OFICINA / DEPTO..." className="h-9 text-[10px] font-bold uppercase" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} /></TableCell>
+                                        <TableCell className="p-2">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                  ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                           <ScrollBar orientation="horizontal" />
                         </ScrollArea>
                         {(!formData.asistentes || formData.asistentes.length === 0) && (
@@ -1102,18 +1098,18 @@ export default function ProgramsPage() {
                     
                     <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner min-h-[300px] flex flex-col">
                       <ScrollArea className="flex-1">
-                        <div className="min-w-[1300px]">
+                        <div className="min-w-[1500px]">
                           <Table className="border-collapse w-full">
                             <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
                                 <TableRow>
                                   <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4">#</TableHead>
-                                  <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                  <TableHead className="w-[130px] text-[9px] font-black uppercase">CCT</TableHead>
-                                  <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Correo</TableHead>
-                                  <TableHead className="w-[180px] text-[9px] font-black uppercase">Función</TableHead>
-                                  <TableHead className="w-[110px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                  <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                  <TableHead className="w-[130px] text-[9px] font-black uppercase">Estatus</TableHead>
+                                  <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">CCT</TableHead>
+                                  <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Correo</TableHead>
+                                  <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Función</TableHead>
+                                  <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                                  <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Departamento</TableHead>
+                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Estatus</TableHead>
                                   <TableHead className="w-14 pr-4"></TableHead>
                                 </TableRow>
                             </TableHeader>
