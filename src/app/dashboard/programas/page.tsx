@@ -142,6 +142,7 @@ function HelpDeskAccessCard() {
               alt="QR Mesa de Ayuda" 
               fill
               className="rounded-md"
+              unoptimized
             />
           </div>
         </div>
@@ -299,49 +300,6 @@ export default function ProgramsPage() {
     toast({ title: "CCT Registrado en Base Maestra" });
   }
 
-  const handleUpdateFase = (faseId: keyof NonNullable<ProgramStatus['bibliotecaFases']>, value: boolean) => {
-    if (!formData.bibliotecaFases) return;
-    const updatedFases = { ...formData.bibliotecaFases, [faseId]: value };
-    const faseKeys = ['fase1', 'fase2', 'fase3', 'fase4', 'fase5', 'fase6', 'fase7'];
-    const completedCount = faseKeys.filter(key => (updatedFases as any)[key]).length;
-    const newProgress = Math.round((completedCount / faseKeys.length) * 100);
-
-    setFormData({ 
-      ...formData, 
-      bibliotecaFases: updatedFases,
-      progress: newProgress,
-      status: newProgress === 100 ? 'concluido' : 'en proceso'
-    });
-  }
-
-  const handleUpdateAssistantField = (index: number, field: string, value: string) => {
-    const updated = [...(formData.asistentes || [])];
-    updated[index] = { ...updated[index], [field]: value };
-    
-    if (field === 'cct' && value.length === 10) {
-      const school = allSchools.find(s => s.cct.toUpperCase() === value.toUpperCase());
-      if (school) updated[index].valle = school.valle;
-    }
-    
-    setFormData({ ...formData, asistentes: updated });
-  }
-
-  const handleAddAssistant = () => {
-    const current = formData.asistentes || [];
-    setFormData({
-      ...formData,
-      asistentes: [...current, { nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }]
-    });
-  }
-
-  const handleRemoveAssistant = (index: number) => {
-    const current = formData.asistentes || [];
-    setFormData({
-      ...formData,
-      asistentes: current.filter((_, i) => i !== index)
-    });
-  }
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -399,10 +357,38 @@ export default function ProgramsPage() {
     } catch (e) {
       toast({ 
         variant: "destructive", 
-        title: "Error de Memoria", 
-        description: "El almacenamiento local está saturado. Elimine archivos adjuntos pesados para poder guardar." 
+        title: "Error de Almacenamiento", 
+        description: "La memoria del navegador está llena. Por favor reduzca el tamaño de las evidencias." 
       })
     }
+  }
+
+  const handleUpdateAssistantField = (index: number, field: string, value: string) => {
+    const updated = [...(formData.asistentes || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    
+    if (field === 'cct' && value.length === 10) {
+      const school = allSchools.find(s => s.cct.toUpperCase() === value.toUpperCase());
+      if (school) updated[index].valle = school.valle;
+    }
+    
+    setFormData({ ...formData, asistentes: updated });
+  }
+
+  const handleAddAssistant = () => {
+    const current = formData.asistentes || [];
+    setFormData({
+      ...formData,
+      asistentes: [...current, { nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }]
+    });
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    const current = formData.asistentes || [];
+    setFormData({
+      ...formData,
+      asistentes: current.filter((_, i) => i !== index)
+    });
   }
 
   const handleDeleteRow = (recordId: string, assistantIndex?: number) => {
@@ -415,11 +401,7 @@ export default function ProgramsPage() {
         return null;
       }
       return r;
-    }).filter(r => {
-      if (r === null) return false;
-      if (['Cuentas Institucionales', 'ATRES', 'Conoce mi Escuela'].includes(r.name) && r.asistentes && r.asistentes.length === 0) return false;
-      return true;
-    }) as ProgramStatus[];
+    }).filter(r => r !== null) as ProgramStatus[];
 
     setRecords(updated);
     localStorage.setItem('programs_full_v24', JSON.stringify(updated));
@@ -470,39 +452,6 @@ export default function ProgramsPage() {
     return filteredRecords;
   }, [filteredRecords, isCensoTab]);
 
-  const downloadExcel = () => {
-    if (displayRows.length === 0) {
-      toast({ variant: "destructive", title: "Sin datos" })
-      return
-    }
-
-    let dataToExport: any[] = [];
-    if (isCensoTab) {
-      dataToExport = displayRows.map((row: any) => ({
-        'Usuario': row.nombreUsuario, 'CCT': row.cct, 'Correo': row.correo, 'Dominio': row.dominio,
-        'Función': row.funcion, 'Valle': row.valle, 'Departamento': row.departamento, 'Estatus': row.estatus || 'ACTIVA'
-      }));
-    } else if (isBibliotecaTab) {
-      dataToExport = filteredRecords.map(r => ({
-        'CCT': r.cct, 'Plantel': r.schoolName, 'Progreso %': r.progress, 'Equipos': r.bibliotecaFases?.equiposHabilitados,
-        'Personal': r.bibliotecaFases?.personalCapacitado, 'Fecha Solicitud': r.requestDate, 'Fecha Atención': r.date
-      }));
-    } else if (isGeoposicionTab) {
-      dataToExport = filteredRecords.map(r => ({
-        'CCT': r.cct, 'Plantel': r.schoolName, 'Latitud': r.latitud, 'Longitud': r.longitud, 'Fecha': r.date
-      }));
-    } else {
-      dataToExport = filteredRecords.map(rec => ({
-        'ID': rec.id, 'CCT': rec.cct, 'Plantel': rec.schoolName, 'Estatus': rec.status, 'Fecha': rec.date
-      }));
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
-    XLSX.writeFile(workbook, `Reporte_${activeTab.replace(/ /g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-  };
-
   const openEvidenceViewer = (record: ProgramStatus) => {
     if (!record.reportPdf && (!record.evidencePhotos || record.evidencePhotos.length === 0)) {
       toast({ title: "Sin evidencias" });
@@ -546,10 +495,6 @@ export default function ProgramsPage() {
               <Headset className={cn("h-4 w-4", pendingCount > 0 && "animate-bounce")} /> {pendingCount > 0 ? `${pendingCount} SOLICITUDES` : "Mesa de Ayuda ATRES"}
             </Button>
           )}
-          <Button onClick={downloadExcel} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md">
-            <FileSpreadsheet className="h-4 w-4" /> Exportar a Excel
-          </Button>
-          <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
             if (isCensoTab) {
@@ -583,247 +528,102 @@ export default function ProgramsPage() {
 
       {activeTab === 'ATRES' && <HelpDeskAccessCard />}
 
-      {isBibliotecaTab ? (
-        <div className="space-y-6 animate-in slide-in-from-top-4 duration-700">
-           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="executive-card p-6 border-l-8 border-l-primary flex flex-col justify-center">
-                 <div className="flex justify-between items-start mb-4">
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Supervisión Biblioteca Digital</p>
-                       <h3 className="text-3xl font-black text-slate-800">{filteredRecords.length} <span className="text-xs text-slate-400">Escuelas</span></h3>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                       <ClipboardCheck className="h-6 w-6" />
-                    </div>
-                 </div>
-                 <div className="space-y-2">
-                    <div className="flex justify-between text-[8px] font-black uppercase">
-                       <span>Avance Meta 2026</span>
-                       <span>{Math.min(100, Math.round((filteredRecords.length / 150) * 100))}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                       <div className="h-full bg-primary" style={{ width: `${Math.min(100, (filteredRecords.length / 150) * 100)}%` }} />
-                    </div>
-                 </div>
-              </Card>
-
-              <Card className="executive-card md:col-span-3 p-4">
-                 <div className="flex items-center gap-3 mb-4 px-2">
-                    <TrendingUp className="h-5 w-5 text-accent" />
-                    <h4 className="text-[11px] font-black uppercase text-primary tracking-widest">Avance Comparativo por Centro de Trabajo</h4>
-                 </div>
-                 <div className="h-[140px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <BarChart data={dashboardData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                          <YAxis dataKey="progreso" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                          <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                          <Bar 
-                            dataKey="progreso" 
-                            radius={[4, 4, 0, 0]} 
-                            barSize={25}
-                            onClick={(data) => {
-                              if (data && data.name) {
-                                const record = filteredRecords.find(r => r.cct === data.name);
-                                if (record) openEvidenceViewer(record);
-                              }
-                            }}
-                          >
-                             {dashboardData.map((entry, index) => (
-                                <Cell 
-                                  key={`cell-${index}`} 
-                                  fill={entry.progreso === 100 ? '#621132' : '#B38E5D'} 
-                                  className="cursor-pointer hover:opacity-80 transition-opacity"
-                                />
-                             ))}
-                          </Bar>
-                       </BarChart>
-                    </ResponsiveContainer>
-                 </div>
-              </Card>
-           </div>
-
-           <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
-              <div className="bg-primary p-4 flex items-center justify-between">
-                 <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
-                    <LayoutDashboard className="h-5 w-5 text-accent" /> BD Supervisión Escolar COEES 2026
-                 </h3>
-                 <Badge className="bg-white/20 text-white border-none font-black text-[9px]">VISTA MATRICIAL ACTIVA</Badge>
-              </div>
-              <div className="overflow-x-auto">
-                 <Table className="border-collapse">
-                    <TableHeader>
-                       <TableRow className="bg-slate-50 border-b-2 border-slate-200">
-                          <TableHead className="min-w-[320px] font-black uppercase text-[10px] text-slate-800 bg-slate-100/50 sticky left-0 z-20 border-r-2 shadow-r">Fases / Indicadores Técnicos</TableHead>
-                          {filteredRecords.map((rec, idx) => (
-                            <TableHead key={`head-${rec.cct}-${idx}`} className="min-w-[140px] text-center border-l border-slate-100">
-                               <div className="flex flex-col items-center gap-1 py-2">
-                                  <span className={cn("text-[11px] font-black", rec.progress === 100 ? "text-emerald-600" : "text-primary")}>{rec.progress}%</span>
-                                  <span className="text-[10px] font-mono font-black text-slate-700 tracking-tighter">{rec.cct}</span>
-                                  <div className="flex gap-1 mt-1">
-                                    <button onClick={() => openEvidenceViewer(rec)} className={cn("h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center transition-all", (rec.reportPdf || (rec.evidencePhotos && rec.evidencePhotos.length > 0)) ? "text-emerald-600 border-emerald-200" : "text-slate-300")}>
-                                      <Archive className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all">
-                                      <Pencil className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button onClick={() => handleDeleteRow(rec.id)} className="h-6 w-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:border-rose-600 transition-all">
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                               </div>
-                            </TableHead>
-                          ))}
-                          {filteredRecords.length === 0 && <TableHead className="p-8 text-center italic text-slate-400 text-xs">Sin datos para la matriz</TableHead>}
-                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                       {BIBLIOTECA_FASES.map((fase) => (
-                         <TableRow key={fase.id} className="hover:bg-slate-50/50 border-b border-slate-50 h-12">
-                            <TableCell className="bg-slate-50/80 font-bold text-[10px] text-slate-600 uppercase pl-6 sticky left-0 z-10 border-r shadow-r">
-                               {fase.label}
-                            </TableCell>
-                            {filteredRecords.map((rec, idx) => (
-                              <TableCell key={`cell-${fase.id}-${rec.cct}-${idx}`} className="text-center border-l border-slate-50">
-                                 <div className="flex justify-center">
-                                    {(rec.bibliotecaFases as any)?.[fase.id] ? (
-                                      <div className="h-5 w-5 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-sm"><CheckCircle2 className="h-3.5 w-3.5" /></div>
-                                    ) : (
-                                      <div className="h-5 w-5 rounded-lg border-2 border-slate-100 bg-slate-50/50" />
-                                    )}
-                                 </div>
-                              </TableCell>
-                            ))}
-                         </TableRow>
-                       ))}
-                       <TableRow className="bg-primary/[0.02] border-t-2 border-primary/10">
-                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Fecha de Solicitud</TableCell>
-                          {filteredRecords.map((rec, idx) => (
-                            <TableCell key={`req-date-${idx}`} className="text-center font-bold text-[9px] text-accent border-l border-slate-50 uppercase">{rec.requestDate || 'S/D'}</TableCell>
-                          ))}
-                       </TableRow>
-                       <TableRow className="bg-primary/[0.02]">
-                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Fecha de Atención</TableCell>
-                          {filteredRecords.map((rec, idx) => (
-                            <TableCell key={`date-${idx}`} className="text-center font-bold text-[9px] text-slate-500 border-l border-slate-50 uppercase">{rec.date}</TableCell>
-                          ))}
-                       </TableRow>
-                       <TableRow className="bg-primary/[0.02]">
-                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Total de Personal Capacitado</TableCell>
-                          {filteredRecords.map((rec, idx) => (
-                            <TableCell key={`pers-${idx}`} className="text-center font-black text-xs text-slate-700 border-l border-slate-50">{rec.bibliotecaFases?.personalCapacitado || 0}</TableCell>
-                          ))}
-                       </TableRow>
-                       <TableRow className="bg-primary/[0.02]">
-                          <TableCell className="bg-slate-100/50 font-black text-[10px] text-primary uppercase pl-6 sticky left-0 z-10 border-r shadow-r">Total de Equipos Habilitados</TableCell>
-                          {filteredRecords.map((rec, idx) => (
-                            <TableCell key={`equip-${idx}`} className="text-center font-black text-xs text-slate-700 border-l border-slate-50">{rec.bibliotecaFases?.equiposHabilitados || 0}</TableCell>
-                          ))}
-                       </TableRow>
-                    </TableBody>
-                 </Table>
-              </div>
-           </Card>
-        </div>
-      ) : (
-        <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
-          <div className="overflow-x-auto w-full">
-            <Table className="w-full">
-              <TableHeader className="bg-slate-50 border-b">
-                 <TableRow className="h-12">
-                    <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
-                    {isCensoTab ? (
-                      <>
-                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[180px]">Usuario</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[140px]">Correo / Dominio</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">Función</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[90px]">Valle</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[130px]">Departamento</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
-                      </>
-                    ) : isGeoposicionTab ? (
-                      <>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Latitud</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Longitud</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
-                      </>
-                    ) : (
-                      <>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
-                      </>
-                    )}
-                    <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-24">Acción</TableHead>
-                  </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayRows.length > 0 ? displayRows.map((row, idx) => {
-                  if (isCensoTab) {
-                    return (
-                      <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
-                        <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                        <TableCell className="font-black text-[10px] text-slate-700 uppercase">{row.nombreUsuario}</TableCell>
-                        <TableCell className="font-black text-[10px] text-primary tracking-tight font-mono">{row.cct}</TableCell>
-                        <TableCell><div className="flex flex-col"><span className="text-[9px] font-bold text-slate-600">{row.correo}</span><span className="text-[8px] font-black text-accent uppercase">@{row.dominio}</span></div></TableCell>
-                        <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200">{row.funcion}</Badge></TableCell>
-                        <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
-                        <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
-                        <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase", row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}>{row.estatus || 'ACTIVA'}</Badge></TableCell>
-                        <TableCell className="text-right pr-6">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => handleDeleteRow(row.id, row.assistantIndex)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }
-                  const rec = row as ProgramStatus;
+      <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
+        <div className="overflow-x-auto w-full">
+          <Table className="w-full">
+            <TableHeader className="bg-slate-50 border-b">
+               <TableRow className="h-12">
+                  <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
+                  {isCensoTab ? (
+                    <>
+                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[180px]">Usuario</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[140px]">Correo / Dominio</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">Función</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[90px]">Valle</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[130px]">Departamento</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                    </>
+                  ) : isGeoposicionTab ? (
+                    <>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Latitud</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Longitud</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                    </>
+                  )}
+                  <TableHead className="text-right text-[9px] font-black uppercase pr-6 w-24">Acción</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayRows.length > 0 ? displayRows.map((row, idx) => {
+                if (isCensoTab) {
                   return (
-                    <TableRow key={`${rec.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
+                    <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
                       <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                      <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
-                      <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
-                      {isGeoposicionTab && (
-                        <>
-                          <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.latitud || 'S/C'}</TableCell>
-                          <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.longitud || 'S/C'}</TableCell>
-                        </>
-                      )}
-                      <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
+                      <TableCell className="font-black text-[10px] text-slate-700 uppercase">{row.nombreUsuario}</TableCell>
+                      <TableCell className="font-black text-[10px] text-primary tracking-tight font-mono">{row.cct}</TableCell>
+                      <TableCell><div className="flex flex-col"><span className="text-[9px] font-bold text-slate-600">{row.correo}</span><span className="text-[8px] font-black text-accent uppercase">@{row.dominio}</span></div></TableCell>
+                      <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200">{row.funcion}</Badge></TableCell>
+                      <TableCell className="text-[9px] font-black text-slate-500">{row.valle}</TableCell>
+                      <TableCell className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">{row.departamento}</TableCell>
+                      <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase", row.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : row.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}>{row.estatus || 'ACTIVA'}</Badge></TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
+                          <button onClick={() => { setFormData({...row.parentRecord}); setEditingId(row.parentRecord.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => handleDeleteRow(rec.id)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                          <button onClick={() => handleDeleteRow(row.id, row.assistantIndex)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </TableCell>
                     </TableRow>
                   );
-                }) : (<TableRow><TableCell colSpan={12} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      )}
+                }
+                const rec = row as ProgramStatus;
+                return (
+                  <TableRow key={`${rec.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
+                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                    <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
+                    <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
+                    {isGeoposicionTab && (
+                      <>
+                        <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.latitud || 'S/C'}</TableCell>
+                        <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.longitud || 'S/C'}</TableCell>
+                      </>
+                    )}
+                    <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteRow(rec.id)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (<TableRow><TableCell colSpan={12} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin registros disponibles</TableCell></TableRow>)}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1250px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[95vw] lg:max-w-[1400px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
              <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12"><Target className="h-40 w-40" /></div>
              <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10">
@@ -836,26 +636,29 @@ export default function ProgramsPage() {
           
           <div className="flex-1 overflow-hidden bg-white">
             <ScrollArea className="h-full">
-              <div className="p-8 space-y-8">
-                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
-                      <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
+              <div className="p-8 space-y-10">
+                <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 relative space-y-6 shadow-inner">
+                  <Label className="text-[11px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                      <Search className="h-5 w-5 text-accent" /> Identificación del Centro de Trabajo
                   </Label>
                   <div className="relative">
-                      <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                      <Input placeholder="BUSCAR CCT O NOMBRE DEL PLANTEL..." className="h-16 rounded-2xl bg-white border-primary/10 font-black text-lg uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                       {dialogSearchTerm.length > 2 && (
-                        <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
+                        <div className="absolute top-18 left-0 right-0 bg-white border rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto divide-y">
                           {schoolSearchResults.map(s => (
-                            <div key={`s-diag-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                              <span className="text-[10px] font-black uppercase">{s.nombre}</span>
-                              <Badge className="text-[8px] font-mono">{s.cct}</Badge>
+                            <div key={`s-diag-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center transition-colors" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-black uppercase text-slate-800">{s.nombre}</span>
+                                <span className="text-[9px] font-mono text-slate-400">{s.municipio} • {s.valle}</span>
+                              </div>
+                              <Badge className="text-[9px] font-mono bg-primary">{s.cct}</Badge>
                             </div>
                           ))}
                           {schoolSearchResults.length === 0 && (
-                            <div className="p-4 text-center">
-                              <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
-                              <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }}>
-                                <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                            <div className="p-6 text-center">
+                              <p className="text-[11px] font-black text-slate-400 uppercase mb-4">CCT No Registrado en la Base Maestra</p>
+                              <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2 hover:bg-primary/5 shadow-sm">
+                                <Plus className="h-4 w-4" /> Alta Rápida de Plantel
                               </Button>
                             </div>
                           )}
@@ -863,24 +666,35 @@ export default function ProgramsPage() {
                       )}
                   </div>
                   {formData.cct && (
-                    <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-emerald-100 animate-in zoom-in-95"><School className="h-8 w-8 text-emerald-600" /><div><h4 className="text-xs font-black uppercase text-slate-800">{formData.schoolName}</h4><p className="text-[9px] font-bold text-slate-400">{formData.cct} • {formData.municipio} • {formData.valle}</p></div></div>
+                    <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 animate-in slide-in-from-top-4 shadow-sm">
+                       <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+                         <School className="h-9 w-9" />
+                       </div>
+                       <div>
+                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none mb-2">Plantel Vinculado</p>
+                         <h4 className="text-xl font-black uppercase text-slate-800 leading-tight">{formData.schoolName}</h4>
+                         <p className="text-[11px] font-mono font-bold text-muted-foreground mt-1 bg-slate-50 px-3 py-1 rounded-full inline-block">
+                           {formData.cct} • {formData.municipio} • {formData.valle}
+                         </p>
+                       </div>
+                    </div>
                   )}
                 </div>
 
                 {isGeoposicionTab && (
-                  <div className="space-y-4 animate-in slide-in-from-top-2">
+                  <div className="space-y-4 animate-in zoom-in-95 duration-500">
                     <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
-                      <Navigation className="h-5 w-5 text-primary" />
-                      <h3 className="text-sm font-black uppercase text-primary">Coordenadas de Geoposición</h3>
+                      <Navigation className="h-6 w-6 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary tracking-wider">Coordenadas Técnicas de Geoposición</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-inner">
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-primary pl-1">Latitud</Label>
-                        <Input placeholder="EJ: 19.345678" className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" value={formData.latitud || ''} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                        <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Latitud Geográfica</Label>
+                        <Input placeholder="EJ: 19.345678" className="h-14 bg-white border-none rounded-xl text-lg font-black shadow-sm px-6" value={formData.latitud || ''} onChange={e => setFormData({...formData, latitud: e.target.value})} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[11px] font-black uppercase text-primary pl-1">Longitud</Label>
-                        <Input placeholder="EJ: -99.456789" className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" value={formData.longitud || ''} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                        <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Longitud Geográfica</Label>
+                        <Input placeholder="EJ: -99.456789" className="h-14 bg-white border-none rounded-xl text-lg font-black shadow-sm px-6" value={formData.longitud || ''} onChange={e => setFormData({...formData, longitud: e.target.value})} />
                       </div>
                     </div>
                   </div>
@@ -889,77 +703,80 @@ export default function ProgramsPage() {
                 <div className="space-y-6">
                   <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
                     <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-primary" />
-                      <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
+                      <Users className="h-6 w-6 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary tracking-wider">Censo de Personal del Módulo</h3>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 rounded-lg border-primary/20 text-primary font-black uppercase text-[9px] hover:bg-primary/5 shadow-sm">
-                      <Plus className="h-3 w-3 mr-1" /> Añadir Servidor
+                    <Button onClick={handleAddAssistant} className="h-10 px-8 rounded-xl bg-primary text-white font-black uppercase text-[10px] shadow-lg hover:scale-105 transition-all">
+                      <Plus className="h-4 w-4 mr-2" /> Vincular Servidor Público
                     </Button>
                   </div>
                   
-                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-2xl min-h-[350px] flex flex-col">
-                    <div className="flex-1 w-full overflow-x-auto">
-                      <div className="min-w-[1400px]">
+                  <div className="border-2 border-slate-100 rounded-[2.5rem] bg-white overflow-hidden shadow-2xl min-h-[400px]">
+                    <div className="w-full overflow-x-auto custom-scrollbar">
+                      <div className="min-w-[1450px]">
                         <Table className="border-collapse w-full">
                           <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
                               <TableRow>
-                                <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4 text-slate-800">#</TableHead>
-                                <TableHead className="min-w-[320px] text-[9px] font-black uppercase text-slate-800">Nombre del Usuario</TableHead>
-                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase text-slate-800">CCT</TableHead>
-                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase text-slate-800">Correo Institucional</TableHead>
-                                <TableHead className="min-w-[220px] text-[9px] font-black uppercase text-slate-800">Función</TableHead>
-                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase text-center text-slate-800">Valle</TableHead>
-                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase text-slate-800">Departamento / Oficina</TableHead>
-                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase text-slate-800">Estatus</TableHead>
-                                <TableHead className="w-16 pr-4"></TableHead>
+                                <TableHead className="w-16 text-[10px] font-black uppercase text-center pl-6 py-5 text-slate-800">#</TableHead>
+                                <TableHead className="min-w-[320px] text-[10px] font-black uppercase text-slate-800">Nombre Completo del Usuario</TableHead>
+                                <TableHead className="min-w-[150px] text-[10px] font-black uppercase text-slate-800">CCT Adscripción</TableHead>
+                                <TableHead className="min-w-[280px] text-[10px] font-black uppercase text-slate-800">Correo Electrónico</TableHead>
+                                <TableHead className="min-w-[220px] text-[10px] font-black uppercase text-slate-800">Función</TableHead>
+                                <TableHead className="min-w-[140px] text-[10px] font-black uppercase text-center text-slate-800">Valle</TableHead>
+                                <TableHead className="min-w-[280px] text-[10px] font-black uppercase text-slate-800">Departamento / Oficina</TableHead>
+                                <TableHead className="min-w-[160px] text-[10px] font-black uppercase text-slate-800">Estatus de Cuenta</TableHead>
+                                <TableHead className="w-20 pr-6"></TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
                               {(formData.asistentes || []).length > 0 ? (formData.asistentes || []).map((ast, idx) => (
-                                <TableRow key={`ast-edit-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-16">
-                                    <TableCell className="text-center font-black text-[10px] text-slate-400 pl-4">{idx + 1}</TableCell>
-                                    <TableCell className="p-2">
-                                      <Input placeholder="APELLIDOS NOMBRE..." className="h-10 text-[10px] uppercase font-black border-primary/5 bg-primary/[0.02] shadow-inner" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} />
+                                <TableRow key={`ast-edit-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-20">
+                                    <TableCell className="text-center font-black text-xs text-slate-300 pl-6">{idx + 1}</TableCell>
+                                    <TableCell className="p-3">
+                                      <Input placeholder="APELLIDOS NOMBRE..." className="h-11 text-[11px] uppercase font-black border-primary/10 bg-primary/[0.02] shadow-inner px-4 rounded-xl" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} />
                                     </TableCell>
-                                    <TableCell className="p-2">
-                                      <Input placeholder="15DES0000X" className="h-10 text-[10px] font-mono font-black uppercase shadow-inner" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                    <TableCell className="p-3">
+                                      <Input placeholder="15DES0000X" className="h-11 text-[11px] font-mono font-black uppercase shadow-inner text-center rounded-xl" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
                                     </TableCell>
-                                    <TableCell className="p-2">
-                                      <Input placeholder="usuario.ejemplo" className="h-10 text-[10px] font-semibold border-accent/20 bg-accent/[0.01] pl-2 shadow-inner" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} />
+                                    <TableCell className="p-3">
+                                      <Input placeholder="usuario.ejemplo" className="h-11 text-[11px] font-bold border-accent/20 bg-accent/[0.02] shadow-inner px-4 rounded-xl" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} />
                                     </TableCell>
-                                    <TableCell className="p-2">
+                                    <TableCell className="p-3">
                                       <Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}>
-                                        <SelectTrigger className="h-10 text-[10px] font-bold uppercase shadow-inner"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-edit-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent>
+                                        <SelectTrigger className="h-11 text-[10px] font-black uppercase shadow-inner rounded-xl"><SelectValue placeholder="ELEGIR FUNCIÓN..." /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl">{FUNCIONES.map(f => <SelectItem key={`f-edit-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className="p-2">
+                                    <TableCell className="p-3">
                                       <Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}>
-                                        <SelectTrigger className="h-10 text-center text-[10px] font-black uppercase border-slate-200 shadow-inner"><SelectValue placeholder="VALLE..." /></SelectTrigger>
-                                        <SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent>
+                                        <SelectTrigger className="h-11 text-center text-[10px] font-black uppercase border-slate-200 shadow-inner rounded-xl"><SelectValue placeholder="VALLE..." /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className="p-2">
-                                      <Input placeholder="OFICINA / ÁREA..." className="h-10 text-[10px] font-bold uppercase border-slate-200 shadow-inner" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} />
+                                    <TableCell className="p-3">
+                                      <Input placeholder="OFICINA / ÁREA ESPECÍFICA..." className="h-11 text-[10px] font-bold uppercase border-slate-200 shadow-inner px-4 rounded-xl" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} />
                                     </TableCell>
-                                    <TableCell className="p-2">
+                                    <TableCell className="p-3">
                                       <Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}>
-                                        <SelectTrigger className={cn("h-10 text-[10px] font-black uppercase border-2 shadow-inner", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-edit-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent>
+                                        <SelectTrigger className={cn("h-11 text-[10px] font-black uppercase border-2 shadow-inner rounded-xl", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-2xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-edit-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className="p-2 pr-4 text-right">
-                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)}>
-                                        <Trash2 className="h-4 w-4" />
+                                    <TableCell className="p-3 pr-6 text-right">
+                                      <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" onClick={() => handleRemoveAssistant(idx)}>
+                                        <Trash2 className="h-5 w-5" />
                                       </Button>
                                     </TableCell>
                                 </TableRow>
                               )) : (
                                 <TableRow>
-                                  <TableCell colSpan={9} className="py-24 text-center opacity-30">
-                                    <div className="flex flex-col items-center gap-4">
-                                      <Users className="h-12 w-12 text-slate-400" />
-                                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Sin servidores públicos vinculados</p>
+                                  <TableCell colSpan={9} className="py-32 text-center opacity-30">
+                                    <div className="flex flex-col items-center gap-6">
+                                      <Users className="h-16 w-16 text-slate-200" />
+                                      <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Sin personal técnico vinculado en la lista</p>
+                                      <Button onClick={handleAddAssistant} variant="outline" className="h-10 px-8 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] hover:bg-primary/5 shadow-sm">
+                                        <Plus className="h-4 w-4 mr-2" /> Añadir Primer Registro
+                                      </Button>
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -972,47 +789,57 @@ export default function ProgramsPage() {
                 </div>
 
                 {activeTab === 'Conoce mi Escuela' && (
-                  <div className="space-y-6 pt-6 border-t-2 border-primary/5">
-                      <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
-                         <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg"><ImageIcon className="h-6 w-6" /></div>
-                         <h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia de Plantel (3 Fotos JPG)</h3>
+                  <div className="space-y-6 pt-10 border-t-4 border-primary/5 animate-in slide-in-from-bottom-4 duration-700">
+                      <div className="flex items-center gap-4 border-b-2 border-primary/10 pb-4">
+                         <div className="h-14 w-14 rounded-2xl bg-accent text-white flex items-center justify-center shadow-xl relative overflow-hidden">
+                           <ImageIcon className="h-8 w-8 relative z-10" />
+                           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                         </div>
+                         <div>
+                            <h3 className="text-lg font-black uppercase text-primary leading-none">Evidencia de Infraestructura</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Carga obligatoria de 3 capturas del plantel (Fachada, Aulas, Laboratorios)</p>
+                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                          <div className="space-y-4">
-                            <div className="p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-4 group hover:border-primary/40 transition-all relative shadow-inner">
-                                <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform"><Upload className="h-7 w-7" /></div>
+                            <div className="p-12 rounded-[3rem] border-4 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-6 group hover:border-primary/40 transition-all relative shadow-inner overflow-hidden">
+                                <div className="h-20 w-20 rounded-3xl bg-white shadow-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500">
+                                  <Upload className="h-10 w-10" />
+                                </div>
                                 <div className="text-center">
-                                  <p className="text-[11px] font-black uppercase text-slate-700">Adjuntar Fotografías del Plantel</p>
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Límite: 3 fotos • Máximo 2.0 MB por archivo</p>
+                                  <p className="text-sm font-black uppercase text-slate-700">Subir Fotografías del Plantel</p>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase mt-2">Límite de Captura: 3 fotos • Formato JPG/PNG</p>
+                                  <Badge className="bg-rose-50 text-rose-600 border-rose-200 text-[9px] font-black uppercase mt-3">Máx 2.0 MB por archivo</Badge>
                                 </div>
                                 <Button 
-                                  variant="outline" 
-                                  size="sm" 
+                                  size="lg"
                                   disabled={(formData.evidencePhotos?.length || 0) >= 3}
                                   onClick={() => imageInputRef.current?.click()} 
-                                  className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 hover:bg-primary/5 shadow-md"
+                                  className="h-12 px-10 rounded-2xl text-[11px] font-black uppercase shadow-2xl active:scale-95 transition-all"
                                 >
-                                  {(formData.evidencePhotos?.length || 0) >= 3 ? 'Límite completado' : 'Seleccionar Imagen'}
+                                  {(formData.evidencePhotos?.length || 0) >= 3 ? 'Capacidad de Fotos Completa' : 'Seleccionar Imágenes'}
                                 </Button>
-                                <input type="file" accept=".jpg, .jpeg" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                                <input type="file" accept=".jpg, .jpeg, .png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
                             </div>
                          </div>
                          
-                         <div className="grid grid-cols-3 gap-4">
+                         <div className="grid grid-cols-3 gap-6 items-center">
                             {(formData.evidencePhotos || []).map((img, idx) => (
-                              <div key={`photo-edit-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden border-4 border-white shadow-2xl group animate-in zoom-in-95">
-                                 <Image src={img} alt={`Escuela ${idx + 1}`} fill className="object-cover" />
-                                 <button onClick={() => removeImage(idx)} className="absolute top-2 right-2 h-7 w-7 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"><X className="h-4 w-4" /></button>
-                                 <div className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md p-2">
-                                    <p className="text-[8px] font-black text-white text-center uppercase">VISTA {idx + 1}</p>
+                              <div key={`photo-edit-${idx}`} className="relative aspect-square rounded-[2rem] overflow-hidden border-4 border-white shadow-2xl group animate-in zoom-in-95 duration-500">
+                                 <Image src={img} alt={`Captura ${idx + 1}`} fill className="object-cover" unoptimized />
+                                 <button onClick={() => removeImage(idx)} className="absolute top-4 right-4 h-10 w-10 bg-rose-600 text-white rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xl z-20 hover:scale-110">
+                                   <X className="h-6 w-6" />
+                                 </button>
+                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-4">
+                                    <p className="text-[10px] font-black text-white uppercase tracking-widest">Vista {idx + 1}</p>
                                  </div>
                               </div>
                             ))}
                             {Array.from({ length: Math.max(0, 3 - (formData.evidencePhotos?.length || 0)) }).map((_, i) => (
-                              <div key={`empty-edit-${i}`} className="aspect-square rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 flex flex-col items-center justify-center text-slate-200 gap-2">
-                                 <ImageIcon className="h-8 w-8" />
-                                 <span className="text-[8px] font-black uppercase">Espacio Libre</span>
+                              <div key={`empty-edit-${i}`} className="aspect-square rounded-[2rem] border-2 border-dashed border-slate-100 bg-slate-50/50 flex flex-col items-center justify-center text-slate-200 gap-3 grayscale opacity-50">
+                                 <ImageIcon className="h-12 w-12" />
+                                 <span className="text-[10px] font-black uppercase tracking-widest">Espacio Libre</span>
                               </div>
                             ))}
                          </div>
@@ -1020,18 +847,21 @@ export default function ProgramsPage() {
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
-                  <Textarea className="min-h-[140px] rounded-[1.5rem] p-6 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white focus:ring-8 focus:ring-primary/5 transition-all" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico o acuerdos relevantes del módulo..." />
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                    <Info className="h-6 w-6 text-primary" />
+                    <h3 className="text-sm font-black uppercase text-primary tracking-wider">Observaciones Técnicas y Bitácora</h3>
+                  </div>
+                  <Textarea className="min-h-[160px] rounded-[2rem] p-8 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white focus:ring-8 focus:ring-primary/5 transition-all" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico relevante, acuerdos del módulo o incidencias identificadas durante el levantamiento..." />
                 </div>
               </div>
             </ScrollArea>
           </div>
           
-          <DialogFooter className="p-8 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0">
-             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
-             <Button onClick={handleSave} className="btn-institutional h-12 px-14 text-[11px] shadow-2xl">
-               <Save className="h-5 w-5 mr-2" /> Guardar Cambios
+          <DialogFooter className="p-8 gap-4 border-t bg-slate-50 flex items-center justify-end shrink-0">
+             <Button variant="ghost" onClick={() => { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); }} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400 rounded-2xl hover:bg-slate-100">Cerrar Ventana</Button>
+             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[11px] shadow-2xl flex items-center gap-3">
+               <Save className="h-5 w-5" /> Guardar Cambios en Sistema
              </Button>
           </DialogFooter>
         </DialogContent>
@@ -1039,53 +869,89 @@ export default function ProgramsPage() {
 
       {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
-            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra institucional.</DialogDescription>
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="h-24 w-24" /></div>
+            <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4 relative z-10">Registro de Nuevo CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-2 tracking-widest relative z-10">Alta instantánea en la base maestra institucional.</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-10 space-y-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Clave CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-14 bg-slate-50 shadow-inner text-lg px-6 rounded-2xl" placeholder="15DES0000X" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
-                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre Oficial del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" placeholder="NOMBRE COMPLETO..." />
                 </div>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Domicilio</Label><Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label><Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Valle de Adscripción</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="h-14 font-black bg-slate-50 border-none shadow-inner rounded-2xl px-6"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      <SelectItem value="MEXICO" className="font-bold">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA" className="font-bold">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Localidad</Label><Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Sector</Label><Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">ZE</Label><Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Modalidad</Label><Input value={quickAddForm.modalidad} onChange={e => setQuickAddForm({...quickAddForm, modalidad: e.target.value.toUpperCase()})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
              </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-14 rounded-xl text-[11px] font-black uppercase shadow-2xl">Registrar y Sumar</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Vincular</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Visor de Evidencia */}
+      {/* Visor de Evidencia Digital */}
       <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[1100px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[3rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}</DialogTitle>
-              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Expediente Digital de Programas Técnicos COEES 2026</DialogDescription>
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+                <Archive className="h-8 w-8 text-accent" /> {evidenceToView?.title}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Expediente de Auditoría COEES 2026</DialogDescription>
             </div>
             <div className="flex gap-4">
-              {evidenceToView?.pdfData && <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir</Button>}
-              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"><X className="h-5 w-5" /></button>
+               {evidenceToView?.pdfData && <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir</Button>}
+               <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"><X className="h-5 w-5" /></button>
             </div>
           </DialogHeader>
-          <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b bg-slate-50/50"><TabsList className="bg-transparent h-14 p-0 gap-8">{evidenceToView?.pdfData && <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider flex items-center gap-2"><FileText className="h-4 w-4" /> Reporte PDF</TabsTrigger>}{evidenceToView?.images && evidenceToView.images.length > 0 && <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Galería ({evidenceToView.images.length})</TabsTrigger>}</TabsList></div>
-            <div className="flex-1 overflow-hidden bg-slate-100/50"><TabsContent value="pdf" className="h-full m-0 p-0">{evidenceToView?.pdfData ? <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" /> : <div className="h-full flex items-center justify-center opacity-20"><FileText className="h-20 w-20" /></div>}</TabsContent><TabsContent value="gallery" className="h-full m-0 overflow-hidden"><ScrollArea className="h-full p-8"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{evidenceToView?.images?.map((img, idx) => (<div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in"><Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" /><div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div></div>))}</div></ScrollArea></TabsContent></div>
-          </Tabs>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button></DialogFooter>
+          <div className="flex-1 bg-slate-100/50 p-8 overflow-hidden">
+             <ScrollArea className="h-full">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
+                  {evidenceToView?.images?.map((img, idx) => (
+                    <div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-3xl overflow-hidden border-4 border-white shadow-2xl transition-all hover:scale-[1.03] cursor-zoom-in">
+                       <Image src={img} alt={`Captura ${idx + 1}`} fill className="object-cover" unoptimized />
+                       <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Eye className="h-10 w-10 text-white" />
+                       </div>
+                    </div>
+                  ))}
+               </div>
+               {evidenceToView?.pdfData && (
+                 <div className="w-full h-[600px] rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl mb-10">
+                   <iframe src={evidenceToView.pdfData} className="w-full h-full border-none" title="PDF Viewer" />
+                 </div>
+               )}
+             </ScrollArea>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t shrink-0 flex justify-end">
+            <Button variant="outline" onClick={() => setEvidenceToView(null)} className="h-12 px-12 rounded-2xl font-black uppercase text-[11px] border-slate-200">Cerrar Visor</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
