@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -14,16 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  Cell
-} from 'recharts'
-import { programsData, type ProgramStatus } from "@/lib/planning-data"
+  programsData, 
+  type ProgramStatus, 
+  type BitacoraEntry,
+  type AppUser
+} from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
@@ -71,7 +65,8 @@ import {
   Printer,
   Download,
   Navigation,
-  Save
+  Save,
+  Clock
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -109,6 +104,30 @@ const ESTATUS_OPCIONES = [
 ]
 
 const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
+
+const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
+  return (
+    <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto",
+        status === 'pendiente' 
+          ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse" 
+          : "bg-rose-900/30 grayscale"
+      )} />
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto",
+        status === 'proceso' 
+          ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" 
+          : "bg-amber-900/30 grayscale"
+      )} />
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto", status === 'atendido' 
+          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
+          : "bg-emerald-900/30 grayscale"
+      )} />
+    </div>
+  );
+}
 
 function HelpDeskAccessCard() {
   const [origin, setOrigin] = useState('')
@@ -168,6 +187,7 @@ export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
+  const [bitacoraRecords, setBitacoraRecords] = useState<BitacoraEntry[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
@@ -222,6 +242,11 @@ export default function ProgramsPage() {
       localStorage.setItem(currentVersion, JSON.stringify(programsData))
     }
 
+    const storedBitacora = localStorage.getItem('atres_bitacora')
+    if (storedBitacora) {
+      setBitacoraRecords(JSON.parse(storedBitacora))
+    }
+
     const rawQueue = localStorage.getItem('atres_support_queue')
     const queue = rawQueue ? JSON.parse(rawQueue) : []
     setPendingRequestsCount(queue.length)
@@ -238,7 +263,7 @@ export default function ProgramsPage() {
     setMounted(true)
     syncData()
     const handleStorageEvent = (e: StorageEvent) => {
-      if (e.key === 'atres_support_queue' || e.key === 'programs_full_v24' || e.key === 'schools_master_full_v21') {
+      if (e.key === 'atres_support_queue' || e.key === 'programs_full_v24' || e.key === 'schools_master_full_v21' || e.key === 'atres_bitacora') {
         syncData()
       }
     }
@@ -279,7 +304,9 @@ export default function ProgramsPage() {
       localidad: quickAddForm.localidad.toUpperCase(),
       sector: quickAddForm.sector.toUpperCase(),
       zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
-      modalidad: quickAddForm.modalidad.toUpperCase()
+      modalidad: quickAddForm.modalidad.toUpperCase(),
+      valle: quickAddForm.valle.toUpperCase(),
+      turno: quickAddForm.turno.toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -398,8 +425,15 @@ export default function ProgramsPage() {
     toast({ title: "Registro eliminado" });
   };
 
-  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES', 'Conoce mi Escuela'].includes(activeTab), [activeTab]);
-  const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
+  const handleDeleteBitacora = (id: string) => {
+    const updated = bitacoraRecords.filter(r => r.id !== id);
+    setBitacoraRecords(updated);
+    localStorage.setItem('atres_bitacora', JSON.stringify(updated));
+    toast({ title: "Registro de Bitácora eliminado" });
+  }
+
+  const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'Conoce mi Escuela'].includes(activeTab), [activeTab]);
+  const isAtresTab = useMemo(() => activeTab === 'ATRES', [activeTab]);
   const isGeoposicionTab = useMemo(() => activeTab === 'Geoposición', [activeTab]);
 
   const filteredRecords = useMemo(() => {
@@ -418,6 +452,18 @@ export default function ProgramsPage() {
     return [...filtered].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [records, activeTab, searchTerm, officeFilter]);
 
+  const filteredBitacora = useMemo(() => {
+    if (activeTab !== 'ATRES') return [];
+    if (!searchTerm) return bitacoraRecords;
+    const term = searchTerm.toUpperCase();
+    return bitacoraRecords.filter(r => 
+      (r.cct || '').toUpperCase().includes(term) ||
+      (r.schoolName || '').toUpperCase().includes(term) ||
+      (r.folio || '').toUpperCase().includes(term) ||
+      (r.tecnico || '').toUpperCase().includes(term)
+    );
+  }, [bitacoraRecords, activeTab, searchTerm]);
+
   const displayRows = useMemo(() => {
     if (isCensoTab) {
       const flatList: any[] = [];
@@ -433,22 +479,40 @@ export default function ProgramsPage() {
     return filteredRecords;
   }, [filteredRecords, isCensoTab]);
 
-  const openEvidenceViewer = (record: ProgramStatus) => {
-    if (!record.reportPdf && (!record.evidencePhotos || record.evidencePhotos.length === 0)) {
-      toast({ title: "Sin evidencias" });
-      return;
+  const openEvidenceViewer = (record: ProgramStatus | BitacoraEntry) => {
+    const isBitacora = 'folio' in record;
+    if (isBitacora) {
+      const rec = record as BitacoraEntry;
+      if (!rec.pdfData) {
+        toast({ title: "Sin evidencias" });
+        return;
+      }
+      setEvidenceToView({
+        pdfData: rec.pdfData,
+        title: `Folio: ${rec.folio} - ${rec.schoolName}`
+      });
+    } else {
+      const rec = record as ProgramStatus;
+      if (!rec.reportPdf && (!rec.evidencePhotos || rec.evidencePhotos.length === 0)) {
+        toast({ title: "Sin evidencias" });
+        return;
+      }
+      setEvidenceToView({
+        pdfData: rec.reportPdf,
+        images: rec.evidencePhotos,
+        title: `Evidencia: ${rec.schoolName}`
+      });
     }
-    setEvidenceToView({
-      pdfData: record.reportPdf,
-      images: record.evidencePhotos,
-      title: `Evidencia: ${record.schoolName}`
-    });
   }
 
   const printFile = (data: string) => {
     const win = window.open();
     if (!win) return;
     win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
+
+  const downloadFile = (data: string, name: string) => {
+    const link = document.createElement('a'); link.href = data; link.download = name; link.click();
   }
 
   const schoolSearchResults = useMemo(() => {
@@ -515,7 +579,17 @@ export default function ProgramsPage() {
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
                   <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
-                  {isCensoTab ? (
+                  {isAtresTab ? (
+                    <>
+                      <TableHead className="w-10 text-[8px] font-black uppercase text-center">Status</TableHead>
+                      <TableHead className="w-20 text-[8px] font-black uppercase text-center text-primary">Folio</TableHead>
+                      <TableHead className="w-24 text-[8px] font-black uppercase">Fecha</TableHead>
+                      <TableHead className="min-w-[150px] text-[8px] font-black uppercase">Plantel</TableHead>
+                      <TableHead className="min-w-[180px] text-[8px] font-black uppercase">Resumen Operativo</TableHead>
+                      <TableHead className="w-24 text-[8px] font-black uppercase text-center">Analista</TableHead>
+                      <TableHead className="w-20 text-[8px] font-black uppercase text-center">Docs</TableHead>
+                    </>
+                  ) : isCensoTab ? (
                     <>
                       <TableHead className="text-[9px] font-black uppercase text-primary min-w-[180px]">Usuario</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
@@ -544,7 +618,34 @@ export default function ProgramsPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-              {displayRows.length > 0 ? displayRows.map((row, idx) => {
+              {isAtresTab ? (
+                filteredBitacora.length > 0 ? filteredBitacora.map((r, idx) => (
+                  <TableRow key={`${r.id}-${idx}`} className="hover:bg-slate-50 transition-colors border-b border-slate-50 h-12 group">
+                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                    <TableCell className="text-center py-0.5"><TrafficLight status={r.status} /></TableCell>
+                    <TableCell className="text-center py-0.5"><span className="font-mono font-black text-[9px] text-primary">{r.folio}</span></TableCell>
+                    <TableCell className="py-0.5"><div className="flex items-center gap-1"><Clock className="h-2.5 w-2.5 text-accent opacity-50" /><span className="text-[8px] font-bold text-slate-500">{r.fecha}</span></div></TableCell>
+                    <TableCell className="py-0.5"><div className="flex flex-col min-w-0"><span className="text-[9px] font-black text-slate-700 uppercase leading-none truncate max-w-[160px]">{r.schoolName}</span><div className="flex items-center gap-1 mt-0.5"><Badge variant="outline" className="bg-primary/5 text-primary text-[7px] font-black border-none h-3 px-1">{r.cct}</Badge></div></div></TableCell>
+                    <TableCell className="py-0.5"><div className="text-[8px] font-semibold text-slate-600 leading-tight line-clamp-2 max-w-[200px]">{r.servicio}</div></TableCell>
+                    <TableCell className="text-center py-0.5"><div className="flex items-center justify-center gap-1"><span className="text-[8px] font-black text-slate-700 uppercase truncate max-w-[80px]">{r.tecnico}</span></div></TableCell>
+                    <TableCell className="py-0.5">
+                       <div className="flex items-center justify-center gap-1">
+                          {r.pdfData ? (
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => openEvidenceViewer(r)} title="Ver PDF"><Eye className="h-3 w-3" /></Button>
+                          ) : <span className="text-[7px] font-black text-slate-300 uppercase italic">S/PDF</span>}
+                          {r.excelData ? (
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg" onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} title="Bajar Excel"><FileSpreadsheet className="h-3 w-3" /></Button>
+                          ) : <span className="text-[7px] font-black text-slate-300 uppercase italic">S/XL</span>}
+                       </div>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => handleDeleteBitacora(r.id)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )) : <TableRow><TableCell colSpan={9} className="text-center py-24 opacity-30 text-xs font-black uppercase tracking-widest">Sin folios registrados en Bitácora</TableCell></TableRow>
+              ) : displayRows.length > 0 ? displayRows.map((row, idx) => {
                 if (isCensoTab) {
                   return (
                     <TableRow key={`census-${row.id}-${idx}`} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
@@ -846,48 +947,77 @@ export default function ProgramsPage() {
 
       {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0 relative">
             <div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="h-24 w-24" /></div>
             <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4 relative z-10">Registro de Nuevo CCT</DialogTitle>
             <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-2 tracking-widest relative z-10">Alta instantánea en la base maestra institucional.</DialogDescription>
           </DialogHeader>
-          <div className="p-10 space-y-8">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Clave CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-14 bg-slate-50 shadow-inner text-lg px-6 rounded-2xl" placeholder="15DES0000X" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre Oficial del Plantel</Label>
-                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" placeholder="NOMBRE COMPLETO..." />
-                </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Municipio</Label>
-                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Valle de Adscripción</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
-                    <SelectTrigger className="h-14 font-black bg-slate-50 border-none shadow-inner rounded-2xl px-6"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="MEXICO" className="font-bold">MÉXICO</SelectItem>
-                      <SelectItem value="TOLUCA" className="font-bold">TOLUCA</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Sector</Label><Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">ZE</Label><Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Modalidad</Label><Input value={quickAddForm.modalidad} onChange={e => setQuickAddForm({...quickAddForm, modalidad: e.target.value.toUpperCase()})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
-             </div>
-          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-10 space-y-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Clave CCT (10 Dígitos)</Label>
+                    <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-14 bg-slate-50 shadow-inner text-lg px-6 rounded-2xl" placeholder="15DES0000X" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre Oficial del Plantel</Label>
+                    <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" placeholder="NOMBRE COMPLETO..." />
+                  </div>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Municipio</Label>
+                    <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-14 bg-slate-50 shadow-inner px-6 rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Valle de Adscripción</Label>
+                    <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                      <SelectTrigger className="h-14 font-black bg-slate-50 border-none shadow-inner rounded-2xl px-6"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-2xl">
+                        <SelectItem value="MEXICO" className="font-bold">MÉXICO</SelectItem>
+                        <SelectItem value="TOLUCA" className="font-bold">TOLUCA</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Sector</Label><Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">ZE</Label><Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-2">Modalidad</Label><Input value={quickAddForm.modalidad} onChange={e => setQuickAddForm({...quickAddForm, modalidad: e.target.value.toUpperCase()})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" /></div>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Domicilio (Calle y Número)</Label>
+                    <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Teléfono</Label>
+                    <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                  </div>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Turno</Label>
+                    <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}>
+                      <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MATUTINO">MATUTINO</SelectItem>
+                        <SelectItem value="VESPERTINO">VESPERTINO</SelectItem>
+                        <SelectItem value="MIXTO">MIXTO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Localidad</Label>
+                    <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" />
+                  </div>
+               </div>
+            </div>
+          </ScrollArea>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
-            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Vincular</Button>
+            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

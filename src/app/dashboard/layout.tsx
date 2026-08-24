@@ -55,7 +55,7 @@ export default function DashboardLayout({
           name: rfc === 'COEES' ? 'Administrador Maestro' : 'Admin Editorial',
           password: '',
           role: 'admin',
-          privileges: ['bitacora-atres', 'planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
+          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
         })
       } else if (user) {
         setCurrentUser(user)
@@ -69,7 +69,6 @@ export default function DashboardLayout({
   }
 
   const allMenuItems = [
-    { id: 'bitacora-atres', name: 'Bitácora ATRES', path: '/dashboard/bitacora-atres', icon: <History className="h-5 w-5" /> },
     { id: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
