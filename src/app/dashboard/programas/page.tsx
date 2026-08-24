@@ -69,7 +69,8 @@ import {
   Archive,
   Eye,
   Printer,
-  Download
+  Download,
+  Navigation
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -87,7 +88,7 @@ const PROGRAM_RUBROS = [
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa NaucalPAN",
   "Oficina de Tecnóloga Educativa Nezahualcóyotl",
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
@@ -215,7 +216,7 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], requestDate: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
-    zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
+    zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '', latitud: '', longitud: '',
     numeroEquipos: 0, observaciones: '', capacitacion: 'N', asistentes: [], email: '',
     oficinaRegionalAtencion: '',
     reportPdf: '',
@@ -290,65 +291,6 @@ export default function ProgramsPage() {
     }
   }
 
-  const handleQuickAddCct = () => {
-    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Datos incompletos", description: "CCT, Nombre y Municipio son obligatorios." })
-      return
-    }
-
-    const newSchool: SchoolInfo = {
-      ...quickAddForm,
-      cct: quickAddForm.cct.toUpperCase(),
-      nombre: quickAddForm.nombre.toUpperCase(),
-      municipio: quickAddForm.municipio.toUpperCase(),
-      domicilio: quickAddForm.domicilio.toUpperCase(),
-      localidad: quickAddForm.localidad.toUpperCase(),
-      sector: quickAddForm.sector.toUpperCase(),
-      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
-      modalidad: quickAddForm.modalidad.toUpperCase()
-    }
-
-    const updatedSchools = [newSchool, ...allSchools]
-    setAllSchools(updatedSchools)
-    localStorage.setItem('schools_master_full_v21', JSON.stringify(updatedSchools))
-    
-    // Auto-select in current form
-    handleCctChange(newSchool.cct)
-    setIsQuickAddOpen(false)
-    setDialogSearchTerm('')
-    toast({ title: "CCT Registrado", description: `${newSchool.cct} se ha sumado a la base maestra.` })
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "El límite es de 2.0 MB." })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      if (type === 'pdf') {
-        setFormData(prev => ({ ...prev, reportPdf: base64 }))
-      } else {
-        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
-      }
-      toast({ title: "Evidencia añadida" })
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
-    }))
-  }
-
   const handleUpdateFase = (faseId: keyof NonNullable<ProgramStatus['bibliotecaFases']>, value: boolean) => {
     if (!formData.bibliotecaFases) return;
     const updatedFases = { ...formData.bibliotecaFases, [faseId]: value };
@@ -405,6 +347,10 @@ export default function ProgramsPage() {
       }
     }
 
+    // OPTIMIZACIÓN: Si es un censo con muchos usuarios, la evidencia (PDF/Imágenes) 
+    // solo debe guardarse en el objeto raíz, no replicarse en cada registro 
+    // (aunque aquí ProgramStatus suele ser un solo documento por escuela).
+    
     const updated = editingId 
       ? records.map(r => r.id === editingId ? recordToSave : r) 
       : [{...recordToSave, id: recordToSave.id || `SOL-${Date.now()}`}, ...records];
@@ -417,7 +363,11 @@ export default function ProgramsPage() {
       setFormData(initialFormState)
       toast({ title: "Cambios guardados correctamente" })
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de Memoria", description: "Almacenamiento lleno. Reduzca el tamaño de PDF o imágenes." })
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Memoria", 
+        description: "El almacenamiento local está saturado. Elimine archivos adjuntos pesados para poder guardar." 
+      })
     }
   }
 
@@ -428,7 +378,7 @@ export default function ProgramsPage() {
           const newAsistentes = r.asistentes.filter((_, idx) => idx !== assistantIndex);
           return { ...r, asistentes: newAsistentes };
         }
-        return null; // Registro completo marcado para eliminación
+        return null;
       }
       return r;
     }).filter(r => {
@@ -439,11 +389,12 @@ export default function ProgramsPage() {
 
     setRecords(updated);
     localStorage.setItem('programs_full_v24', JSON.stringify(updated));
-    toast({ title: "Registro eliminado con éxito" });
+    toast({ title: "Registro eliminado" });
   };
 
   const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'ATRES'].includes(activeTab), [activeTab]);
   const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
+  const isGeoposicionTab = useMemo(() => activeTab === 'Geoposición', [activeTab]);
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
@@ -487,7 +438,7 @@ export default function ProgramsPage() {
 
   const downloadExcel = () => {
     if (displayRows.length === 0) {
-      toast({ variant: "destructive", title: "Sin datos", description: "No hay registros para exportar." })
+      toast({ variant: "destructive", title: "Sin datos" })
       return
     }
 
@@ -502,6 +453,10 @@ export default function ProgramsPage() {
         'CCT': r.cct, 'Plantel': r.schoolName, 'Progreso %': r.progress, 'Equipos': r.bibliotecaFases?.equiposHabilitados,
         'Personal': r.bibliotecaFases?.personalCapacitado, 'Fecha Solicitud': r.requestDate, 'Fecha Atención': r.date
       }));
+    } else if (isGeoposicionTab) {
+      dataToExport = filteredRecords.map(r => ({
+        'CCT': r.cct, 'Plantel': r.schoolName, 'Latitud': r.latitud, 'Longitud': r.longitud, 'Fecha': r.date
+      }));
     } else {
       dataToExport = filteredRecords.map(rec => ({
         'ID': rec.id, 'CCT': rec.cct, 'Plantel': rec.schoolName, 'Estatus': rec.status, 'Fecha': rec.date
@@ -512,15 +467,13 @@ export default function ProgramsPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte");
     XLSX.writeFile(workbook, `Reporte_${activeTab.replace(/ /g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    toast({ title: "Exportación Exitosa" });
   };
 
   const openEvidenceViewer = (record: ProgramStatus) => {
     if (!record.reportPdf && (!record.evidencePhotos || record.evidencePhotos.length === 0)) {
-      toast({ title: "Sin evidencias", description: "Este registro no cuenta con archivos adjuntos." });
+      toast({ title: "Sin evidencias" });
       return;
     }
-
     setEvidenceToView({
       pdfData: record.reportPdf,
       images: record.evidencePhotos,
@@ -543,7 +496,7 @@ export default function ProgramsPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1450px] mx-auto overflow-hidden px-2">
+    <div className="space-y-4 animate-in fade-in duration-700 w-full max-w-[1550px] mx-auto overflow-hidden px-2">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-primary/5 pb-4">
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
@@ -754,6 +707,14 @@ export default function ProgramsPage() {
                         <TableHead className="text-[9px] font-black uppercase text-primary min-w-[130px]">Departamento</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
                       </>
+                    ) : isGeoposicionTab ? (
+                      <>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Latitud</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[120px] text-center">Longitud</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
+                      </>
                     ) : (
                       <>
                         <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
@@ -796,6 +757,12 @@ export default function ProgramsPage() {
                       <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
                       <TableCell className="font-black text-[10px] text-primary tracking-tight">{rec.cct}</TableCell>
                       <TableCell className="py-2"><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-700 uppercase leading-tight truncate max-w-[180px]">{rec.schoolName}</span><span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70 truncate max-w-[180px]">{rec.municipio} • {rec.valle}</span></div></TableCell>
+                      {isGeoposicionTab && (
+                        <>
+                          <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.latitud || 'S/C'}</TableCell>
+                          <TableCell className="text-center font-mono text-[9px] font-black text-emerald-600">{rec.longitud || 'S/C'}</TableCell>
+                        </>
+                      )}
                       <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente' || rec.status === 'en proceso') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-1">
@@ -826,7 +793,7 @@ export default function ProgramsPage() {
                 <Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}
              </DialogTitle>
              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                {isBibliotecaTab ? "Seguimiento técnico de instalación por fases." : "Captura de censo de personal institucional."}
+                Administración integral del módulo técnico institucional.
              </DialogDescription>
           </DialogHeader>
           
@@ -1012,8 +979,8 @@ export default function ProgramsPage() {
               </Tabs>
             ) : (
               <ScrollArea className="h-full">
-                <div className="p-8 space-y-6">
-                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4">
+                <div className="p-8 space-y-8">
+                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
                     <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
                         <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
                     </Label>
@@ -1043,9 +1010,47 @@ export default function ProgramsPage() {
                     )}
                   </div>
 
+                  {isGeoposicionTab && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2">
+                      <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                        <Navigation className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-black uppercase text-primary">Coordenadas de Geoposición</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-black uppercase text-primary pl-1">Latitud</Label>
+                          <Input 
+                            placeholder="EJ: 19.345678" 
+                            className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" 
+                            value={formData.latitud || ''} 
+                            onChange={e => setFormData({...formData, latitud: e.target.value})} 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-black uppercase text-primary pl-1">Longitud</Label>
+                          <Input 
+                            placeholder="EJ: -99.456789" 
+                            className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" 
+                            value={formData.longitud || ''} 
+                            onChange={e => setFormData({...formData, longitud: e.target.value})} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-6">
-                    <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3></div></div>
-                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[150px]">
+                    <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
+                      <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 rounded-lg border-primary/20 text-primary font-black uppercase text-[9px] hover:bg-primary/5 shadow-sm">
+                        <Plus className="h-3 w-3 mr-1" /> Añadir Servidor
+                      </Button>
+                    </div>
+                    
+                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner">
                       <ScrollArea className="h-full">
                         <Table>
                           <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
@@ -1055,10 +1060,10 @@ export default function ProgramsPage() {
                                 <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
                                 <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
                                 <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
-                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Dominio</TableHead>
                                 <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
                                 <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
                                 <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Estatus</TableHead>
+                                <TableHead className="w-12"></TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1069,10 +1074,14 @@ export default function ProgramsPage() {
                                     <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[10px] font-mono font-black uppercase" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
                                     <TableCell className="p-2"><Input placeholder="usuario.ejemplo" className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-2" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} /></TableCell>
                                     <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-9 text-[10px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
-                                    <TableCell className="p-2"><Select value={ast.dominio} onValueChange={v => handleUpdateAssistantField(idx, 'dominio', v)}><SelectTrigger className="h-9 text-[10px] font-black uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{DOMINIOS.map(d => <SelectItem key={`dom-${d}`} value={d} className="text-[10px] font-bold">@{d}</SelectItem>)}</SelectContent></Select></TableCell>
                                     <TableCell className="p-2"><Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}><SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200"><SelectValue placeholder="VALLE..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent></Select></TableCell>
                                     <TableCell className="p-2"><Input placeholder="OFICINA / DEPTO..." className="h-9 text-[10px] font-bold uppercase border-slate-200" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} /></TableCell>
                                     <TableCell className="p-2"><Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}><SelectTrigger className={cn("h-9 text-[10px] font-black uppercase border-2", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent></Select></TableCell>
+                                    <TableCell className="p-2">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
                                 </TableRow>
                               ))}
                           </TableBody>
