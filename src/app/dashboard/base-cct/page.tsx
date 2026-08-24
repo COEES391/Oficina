@@ -173,22 +173,22 @@ export default function BaseCctPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Base Maestra CCT</h2>
-          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
-            <Database className="h-4 w-4 text-accent" /> Catálogo Institucional Edoméx 2026 - Datos Estadísticos
+          <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Base Maestra CCT</h2>
+          <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2 mt-1">
+            <Database className="h-3.5 w-3.5 text-accent" /> Catálogo Institucional Edoméx 2026 - Datos Estadísticos
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Button 
             onClick={downloadExcel} 
             variant="outline" 
-            className="h-12 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md"
+            className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[9px] gap-2 hover:bg-emerald-50 shadow-md"
           >
-            <FileSpreadsheet className="h-5 w-5" /> Exportar a Excel
+            <FileSpreadsheet className="h-4 w-4" /> Exportar a Excel
           </Button>
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -199,8 +199,8 @@ export default function BaseCctPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button className="btn-institutional h-12 px-8 rounded-xl shadow-lg">
-                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro CCT
+              <Button className="btn-institutional h-10 px-8 rounded-xl shadow-lg text-[9px]">
+                <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro CCT
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem]">
@@ -338,8 +338,8 @@ export default function BaseCctPage() {
               </ScrollArea>
 
               <DialogFooter className="p-8 border-t bg-slate-50/50">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
-                <Button onClick={handleSave} className="btn-institutional h-14 px-16 rounded-xl text-xs">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 px-10 rounded-xl font-bold uppercase text-xs">Cancelar</Button>
+                <Button onClick={handleSave} className="btn-institutional h-12 px-16 rounded-xl text-xs">
                   {editingId ? 'Actualizar Plantel' : 'Guardar Plantel'}
                 </Button>
               </DialogFooter>
@@ -348,108 +348,108 @@ export default function BaseCctPage() {
         </div>
       </div>
 
-      <Card className="executive-card p-6 bg-white/80 border-none shadow-lg">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <Search className="h-5 w-5 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscador Operativo:</span>
+      <Card className="executive-card p-4 bg-white/80 border-none shadow-lg">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <Search className="h-4 w-4 text-primary" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Buscador:</span>
           </div>
           
           <div className="relative flex-1 w-full group">
             <Input 
-              placeholder="Buscar por CCT, Escuela, Director o Teléfono..." 
-              className="h-12 rounded-xl bg-slate-50 border-primary/10 pl-12 pr-4 text-sm font-bold uppercase shadow-inner focus:bg-white transition-all"
+              placeholder="BUSCAR POR CCT, ESCUELA, DIRECTOR O TELÉFONO..." 
+              className="h-10 rounded-xl bg-slate-50 border-primary/10 pl-10 pr-4 text-[10px] font-bold uppercase shadow-inner focus:bg-white transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-4 top-3 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
              <Button 
                 onClick={() => searchTerm && setIsResultsDialogOpen(true)} 
                 disabled={!searchTerm}
-                className="btn-institutional h-12 px-6 rounded-xl shadow-md text-[10px] gap-2 disabled:opacity-50"
+                className="btn-institutional h-10 px-4 rounded-xl shadow-md text-[8px] gap-2 disabled:opacity-50"
               >
-               <ListFilter className="h-4 w-4" /> Ver Resultados en Ventana ({filteredSchools.length})
+               <ListFilter className="h-3 w-3" /> VER RESULTADOS ({filteredSchools.length})
              </Button>
-             <Badge variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">
-               Registros: {schools.length}
+             <Badge variant="outline" className="h-10 px-4 rounded-xl border-primary/20 text-primary font-black text-[9px] uppercase">
+               TOTAL: {schools.length}
              </Badge>
           </div>
         </div>
       </Card>
 
       <Card className="executive-card p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="overflow-x-auto w-full">
+          <Table className="w-full border-collapse">
             <TableHeader className="bg-slate-50/50">
-              <TableRow>
-                <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[150px]">Región / Valle</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[120px]">Municipio</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Turno</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">CCT</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[250px]">Nombre del Centro</TableHead>
-                <TableHead className="text-[10px] font-black uppercase min-w-[200px]">Director(a)</TableHead>
-                <TableHead className="text-[10px] font-black uppercase">Teléfono</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center"><Users className="h-3 w-3 inline mr-1" /> Alums</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-center"><ClipboardList className="h-3 w-3 inline mr-1" /> Gpos</TableHead>
-                <TableHead className="text-right text-[10px] font-black uppercase pr-10">Acción</TableHead>
+              <TableRow className="h-10">
+                <TableHead className="w-8 text-[8px] font-black uppercase text-center pl-4">#</TableHead>
+                <TableHead className="text-[8px] font-black uppercase min-w-[110px]">Región / Valle</TableHead>
+                <TableHead className="text-[8px] font-black uppercase min-w-[100px]">Municipio</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-[80px] text-center">Turno</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-[90px] text-center">CCT</TableHead>
+                <TableHead className="text-[8px] font-black uppercase min-w-[180px]">Nombre del Centro</TableHead>
+                <TableHead className="text-[8px] font-black uppercase min-w-[160px]">Director(a)</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-[90px] text-center">Teléfono</TableHead>
+                <TableHead className="text-[8px] font-black uppercase text-center w-[60px]">Alums</TableHead>
+                <TableHead className="text-[8px] font-black uppercase text-center w-[60px]">Gpos</TableHead>
+                <TableHead className="text-right text-[8px] font-black uppercase pr-6 w-20">Acción</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSchools.length > 0 ? filteredSchools.slice(0, 100).map((s, idx) => (
-                <TableRow key={`${s.cct}-${s.turno}-${idx}`} className="hover:bg-slate-50 transition-colors group">
-                  <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}.-</TableCell>
+                <TableRow key={`${s.cct}-${s.turno}-${idx}`} className="hover:bg-slate-50 transition-colors group h-14">
+                  <TableCell className="text-center font-black text-[9px] text-muted-foreground pl-4">{idx + 1}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-700">{s.region}</span>
-                      <span className="text-[8px] font-bold text-accent uppercase tracking-widest">Valle de {s.valle}</span>
+                      <span className="text-[9px] font-black text-slate-700 uppercase leading-none">{s.region}</span>
+                      <span className="text-[7px] font-bold text-accent uppercase tracking-widest mt-0.5">Valle {s.valle}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-[10px] font-bold text-slate-500 uppercase">{s.municipio}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn("text-[8px] font-black", s.turno === 'MATUTINO' ? 'border-emerald-200 text-emerald-600' : 'border-amber-200 text-amber-600')}>
-                      {s.turno}
+                  <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[100px]">{s.municipio}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn("text-[7px] font-black py-0 px-1.5 h-4", s.turno === 'MATUTINO' ? 'border-emerald-200 text-emerald-600' : 'border-amber-200 text-amber-600')}>
+                      {s.turno?.slice(0, 3)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-black text-[10px] text-primary group-hover:scale-105 transition-transform">{s.cct}</TableCell>
+                  <TableCell className="font-black text-[9px] text-primary text-center group-hover:scale-105 transition-transform">{s.cct}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <School className="h-4 w-4" />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-6 w-6 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
+                        <School className="h-3 w-3" />
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-700 uppercase leading-tight max-w-[250px]">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] font-black text-slate-700 uppercase leading-tight truncate max-w-[160px]">
                           {s.nombre}
                         </span>
-                        <span className="text-[8px] text-muted-foreground font-bold">{s.servicioEducativo}</span>
+                        <span className="text-[7px] text-muted-foreground font-bold truncate max-w-[160px]">{s.servicioEducativo}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                       <User className="h-3 w-3 text-accent" />
-                       <span className="text-[10px] font-bold uppercase text-slate-600">{s.director || 'POR ASIGNAR'}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                       <User className="h-2.5 w-2.5 text-accent shrink-0" />
+                       <span className="text-[9px] font-bold uppercase text-slate-600 truncate max-w-[140px]">{s.director || 'POR ASIGNAR'}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                       <Phone className="h-3 w-3 text-emerald-500" />
-                       <span className="text-[10px] font-mono font-bold text-slate-600">{s.telefono || 'S/D'}</span>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                       <Phone className="h-2.5 w-2.5 text-emerald-500" />
+                       <span className="text-[9px] font-mono font-bold text-slate-600">{s.telefono || 'S/D'}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center font-black text-primary text-[11px]">{s.alumnos}</TableCell>
-                  <TableCell className="text-center font-black text-slate-600 text-[11px]">{s.grupos}</TableCell>
-                  <TableCell className="text-right pr-8">
-                     <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
-                            <Pencil className="h-4 w-4" />
+                  <TableCell className="text-center font-black text-primary text-[10px]">{s.alumnos}</TableCell>
+                  <TableCell className="text-center font-black text-slate-600 text-[10px]">{s.grupos}</TableCell>
+                  <TableCell className="text-right pr-4">
+                     <div className="flex justify-end gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/10 rounded-lg transition-colors" onClick={() => handleEdit(s)}>
+                            <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" onClick={() => handleDelete(s.cct, s.turno)}>
-                            <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" onClick={() => handleDelete(s.cct, s.turno)}>
+                            <Trash2 className="h-3 w-3" />
                         </Button>
                      </div>
                   </TableCell>
@@ -457,9 +457,9 @@ export default function BaseCctPage() {
               )) : (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-20 bg-slate-50/20">
-                    <div className="flex flex-col items-center gap-3 opacity-40">
-                      <Search className="h-10 w-10 text-primary" />
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">No se encontraron planteles con los criterios de búsqueda.</p>
+                    <div className="flex flex-col items-center gap-2 opacity-40">
+                      <Search className="h-8 w-8 text-primary" />
+                      <p className="text-[9px] font-black uppercase text-muted-foreground">Sin planteles encontrados.</p>
                     </div>
                   </TableCell>
                 </TableRow>

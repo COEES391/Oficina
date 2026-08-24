@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Lock, Shield, Save } from "lucide-react"
+import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Lock, Shield, Save, RefreshCw, KeyRound } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { type AppUser } from '@/lib/planning-data'
 import { cn } from "@/lib/utils"
@@ -79,6 +79,14 @@ export default function UsersPage() {
     } else {
       setFormData({ ...formData, privileges: [...current, sectionId] })
     }
+  }
+
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
+    let pass = ""
+    for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
+    setFormData({ ...formData, password: pass })
+    toast({ title: "Contraseña generada" })
   }
 
   const handleDelete = (id: string) => {
@@ -195,7 +203,12 @@ export default function UsersPage() {
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
                     <Lock className="h-4 w-4" /> Contraseña Oficial
                   </Label>
-                  <Input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-sm" placeholder="••••••••" />
+                  <div className="flex gap-2">
+                    <Input type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-sm flex-1" placeholder="ASIGNAR CLAVE..." />
+                    <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 p-0 rounded-2xl border-primary/20 text-primary hover:bg-primary/5" title="Generar Aleatoria">
+                      <KeyRound className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
