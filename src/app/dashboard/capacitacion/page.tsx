@@ -564,20 +564,72 @@ export default function TrainingPage() {
       <Card className="executive-card p-0 shadow-xl overflow-hidden border-t-8 border-t-primary">
         <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100"><CardTitle className="flex items-center gap-4 text-primary uppercase font-black text-2xl"><GraduationCap className="h-10 w-10 text-accent" /> Control de Personal Capacitado</CardTitle><CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Bitácora Maestra de Actualización Docente y Administrativa</CardDescription></CardHeader>
         <CardContent className="p-0">
-          <div className="w-full overflow-x-auto">
-            <Table className="min-w-[1200px]">
-              <TableHeader className="bg-slate-100/50"><TableRow><TableHead className="font-black text-[10px] uppercase w-20 text-center pl-6">ID</TableHead><TableHead className="font-black text-[10px] uppercase w-[250px]">Curso / Grupo</TableHead><TableHead className="font-black text-[10px] uppercase w-[280px]">Asistente Capacitado</TableHead><TableHead className="font-black text-[10px] uppercase w-[120px]">RFC</TableHead><TableHead className="font-black text-[10px] uppercase w-[150px]">Función</TableHead><TableHead className="font-black text-[10px] uppercase w-[250px]">Plantel de Origen</TableHead><TableHead className="font-black text-[10px] uppercase text-center w-20">SETES</TableHead><TableHead className="text-right font-black text-[10px] uppercase pr-10 w-24">Acción</TableHead></TableRow></TableHeader>
-              <TableBody>{filteredRecords.length > 0 ? filteredRecords.map((record) => (
-                <TableRow key={record.id} className="hover:bg-slate-50 group border-b border-slate-50"><TableCell className="text-center pl-6"><span className="font-black text-xs text-primary">#{record.id.split('-')[0]}</span></TableCell>
-                  <TableCell><button onClick={() => openEvidenceViewer(record)} className="flex flex-col text-left hover:scale-[1.02] transition-transform"><span className="font-black text-[11px] text-slate-700 uppercase tracking-tight group-hover:text-primary underline decoration-dotted decoration-primary/30">{record.cursoNombre}</span><span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{record.cursoGrupo}</span></button></TableCell>
-                  <TableCell><span className="text-[11px] font-bold uppercase text-slate-600">{record.asistenteNombres} {record.asistentePaterno} {record.asistenteMaterno}</span></TableCell>
-                  <TableCell><span className="font-mono text-[10px] uppercase font-black text-primary">{record.asistenteRFC}</span></TableCell>
-                  <TableCell><Badge variant="outline" className="text-[9px] font-black uppercase border-slate-200 text-slate-500 bg-white">{record.asistenteFuncion || '-'}</Badge></TableCell>
-                  <TableCell><div className="flex flex-col"><span className="text-[10px] font-black text-primary leading-none">{record.asistenteCCT}</span><span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[200px] mt-1">{record.asistenteNombreCT}</span></div></TableCell>
-                  <TableCell className="text-center"><Badge variant={record.setes === 'S' ? 'default' : 'secondary'} className={cn("text-[9px] font-black", record.setes === 'S' ? 'bg-emerald-500 hover:bg-emerald-600' : '')}>{record.setes === 'S' ? 'SÍ' : 'NO'}</Badge></TableCell>
-                  <TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEdit(record)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(record.id)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
+          <div className="w-full overflow-hidden">
+            <Table className="w-full border-collapse">
+              <TableHeader className="bg-slate-100/50">
+                <TableRow>
+                  <TableHead className="font-black text-[9px] uppercase w-[60px] text-center pl-4">ID</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase min-w-[200px]">Curso / Grupo</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase min-w-[200px]">Asistente Capacitado</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase w-[100px]">RFC</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase w-[110px]">Función</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase min-w-[180px]">Plantel de Origen</TableHead>
+                  <TableHead className="font-black text-[9px] uppercase text-center w-[60px]">SETES</TableHead>
+                  <TableHead className="text-right font-black text-[9px] uppercase pr-6 w-[80px]">Acción</TableHead>
                 </TableRow>
-              )) : (<TableRow><TableCell colSpan={8} className="text-center py-32 opacity-30 flex flex-col items-center gap-4"><GraduationCap className="h-16 w-16 text-slate-300" /><p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Sin registros operativos</p></TableCell></TableRow>)}</TableBody>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.length > 0 ? filteredRecords.map((record) => (
+                  <TableRow key={record.id} className="hover:bg-slate-50 group border-b border-slate-50 h-14">
+                    <TableCell className="text-center pl-4">
+                      <span className="font-black text-[10px] text-primary">#{record.id.split('-')[0]}</span>
+                    </TableCell>
+                    <TableCell>
+                      <button onClick={() => openEvidenceViewer(record)} className="flex flex-col text-left hover:scale-[1.01] transition-transform">
+                        <span className="font-black text-[10px] text-slate-700 uppercase leading-tight group-hover:text-primary underline decoration-dotted decoration-primary/30 truncate max-w-[200px]">{record.cursoNombre}</span>
+                        <span className="text-[8px] text-muted-foreground font-black uppercase tracking-tight mt-0.5">{record.cursoGrupo}</span>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[10px] font-bold uppercase text-slate-600 truncate max-w-[200px] block">{record.asistenteNombres} {record.asistentePaterno} {record.asistenteMaterno}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-[9px] uppercase font-black text-primary">{record.asistenteRFC}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200 text-slate-500 bg-white px-1.5 h-5">{record.asistenteFuncion || '-'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-black text-primary leading-none truncate max-w-[180px]">{record.asistenteCCT}</span>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase truncate max-w-[180px] mt-0.5">{record.asistenteNombreCT}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={record.setes === 'S' ? 'default' : 'secondary'} className={cn("text-[8px] font-black h-5 px-2", record.setes === 'S' ? 'bg-emerald-500 hover:bg-emerald-600' : '')}>{record.setes === 'S' ? 'SÍ' : 'NO'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <div className="flex justify-end gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-primary hover:bg-primary/5 rounded-lg" onClick={() => handleEdit(record)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(record.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-32 opacity-30">
+                      <div className="flex flex-col items-center gap-4">
+                        <GraduationCap className="h-16 w-16 text-slate-300" />
+                        <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Sin registros operativos</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
             </Table>
           </div>
         </CardContent>
