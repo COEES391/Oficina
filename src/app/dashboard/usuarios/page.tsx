@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Lock, Shield, Save } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { type AppUser } from '@/lib/planning-data'
+import { cn } from "@/lib/utils"
 
 const SECTIONS = [
   { id: 'bitacora-atres', name: 'Bitácora ATRES' },
@@ -98,12 +99,12 @@ export default function UsersPage() {
             <ShieldCheck className="h-4 w-4 text-accent" /> Control de Privilegios Administrativos
           </p>
         </div>
-        <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8">
-          <UserPlus className="h-5 w-5 mr-2" /> Nuevo Usuario
-        </Button>
+        <button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 flex items-center gap-2">
+          <UserPlus className="h-5 w-5" /> NUEVO ACCESO
+        </button>
       </div>
 
-      <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary">
+      <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary shadow-2xl">
         <CardHeader className="bg-slate-50/50 p-8">
           <CardTitle className="flex items-center gap-4 text-primary uppercase font-black text-2xl">
             <Users className="h-10 w-10 text-accent" />
@@ -166,7 +167,7 @@ export default function UsersPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 flex flex-col overflow-hidden bg-white">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><Shield className="h-32 w-32" /></div>
             <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4 relative z-10">
@@ -207,7 +208,14 @@ export default function UsersPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {SECTIONS.map(section => (
-                    <div key={section.id} className={cn("flex items-center space-x-4 p-4 rounded-2xl border transition-all duration-300 group cursor-pointer", formData.privileges.includes(section.id) ? "bg-primary/[0.03] border-primary/20 shadow-sm" : "bg-white border-slate-100 hover:border-primary/10")} onClick={() => handleTogglePrivilege(section.id)}>
+                    <div 
+                      key={section.id} 
+                      className={cn(
+                        "flex items-center space-x-4 p-4 rounded-2xl border transition-all duration-300 group cursor-pointer", 
+                        formData.privileges.includes(section.id) ? "bg-primary/[0.03] border-primary/20 shadow-sm" : "bg-white border-slate-100 hover:border-primary/10"
+                      )} 
+                      onClick={() => handleTogglePrivilege(section.id)}
+                    >
                         <Checkbox 
                           id={`section-${section.id}`} 
                           checked={formData.privileges.includes(section.id)}
