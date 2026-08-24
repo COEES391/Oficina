@@ -129,11 +129,6 @@ export default function BaseCctPage() {
     toast({ title: "Registro eliminado", description: `Se ha quitado ${cct} de la base maestra.` })
   }
 
-  const handleEditFromResults = (school: SchoolInfo) => {
-    handleEdit(school);
-    setIsResultsDialogOpen(false);
-  }
-
   const handleSave = () => {
     if (!formData.cct || !formData.nombre) {
       toast({ variant: "destructive", title: "Campos obligatorios", description: "CCT y Nombre son necesarios." })
@@ -363,7 +358,7 @@ export default function BaseCctPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && searchTerm && setIsResultsDialogOpen(true)}
             />
-            <Search className="absolute left-4 top-3 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-4 top-3.5 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary transition-colors" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -382,21 +377,21 @@ export default function BaseCctPage() {
       </Card>
 
       <Card className="executive-card p-0 overflow-hidden">
-        <div className="overflow-x-auto w-full">
+        <div className="w-full">
           <Table className="w-full border-collapse">
             <TableHeader className="bg-slate-50/50">
               <TableRow className="h-10">
-                <TableHead className="w-8 text-[8px] font-black uppercase text-center pl-4">#</TableHead>
-                <TableHead className="text-[8px] font-black uppercase min-w-[110px]">Región / Valle</TableHead>
-                <TableHead className="text-[8px] font-black uppercase min-w-[100px]">Municipio</TableHead>
-                <TableHead className="text-[8px] font-black uppercase w-[80px] text-center">Turno</TableHead>
-                <TableHead className="text-[8px] font-black uppercase w-[90px] text-center">CCT</TableHead>
-                <TableHead className="text-[8px] font-black uppercase min-w-[180px]">Nombre del Centro</TableHead>
-                <TableHead className="text-[8px] font-black uppercase min-w-[160px]">Director(a)</TableHead>
-                <TableHead className="text-[8px] font-black uppercase w-[90px] text-center">Teléfono</TableHead>
-                <TableHead className="text-[8px] font-black uppercase text-center w-[60px]">Alums</TableHead>
-                <TableHead className="text-[8px] font-black uppercase text-center w-[60px]">Gpos</TableHead>
-                <TableHead className="text-right text-[8px] font-black uppercase pr-6 w-20">Acción</TableHead>
+                <TableHead className="w-10 text-[8px] font-black uppercase text-center pl-4">#</TableHead>
+                <TableHead className="text-[8px] font-black uppercase">Región / Valle</TableHead>
+                <TableHead className="text-[8px] font-black uppercase">Municipio</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-16 text-center">Turno</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-20 text-center">CCT</TableHead>
+                <TableHead className="text-[8px] font-black uppercase">Nombre del Centro</TableHead>
+                <TableHead className="text-[8px] font-black uppercase">Director(a)</TableHead>
+                <TableHead className="text-[8px] font-black uppercase w-20 text-center">Teléfono</TableHead>
+                <TableHead className="text-[8px] font-black uppercase text-center w-12">Alums</TableHead>
+                <TableHead className="text-[8px] font-black uppercase text-center w-12">Gpos</TableHead>
+                <TableHead className="text-right text-[8px] font-black uppercase pr-6 w-16">Acción</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -409,37 +404,33 @@ export default function BaseCctPage() {
                       <span className="text-[7px] font-bold text-accent uppercase tracking-widest mt-0.5">Valle {s.valle}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[100px]">{s.municipio}</TableCell>
+                  <TableCell className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[80px]">{s.municipio}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className={cn("text-[7px] font-black py-0 px-1.5 h-4", s.turno === 'MATUTINO' ? 'border-emerald-200 text-emerald-600' : 'border-amber-200 text-amber-600')}>
                       {s.turno?.slice(0, 3)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-black text-[9px] text-primary text-center group-hover:scale-105 transition-transform">{s.cct}</TableCell>
+                  <TableCell className="font-black text-[9px] text-primary text-center">{s.cct}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="h-6 w-6 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
                         <School className="h-3 w-3" />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[9px] font-black text-slate-700 uppercase leading-tight truncate max-w-[160px]">
+                        <span className="text-[9px] font-black text-slate-700 uppercase leading-tight truncate max-w-[140px]">
                           {s.nombre}
                         </span>
-                        <span className="text-[7px] text-muted-foreground font-bold truncate max-w-[160px]">{s.servicioEducativo}</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 min-w-0">
                        <User className="h-2.5 w-2.5 text-accent shrink-0" />
-                       <span className="text-[9px] font-bold uppercase text-slate-600 truncate max-w-[140px]">{s.director || 'POR ASIGNAR'}</span>
+                       <span className="text-[9px] font-bold uppercase text-slate-600 truncate max-w-[120px]">{s.director || 'POR ASIGNAR'}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                       <Phone className="h-2.5 w-2.5 text-emerald-500" />
-                       <span className="text-[9px] font-mono font-bold text-slate-600">{s.telefono || 'S/D'}</span>
-                    </div>
+                    <span className="text-[9px] font-mono font-bold text-slate-600">{s.telefono || 'S/D'}</span>
                   </TableCell>
                   <TableCell className="text-center font-black text-primary text-[10px]">{s.alumnos}</TableCell>
                   <TableCell className="text-center font-black text-slate-600 text-[10px]">{s.grupos}</TableCell>
@@ -469,7 +460,6 @@ export default function BaseCctPage() {
         </div>
       </Card>
 
-      {/* Ventana Emergente de Resultados de Búsqueda de CCT */}
       <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
         <DialogContent className="sm:max-w-[1200px] h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
@@ -544,7 +534,7 @@ export default function BaseCctPage() {
                            </TableCell>
                            <TableCell className="text-right pr-10">
                               <div className="flex justify-end gap-1.5">
-                                 <Button variant="outline" size="sm" onClick={() => handleEditFromResults(s)} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
+                                 <Button variant="outline" size="sm" onClick={() => { setFormData(s); setEditingId(`${s.cct}-${s.turno}`); setIsResultsDialogOpen(false); setIsDialogOpen(true); }} className="h-8 rounded-lg border-slate-200 text-primary font-black uppercase text-[8px] gap-2 hover:bg-primary/5">
                                     <Pencil className="h-3.5 w-3.5" /> Editar
                                  </Button>
                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(s.cct, s.turno)} className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
