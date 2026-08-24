@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -86,7 +85,7 @@ const REGIONAL_OFFICES = [
   "Oficina de COEES Tultitlan"
 ];
 
-const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // Aumentado a 2.0 MB
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
   const { toast } = useToast()
@@ -439,6 +438,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     toast({ title: "Soporte Solicitado", description: `Su turno es el: ${turn}. El ID ha sido enviado al técnico.` });
   }
 
+  const handleRequestChatSupport = () => {
+    const turn = generateTurnSessionId();
+    const rawQueue = localStorage.getItem('atres_support_queue');
+    let currentQueue = JSON.parse(rawQueue || '[]');
+    
+    const alreadyInQueue = currentQueue.find((r: any) => r.chatKey === sessionKey);
+    if (!alreadyInQueue) {
+      const newReq: SupportRequest = {
+        remoteId: '',
+        ticketNumber: turn,
+        timestamp: Date.now(),
+        status: 'pending',
+        requestType: 'chat',
+        chatKey: sessionKey
+      }
+      localStorage.setItem('atres_support_queue', JSON.stringify([...currentQueue, newReq]));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'atres_support_queue' }));
+      setActiveTicketNumber(turn);
+      toast({ title: "Atención Solicitada", description: `Un analista se unirá al chat en breve. Turno: ${turn}` });
+    }
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "Archivo Excedido", description: "Máximo 2.0 MB permitido." }); return; }
@@ -526,7 +547,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); return;
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
@@ -538,7 +559,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       sector: (quickAddForm.sector || '').toUpperCase(),
       zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
       modalidad: (quickAddForm.modalidad || 'DES').toUpperCase(),
-      valle: quickAddForm.valle.toUpperCase()
+      valle: quickAddForm.valle.toUpperCase(),
+      turno: quickAddForm.turno.toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -1162,27 +1184,102 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </Dialog>
 
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[700px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><PlusCircle className="h-6 w-6 text-white" /> Registro Institucional de CCT</DialogTitle>
-            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-2">Alta inmediata en la base maestra del sistema.</DialogDescription>
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-8 bg-[#B38E5D] text-white shrink-0 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10"><PlusCircle className="h-24 w-24" /></div>
+            <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4 relative z-10">Registro Institucional de CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-2 tracking-widest relative z-10">Alta inmediata en la base maestra del sistema.</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black h-12" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre Oficial</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black h-12" /></div>
-             </div>
-             <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="h-12" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
-                    <SelectTrigger className="h-12 font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="15DES0000X" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="NOMBRE OFICIAL..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Domicilio (Calle y Número)</Label>
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="CALLE, NÚMERO, COLONIA..." />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Teléfono</Label>
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" placeholder="10 DÍGITOS..." />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Localidad</Label>
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner px-6 rounded-xl" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Modalidad</Label>
+                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
+                      <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
+                      <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
-             </div>
-          </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-xs font-black">Cancelar</Button><Button onClick={handleQuickAddCct} className="btn-institutional h-12 px-12">Registrar y Seleccionar</Button></DialogFooter>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Turno</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MATUTINO" className="text-[10px] font-bold">MATUTINO</SelectItem>
+                      <SelectItem value="VESPERTINO" className="text-[10px] font-bold">VESPERTINO</SelectItem>
+                      <SelectItem value="MIXTO" className="text-[10px] font-bold">MIXTO</SelectItem>
+                      <SelectItem value="DISCONTINUO" className="text-[10px] font-bold">DISCONTINUO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="h-12 bg-slate-50 border-none shadow-inner rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEXICO" className="text-[10px] font-bold">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA" className="text-[10px] font-bold">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-[#9f2241] text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
