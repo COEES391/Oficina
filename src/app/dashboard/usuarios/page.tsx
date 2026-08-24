@@ -167,7 +167,7 @@ export default function UsersPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 flex flex-col overflow-hidden bg-white">
+        <DialogContent className="sm:max-w-[750px] h-[85vh] max-h-[850px] rounded-[3rem] border-none shadow-2xl p-0 flex flex-col overflow-hidden bg-white">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><Shield className="h-32 w-32" /></div>
             <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4 relative z-10">
@@ -179,27 +179,27 @@ export default function UsersPage() {
           </DialogHeader>
 
           <ScrollArea className="flex-1">
-            <div className="p-8 space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-8 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2 space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Nombre Completo del Servidor</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-sm font-black uppercase" placeholder="PATERNO MATERNO NOMBRES" />
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} className="h-12 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-xs font-black uppercase" placeholder="PATERNO MATERNO NOMBRES" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4" /> Identificador (Usuario)
                   </Label>
-                  <Input value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-primary/10 font-mono font-black shadow-inner px-6 text-lg text-primary" placeholder="RFC O USUARIO" />
+                  <Input value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} className="h-12 rounded-2xl bg-slate-50 border-primary/10 font-mono font-black shadow-inner px-6 text-sm text-primary" placeholder="RFC O USUARIO" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1 flex items-center gap-2">
                     <Lock className="h-4 w-4" /> Contraseña Oficial
                   </Label>
-                  <Input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-lg" placeholder="••••••••" />
+                  <Input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-primary/10 shadow-inner px-6 text-sm" placeholder="••••••••" />
                 </div>
               </div>
 
-              <div className="space-y-6 pt-6 border-t border-slate-100">
+              <div className="space-y-4 pt-4 border-t border-slate-100 pb-6">
                 <div className="flex items-center justify-between">
                    <h4 className="text-[11px] font-black uppercase text-accent tracking-widest flex items-center gap-2">
                      <ShieldCheck className="h-5 w-5" /> Privilegios de Sección
@@ -220,7 +220,7 @@ export default function UsersPage() {
                           id={`section-${section.id}`} 
                           checked={formData.privileges.includes(section.id)}
                           onCheckedChange={() => handleTogglePrivilege(section.id)}
-                          className="h-6 w-6 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          className="h-5 w-5 border-slate-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         />
                         <Label htmlFor={`section-${section.id}`} className={cn("text-[10px] font-black uppercase cursor-pointer transition-colors", formData.privileges.includes(section.id) ? "text-primary" : "text-slate-500 group-hover:text-primary")}>
                           {section.name}
@@ -232,9 +232,9 @@ export default function UsersPage() {
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="font-black text-[10px] uppercase h-14 px-10 text-slate-400 rounded-2xl hover:bg-slate-100">Cancelar</Button>
-            <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[10px] shadow-2xl flex items-center gap-3">
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0 mt-auto">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-10 text-slate-400 rounded-2xl hover:bg-slate-100">Cancelar</Button>
+            <Button onClick={handleSave} className="btn-institutional h-12 px-14 text-[10px] shadow-2xl flex items-center gap-3">
               <Save className="h-5 w-5" /> {editingId ? 'Actualizar Usuario' : 'Crear Acceso Seguro'}
             </Button>
           </DialogFooter>
