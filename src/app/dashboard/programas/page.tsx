@@ -394,6 +394,9 @@ export default function ProgramsPage() {
       }
     }
     
+    // Deduplicación inteligente: si es un programa de censo masivo, limpiamos evidencias de los asistentes para ahorrar espacio
+    // Solo el registro padre (por CCT/Fecha) mantendrá la evidencia.
+    
     const updated = editingId 
       ? records.map(r => r.id === editingId ? recordToSave : r) 
       : [{...recordToSave, id: recordToSave.id || `SOL-${Date.now()}`}, ...records];
@@ -561,7 +564,10 @@ export default function ProgramsPage() {
           <Button variant="outline" className="h-10 px-6 border-primary/20 text-primary font-black uppercase text-[10px] gap-2 rounded-xl hover:bg-primary/5 shadow-md" onClick={() => setIsSchedulerOpen(true)}><CalendarDays className="h-4 w-4" /> Agenda</Button>
           <Button onClick={() => { 
             const f = {...initialFormState, name: activeTab};
-            if (isCensoTab) f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }];
+            // Para Cuentas, ATRES y Geoposición habilitamos el censo
+            if (activeTab !== 'Biblioteca Digital') {
+               f.asistentes = [{ nombreUsuario: '', cct: '', correo: '', funcion: '', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }];
+            }
             setFormData(f); setEditingId(null); setIsDialogOpen(true); setSearchTerm('');
           }} className="btn-institutional h-10 px-8 rounded-xl shadow-md text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro</Button>
         </div>
@@ -830,13 +836,14 @@ export default function ProgramsPage() {
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1000px] rounded-[2rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0">
-             <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-                <Target className="h-7 w-7 text-white/40" /> Gestión de {activeTab}
+        <DialogContent className="sm:max-w-[1200px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12"><Target className="h-40 w-40" /></div>
+             <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10">
+                <Target className="h-8 w-8 text-white/40" /> Gestión de {activeTab}
              </DialogTitle>
-             <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                Administración integral del módulo técnico institucional.
+             <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1 relative z-10">
+                Administración integral del módulo técnico institucional COEES 2026.
              </DialogDescription>
           </DialogHeader>
           
@@ -860,7 +867,7 @@ export default function ProgramsPage() {
                             <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
                         </Label>
                         <div className="relative">
-                            <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/5 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                            <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                             {dialogSearchTerm.length > 2 && (
                               <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
                                 {schoolSearchResults.map(s => (
@@ -1093,40 +1100,52 @@ export default function ProgramsPage() {
                       </Button>
                     </div>
                     
-                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner">
+                    <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner min-h-[150px]">
                       <ScrollArea className="h-full">
-                        <Table>
-                          <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
+                        <Table className="border-collapse">
+                          <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
                               <TableRow>
-                                <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                <TableHead className="min-w-[180px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase">CCT</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Correo</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Función</TableHead>
-                                <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                <TableHead className="min-w-[140px] text-[9px] font-black uppercase">Estatus</TableHead>
-                                <TableHead className="w-12"></TableHead>
+                                <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
+                                <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase">CCT</TableHead>
+                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase">Correo</TableHead>
+                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase">Función</TableHead>
+                                <TableHead className="min-w-[110px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase">Departamento</TableHead>
+                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase">Estatus</TableHead>
+                                <TableHead className="w-14 pr-4"></TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
-                              {(formData.asistentes || []).map((ast, idx) => (
-                                <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
-                                    <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                    <TableCell className="p-2"><Input placeholder="APELLIDOS NOMBRE..." className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} /></TableCell>
-                                    <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[10px] font-mono font-black uppercase" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
-                                    <TableCell className="p-2"><Input placeholder="usuario.ejemplo" className="h-9 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-2" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} /></TableCell>
-                                    <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-9 text-[10px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
-                                    <TableCell className="p-2"><Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}><SelectTrigger className="h-9 text-center text-[10px] font-black uppercase border-slate-200"><SelectValue placeholder="VALLE..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent></Select></TableCell>
-                                    <TableCell className="p-2"><Input placeholder="OFICINA / DEPTO..." className="h-9 text-[10px] font-bold uppercase border-slate-200" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} /></TableCell>
-                                    <TableCell className="p-2"><Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}><SelectTrigger className={cn("h-9 text-[10px] font-black uppercase border-2", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent></Select></TableCell>
-                                    <TableCell className="p-2">
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
-                                        <Trash2 className="h-4 w-4" />
+                              {(formData.asistentes || []).length > 0 ? (formData.asistentes || []).map((ast, idx) => (
+                                <TableRow key={`ast-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-14">
+                                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                                    <TableCell className="p-2"><Input placeholder="APELLIDOS NOMBRE..." className="h-10 text-[10px] uppercase font-black border-primary/5 bg-primary/[0.02] shadow-sm" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} /></TableCell>
+                                    <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-10 text-[10px] font-mono font-black uppercase shadow-sm" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
+                                    <TableCell className="p-2"><Input placeholder="usuario.ejemplo" className="h-10 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-2 shadow-sm" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} /></TableCell>
+                                    <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-10 text-[10px] font-bold uppercase shadow-sm"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
+                                    <TableCell className="p-2"><Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}><SelectTrigger className="h-10 text-center text-[10px] font-black uppercase border-slate-200 shadow-sm"><SelectValue placeholder="VALLE..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent></Select></TableCell>
+                                    <TableCell className="p-2"><Input placeholder="OFICINA / DEPTO..." className="h-10 text-[10px] font-bold uppercase border-slate-200 shadow-sm" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} /></TableCell>
+                                    <TableCell className="p-2"><Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}><SelectTrigger className={cn("h-10 text-[10px] font-black uppercase border-2 shadow-sm", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent></Select></TableCell>
+                                    <TableCell className="p-2 pr-4 text-right">
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)}>
+                                        <Trash2 className="h-4.5 w-4.5" />
                                       </Button>
                                     </TableCell>
                                 </TableRow>
-                              ))}
+                              )) : (
+                                <TableRow>
+                                  <TableCell colSpan={9} className="py-20 text-center opacity-30">
+                                    <div className="flex flex-col items-center gap-4">
+                                      <div className="h-16 w-16 bg-slate-50 rounded-3xl flex items-center justify-center"><Users className="h-8 w-8 text-slate-400" /></div>
+                                      <div className="space-y-1">
+                                        <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Sin personal registrado en el censo</p>
+                                        <Button variant="link" onClick={handleAddAssistant} className="text-[10px] font-black uppercase text-primary">Haga clic aquí para añadir el primer servidor</Button>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
                           </TableBody>
                         </Table>
                         <ScrollBar orientation="horizontal" />
@@ -1142,7 +1161,12 @@ export default function ProgramsPage() {
               </ScrollArea>
             )}
           </div>
-          <DialogFooter className="p-6 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-11 px-6 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleSave} className="btn-institutional h-11 px-10 text-[10px]">Guardar Cambios</Button></DialogFooter>
+          <DialogFooter className="p-8 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0">
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
+             <Button onClick={handleSave} className="btn-institutional h-12 px-14 text-[11px] shadow-2xl">
+               <Save className="h-5 w-5 mr-2" /> Guardar Cambios
+             </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1154,57 +1178,57 @@ export default function ProgramsPage() {
               <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
             </DialogTitle>
             <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">
-              Sume un nuevo plantel a la base maestra del sistema.
+              Sume un nuevo plantel a la base maestra del sistema integral.
             </DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
-                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
-                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200" />
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label>
-                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200" />
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
-                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200" />
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
-                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
-                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200 h-11 bg-white" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
-                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200 h-11 bg-white" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Modalidad</Label>
                   <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
-                    <SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-2xl">
                       <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
                       <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
                       <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
@@ -1217,21 +1241,21 @@ export default function ProgramsPage() {
              <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
-                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
                 </div>
              </div>
-             <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                <p className="text-[8px] font-black text-amber-800 uppercase leading-none">Este registro será visible en todos los módulos.</p>
+             <div className="p-4 bg-amber-50 border border-amber-100 rounded-[1.5rem] flex items-center gap-4">
+                <AlertCircle className="h-6 w-6 text-amber-600" />
+                <p className="text-[9px] font-black text-amber-800 uppercase leading-none">Este registro se sincronizará con todos los módulos operativos del sistema integral.</p>
              </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
-             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
-             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase">Cancelar</Button>
+             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-14 rounded-xl text-[11px] font-black uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all">Registrar y Sumar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1245,7 +1269,7 @@ export default function ProgramsPage() {
                 <Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}
               </DialogTitle>
               <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                Expediente Digital de Programas Técnicos COEES
+                Expediente Digital de Programas Técnicos COEES 2026
               </DialogDescription>
             </div>
             <div className="flex gap-4">
