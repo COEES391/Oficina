@@ -196,7 +196,6 @@ export default function ProgramsPage() {
     title: string 
   } | null>(null)
 
-  // CCT Dynamic Logic
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
@@ -236,7 +235,6 @@ export default function ProgramsPage() {
     const queue = rawQueue ? JSON.parse(rawQueue) : []
     setPendingRequestsCount(queue.length)
 
-    // Sync Schools
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
     if (storedSchools.length > 0) {
       setAllSchools(storedSchools)
@@ -825,7 +823,7 @@ export default function ProgramsPage() {
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1200px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-[1250px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 bg-primary text-white shrink-0 relative overflow-hidden">
              <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12"><Target className="h-40 w-40" /></div>
              <DialogTitle className="uppercase font-black text-white text-2xl flex items-center gap-4 relative z-10">
@@ -837,403 +835,200 @@ export default function ProgramsPage() {
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden bg-white">
-            {isBibliotecaTab ? (
-              <Tabs defaultValue="seguimiento" className="h-full flex flex-col">
-                <div className="px-8 border-b bg-slate-50/50">
-                  <TabsList className="bg-transparent h-14 p-0 gap-8">
-                    <TabsTrigger value="seguimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">1. Seguimiento Técnico</TabsTrigger>
-                    {formData.bibliotecaFases && formData.bibliotecaFases.personalCapacitado > 0 && (
-                      <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider animate-in slide-in-from-left">2. Lista de Asistentes (Captura Directa)</TabsTrigger>
-                    )}
-                  </TabsList>
-                </div>
-                
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
-                    <TabsContent value="seguimiento" className="p-8 space-y-6 m-0">
-                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
-                        <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                            <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
-                        </Label>
-                        <div className="relative">
-                            <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
-                            {dialogSearchTerm.length > 2 && (
-                              <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
-                                {schoolSearchResults.map(s => (
-                                  <div key={`s-diag-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                                    <span className="text-[10px] font-black uppercase">{s.nombre}</span>
-                                    <Badge className="text-[8px] font-mono">{s.cct}</Badge>
-                                  </div>
-                                ))}
-                                {schoolSearchResults.length === 0 && (
-                                  <div className="p-4 text-center">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
-                                    <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }}>
-                                      <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+            <ScrollArea className="h-full">
+              <div className="p-8 space-y-8">
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
+                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
+                      <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
+                  </Label>
+                  <div className="relative">
+                      <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                      {dialogSearchTerm.length > 2 && (
+                        <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
+                          {schoolSearchResults.map(s => (
+                            <div key={`s-diag-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                              <span className="text-[10px] font-black uppercase">{s.nombre}</span>
+                              <Badge className="text-[8px] font-mono">{s.cct}</Badge>
+                            </div>
+                          ))}
+                          {schoolSearchResults.length === 0 && (
+                            <div className="p-4 text-center">
+                              <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
+                              <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }}>
+                                <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        {formData.cct && (
-                          <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-emerald-100 animate-in zoom-in-95"><School className="h-8 w-8 text-emerald-600" /><div><h4 className="text-xs font-black uppercase text-slate-800">{formData.schoolName}</h4><p className="text-[9px] font-bold text-slate-400">{formData.cct} • {formData.municipio} • {formData.valle}</p></div></div>
-                        )}
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><CheckSquare className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Fases de Instalación y Seguimiento</h3></div>
-                        <div className="grid grid-cols-1 gap-3 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
-                            {BIBLIOTECA_FASES.map((fase) => (
-                              <div key={fase.id} className="flex items-center space-x-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm group hover:border-primary/20 transition-all"><Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={(checked) => handleUpdateFase(fase.id as any, !!checked)} className="h-6 w-6 border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-600" /><Label htmlFor={fase.id} className="text-[11px] font-black uppercase text-slate-600 cursor-pointer group-hover:text-primary transition-colors flex-1">{fase.label}</Label></div>
-                            ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Fecha de Solicitud</Label><Input type="date" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={formData.requestDate} onChange={e => setFormData({...formData, requestDate: e.target.value})} /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Fecha de Atención</Label><Input type="date" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase text-primary pl-1">Personal Capacitado</Label>
-                          <Input 
-                            type="number" 
-                            className="h-12 rounded-xl bg-slate-50 border-none font-black text-center text-lg" 
-                            value={formData.bibliotecaFases?.personalCapacitado} 
-                            onChange={e => {
-                              const val = parseInt(e.target.value) || 0;
-                              setFormData({
-                                ...formData, 
-                                bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: val},
-                                asistentes: (val > 0 && (!formData.asistentes || formData.asistentes.length === 0)) ? [{ nombreUsuario: '', cct: '', correo: '', funcion: 'DOCENTE', dominio: DOMINIOS[0], valle: '', departamento: '', estatus: 'ACTIVA' }] : formData.asistentes
-                              })
-                            }} 
-                          />
-                        </div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary pl-1">Equipos Habilitados</Label><Input type="number" className="h-12 rounded-xl bg-slate-50 border-none font-black text-center text-lg" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} /></div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
-                        <Textarea className="min-h-[120px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico o acuerdos del módulo..." />
-                      </div>
-
-                      <div className="space-y-6 pt-6 border-t-2 border-primary/5">
-                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg"><Archive className="h-6 w-6" /></div><h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia Digital (PDF e imágenes PNG)</h3></div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                           <div className="space-y-4">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Reporte Oficial Escaneado (PDF)</Label>
-                              <div className={cn("p-6 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all relative group", formData.reportPdf ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200 hover:border-primary/40")}>
-                                 {formData.reportPdf ? (
-                                   <div className="flex flex-col items-center gap-3">
-                                      <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600"><FileText className="h-8 w-8" /></div>
-                                      <p className="text-[10px] font-black uppercase text-emerald-700">REPORTE CARGADO</p>
-                                      <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-8 w-8 text-rose-500 hover:bg-rose-100 rounded-full" onClick={() => setFormData(prev => ({...prev, reportPdf: ''}))}><X className="h-4 w-4" /></Button>
-                                   </div>
-                                 ) : (
-                                   <>
-                                      <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
-                                      <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 2.0 MB</p></div>
-                                      <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar</Button>
-                                   </>
-                                 )}
-                                 <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
-                              </div>
-                           </div>
-
-                           <div className="space-y-4">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Galería de Evidencias (PNG)</Label>
-                              <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
-                                  <ImageIcon className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
-                                  <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG</p><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Máximo 2.0 MB por archivo</p></div>
-                                  <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Añadir Imagen</Button>
-                                  <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
-                              </div>
-                              
-                              <div className="grid grid-cols-3 gap-3 mt-4">
-                                 {(formData.evidencePhotos || []).map((img, idx) => (
-                                   <div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group">
-                                      <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
-                                      <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
-                                   </div>
-                                 ))}
-                              </div>
-                           </div>
-                        </div>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="asistentes" className="p-8 space-y-6 m-0">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm">
-                          <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                          <p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed tracking-wide">
-                            Registro de Servidores Públicos: Ingrese el CCT para autocompletar la información del plantel de origen.
-                          </p>
-                        </div>
-                        <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[10px] h-10 px-6 shadow-md">
-                          <Plus className="h-4 w-4" /> Añadir Asistente
-                        </Button>
-                      </div>
-
-                      <div className="border-2 border-slate-100 rounded-[1.5rem] bg-white overflow-hidden shadow-inner">
-                        <ScrollArea className="h-full">
-                          <div className="min-w-[1500px]">
-                            <Table>
-                              <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm">
-                                  <TableRow>
-                                    <TableHead className="w-12 text-[9px] font-black uppercase text-center">#</TableHead>
-                                    <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                    <TableHead className="min-w-[140px] text-[9px] font-black uppercase">CCT Origen</TableHead>
-                                    <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Función</TableHead>
-                                    <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                    <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                    <TableHead className="w-16"></TableHead>
-                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {(formData.asistentes || []).map((ast, idx) => (
-                                    <TableRow key={`ast-lib-${idx}`} className="hover:bg-slate-50/50 group border-b border-slate-50">
-                                        <TableCell className="text-center font-black text-[10px] text-muted-foreground">{idx + 1}</TableCell>
-                                        <TableCell className="p-2"><Input placeholder="APELLIDOS NOMBRE..." className="h-9 text-[10px] uppercase font-bold border-primary/5 bg-primary/[0.02]" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} /></TableCell>
-                                        <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[10px] font-mono font-black uppercase" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
-                                        <TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}><SelectTrigger className="h-9 text-[10px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-lib-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell>
-                                        <TableCell className="p-2"><Input value={ast.valle} readOnly className="h-9 text-center text-[10px] bg-slate-50 border-none font-black text-slate-500" /></TableCell>
-                                        <TableCell className="p-2"><Input placeholder="OFICINA / DEPTO..." className="h-9 text-[10px] font-bold uppercase" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} /></TableCell>
-                                        <TableCell className="p-2">
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 rounded-lg" onClick={() => handleRemoveAssistant(idx)}>
-                                            <X className="h-4 w-4" />
-                                          </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                  ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                          <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                        {(!formData.asistentes || formData.asistentes.length === 0) && (
-                          <div className="py-20 text-center opacity-30 flex flex-col items-center gap-2">
-                            <Users className="h-10 w-10" />
-                            <p className="text-[10px] font-black uppercase">Sin asistentes registrados</p>
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
-                  </ScrollArea>
-                </div>
-              </Tabs>
-            ) : (
-              <ScrollArea className="h-full">
-                <div className="p-8 space-y-8">
-                  <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 relative space-y-4 shadow-inner">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2 pl-2">
-                        <Search className="h-4 w-4 text-accent" /> Identificación del Centro de Trabajo
-                    </Label>
-                    <div className="relative">
-                        <Input placeholder="BUSCAR CCT O NOMBRE..." className="h-12 rounded-xl bg-white border-primary/10 font-bold uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
-                        {dialogSearchTerm.length > 2 && (
-                          <div className="absolute top-13 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y">
-                            {schoolSearchResults.map(s => (
-                              <div key={`s-diag-general-${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                                <span className="text-[10px] font-black uppercase">{s.nombre}</span>
-                                <Badge className="text-[8px] font-mono">{s.cct}</Badge>
-                              </div>
-                            ))}
-                            {schoolSearchResults.length === 0 && (
-                              <div className="p-4 text-center">
-                                <p className="text-[10px] font-black text-slate-400 uppercase mb-2">CCT No Registrado</p>
-                                <Button size="sm" variant="outline" className="h-8 text-[9px] font-black uppercase border-primary/20 text-primary" onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }}>
-                                  <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                    </div>
-                    {formData.cct && (
-                      <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-emerald-100 animate-in zoom-in-95"><School className="h-8 w-8 text-emerald-600" /><div><h4 className="text-xs font-black uppercase text-slate-800">{formData.schoolName}</h4><p className="text-[9px] font-bold text-slate-400">{formData.cct} • {formData.municipio} • {formData.valle}</p></div></div>
-                    )}
+                      )}
                   </div>
-
-                  {isGeoposicionTab && (
-                    <div className="space-y-4 animate-in slide-in-from-top-2">
-                      <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
-                        <Navigation className="h-5 w-5 text-primary" />
-                        <h3 className="text-sm font-black uppercase text-primary">Coordenadas de Geoposición</h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
-                        <div className="space-y-2">
-                          <Label className="text-[11px] font-black uppercase text-primary pl-1">Latitud</Label>
-                          <Input 
-                            placeholder="EJ: 19.345678" 
-                            className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" 
-                            value={formData.latitud || ''} 
-                            onChange={e => setFormData({...formData, latitud: e.target.value})} 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[11px] font-black uppercase text-primary pl-1">Longitud</Label>
-                          <Input 
-                            placeholder="EJ: -99.456789" 
-                            className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" 
-                            value={formData.longitud || ''} 
-                            onChange={e => setFormData({...formData, longitud: e.target.value})} 
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  {formData.cct && (
+                    <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-emerald-100 animate-in zoom-in-95"><School className="h-8 w-8 text-emerald-600" /><div><h4 className="text-xs font-black uppercase text-slate-800">{formData.schoolName}</h4><p className="text-[9px] font-bold text-slate-400">{formData.cct} • {formData.municipio} • {formData.valle}</p></div></div>
                   )}
+                </div>
 
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 rounded-lg border-primary/20 text-primary font-black uppercase text-[9px] hover:bg-primary/5 shadow-sm">
-                        <Plus className="h-3 w-3 mr-1" /> Añadir Servidor
-                      </Button>
+                {isGeoposicionTab && (
+                  <div className="space-y-4 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                      <Navigation className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary">Coordenadas de Geoposición</h3>
                     </div>
-                    
-                    <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner min-h-[300px] flex flex-col">
-                      <ScrollArea className="flex-1">
-                        <div className="min-w-[1500px]">
-                          <Table className="border-collapse w-full">
-                            <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
-                                <TableRow>
-                                  <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4">#</TableHead>
-                                  <TableHead className="min-w-[300px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                  <TableHead className="min-w-[140px] text-[9px] font-black uppercase">CCT</TableHead>
-                                  <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Correo</TableHead>
-                                  <TableHead className="min-w-[200px] text-[9px] font-black uppercase">Función</TableHead>
-                                  <TableHead className="min-w-[120px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                  <TableHead className="min-w-[250px] text-[9px] font-black uppercase">Departamento</TableHead>
-                                  <TableHead className="min-w-[150px] text-[9px] font-black uppercase">Estatus</TableHead>
-                                  <TableHead className="w-14 pr-4"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {(formData.asistentes || []).length > 0 ? (formData.asistentes || []).map((ast, idx) => (
-                                  <TableRow key={`ast-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-16">
-                                      <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
-                                      <TableCell className="p-2">
-                                        <Input placeholder="APELLIDOS NOMBRE..." className="h-10 text-[10px] uppercase font-black border-primary/5 bg-primary/[0.02] shadow-sm" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} />
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Input placeholder="15DES0000X" className="h-10 text-[10px] font-mono font-black uppercase shadow-sm" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Input placeholder="usuario.ejemplo" className="h-10 text-[10px] font-semibold border-accent/20 bg-accent/[0.02] pl-2 shadow-sm" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} />
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}>
-                                          <SelectTrigger className="h-10 text-[10px] font-bold uppercase shadow-sm"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
-                                          <SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}>
-                                          <SelectTrigger className="h-10 text-center text-[10px] font-black uppercase border-slate-200 shadow-sm"><SelectValue placeholder="VALLE..." /></SelectTrigger>
-                                          <SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent>
-                                        </Select>
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Input placeholder="OFICINA / DEPTO..." className="h-10 text-[10px] font-bold uppercase border-slate-200 shadow-sm" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} />
-                                      </TableCell>
-                                      <TableCell className="p-2">
-                                        <Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}>
-                                          <SelectTrigger className={cn("h-10 text-[10px] font-black uppercase border-2 shadow-sm", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger>
-                                          <SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent>
-                                        </Select>
-                                      </TableCell>
-                                      <TableCell className="p-2 pr-4 text-right">
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)}>
-                                          <Trash2 className="h-4.5 w-4.5" />
-                                        </Button>
-                                      </TableCell>
-                                  </TableRow>
-                                )) : (
-                                  <TableRow>
-                                    <TableCell colSpan={9} className="py-20 text-center opacity-30">
-                                      <div className="flex flex-col items-center gap-4">
-                                        <div className="h-16 w-16 bg-slate-50 rounded-3xl flex items-center justify-center"><Users className="h-8 w-8 text-slate-400" /></div>
-                                        <div className="space-y-1">
-                                          <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Sin personal registrado en el censo</p>
-                                          <Button variant="link" onClick={handleAddAssistant} className="text-[10px] font-black uppercase text-primary">Haga clic aquí para añadir el primer servidor</Button>
-                                        </div>
-                                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-primary pl-1">Latitud</Label>
+                        <Input placeholder="EJ: 19.345678" className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" value={formData.latitud || ''} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-primary pl-1">Longitud</Label>
+                        <Input placeholder="EJ: -99.456789" className="h-12 bg-white border-none rounded-xl text-sm font-black shadow-sm" value={formData.longitud || ''} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary">Censo de Personal del Módulo</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleAddAssistant} className="h-8 rounded-lg border-primary/20 text-primary font-black uppercase text-[9px] hover:bg-primary/5 shadow-sm">
+                      <Plus className="h-3 w-3 mr-1" /> Añadir Servidor
+                    </Button>
+                  </div>
+                  
+                  <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-2xl min-h-[350px] flex flex-col">
+                    <ScrollArea className="flex-1 w-full" orientation="horizontal">
+                      <div className="min-w-[1550px]">
+                        <Table className="border-collapse w-full">
+                          <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
+                              <TableRow>
+                                <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4">#</TableHead>
+                                <TableHead className="min-w-[320px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
+                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase">CCT</TableHead>
+                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Correo Institucional</TableHead>
+                                <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Función</TableHead>
+                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase text-center">Valle</TableHead>
+                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Departamento / Oficina</TableHead>
+                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase">Estatus</TableHead>
+                                <TableHead className="w-16 pr-4"></TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {(formData.asistentes || []).length > 0 ? (formData.asistentes || []).map((ast, idx) => (
+                                <TableRow key={`ast-edit-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-16">
+                                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                                    <TableCell className="p-2">
+                                      <Input placeholder="APELLIDOS NOMBRE..." className="h-10 text-[10px] uppercase font-black border-primary/5 bg-primary/[0.02] shadow-inner" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} />
                                     </TableCell>
-                                  </TableRow>
-                                )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                        <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
-                    </div>
-                  </div>
-
-                  {activeTab === 'Conoce mi Escuela' && (
-                    <div className="space-y-6 pt-6 border-t-2 border-primary/5">
-                        <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
-                           <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg">
-                              <ImageIcon className="h-6 w-6" />
-                           </div>
-                           <h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia de Plantel (3 Fotos JPG)</h3>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                           <div className="space-y-4">
-                              <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 group hover:border-primary/40 transition-all relative">
-                                  <Upload className="h-8 w-8 text-slate-300 group-hover:scale-110 transition-transform" />
-                                  <div className="text-center">
-                                    <p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Fotografías</p>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Límite: 3 fotos • Máx 2.0 MB cada una</p>
-                                  </div>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    disabled={(formData.evidencePhotos?.length || 0) >= 3}
-                                    onClick={() => imageInputRef.current?.click()} 
-                                    className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5"
-                                  >
-                                    {(formData.evidencePhotos?.length || 0) >= 3 ? 'Límite alcanzado' : 'Añadir Imagen JPG'}
-                                  </Button>
-                                  <input type="file" accept=".jpg, .jpeg, .png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
-                              </div>
-                           </div>
-                           
-                           <div className="grid grid-cols-3 gap-3">
-                              {(formData.evidencePhotos || []).map((img, idx) => (
-                                <div key={`photo-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white shadow-xl group animate-in zoom-in-95">
-                                   <Image src={img} alt={`Escuela ${idx + 1}`} fill className="object-cover" />
-                                   <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-6 w-6 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                                      <X className="h-4 w-4" />
-                                   </button>
-                                   <div className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-sm p-1">
-                                      <p className="text-[7px] font-black text-white text-center uppercase">Foto {idx + 1}</p>
-                                   </div>
-                                </div>
-                              ))}
-                              {Array.from({ length: Math.max(0, 3 - (formData.evidencePhotos?.length || 0)) }).map((_, i) => (
-                                <div key={`empty-${i}`} className="aspect-square rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 flex items-center justify-center text-slate-200">
-                                   <ImageIcon className="h-6 w-6" />
-                                </div>
-                              ))}
-                           </div>
-                        </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
-                    <Textarea className="min-h-[120px] rounded-xl p-5 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico o acuerdos del módulo..." />
+                                    <TableCell className="p-2">
+                                      <Input placeholder="15DES0000X" className="h-10 text-[10px] font-mono font-black uppercase shadow-inner" value={ast.cct} onChange={e => handleUpdateAssistantField(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Input placeholder="usuario.ejemplo" className="h-10 text-[10px] font-semibold border-accent/20 bg-accent/[0.01] pl-2 shadow-inner" value={ast.correo} onChange={e => handleUpdateAssistantField(idx, 'correo', e.target.value.toLowerCase())} />
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.funcion} onValueChange={v => handleUpdateAssistantField(idx, 'funcion', v)}>
+                                        <SelectTrigger className="h-10 text-[10px] font-bold uppercase shadow-inner"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
+                                        <SelectContent className="rounded-xl">{FUNCIONES.map(f => <SelectItem key={`f-edit-${f}`} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.valle} onValueChange={v => handleUpdateAssistantField(idx, 'valle', v)}>
+                                        <SelectTrigger className="h-10 text-center text-[10px] font-black uppercase border-slate-200 shadow-inner"><SelectValue placeholder="VALLE..." /></SelectTrigger>
+                                        <SelectContent className="rounded-xl"><SelectItem value="TOLUCA" className="text-[10px] font-bold uppercase">TOLUCA</SelectItem><SelectItem value="MEXICO" className="text-[10px] font-bold uppercase">MÉXICO</SelectItem></SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Input placeholder="OFICINA / ÁREA..." className="h-10 text-[10px] font-bold uppercase border-slate-200 shadow-inner" value={ast.departamento} onChange={e => handleUpdateAssistantField(idx, 'departamento', e.target.value.toUpperCase())} />
+                                    </TableCell>
+                                    <TableCell className="p-2">
+                                      <Select value={ast.estatus || 'ACTIVA'} onValueChange={v => handleUpdateAssistantField(idx, 'estatus', v)}>
+                                        <SelectTrigger className={cn("h-10 text-[10px] font-black uppercase border-2 shadow-inner", ast.estatus === 'ACTIVA' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ast.estatus === 'INACTIVA' ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-rose-200 text-rose-700 bg-rose-50')}><SelectValue /></SelectTrigger>
+                                        <SelectContent className="rounded-xl">{ESTATUS_OPCIONES.map(e => (<SelectItem key={`est-edit-${e}`} value={e} className={cn("text-[10px] font-black", e === 'ACTIVA' ? 'text-emerald-600' : e === 'INACTIVA' ? 'text-slate-500' : 'text-rose-600')}>{e}</SelectItem>))}</SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-2 pr-4 text-right">
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                </TableRow>
+                              )) : (
+                                <TableRow>
+                                  <TableCell colSpan={9} className="py-24 text-center opacity-30">
+                                    <div className="flex flex-col items-center gap-4">
+                                      <Users className="h-12 w-12 text-slate-400" />
+                                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">Sin servidores públicos vinculados</p>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
                   </div>
                 </div>
-              </ScrollArea>
-            )}
+
+                {activeTab === 'Conoce mi Escuela' && (
+                  <div className="space-y-6 pt-6 border-t-2 border-primary/5">
+                      <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                         <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg"><ImageIcon className="h-6 w-6" /></div>
+                         <h3 className="text-sm font-black uppercase text-primary tracking-wider">Evidencia de Plantel (3 Fotos JPG)</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="space-y-4">
+                            <div className="p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-4 group hover:border-primary/40 transition-all relative shadow-inner">
+                                <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform"><Upload className="h-7 w-7" /></div>
+                                <div className="text-center">
+                                  <p className="text-[11px] font-black uppercase text-slate-700">Adjuntar Fotografías del Plantel</p>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Límite: 3 fotos • Máximo 2.0 MB por archivo</p>
+                                </div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  disabled={(formData.evidencePhotos?.length || 0) >= 3}
+                                  onClick={() => imageInputRef.current?.click()} 
+                                  className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 hover:bg-primary/5 shadow-md"
+                                >
+                                  {(formData.evidencePhotos?.length || 0) >= 3 ? 'Límite completado' : 'Seleccionar Imagen'}
+                                </Button>
+                                <input type="file" accept=".jpg, .jpeg" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                            </div>
+                         </div>
+                         
+                         <div className="grid grid-cols-3 gap-4">
+                            {(formData.evidencePhotos || []).map((img, idx) => (
+                              <div key={`photo-edit-${idx}`} className="relative aspect-square rounded-2xl overflow-hidden border-4 border-white shadow-2xl group animate-in zoom-in-95">
+                                 <Image src={img} alt={`Escuela ${idx + 1}`} fill className="object-cover" />
+                                 <button onClick={() => removeImage(idx)} className="absolute top-2 right-2 h-7 w-7 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"><X className="h-4 w-4" /></button>
+                                 <div className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md p-2">
+                                    <p className="text-[8px] font-black text-white text-center uppercase">VISTA {idx + 1}</p>
+                                 </div>
+                              </div>
+                            ))}
+                            {Array.from({ length: Math.max(0, 3 - (formData.evidencePhotos?.length || 0)) }).map((_, i) => (
+                              <div key={`empty-edit-${i}`} className="aspect-square rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 flex flex-col items-center justify-center text-slate-200 gap-2">
+                                 <ImageIcon className="h-8 w-8" />
+                                 <span className="text-[8px] font-black uppercase">Espacio Libre</span>
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Info className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-primary">Observaciones Técnicas</h3></div>
+                  <Textarea className="min-h-[140px] rounded-[1.5rem] p-6 bg-slate-50 border-2 border-slate-200 text-xs font-semibold shadow-inner focus:bg-white focus:ring-8 focus:ring-primary/5 transition-all" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} placeholder="Detalle técnico o acuerdos relevantes del módulo..." />
+                </div>
+              </div>
+            </ScrollArea>
           </div>
+          
           <DialogFooter className="p-8 gap-3 border-t bg-slate-50 flex items-center justify-end shrink-0">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
              <Button onClick={handleSave} className="btn-institutional h-12 px-14 text-[11px] shadow-2xl">
@@ -1247,12 +1042,8 @@ export default function ProgramsPage() {
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3">
-              <PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT
-            </DialogTitle>
-            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">
-              Sume un nuevo plantel a la base maestra del sistema integral.
-            </DialogDescription>
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra institucional.</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1265,71 +1056,16 @@ export default function ProgramsPage() {
                   <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Domicilio (Calle y Número)</Label>
-                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label>
-                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" />
-                </div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Domicilio</Label><Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Teléfono</Label><Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="font-mono font-black border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Localidad</Label>
-                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
-                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200 h-12 bg-slate-50 shadow-inner" />
-                </div>
-             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
-                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value})} className="font-black border-slate-200 h-11 bg-white" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
-                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value})} className="font-black border-slate-200 h-11 bg-white" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Modalidad</Label>
-                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
-                    <SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      <SelectItem value="DES" className="text-[10px] font-bold">DES (GENERAL)</SelectItem>
-                      <SelectItem value="DST" className="text-[10px] font-bold">DST (TÉCNICA)</SelectItem>
-                      <SelectItem value="DTV" className="text-[10px] font-bold">DTV (TELESECUNDARIA)</SelectItem>
-                      <SelectItem value="ADG" className="text-[10px] font-bold">ADG (DEPARTAMENTO)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Turno</Label>
-                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="MATUTINO">MATUTINO</SelectItem><SelectItem value="VESPERTINO">VESPERTINO</SelectItem><SelectItem value="MIXTO">MIXTO</SelectItem></SelectContent></Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="text-[10px] font-bold uppercase border-slate-200 h-11 bg-white"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
-                </div>
-             </div>
-             <div className="p-4 bg-amber-50 border border-amber-100 rounded-[1.5rem] flex items-center gap-4">
-                <AlertCircle className="h-6 w-6 text-amber-600" />
-                <p className="text-[9px] font-black text-amber-800 uppercase leading-none">Este registro se sincronizará con todos los módulos operativos del sistema integral.</p>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Localidad</Label><Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value})} className="font-bold border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200 h-12 bg-slate-50 shadow-inner" /></div>
              </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
-             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
-             <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-14 rounded-xl text-[11px] font-black uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all">Registrar y Sumar</Button>
-          </DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-14 rounded-xl text-[11px] font-black uppercase shadow-2xl">Registrar y Sumar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1338,69 +1074,19 @@ export default function ProgramsPage() {
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-                <Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}
-              </DialogTitle>
-              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">
-                Expediente Digital de Programas Técnicos COEES 2026
-              </DialogDescription>
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}</DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Expediente Digital de Programas Técnicos COEES 2026</DialogDescription>
             </div>
             <div className="flex gap-4">
-              {evidenceToView?.pdfData && (
-                <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl">
-                  <Printer className="h-4 w-4" /> Imprimir Reporte
-                </Button>
-              )}
-              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all">
-                <X className="h-5 w-5" />
-              </button>
+              {evidenceToView?.pdfData && <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir</Button>}
+              <button onClick={() => setEvidenceToView(null)} className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10 transition-all"><X className="h-5 w-5" /></button>
             </div>
           </DialogHeader>
-
           <Tabs defaultValue={evidenceToView?.pdfData ? "pdf" : "gallery"} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b bg-slate-50/50">
-               <TabsList className="bg-transparent h-14 p-0 gap-8">
-                  {evidenceToView?.pdfData && (
-                    <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
-                      <FileText className="h-4 w-4" /> Reporte Oficial PDF
-                    </TabsTrigger>
-                  )}
-                  {evidenceToView?.images && evidenceToView.images.length > 0 && (
-                    <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2">
-                      <ImageIcon className="h-4 w-4" /> Galería de Evidencias ({evidenceToView.images.length})
-                    </TabsTrigger>
-                  )}
-               </TabsList>
-            </div>
-            <div className="flex-1 overflow-hidden bg-slate-100/50">
-               <TabsContent value="pdf" className="h-full m-0 p-0">
-                  {evidenceToView?.pdfData ? (
-                    <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" />
-                  ) : (
-                    <div className="h-full flex items-center justify-center opacity-20">
-                      <FileText className="h-20 w-20" />
-                    </div>
-                  )}
-               </TabsContent>
-               <TabsContent value="gallery" className="h-full m-0 overflow-hidden">
-                  <ScrollArea className="h-full p-8">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {evidenceToView?.images?.map((img, idx) => (
-                           <div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in">
-                              <Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" />
-                              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Eye className="h-8 w-8 text-white" />
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  </ScrollArea>
-               </TabsContent>
-            </div>
+            <div className="px-8 border-b bg-slate-50/50"><TabsList className="bg-transparent h-14 p-0 gap-8">{evidenceToView?.pdfData && <TabsTrigger value="pdf" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider flex items-center gap-2"><FileText className="h-4 w-4" /> Reporte PDF</TabsTrigger>}{evidenceToView?.images && evidenceToView.images.length > 0 && <TabsTrigger value="gallery" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Galería ({evidenceToView.images.length})</TabsTrigger>}</TabsList></div>
+            <div className="flex-1 overflow-hidden bg-slate-100/50"><TabsContent value="pdf" className="h-full m-0 p-0">{evidenceToView?.pdfData ? <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" /> : <div className="h-full flex items-center justify-center opacity-20"><FileText className="h-20 w-20" /></div>}</TabsContent><TabsContent value="gallery" className="h-full m-0 overflow-hidden"><ScrollArea className="h-full p-8"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{evidenceToView?.images?.map((img, idx) => (<div key={`view-img-${idx}`} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02] cursor-zoom-in"><Image src={img} alt={`Evidencia ${idx + 1}`} fill className="object-cover" /><div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div></div>))}</div></ScrollArea></TabsContent></div>
           </Tabs>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-            <Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button>
-          </DialogFooter>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
