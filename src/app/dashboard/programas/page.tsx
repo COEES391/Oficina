@@ -66,7 +66,9 @@ import {
   Download,
   Navigation,
   Save,
-  Clock
+  Clock,
+  Layers,
+  Monitor
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -311,10 +313,22 @@ export default function ProgramsPage() {
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctChange(newSchool.cct);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'schools_master_full_v21' }));
+    
+    setFormData(prev => ({
+      ...prev,
+      cct: newSchool.cct,
+      schoolName: newSchool.nombre,
+      municipio: newSchool.municipio,
+      valle: newSchool.valle,
+      zonaEscolar: newSchool.zonaEscolar,
+      sector: newSchool.sector,
+      modalidad: newSchool.modalidad
+    }));
+    
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "CCT Registrado en Base Maestra" });
+    toast({ title: "CCT Sumado a la Base Maestra" });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
@@ -435,6 +449,7 @@ export default function ProgramsPage() {
   const isCensoTab = useMemo(() => ['Cuentas Institucionales', 'Conoce mi Escuela'].includes(activeTab), [activeTab]);
   const isAtresTab = useMemo(() => activeTab === 'ATRES', [activeTab]);
   const isGeoposicionTab = useMemo(() => activeTab === 'Geoposición', [activeTab]);
+  const isBibliotecaTab = useMemo(() => activeTab === 'Biblioteca Digital', [activeTab]);
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter(r => r.name === activeTab);
@@ -777,6 +792,85 @@ export default function ProgramsPage() {
                       <div className="space-y-2">
                         <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Longitud Geográfica</Label>
                         <Input placeholder="EJ: -99.456789" className="h-14 bg-white border-none rounded-xl text-lg font-black shadow-sm px-6" value={formData.longitud || ''} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isBibliotecaTab && (
+                  <div className="space-y-6 pt-4 animate-in zoom-in-95 duration-500">
+                    <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2">
+                      <Layers className="h-6 w-6 text-primary" />
+                      <h3 className="text-sm font-black uppercase text-primary tracking-wider">Seguimiento de Biblioteca Digital</h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                      <div className="lg:col-span-2 space-y-4">
+                        <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Fases de Implementación</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                          {[
+                            { id: 'fase1', label: 'Fase 1: Diagnóstico' },
+                            { id: 'fase2', label: 'Fase 2: Conectividad' },
+                            { id: 'fase3', label: 'Fase 3: Mobiliario' },
+                            { id: 'fase4', label: 'Fase 4: Instalación' },
+                            { id: 'fase5', label: 'Fase 5: Capacitación' },
+                            { id: 'fase6', label: 'Fase 6: Puesta en Marcha' },
+                            { id: 'fase7', label: 'Fase 7: Auditoría' },
+                          ].map((fase) => (
+                            <div key={fase.id} className="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                              <Checkbox 
+                                id={fase.id} 
+                                checked={formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] as boolean} 
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  bibliotecaFases: {
+                                    ...formData.bibliotecaFases!,
+                                    [fase.id]: checked === true
+                                  }
+                                })}
+                              />
+                              <Label htmlFor={fase.id} className="text-[9px] font-black uppercase cursor-pointer leading-tight">{fase.label}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Personal Capacitado</Label>
+                          <div className="relative">
+                            <Users className="absolute left-4 top-4 h-5 w-5 text-slate-300" />
+                            <Input 
+                              type="number" 
+                              className="h-14 pl-12 bg-slate-50 border-none rounded-2xl text-lg font-black shadow-inner" 
+                              value={formData.bibliotecaFases?.personalCapacitado || 0} 
+                              onChange={e => setFormData({
+                                ...formData,
+                                bibliotecaFases: {
+                                  ...formData.bibliotecaFases!,
+                                  personalCapacitado: parseInt(e.target.value) || 0
+                                }
+                              })}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[11px] font-black uppercase text-primary pl-2 tracking-widest">Equipos Habilitados</Label>
+                          <div className="relative">
+                            <Monitor className="absolute left-4 top-4 h-5 w-5 text-slate-300" />
+                            <Input 
+                              type="number" 
+                              className="h-14 pl-12 bg-slate-50 border-none rounded-2xl text-lg font-black shadow-inner" 
+                              value={formData.bibliotecaFases?.equiposHabilitados || 0} 
+                              onChange={e => setFormData({
+                                ...formData,
+                                bibliotecaFases: {
+                                  ...formData.bibliotecaFases!,
+                                  equiposHabilitados: parseInt(e.target.value) || 0
+                                }
+                              })}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
