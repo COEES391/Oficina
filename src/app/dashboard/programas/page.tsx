@@ -435,6 +435,12 @@ export default function ProgramsPage() {
     return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
   }, [allSchools, dialogSearchTerm]);
 
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) return;
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
+
   if (!mounted) return null
 
   return (
@@ -531,7 +537,9 @@ export default function ProgramsPage() {
                     <TableCell className="py-0.5">
                        <div className="flex items-center justify-center gap-1">
                           {r.pdfData ? (
-                             <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg"><Eye className="h-3 w-3" /></Button>
+                             <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg" onClick={() => setEvidenceToView({ pdfData: r.pdfData, title: `Reporte Folio: ${r.folio}` })}>
+                                <Eye className="h-3 w-3" />
+                             </Button>
                           ) : <span className="text-[7px] font-black text-slate-300 uppercase italic">S/PDF</span>}
                        </div>
                     </TableCell>
@@ -933,7 +941,7 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!evidenceToView} onOpenChange={() => setPdfToPreview(null)}>
+      <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
@@ -943,17 +951,19 @@ export default function ProgramsPage() {
               <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Documento Digital</DialogDescription>
             </div>
             <div className="flex gap-4">
-               <Button onClick={() => pdfToPreview && printFile(pdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
-                  <Printer className="h-4 w-4" /> Imprimir
-               </Button>
-               <button onClick={() => setPdfToPreview(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20 flex items-center justify-center"><X className="h-5 w-5" /></button>
+               {evidenceToView?.pdfData && (
+                 <Button onClick={() => evidenceToView?.pdfData && printFile(evidenceToView.pdfData)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-8 rounded-xl gap-2 shadow-xl">
+                    <Printer className="h-4 w-4" /> Imprimir
+                 </Button>
+               )}
+               <button onClick={() => setEvidenceToView(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20 flex items-center justify-center"><X className="h-5 w-5" /></button>
             </div>
           </DialogHeader>
           <div className="flex-1 bg-slate-800 p-1">
-             <iframe src={pdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
+             <iframe src={evidenceToView?.pdfData || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
           </div>
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => setPdfToPreview(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar Visor</Button>
+             <Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar Visor</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

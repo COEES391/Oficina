@@ -5,7 +5,7 @@ export type AppUser = {
   name: string;
   password: string;
   role: 'admin' | 'user';
-  privileges: string[]; // ['bitacora-atres', 'planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+  privileges: string[]; // ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
 };
 
 export type BitacoraEntry = {
