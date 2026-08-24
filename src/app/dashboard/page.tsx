@@ -335,109 +335,109 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/5">
-                <LayoutDashboard className="h-6 w-6 text-primary" />
+    <div className="space-y-4 animate-in fade-in duration-700 max-w-[1600px] mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/5">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
              </div>
              <div>
-               <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">PLANEACIÓN</h2>
-               <p className="text-muted-foreground font-black text-[10px] tracking-[0.2em] uppercase mt-1">Análisis Técnico Operativo COEES</p>
+               <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">PLANEACIÓN</h2>
+               <p className="text-muted-foreground font-black text-[8px] tracking-[0.2em] uppercase">Análisis Técnico Operativo COEES</p>
              </div>
           </div>
         </div>
         
         <Tabs value={activeReport} onValueChange={setActiveReport} className="w-full md:w-auto">
-          <TabsList className="grid grid-cols-3 w-full md:w-[450px] h-12 bg-white/50 backdrop-blur-md border border-slate-200 p-1 rounded-2xl shadow-sm">
-            <TabsTrigger value="soporte" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Wrench className="h-4 w-4" /> Soporte
+          <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-10 bg-white/50 backdrop-blur-md border border-slate-200 p-1 rounded-xl shadow-sm">
+            <TabsTrigger value="soporte" className="gap-1.5 text-[9px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <Wrench className="h-3.5 w-3.5" /> Soporte
             </TabsTrigger>
-            <TabsTrigger value="capacitacion" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <GraduationCap className="h-4 w-4" /> Capacitación
+            <TabsTrigger value="capacitacion" className="gap-1.5 text-[9px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <GraduationCap className="h-3.5 w-3.5" /> Capacitación
             </TabsTrigger>
-            <TabsTrigger value="programas" className="gap-2 text-[10px] font-black uppercase rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
-              <Briefcase className="h-4 w-4" /> Programas
+            <TabsTrigger value="programas" className="gap-1.5 text-[9px] font-black uppercase rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all">
+              <Briefcase className="h-3.5 w-3.5" /> Programas
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <Card className="executive-card p-6 bg-white border-none shadow-xl">
-        <div className="flex flex-col space-y-6">
-          <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Filter className="h-4 w-4" />
+      <Card className="executive-card p-3 bg-white border-none shadow-lg">
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-50 pb-2">
+            <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+              <Filter className="h-3 w-3" />
             </div>
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Filtros Operativos de Análisis</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Filtros de Análisis</span>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4 lg:gap-8">
-            <div className="flex flex-col gap-2">
-              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Periodo de Atención</Label>
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-inner">
-                <Calendar className="h-4 w-4 text-slate-400" />
-                <Input type="date" className="h-8 w-32 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateStart} onChange={e => setDateStart(e.target.value)} />
-                <span className="text-[9px] font-black text-slate-300">AL</span>
-                <Input type="date" className="h-8 w-32 text-[10px] font-black border-none focus-visible:ring-0 bg-transparent" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-1">
+              <Label className="text-[7px] font-black uppercase text-slate-400 ml-1">Periodo</Label>
+              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-inner">
+                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                <Input type="date" className="h-6 w-28 text-[9px] font-black border-none focus-visible:ring-0 bg-transparent p-0" value={dateStart} onChange={e => setDateStart(e.target.value)} />
+                <span className="text-[8px] font-black text-slate-300">/</span>
+                <Input type="date" className="h-6 w-28 text-[9px] font-black border-none focus-visible:ring-0 bg-transparent p-0" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Localizador CCT</Label>
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-inner min-w-[200px]">
-                <Search className="h-4 w-4 text-slate-400" />
+            <div className="flex flex-col gap-1">
+              <Label className="text-[7px] font-black uppercase text-slate-400 ml-1">Localizador CCT</Label>
+              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-inner min-w-[160px]">
+                <Search className="h-3.5 w-3.5 text-slate-400" />
                 <Input 
                   placeholder="INGRESAR CCT..." 
-                  className="h-8 w-full text-[10px] font-black border-none focus-visible:ring-0 bg-transparent uppercase shadow-none" 
+                  className="h-6 w-full text-[9px] font-black border-none focus-visible:ring-0 bg-transparent uppercase shadow-none p-0" 
                   value={cctFilter} 
                   onChange={e => setCctFilter(e.target.value)} 
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Zona Geográfica (Valle)</Label>
+            <div className="flex flex-col gap-1">
+              <Label className="text-[7px] font-black uppercase text-slate-400 ml-1">Valle</Label>
               <Select value={valleFilter} onValueChange={setValleFilter}>
-                <SelectTrigger className="h-12 text-[10px] font-black w-[160px] rounded-2xl border-slate-100 bg-slate-50 shadow-inner">
+                <SelectTrigger className="h-9 text-[9px] font-black w-[130px] rounded-xl border-slate-100 bg-slate-50 shadow-inner">
                   <SelectValue placeholder="VALLE" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todos los Valles</SelectItem>
-                  <SelectItem value="MEXICO" className="text-[10px] font-black uppercase">Valle de México</SelectItem>
-                  <SelectItem value="TOLUCA" className="text-[10px] font-black uppercase">Valle de Toluca</SelectItem>
+                  <SelectItem value="all" className="text-[9px] font-black uppercase">Todos los Valles</SelectItem>
+                  <SelectItem value="MEXICO" className="text-[9px] font-black uppercase">V. de México</SelectItem>
+                  <SelectItem value="TOLUCA" className="text-[9px] font-black uppercase">V. de Toluca</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Oficina Regional</Label>
+            <div className="flex flex-col gap-1">
+              <Label className="text-[7px] font-black uppercase text-slate-400 ml-1">Oficina</Label>
               <Select value={oficinaFilter} onValueChange={setOficinaFilter}>
-                <SelectTrigger className="h-12 text-[10px] font-black w-[200px] rounded-2xl border-slate-100 bg-slate-50 shadow-inner">
+                <SelectTrigger className="h-9 text-[9px] font-black w-[170px] rounded-xl border-slate-100 bg-slate-50 shadow-inner">
                    <div className="flex items-center gap-2">
-                     <Building2 className="h-3.5 w-3.5 text-primary" />
+                     <Building2 className="h-3 w-3 text-primary" />
                      <SelectValue placeholder="OFICINA REGIONAL" />
                    </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="all" className="text-[10px] font-black uppercase">Todas las Oficinas</SelectItem>
-                  <SelectItem value="Toluca" className="text-[10px] font-black uppercase">Toluca</SelectItem>
-                  <SelectItem value="Ecatepec" className="text-[10px] font-black uppercase">Ecatepec</SelectItem>
-                  <SelectItem value="Naucalpan" className="text-[10px] font-black uppercase">Naucalpan</SelectItem>
-                  <SelectItem value="Nezahualcóyotl" className="text-[10px] font-black uppercase">Nezahualcóyotl</SelectItem>
+                  <SelectItem value="all" className="text-[9px] font-black uppercase">Todas</SelectItem>
+                  <SelectItem value="Toluca" className="text-[9px] font-black uppercase">Toluca</SelectItem>
+                  <SelectItem value="Ecatepec" className="text-[9px] font-black uppercase">Ecatepec</SelectItem>
+                  <SelectItem value="Naucalpan" className="text-[9px] font-black uppercase">Naucalpan</SelectItem>
+                  <SelectItem value="Nezahualcóyotl" className="text-[9px] font-black uppercase">Nezahualcóyotl</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-end h-full pt-6">
+            <div className="flex items-end h-full pt-4">
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="sm" 
-                className="h-12 px-6 text-[9px] font-black uppercase tracking-widest text-rose-600 border-rose-100 hover:bg-rose-50 rounded-2xl transition-all shadow-sm" 
+                className="h-9 px-3 text-[8px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 rounded-xl transition-all" 
                 onClick={() => {setValleFilter('all'); setOficinaFilter('all'); setCctFilter(''); setDateStart(''); setDateEnd('')}}
               >
-                <RefreshCcw className="h-3.5 w-3.5 mr-2" /> Reiniciar Tablero
+                <RefreshCcw className="h-3 w-3 mr-1.5" /> Reiniciar
               </Button>
             </div>
           </div>
@@ -445,77 +445,65 @@ export default function DashboardPage() {
       </Card>
 
       {activeReport === 'soporte' && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-6">
-              <Card className="executive-card border-l-8 border-l-primary">
-                <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-black uppercase text-primary">Indicador C</CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Acciones estratégicas de asesoría y actualización técnica</CardDescription>
+        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-3 space-y-4">
+              <Card className="executive-card border-l-4 border-l-primary">
+                <CardHeader className="bg-slate-50/50 p-4 flex flex-row items-center justify-between">
+                  <div className="space-y-0.5">
+                    <CardTitle className="text-sm font-black uppercase text-primary">Indicador C: Acciones de Soporte</CardTitle>
+                    <CardDescription className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground">Actualización técnica de infraestructura</CardDescription>
                   </div>
-                  <div className="text-right">
-                    <Badge className="bg-primary text-white text-xs px-4 py-1">{supportStats.indicadorC.porcentaje}% Eficiencia Real</Badge>
-                  </div>
+                  <Badge className="bg-primary text-white text-[9px] font-black px-3 py-0.5">{supportStats.indicadorC.porcentaje}% Logro</Badge>
                 </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-primary shadow-sm">
-                          <Navigation className="h-6 w-6" />
+                <CardContent className="p-4 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center text-primary shadow-sm">
+                          <Navigation className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase">Servicios Red Escolar</p>
-                          <h4 className="text-xl font-black text-slate-700">{supportStats.indicadorC.redEscolar} Servicios</h4>
+                          <p className="text-[8px] font-black text-slate-400 uppercase">Red Escolar</p>
+                          <h4 className="text-sm font-black text-slate-700">{supportStats.indicadorC.redEscolar}</h4>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center text-accent shadow-sm">
-                          <Radio className="h-6 w-6" />
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-slate-100 flex items-center justify-center text-accent shadow-sm">
+                          <Radio className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase">Servicios Red Edusat</p>
-                          <h4 className="text-xl font-black text-slate-700">{supportStats.indicadorC.redEdusat} Servicios</h4>
+                          <p className="text-[8px] font-black text-slate-400 uppercase">Red Edusat</p>
+                          <h4 className="text-sm font-black text-slate-700">{supportStats.indicadorC.redEdusat}</h4>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 shadow-inner flex flex-col justify-center">
-                       <div className="flex justify-between items-end mb-2">
-                          <p className="text-[10px] font-black uppercase text-slate-400">Logro Real vs Meta: {supportStats.indicadorC.meta}</p>
-                          <p className="text-2xl font-black text-primary">{supportStats.indicadorC.alcanzado}</p>
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 shadow-inner">
+                       <div className="flex justify-between items-end mb-1.5">
+                          <p className="text-[8px] font-black uppercase text-slate-400">Meta Anual: {supportStats.indicadorC.meta}</p>
+                          <p className="text-lg font-black text-primary leading-none">{supportStats.indicadorC.alcanzado}</p>
                        </div>
-                       <Progress value={supportStats.indicadorC.porcentaje} className="h-3 bg-white" />
-                       <div className="mt-4 grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
-                             <p className="text-[8px] font-black text-slate-400 uppercase">Faltante</p>
-                             <p className="text-lg font-black text-rose-500">{supportStats.indicadorC.faltante}</p>
-                          </div>
-                          <div className="text-center p-3 bg-white rounded-xl shadow-sm">
-                             <p className="text-[8px] font-black text-slate-400 uppercase">Estatus</p>
-                             <Badge variant="outline" className="text-[8px] font-black uppercase border-primary/20 text-primary mt-1">Auditado</Badge>
-                          </div>
-                       </div>
+                       <Progress value={supportStats.indicadorC.porcentaje} className="h-2 bg-white" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="executive-card">
-                  <CardHeader>
-                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      <Activity className="h-4 w-4" /> Análisis por Tipo de Servicio
+                  <CardHeader className="p-4 pb-1">
+                    <CardTitle className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Activity className="h-3.5 w-3.5" /> Servicios por Tipo
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[300px]">
+                  <CardContent className="h-[200px] p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                        <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 30, right: 30, top: 10, bottom: 10 }}>
+                        <RechartsBarChart layout="vertical" data={supportStats.typesData} margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                           <XAxis type="number" hide />
-                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontBold: 900 }} width={110} />
-                          <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                          <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={25}>
+                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontBold: 900 }} width={80} />
+                          <RechartsTooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '9px', fontWeight: '900' }} />
+                          <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={15}>
                               {supportStats.typesData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} />
                               ))}
@@ -526,32 +514,32 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className="executive-card">
-                  <CardHeader>
-                    <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      <Building2 className="h-4 w-4" /> Red Local: Distribución Territorial
+                  <CardHeader className="p-4 pb-1">
+                    <CardTitle className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <Building2 className="h-3.5 w-3.5" /> Distribución Territorial
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-2">
                      <Tabs defaultValue="municipio" className="w-full">
-                        <TabsList className="grid grid-cols-2 w-full mb-4 bg-slate-50 h-8">
-                           <TabsTrigger value="municipio" className="text-[9px] font-black uppercase">Por Municipio</TabsTrigger>
-                           <TabsTrigger value="oficina" className="text-[9px] font-black uppercase">Por Oficina</TabsTrigger>
+                        <TabsList className="grid grid-cols-2 w-full mb-2 bg-slate-50 h-7 p-0.5">
+                           <TabsTrigger value="municipio" className="text-[8px] font-black uppercase h-6">Muns</TabsTrigger>
+                           <TabsTrigger value="oficina" className="text-[8px] font-black uppercase h-6">Ofis</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="municipio" className="h-[220px]">
+                        <TabsContent value="municipio" className="h-[160px]">
                            <ResponsiveContainer width="100%" height="100%">
                               <RechartsBarChart data={supportStats.redLocalMunData}>
-                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900 }} />
-                                 <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                                 <Bar dataKey="value" fill="#B38E5D" radius={[4, 4, 0, 0]} />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 6, fontWeight: 900 }} />
+                                 <RechartsTooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '8px', fontWeight: '900' }} />
+                                 <Bar dataKey="value" fill="#B38E5D" radius={[2, 2, 0, 0]} barSize={15} />
                               </RechartsBarChart>
                            </ResponsiveContainer>
                         </TabsContent>
-                        <TabsContent value="oficina" className="h-[220px]">
+                        <TabsContent value="oficina" className="h-[160px]">
                            <ResponsiveContainer width="100%" height="100%">
                               <RechartsBarChart data={supportStats.redLocalOfiData}>
-                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
-                                 <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                                 <Bar dataKey="value" fill="#621132" radius={[4, 4, 0, 0]} />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 6, fontWeight: 900 }} />
+                                 <RechartsTooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '8px', fontWeight: '900' }} />
+                                 <Bar dataKey="value" fill="#621132" radius={[2, 2, 0, 0]} barSize={15} />
                               </RechartsBarChart>
                            </ResponsiveContainer>
                         </TabsContent>
@@ -561,65 +549,56 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              <Card className="executive-card p-6 bg-primary text-white relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                   <Wrench className="h-20 w-20" />
+            <div className="grid grid-cols-1 gap-4">
+              <Card className="executive-card p-4 bg-primary text-white relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                   <Wrench className="h-14 w-14" />
                  </div>
-                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Folios Registrados</p>
-                 <h3 className="text-5xl font-black mt-2 leading-none">{supportStats.total}</h3>
-                 <div className="mt-4 flex items-center gap-2">
-                   <Badge className="bg-white/20 text-white border-none text-[9px] font-black">Ciclo 2025-2026</Badge>
+                 <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-80">Folios Totales</p>
+                 <h3 className="text-3xl font-black mt-1 leading-none">{supportStats.total}</h3>
+                 <Badge className="bg-white/20 text-white border-none text-[7px] font-black mt-2">Ciclo 2026</Badge>
+              </Card>
+
+              <Card className="executive-card p-4 border-l-4 border-emerald-500 bg-white">
+                 <div className="flex justify-between items-start">
+                   <div>
+                     <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimientos</p>
+                     <h3 className="text-2xl font-black mt-1 text-emerald-600">{supportStats.serviciosMP + supportStats.serviciosMC}</h3>
+                   </div>
+                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                 </div>
+                 <div className="flex gap-3 mt-2 border-t border-slate-50 pt-1.5">
+                    <span className="text-[7px] font-black text-slate-500 uppercase">P: <b className="text-emerald-600">{supportStats.serviciosMP}</b></span>
+                    <span className="text-[7px] font-black text-slate-500 uppercase">C: <b className="text-emerald-600">{supportStats.serviciosMC}</b></span>
                  </div>
               </Card>
 
-              <Card className="executive-card p-6 border-l-4 border-emerald-500">
+              <Card className="executive-card p-4 border-l-4 border-rose-500 bg-white">
                  <div className="flex justify-between items-start">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Mantenimiento Realizado</p>
-                     <h3 className="text-4xl font-black mt-2 text-emerald-600">{supportStats.serviciosMP + supportStats.serviciosMC}</h3>
+                     <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground">Pendientes</p>
+                     <h3 className="text-2xl font-black mt-1 text-rose-600">{supportStats.statusData.find(s => s.name === 'PENDIENTES')?.value || 0}</h3>
                    </div>
-                   <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm">
-                     <CheckCircle2 className="h-6 w-6" />
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-2 gap-2 mt-4">
-                    <div className="text-[9px] font-black text-slate-500 uppercase">Prev: <span className="text-emerald-600">{supportStats.serviciosMP}</span></div>
-                    <div className="text-[9px] font-black text-slate-500 uppercase">Corr: <span className="text-emerald-600">{supportStats.serviciosMC}</span></div>
-                 </div>
-              </Card>
-
-              <Card className="executive-card p-6 border-l-4 border-rose-500">
-                 <div className="flex justify-between items-start">
-                   <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Estatus Pendiente</p>
-                     <h3 className="text-4xl font-black mt-2 text-rose-600">{supportStats.statusData.find(s => s.name === 'PENDIENTES')?.value || 0}</h3>
-                   </div>
-                   <div className="h-10 w-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-sm">
-                     <AlertCircle className="h-6 w-6" />
-                   </div>
+                   <AlertCircle className="h-5 w-5 text-rose-500" />
                  </div>
               </Card>
               
-              <Card className="executive-card p-6 border-l-4 border-slate-400">
-                 <div className="flex justify-between items-start mb-4">
+              <Card className="executive-card p-4 border-l-4 border-slate-400 bg-white">
+                 <div className="flex justify-between items-start mb-2">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios Directos</p>
-                     <h3 className="text-3xl font-black mt-1 text-slate-700">{supportStats.beneficiados}</h3>
+                     <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground">Beneficiarios</p>
+                     <h3 className="text-xl font-black mt-0.5 text-slate-700">{supportStats.beneficiados}</h3>
                    </div>
-                   <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-sm">
-                     <Users className="h-6 w-6" />
-                   </div>
+                   <Users className="h-5 w-5 text-slate-400" />
                  </div>
-                 
-                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Alumnos</p>
-                      <p className="text-xl font-black text-primary">{supportStats.alumnos}</p>
+                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                    <div>
+                      <p className="text-[6px] font-black text-slate-400 uppercase">Alums</p>
+                      <p className="text-sm font-black text-primary">{supportStats.alumnos}</p>
                     </div>
-                    <div className="space-y-1 border-l pl-4 border-slate-100">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Docentes</p>
-                      <p className="text-xl font-black text-accent">{supportStats.docentes}</p>
+                    <div className="border-l pl-2 border-slate-100">
+                      <p className="text-[6px] font-black text-slate-400 uppercase">Docs</p>
+                      <p className="text-sm font-black text-accent">{supportStats.docentes}</p>
                     </div>
                  </div>
               </Card>
@@ -629,184 +608,85 @@ export default function DashboardPage() {
       )}
 
       {activeReport === 'capacitacion' && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="executive-card md:col-span-2 p-6 flex flex-col justify-center text-center bg-white shadow-xl border-t-4 border-primary">
-               <div className="mx-auto h-40 w-40 rounded-full border-[12px] border-primary/10 border-t-primary flex items-center justify-center shadow-inner relative">
-                  <span className="text-4xl font-black text-primary">{trainingStats.progressTotal}%</span>
-                  <Target className="absolute -top-1 -right-1 h-10 w-10 text-accent bg-white rounded-full p-2 shadow-lg border-2 border-accent/20" />
+        <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="executive-card p-4 flex flex-col justify-center text-center bg-white shadow-lg border-t-4 border-primary">
+               <div className="mx-auto h-28 w-28 rounded-full border-[8px] border-primary/10 border-t-primary flex items-center justify-center relative">
+                  <span className="text-xl font-black text-primary">{trainingStats.progressTotal}%</span>
+                  <Target className="absolute -top-1 -right-1 h-6 w-6 text-accent bg-white rounded-full p-1 shadow-md border border-accent/20" />
                </div>
-               <div className="mt-8 space-y-1">
-                 <h3 className="text-2xl font-black uppercase text-slate-900 leading-none">Meta Institucional 2026</h3>
-                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-2">Cumplimiento consolidado sobre meta de {goals.trainingGoal} servidores</p>
+               <div className="mt-4 space-y-1">
+                 <h3 className="text-base font-black uppercase text-slate-900 leading-none">Meta 2026</h3>
+                 <p className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1">Avance sobre {goals.trainingGoal} servidores</p>
                </div>
-               <div className="mt-10 grid grid-cols-2 gap-6">
-                  <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner group hover:bg-white hover:shadow-md transition-all">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Real Capturado</p>
-                     <p className="text-3xl font-black text-primary">{trainingStats.total}</p>
+               <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
+                     <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Real</p>
+                     <p className="text-xl font-black text-primary">{trainingStats.total}</p>
                   </div>
-                  <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner group hover:bg-white hover:shadow-md transition-all">
-                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Restante Meta</p>
-                     <p className="text-3xl font-black text-accent">{Math.max(0, goals.trainingGoal - trainingStats.total)}</p>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-inner">
+                     <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faltante</p>
+                     <p className="text-xl font-black text-accent">{Math.max(0, goals.trainingGoal - trainingStats.total)}</p>
                   </div>
                </div>
             </Card>
 
-            <Card className="md:col-span-2 executive-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" /> Planeación Anual 2026 por Región
+            <Card className="md:col-span-3 executive-card">
+              <CardHeader className="p-4 pb-1">
+                <CardTitle className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <ClipboardList className="h-3.5 w-3.5" /> Planeación Anual por Región
                 </CardTitle>
-                <CardDescription className="text-[9px] font-bold uppercase">Proyección de Alcance Territorial</CardDescription>
               </CardHeader>
-              <CardContent className="h-[300px]">
+              <CardContent className="h-[250px] p-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <RechartsBarChart data={trainingStats.byRegionalOffice} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900, fill: '#64748b' }} />
-                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />
-                    <Bar name="Logro Real" dataKey="actual" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
-                    <Bar name="Meta Programada" dataKey="goal" radius={[4, 4, 0, 0]} barSize={40} fill="#B38E5D" fillOpacity={0.3} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900, fill: '#64748b' }} />
+                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '9px', fontWeight: '900' }} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '8px', fontWeight: 'bold' }} />
+                    <Bar name="Real" dataKey="actual" radius={[2, 2, 0, 0]} barSize={30} fill="#621132" />
+                    <Bar name="Meta" dataKey="goal" radius={[2, 2, 0, 0]} barSize={30} fill="#B38E5D" fillOpacity={0.2} />
                   </RechartsBarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 gap-8">
-            <Card className="executive-card border-l-8 border-l-primary">
-              <CardHeader className="bg-slate-50/50 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-black uppercase text-primary">Indicador A</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Docentes capacitados sobre TICCAD (Datos Operativos)</CardDescription>
-                </div>
-                <div className="text-right">
-                  <Badge className="bg-primary text-white text-xs px-4 py-1">{trainingStats.indicadorA.porcentaje}% Cumplimiento Trimestral</Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="executive-card border-l-4 border-l-primary">
+              <CardHeader className="bg-slate-50/50 p-4">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-sm font-black uppercase text-primary">Indicador A: TICCAD</CardTitle>
+                  <Badge className="bg-primary text-white text-[8px] font-black px-2">{trainingStats.indicadorA.porcentaje}% Trimestral</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="md:col-span-2 space-y-4">
-                    <h4 className="text-[11px] font-black uppercase text-accent border-b pb-1">Distribución por Curso Real</h4>
-                    <div className="space-y-4">
-                      {trainingStats.indicadorA.cursos.map((curso, idx) => (
-                        <div key={idx} className="space-y-1.5">
-                          <div className="flex justify-between items-center text-[10px] font-black uppercase">
-                            <span className="text-slate-600 truncate max-w-[80%]">{idx + 1}. {curso.name}</span>
-                            <span className="text-primary">{curso.value} Asistentes</span>
-                          </div>
-                          <Progress value={trainingStats.indicadorA.alcanzado > 0 ? (curso.value / trainingStats.indicadorA.alcanzado) * 100 : 0} className="h-1.5 bg-slate-100" />
-                        </div>
-                      ))}
+              <CardContent className="p-4 space-y-3">
+                {trainingStats.indicadorA.cursos.slice(0, 3).map((curso, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between items-center text-[8px] font-black uppercase text-slate-600">
+                      <span className="truncate max-w-[70%]">{idx + 1}. {curso.name}</span>
+                      <span className="text-primary">{curso.value} Asists</span>
                     </div>
+                    <Progress value={trainingStats.indicadorA.alcanzado > 0 ? (curso.value / trainingStats.indicadorA.alcanzado) * 100 : 0} className="h-1 bg-slate-100" />
                   </div>
-                  <div className="bg-primary/5 rounded-[2rem] p-6 flex flex-col justify-center items-center text-center space-y-4 border border-primary/10 shadow-inner">
-                    <Cpu className="h-10 w-10 text-primary opacity-40" />
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Docentes Alcanzados</p>
-                      <h4 className="text-4xl font-black text-primary">{trainingStats.indicadorA.alcanzado}</h4>
-                    </div>
-                    <div className="w-full h-px bg-primary/10" />
-                    <div className="grid grid-cols-2 w-full gap-4">
-                      <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase">Faltante</p>
-                        <p className="text-sm font-black text-accent">{trainingStats.indicadorA.faltante}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase">Meta Trim.</p>
-                        <p className="text-sm font-black text-slate-600">{trainingStats.indicadorA.meta}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </CardContent>
             </Card>
 
-            <Card className="executive-card border-l-8 border-l-accent">
-              <CardHeader className="bg-slate-50/50">
-                <CardTitle className="text-lg font-black uppercase text-accent">Indicador B</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estrategia de vinculación territorial "Más territorio, menos escritorio"</CardDescription>
+            <Card className="executive-card border-l-4 border-l-accent">
+              <CardHeader className="bg-slate-50/50 p-4">
+                <CardTitle className="text-sm font-black uppercase text-accent">Indicador B: Territorio</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                 <div className="flex flex-col md:flex-row items-center gap-8">
-                    <div className="flex-1 space-y-4">
-                       <div className="p-5 bg-accent/5 rounded-2xl border border-accent/10">
-                          <h4 className="text-[11px] font-black text-accent uppercase mb-2 flex items-center gap-2">
-                             <Globe className="h-4 w-4" /> Cobertura Institucional de Diagnósticos
-                          </h4>
-                          <p className="text-xs font-semibold text-slate-700 leading-relaxed">
-                             Se han realizado diagnósticos específicos en <strong>{trainingStats.indicadorB.total}</strong> centros de trabajo únicos, alineados con el Plan de Desarrollo 2023-2029.
-                          </p>
-                       </div>
-                    </div>
-                    <div className="h-32 w-32 rounded-full border-8 border-emerald-100 flex items-center justify-center bg-white shadow-xl relative">
-                       <span className="text-2xl font-black text-emerald-600">{trainingStats.indicadorB.porcentaje}%</span>
-                       <Badge className="absolute -bottom-2 bg-emerald-500 text-white border-none text-[8px] font-black uppercase">En Tiempo</Badge>
-                    </div>
-                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="executive-card border-t-4 border-primary">
-              <CardHeader className="bg-slate-50/30">
-                <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                  <TableIcon className="h-4 w-4" /> Desglose Operativo de Atención Técnica
-                </CardTitle>
-                <CardDescription className="text-[9px] font-bold uppercase text-muted-foreground">Relación detallada: Nombre del Curso + Modalidad (Mes) + Oficina Regional</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader className="bg-slate-100/50 sticky top-0 z-10">
-                      <TableRow>
-                        <TableHead className="text-[9px] font-black uppercase pl-8 h-12">Nombre del Curso / Taller</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase h-12">Modalidad</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase h-12">Mes Atención</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase h-12">Oficina que Atendió</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase h-12 text-center">Impacto (Servidores)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trainingStats.detailedAnalysis.length > 0 ? trainingStats.detailedAnalysis.map((item, idx) => (
-                        <TableRow key={idx} className="hover:bg-slate-50 transition-colors group">
-                          <TableCell className="pl-8 py-4">
-                            <span className="text-[10px] font-black text-slate-700 uppercase leading-tight">{item.curso}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-[8px] font-black uppercase border-slate-200 bg-white">
-                              {item.modalidad}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[10px] font-bold text-accent uppercase">{item.mes}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                               <Building2 className="h-3 w-3 text-primary opacity-40" />
-                               <span className="text-[9px] font-black text-slate-500 uppercase">{item.oficina}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="inline-flex items-center justify-center h-7 w-12 rounded-lg bg-primary/5 text-primary text-[11px] font-black border border-primary/10">
-                              {item.total}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-20 opacity-30">
-                            <div className="flex flex-col items-center gap-2">
-                              <Search className="h-10 w-10 text-slate-300" />
-                              <p className="text-[10px] font-black uppercase">Sin registros operativos para mostrar</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+              <CardContent className="p-4 flex items-center justify-between gap-4">
+                <div className="flex-1 p-3 bg-accent/5 rounded-xl border border-accent/10">
+                  <p className="text-[9px] font-semibold text-slate-700 leading-tight">
+                    Cobertura en <strong>{trainingStats.indicadorB.total}</strong> centros únicos diagnosticados.
+                  </p>
+                </div>
+                <div className="h-16 w-16 rounded-full border-4 border-emerald-100 flex items-center justify-center bg-white shadow-md relative shrink-0">
+                  <span className="text-xs font-black text-emerald-600">{trainingStats.indicadorB.porcentaje}%</span>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -814,67 +694,58 @@ export default function DashboardPage() {
       )}
 
       {activeReport === 'programas' && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             {['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map((name) => {
               const records = filteredPrograms.filter(p => p.name === name);
               const value = new Set(records.map(p => p.cct)).size;
               const percentage = Math.min(100, Math.round((value / TOTAL_UNIVERSE) * 100));
               return (
-                <Card key={name} className="executive-card p-6 border-l-4 group hover:scale-[1.02] transition-all" style={{ borderLeftColor: percentage > 50 ? '#621132' : '#B38E5D' }}>
+                <Card key={name} className="executive-card p-3 border-l-4 border-l-slate-200 bg-white group hover:scale-105 transition-all">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest truncate max-w-[80px]">{name}</p>
-                      <h3 className="text-3xl font-black text-slate-900 mt-1">{value}</h3>
+                      <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest truncate max-w-[80px]">{name}</p>
+                      <h3 className="text-xl font-black text-slate-900 mt-0.5">{value}</h3>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center shadow-inner">
-                      <span className="text-[10px] font-black text-primary">{percentage}%</span>
-                    </div>
+                    <span className="text-[8px] font-black text-primary bg-primary/5 px-1.5 rounded">{percentage}%</span>
                   </div>
-                  <Progress value={percentage} className="h-1.5 mt-4" />
+                  <Progress value={percentage} className="h-1 mt-2 bg-slate-50" />
                 </Card>
               )
             })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="executive-card md:col-span-2 border-l-8 border-l-[#9f2241]">
-              <CardHeader className="bg-slate-50/50">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg font-black uppercase text-primary flex items-center gap-3">
-                       <UserCheck className="h-6 w-6" /> Estadística de Cuentas Institucionales
-                    </CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Identidad Digital de Servidores Públicos</CardDescription>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="executive-card md:col-span-2 border-l-4 border-l-primary bg-white">
+              <CardHeader className="bg-slate-50/50 p-4 flex flex-row items-center justify-between">
+                  <div className="space-y-0.5">
+                    <CardTitle className="text-sm font-black uppercase text-primary">Cuentas Institucionales</CardTitle>
+                    <CardDescription className="text-[8px] font-bold uppercase text-muted-foreground">Identidad Digital Consolidada</CardDescription>
                   </div>
-                  <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 text-center">
-                    <p className="text-[9px] font-black text-slate-400 uppercase leading-none">Total Cuentas</p>
-                    <h4 className="text-2xl font-black text-primary mt-1">{accountStats.totalAccounts}</h4>
+                  <div className="bg-white px-4 py-1.5 rounded-xl shadow-sm border border-slate-100 text-center">
+                    <p className="text-[7px] font-black text-slate-400 uppercase leading-none">Total</p>
+                    <h4 className="text-lg font-black text-primary mt-0.5">{accountStats.totalAccounts}</h4>
                   </div>
-                </div>
               </CardHeader>
-              <CardContent className="pt-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+              <CardContent className="p-4">
+                <div className="grid grid-cols-3 gap-4 mb-6">
                   {Object.entries(accountStats.modalityCounts).map(([mod, count]) => (
-                    <div key={mod} className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 shadow-inner group hover:bg-white transition-all relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                        <UserCheck className="h-12 w-12" />
-                      </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{mod === 'DES' ? 'Generales' : mod === 'DST' ? 'Técnicas' : 'Telesecundarias'}</p>
-                      <h4 className="text-3xl font-black text-slate-800 mt-2">{count}</h4>
-                      <Badge variant="outline" className="mt-3 text-[8px] font-black uppercase bg-white border-primary/10 text-primary">{mod}</Badge>
+                    <div key={mod} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 relative overflow-hidden group">
+                      <p className="text-[7px] font-black text-slate-400 uppercase leading-none">{mod === 'DES' ? 'Grales' : mod === 'DST' ? 'Técs' : 'Teles'}</p>
+                      <h4 className="text-xl font-black text-slate-800 mt-1">{count}</h4>
+                      <Badge variant="outline" className="mt-1.5 text-[6px] font-black border-primary/10 text-primary h-4">{mod}</Badge>
                     </div>
                   ))}
                 </div>
 
-                <div className="h-[250px] w-full">
+                <div className="h-[200px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart data={accountStats.chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                    <RechartsBarChart data={accountStats.chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '11px', fontWeight: '900' }} />
-                      <Bar name="Cuentas Activas" dataKey="value" radius={[10, 10, 0, 0]} barSize={50}>
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 8, fontWeight: 900 }} />
+                      <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '9px', fontWeight: '900' }} />
+                      <Bar name="Cuentas" dataKey="value" radius={[4, 4, 0, 0]} barSize={35}>
                         {accountStats.chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
@@ -885,20 +756,20 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="executive-card">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" /> Cobertura Institucional
+            <Card className="executive-card bg-white">
+              <CardHeader className="p-4">
+                <CardTitle className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <BarChart3 className="h-3.5 w-3.5" /> Cobertura Módulos
                 </CardTitle>
               </CardHeader>
-              <CardContent className="h-[450px]">
+              <CardContent className="h-[350px] p-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name, value: new Set(filteredPrograms.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                  <RechartsBarChart data={['Biblioteca Digital', 'Cuentas Institucionales', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(name => ({ name: name.split(' ')[0], value: new Set(filteredPrograms.filter(p => p.name === name).map(p => p.cct)).size }))} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                    <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontSize: '10px', fontWeight: '900' }} />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40} fill="#621132" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900 }} />
+                    <YAxis dataKey="value" axisLine={false} tickLine={false} tick={{ fontSize: 7, fontWeight: 900 }} />
+                    <RechartsTooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', fontSize: '9px', fontWeight: '900' }} />
+                    <Bar dataKey="value" radius={[2, 2, 0, 0]} barSize={25} fill="#621132" />
                   </RechartsBarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -907,10 +778,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-3 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-pulse">
-         <AlertCircle className="h-5 w-5 text-accent" />
-         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-accent">
-            Reporte ejecutivo actualizado en tiempo real conforme a la captura operativa del sistema integral COEES. Planeación Anual 2026 Auditada.
+      <div className="flex items-center gap-2 p-2 bg-accent/5 border border-accent/10 rounded-xl">
+         <AlertCircle className="h-3 w-3 text-accent" />
+         <p className="text-[8px] font-black uppercase tracking-[0.1em] text-accent">
+            Información operativa auditada en tiempo real. Sistema Integral COEES 2026.
          </p>
       </div>
     </div>
