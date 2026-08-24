@@ -898,26 +898,26 @@ export default function ProgramsPage() {
                   </div>
                   
                   <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-2xl min-h-[350px] flex flex-col">
-                    <ScrollArea className="flex-1 w-full" orientation="horizontal">
-                      <div className="min-w-[1550px]">
+                    <div className="flex-1 w-full overflow-x-auto">
+                      <div className="min-w-[1400px]">
                         <Table className="border-collapse w-full">
                           <TableHeader className="bg-slate-50 sticky top-0 z-20 shadow-sm border-b">
                               <TableRow>
-                                <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4">#</TableHead>
-                                <TableHead className="min-w-[320px] text-[9px] font-black uppercase">Nombre del Usuario</TableHead>
-                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase">CCT</TableHead>
-                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Correo Institucional</TableHead>
-                                <TableHead className="min-w-[220px] text-[9px] font-black uppercase">Función</TableHead>
-                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase text-center">Valle</TableHead>
-                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase">Departamento / Oficina</TableHead>
-                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase">Estatus</TableHead>
+                                <TableHead className="w-14 text-[9px] font-black uppercase text-center pl-4 py-4 text-slate-800">#</TableHead>
+                                <TableHead className="min-w-[320px] text-[9px] font-black uppercase text-slate-800">Nombre del Usuario</TableHead>
+                                <TableHead className="min-w-[150px] text-[9px] font-black uppercase text-slate-800">CCT</TableHead>
+                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase text-slate-800">Correo Institucional</TableHead>
+                                <TableHead className="min-w-[220px] text-[9px] font-black uppercase text-slate-800">Función</TableHead>
+                                <TableHead className="min-w-[130px] text-[9px] font-black uppercase text-center text-slate-800">Valle</TableHead>
+                                <TableHead className="min-w-[280px] text-[9px] font-black uppercase text-slate-800">Departamento / Oficina</TableHead>
+                                <TableHead className="min-w-[160px] text-[9px] font-black uppercase text-slate-800">Estatus</TableHead>
                                 <TableHead className="w-16 pr-4"></TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
                               {(formData.asistentes || []).length > 0 ? (formData.asistentes || []).map((ast, idx) => (
                                 <TableRow key={`ast-edit-${idx}`} className="hover:bg-slate-50 transition-colors group border-b border-slate-50 h-16">
-                                    <TableCell className="text-center font-black text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
+                                    <TableCell className="text-center font-black text-[10px] text-slate-400 pl-4">{idx + 1}</TableCell>
                                     <TableCell className="p-2">
                                       <Input placeholder="APELLIDOS NOMBRE..." className="h-10 text-[10px] uppercase font-black border-primary/5 bg-primary/[0.02] shadow-inner" value={ast.nombreUsuario} onChange={e => handleUpdateAssistantField(idx, 'nombreUsuario', e.target.value.toUpperCase())} />
                                     </TableCell>
@@ -967,8 +967,7 @@ export default function ProgramsPage() {
                           </TableBody>
                         </Table>
                       </div>
-                      <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
+                    </div>
                   </div>
                 </div>
 
