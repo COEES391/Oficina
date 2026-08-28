@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -72,9 +71,9 @@ export default function UsersPage() {
   }, [])
 
   const handleSave = async () => {
-    const cleanRfc = formData.rfc?.trim().toUpperCase()
-    const cleanName = formData.name?.trim().toUpperCase()
-    const cleanPassword = formData.password?.trim()
+    const cleanRfc = (formData.rfc || '').trim().toUpperCase()
+    const cleanName = (formData.name || '').trim().toUpperCase()
+    const cleanPassword = (formData.password || '').trim()
 
     if (!cleanRfc || !cleanPassword || !cleanName) {
       toast({ 

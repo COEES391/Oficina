@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
-import { Eye, EyeOff, Lock, User, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { type AppUser } from '@/lib/planning-data'
@@ -38,7 +37,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // Usuarios Maestros
+      // Usuarios Maestros con Prioridad Forzada
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
@@ -57,7 +56,7 @@ export default function LoginPage() {
         
         const privs = userData.privileges || []
         
-        // REDIRECCIÓN FORZADA: Prioridad Máxima a Programas/Bitácora
+        // REDIRECCIÓN FORZADA: Jerarquía de aterrizaje obligatoria
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
@@ -74,7 +73,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error)
-      toast({ variant: "destructive", title: "Error de conexión" })
+      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su acceso a internet." })
     } finally {
       setIsLoading(false)
     }

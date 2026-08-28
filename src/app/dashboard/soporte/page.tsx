@@ -1,6 +1,5 @@
-
 'use client'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -13,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
-import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   LifeBuoy, 
@@ -26,23 +24,13 @@ import {
   AlertTriangle,
   History,
   Save,
-  Monitor,
   Search,
-  X,
-  Plus
+  X
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
 import { cn } from '@/lib/utils'
-
-const REGIONAL_OFFICES = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
-  "Oficina de COEES Tultitlan"
-];
 
 type InventoryItem = {
   id: number;
@@ -99,35 +87,9 @@ export default function SupportPage() {
     id: '',
     cct: '',
     schoolName: '',
-    zonaEscolar: '',
-    sector: '',
-    modalidad: '',
-    municipio: '',
-    region: '',
-    valle: '',
     tecnicos: '',
-    oficinaRegionalAtencion: '',
-    numeroOficio: '',
-    alumnosBeneficiados: 0,
-    docentesBeneficiados: 0,
-    numeroEquipos: 0,
-    tipoIncidencia: 'mantenimiento',
-    materialUtilizado: '',
-    setes: 'N',
-    observaciones: '',
     fechaEntrada: '',
-    fechaSalida: '',
-    serviciosMC: 0,
-    serviciosMP: 0,
-    reportPdf: '',
-    evidencePhotos: [],
-    mantenimientoDetalle: {
-      equipoTecnologico: '',
-      equipoTecnologicoOtro: '',
-      equipos: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
-      fallaIdentificada: '',
-      servicioRealizado: ''
-    }
+    tipoIncidencia: 'mantenimiento' as any,
   }
 
   const [formData, setFormData] = useState(initialFormState)
@@ -164,19 +126,6 @@ export default function SupportPage() {
 
   const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
 
-  const handleEdit = (ticket: SupportTicket) => {
-    setFormData({ ...ticket });
-    setEditingTicketId(ticket.id || null);
-    setIsDialogOpen(true);
-  }
-
-  const handleDeleteTicket = (id: string) => {
-    const updated = tickets.filter(t => t.id !== id);
-    setTickets(updated);
-    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
-    toast({ title: "Registro eliminado" });
-  }
-
   const handleRegisterMovement = () => {
     const { itemId, qty, type, recipient, folio } = movementForm;
     if (!itemId || qty <= 0) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
@@ -198,9 +147,10 @@ export default function SupportPage() {
     };
     
     setInventory(updatedInventory);
-    setMovements([newMovement, ...movements]);
+    const updatedMovements = [newMovement, ...movements];
+    setMovements(updatedMovements);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
-    localStorage.setItem('coees_movements_v1', JSON.stringify([newMovement, ...movements]));
+    localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
     setMovementForm({ type: 'salida', itemId: '', qty: 0, recipient: '', folio: '' });
     toast({ title: "Movimiento registrado" });
   }
@@ -209,8 +159,7 @@ export default function SupportPage() {
     const matchSearch = (t.cct || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
       (t.schoolName || '').toUpperCase().includes(listSearchTerm.toUpperCase()) ||
       (t.id || '').toUpperCase().includes(listSearchTerm.toUpperCase());
-    const matchOffice = officeFilter === 'all' || t.oficinaRegionalAtencion === officeFilter;
-    return matchSearch && matchOffice;
+    return matchSearch;
   });
 
   const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
@@ -337,7 +286,7 @@ export default function SupportPage() {
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
                           <Input placeholder="FOLIO / SOLICITUD" className="h-12 bg-white rounded-xl uppercase font-mono px-4 text-xs font-black" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
                         </div>
-                        <Input placeholder="USUARIO A QUIEN SE LE DIO EL MATERIAL..." className="h-12 bg-white rounded-xl uppercase font-black px-6 text-xs" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                        <Input placeholder="USUARIO A QUIEN SE LE DIO EL MATERIAL..." className="h-12 bg-white rounded-xl uppercase font-black px-6 text-xs" value={movementForm.type === 'salida' ? movementForm.recipient : ''} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
                         <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'salida'})); handleRegisterMovement(); }} className="w-full bg-accent hover:bg-accent/90 text-white h-14 rounded-xl font-black uppercase shadow-lg transition-all active:scale-95">Registrar Salida</Button>
                       </div>
                    </Card>
@@ -348,7 +297,7 @@ export default function SupportPage() {
                         <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
-                          <Input placeholder="QUIEN RECIBE..." className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                          <Input placeholder="QUIEN RECIBE..." className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" value={movementForm.type === 'entrada' ? movementForm.recipient : ''} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
                         </div>
                         <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'entrada'})); handleRegisterMovement(); }} className="w-full btn-institutional h-14 shadow-lg active:scale-95 transition-all">Registrar Entrada</Button>
                       </div>
