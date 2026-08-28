@@ -27,7 +27,8 @@ import {
   Search,
   X,
   Activity,
-  Box
+  Box,
+  ShoppingCart
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -70,6 +71,7 @@ export default function SupportPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
+  const [isCriticalDialogOpen, setIsCriticalDialogOpen] = useState(false)
   const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen')
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
@@ -315,17 +317,35 @@ export default function SupportPage() {
                 <ScrollArea className="h-full">
                   <div className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      <Card className="executive-card p-8 bg-primary/5 border-l-[12px] border-l-primary flex justify-between items-center shadow-xl">
-                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-primary/60 tracking-widest">Insumos Críticos</p><h3 className="text-6xl font-black text-primary leading-none">{lowStockItems.length}</h3></div>
-                        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><AlertTriangle className="h-10 w-10" /></div>
+                      <Card 
+                        className="executive-card p-8 bg-primary/5 border-l-[12px] border-l-primary flex justify-between items-center shadow-xl cursor-pointer hover:bg-primary/10 transition-all group"
+                        onClick={() => setIsCriticalDialogOpen(true)}
+                      >
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-black uppercase text-primary/60 tracking-widest">Insumos Críticos</p>
+                          <h3 className="text-6xl font-black text-primary leading-none">{lowStockItems.length}</h3>
+                        </div>
+                        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                          <AlertTriangle className="h-10 w-10" />
+                        </div>
                       </Card>
                       <Card className="executive-card p-8 bg-accent/5 border-l-[12px] border-l-accent flex justify-between items-center shadow-xl">
-                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-accent/60 tracking-widest">Movimientos Hoy</p><h3 className="text-6xl font-black text-accent leading-none">{movements.filter(m => m.date.includes(format(new Date(), 'dd/MM/yyyy'))).length}</h3></div>
-                        <div className="h-16 w-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent"><Activity className="h-10 w-10" /></div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-black uppercase text-accent/60 tracking-widest">Movimientos Hoy</p>
+                          <h3 className="text-6xl font-black text-accent leading-none">{movements.filter(m => m.date.includes(format(new Date(), 'dd/MM/yyyy'))).length}</h3>
+                        </div>
+                        <div className="h-16 w-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
+                          <Activity className="h-10 w-10" />
+                        </div>
                       </Card>
                       <Card className="executive-card p-8 bg-emerald-50 border-l-[12px] border-l-emerald-500 flex justify-between items-center shadow-xl">
-                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-emerald-600/60 tracking-widest">Total de Insumos</p><h3 className="text-6xl font-black text-emerald-600 leading-none">{inventory.length}</h3></div>
-                        <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><Box className="h-10 w-10" /></div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-black uppercase text-emerald-600/60 tracking-widest">Total de SKUs</p>
+                          <h3 className="text-6xl font-black text-emerald-600 leading-none">{inventory.length}</h3>
+                        </div>
+                        <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+                          <Box className="h-10 w-10" />
+                        </div>
                       </Card>
                     </div>
 
@@ -336,7 +356,10 @@ export default function SupportPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {lowStockItems.map(item => (
                           <div key={`alert-${item.id}`} className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-center justify-between shadow-sm">
-                            <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-rose-800 leading-none">{item.name}</span><span className="text-[8px] font-bold text-rose-400 mt-1 uppercase">Stock: {item.qty} {item.unit}</span></div>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase text-rose-800 leading-none">{item.name}</span>
+                              <span className="text-[8px] font-bold text-rose-400 mt-1 uppercase">Stock: {item.qty} {item.unit}</span>
+                            </div>
                             <Badge className="bg-rose-600 text-white font-black text-[9px]">CRÍTICO</Badge>
                           </div>
                         ))}
@@ -529,6 +552,68 @@ export default function SupportPage() {
           </Tabs>
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0 flex justify-end">
              <Button variant="ghost" onClick={() => setIsWarehouseOpen(false)} className="rounded-xl h-10 px-8 text-[10px] font-black uppercase">Cerrar Almacén</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ventana Emergente de Insumos Críticos */}
+      <Dialog open={isCriticalDialogOpen} onOpenChange={setIsCriticalDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+             <div className="flex items-center gap-5">
+                <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
+                   <AlertTriangle className="h-10 w-10" />
+                </div>
+                <div>
+                   <DialogTitle className="uppercase font-black text-2xl">Insumos Críticos</DialogTitle>
+                   <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Artículos con stock igual o inferior al mínimo permitido</DialogDescription>
+                </div>
+             </div>
+          </DialogHeader>
+          <div className="p-0">
+             {lowStockItems.length > 0 ? (
+               <Table>
+                 <TableHeader className="bg-slate-50">
+                    <TableRow>
+                       <TableHead className="pl-8 font-black uppercase text-[10px] text-slate-400 h-12">Insumo Técnico</TableHead>
+                       <TableHead className="text-center font-black uppercase text-[10px] text-slate-400 h-12">Stock Actual</TableHead>
+                       <TableHead className="text-center font-black uppercase text-[10px] text-slate-400 h-12">Mínimo</TableHead>
+                    </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                    {lowStockItems.map(item => (
+                      <TableRow key={`critical-list-${item.id}`} className="h-16 border-b border-slate-50">
+                         <TableCell className="pl-8">
+                            <div className="flex flex-col">
+                               <span className="text-xs font-black uppercase text-slate-800">{item.name}</span>
+                               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.unit}</span>
+                            </div>
+                         </TableCell>
+                         <TableCell className="text-center">
+                            <Badge className="bg-rose-500 text-white font-black text-sm px-4 h-8 rounded-lg shadow-lg shadow-rose-200">{item.qty}</Badge>
+                         </TableCell>
+                         <TableCell className="text-center">
+                            <span className="text-xs font-bold text-slate-400">{item.minStock}</span>
+                         </TableCell>
+                      </TableRow>
+                    ))}
+                 </TableBody>
+               </Table>
+             ) : (
+               <div className="p-20 text-center space-y-4 opacity-30">
+                  <CheckCircle2 className="h-16 w-16 mx-auto text-emerald-500" />
+                  <p className="text-sm font-black uppercase tracking-[0.2em]">Todos los insumos en orden</p>
+               </div>
+             )}
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+             <Button 
+                onClick={() => { setIsCriticalDialogOpen(false); setWarehouseActiveTab('movimientos'); }} 
+                className="btn-institutional h-12 px-8 text-[9px] gap-2"
+             >
+                <PlusCircle className="h-4 w-4" /> REGISTRAR ENTRADA
+             </Button>
+             <Button variant="ghost" onClick={() => setIsCriticalDialogOpen(false)} className="rounded-xl h-12 px-6 text-[9px] font-black uppercase">CERRAR</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
