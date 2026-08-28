@@ -54,7 +54,7 @@ export default function DashboardLayout({
           name: rfc === 'COEES' ? 'Administrador Maestro' : 'Admin Editorial',
           password: '',
           role: 'admin',
-          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
+          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'bitacora-atres', 'base-cct', 'base-participantes', 'usuarios']
         })
       } else if (user) {
         setCurrentUser(user)
@@ -79,7 +79,13 @@ export default function DashboardLayout({
 
   const allowedMenuItems = useMemo(() => {
     if (!currentUser) return []
-    return allMenuItems.filter(item => currentUser.privileges.includes(item.id))
+    return allMenuItems.filter(item => {
+      // Casos especiales de redirección: Bitácora ATRES y Programas van a Programas
+      if (item.id === 'programas') {
+        return currentUser.privileges.includes('programas') || currentUser.privileges.includes('bitacora-atres')
+      }
+      return currentUser.privileges.includes(item.id)
+    })
   }, [currentUser])
 
   if (!mounted) return null
