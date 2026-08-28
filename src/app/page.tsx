@@ -42,14 +42,14 @@ export default function LoginPage() {
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
-        router.push('/dashboard/programas') // Forzar Programas
+        router.push('/dashboard/programas') 
         return
       }
 
       if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Administrativo", description: "Bienvenido, Admin Editorial." })
-        router.push('/dashboard/programas') // Forzar Programas
+        router.push('/dashboard/programas')
         return
       }
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
         
         const privs = dynamicUser.privileges || []
         
-        // Prioridad de Redirección Forzada
+        // Prioridad de Redirección Forzada: Programas tiene la jerarquía máxima
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
@@ -75,7 +75,6 @@ export default function LoginPage() {
         } else if (privs.includes('planeacion')) {
           router.push('/dashboard')
         } else {
-          // Si tiene otros privilegios (Base CCT, Participantes, Usuarios)
           router.push('/dashboard/base-cct')
         }
       } else {
@@ -98,7 +97,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
+      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
         <CardHeader className="text-center pt-8 pb-4 space-y-6">
           <div className="mx-auto relative h-32 w-32 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image 
@@ -176,11 +175,6 @@ export default function LoginPage() {
            </div>
         </CardFooter>
       </Card>
-      <div className="absolute bottom-4 text-center w-full px-4">
-        <p className="text-[8px] font-black text-[#9f2241]/40 uppercase tracking-[0.3em] opacity-80">
-          DIRECCIÓN DE EDUCACIÓN SECUNDARIA • SERVICIOS DE APOYO
-        </p>
-      </div>
     </div>
   )
 }
