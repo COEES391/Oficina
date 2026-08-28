@@ -53,6 +53,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { db } from '@/lib/firebase'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 
 const TOTAL_UNIVERSE = 830;
 const TRAINING_GOAL_2026 = 5600;
@@ -118,25 +120,40 @@ export default function DashboardPage() {
     setMounted(true)
     syncData()
 
-    // GUARDIA DE ACCESO: Si el usuario llega aquí pero no tiene privilegio de Planeación, redirigir a su sección principal
+    // GUARDIA DE ACCESO SINCRONIZADA CON LA NUBE
     const rfc = localStorage.getItem('userRfc')
-    if (rfc && rfc !== 'COEES' && rfc !== 'CEDITORIAL') {
-      const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
-      const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc.toUpperCase())
-      if (user && !user.privileges.includes('planeacion')) {
-        if (user.privileges.includes('programas') || user.privileges.includes('bitacora-atres')) {
-          router.push('/dashboard/programas')
-        } else if (user.privileges.includes('soporte')) {
-          router.push('/dashboard/soporte')
-        } else if (user.privileges.includes('capacitacion')) {
-          router.push('/dashboard/capacitacion')
-        } else if (user.privileges.includes('base-cct')) {
-          router.push('/dashboard/base-cct')
-        } else if (user.privileges.includes('base-participantes')) {
-          router.push('/dashboard/base-participantes')
+    if (!rfc) {
+      router.push('/')
+      return
+    }
+
+    const checkAccess = async () => {
+      if (rfc === 'COEES' || rfc === 'CEDITORIAL') return;
+
+      try {
+        const q = query(collection(db, 'users'), where('rfc', '==', rfc))
+        const querySnapshot = await getDocs(q)
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data() as AppUser
+          const privs = userData.privileges || []
+          
+          // REDIRECCIÓN FORZADA: Si no tiene privilegio de planeación pero sí de programas
+          if (!privs.includes('planeacion')) {
+            if (privs.includes('programas') || privs.includes('bitacora-atres')) {
+              router.push('/dashboard/programas')
+            } else if (privs.includes('soporte')) {
+              router.push('/dashboard/soporte')
+            } else if (privs.includes('capacitacion')) {
+              router.push('/dashboard/capacitacion')
+            }
+          }
         }
+      } catch (e) {
+        console.error("Error checking dashboard access:", e)
       }
     }
+
+    checkAccess()
 
     window.addEventListener('storage', syncData)
     window.addEventListener('focus', syncData)

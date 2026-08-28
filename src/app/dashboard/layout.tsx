@@ -25,11 +25,13 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
+import { db } from '@/lib/firebase'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.Node
+  children: React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -42,11 +44,13 @@ export default function DashboardLayout({
     const rfc = localStorage.getItem('userRfc')
     if (!rfc) {
       router.push('/')
-    } else {
-      setUserRfc(rfc)
-      const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
-      const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc.toUpperCase())
-      
+      return
+    }
+
+    setUserRfc(rfc)
+
+    // Cargar usuario desde Firestore para asegurar privilegios sincronizados
+    const fetchUserData = async () => {
       if (rfc === 'COEES' || rfc === 'CEDITORIAL') {
         setCurrentUser({
           id: 'master',
@@ -56,10 +60,21 @@ export default function DashboardLayout({
           role: 'admin',
           privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'bitacora-atres', 'base-cct', 'base-participantes', 'usuarios']
         })
-      } else if (user) {
-        setCurrentUser(user)
+        return
+      }
+
+      try {
+        const q = query(collection(db, 'users'), where('rfc', '==', rfc))
+        const querySnapshot = await getDocs(q)
+        if (!querySnapshot.empty) {
+          setCurrentUser({ ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id } as AppUser)
+        }
+      } catch (e) {
+        console.error("Error fetching layout user:", e)
       }
     }
+
+    fetchUserData()
   }, [router])
 
   const handleLogout = () => {
@@ -84,7 +99,6 @@ export default function DashboardLayout({
     const seenPaths = new Set();
     return menuConfig.filter(item => {
       if (currentUser.privileges.includes(item.privilege)) {
-        // Evitar duplicados si tiene bitacora-atres y programas (ambos van a la misma ruta)
         if (seenPaths.has(item.path)) return false;
         seenPaths.add(item.path);
         return true;

@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -83,10 +82,14 @@ export default function UsersPage() {
 
     setIsSaving(true)
     try {
+      const cleanRfc = formData.rfc.trim().toUpperCase()
+      const cleanName = formData.name.trim().toUpperCase()
+      const cleanPassword = formData.password.trim()
+
       const userData = {
-        rfc: formData.rfc.trim().toUpperCase(),
-        name: formData.name.trim().toUpperCase(),
-        password: formData.password.trim(),
+        rfc: cleanRfc,
+        name: cleanName,
+        password: cleanPassword,
         role: 'user',
         privileges: formData.privileges || [],
         updatedAt: serverTimestamp()
@@ -130,7 +133,7 @@ export default function UsersPage() {
   }
 
   const generateRandomPassword = () => {
-    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789" // Caracteres legibles
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
     let pass = ""
     for (let i = 0; i < 6; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
     setFormData({ ...formData, password: pass })
@@ -151,7 +154,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Gestión de Accesos Global</h2>
           <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">

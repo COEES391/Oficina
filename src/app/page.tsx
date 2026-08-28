@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -38,7 +37,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // 1. Usuarios Maestros hardcoded (Soporte técnico de emergencia)
+      // 1. Usuarios Maestros hardcoded
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
@@ -59,13 +58,13 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q)
 
       if (!querySnapshot.empty) {
-        const dynamicUser = querySnapshot.docs[0].data() as AppUser
+        const userData = querySnapshot.docs[0].data() as AppUser
         localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Acceso concedido", description: `Bienvenido, ${dynamicUser.name}.` })
+        toast({ title: "Acceso concedido", description: `Bienvenido, ${userData.name}.` })
         
-        const privs = dynamicUser.privileges || []
+        const privs = userData.privileges || []
         
-        // Prioridad de Redirección Forzada: Programas tiene la jerarquía máxima
+        // REDIRECCIÓN FORZADA: Prioridad Máxima a Programas
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
@@ -82,7 +81,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error)
-      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su acceso a internet para la validación en la nube." })
+      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo validar el acceso en la nube." })
     } finally {
       setIsLoading(false)
     }
