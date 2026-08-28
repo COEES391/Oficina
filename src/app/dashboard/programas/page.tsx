@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -32,6 +31,7 @@ import {
   School,
   Headset,
   CheckCircle2,
+  Circle,
   Tag,
   Info,
   Users,
@@ -302,11 +302,11 @@ export default function ProgramsPage() {
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
-      domicilio: quickAddForm.domicilio.toUpperCase(),
-      localidad: quickAddForm.localidad.toUpperCase(),
-      sector: quickAddForm.sector.toUpperCase(),
-      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
-      modalidad: quickAddForm.modalidad.toUpperCase(),
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase(),
       valle: quickAddForm.valle.toUpperCase(),
       turno: quickAddForm.turno.toUpperCase()
     };
@@ -364,7 +364,6 @@ export default function ProgramsPage() {
   const handleSave = () => {
     const recordToSave = { ...formData };
     
-    // Calcular progreso para biblioteca digital
     if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
       const f = formData.bibliotecaFases;
       const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
@@ -639,7 +638,6 @@ export default function ProgramsPage() {
 
            <ScrollArea className="flex-1 print:overflow-visible">
               <div ref={reportRef} className="p-10 space-y-10 print:p-0">
-                 {/* I. Identificación del Plantel */}
                  <div className="space-y-4">
                     <div className="bg-primary/5 border-l-4 border-primary px-4 py-2 inline-block"><h3 className="text-xs font-black text-primary uppercase tracking-widest">I. Identificación Institucional</h3></div>
                     <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
@@ -657,7 +655,6 @@ export default function ProgramsPage() {
                     </div>
                  </div>
 
-                 {/* II. Avance Técnico y Fases */}
                  <div className="space-y-4">
                     <div className="bg-accent/5 border-l-4 border-accent px-4 py-2 inline-block"><h3 className="text-xs font-black text-accent uppercase tracking-widest">II. Estatus de Implementación</h3></div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
@@ -696,7 +693,6 @@ export default function ProgramsPage() {
                     </div>
                  </div>
 
-                 {/* III. Recursos Habilitados */}
                  <div className="space-y-4">
                     <div className="bg-[#4a90e2]/5 border-l-4 border-[#4a90e2] px-4 py-2 inline-block"><h3 className="text-xs font-black text-[#4a90e2] uppercase tracking-widest">III. Auditoría de Recursos</h3></div>
                     <div className="grid grid-cols-2 gap-6">
@@ -735,7 +731,6 @@ export default function ProgramsPage() {
                     </div>
                  </div>
 
-                 {/* IV. Evidencia y Enlaces */}
                  {(selectedReport?.bibliotecaFases?.fase7_formsUrl || selectedReport?.observaciones) && (
                    <div className="space-y-4">
                       <div className="bg-slate-200/40 border-l-4 border-slate-400 px-4 py-2 inline-block"><h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">IV. Observaciones y Enlaces de Control</h3></div>
@@ -758,7 +753,6 @@ export default function ProgramsPage() {
                    </div>
                  )}
 
-                 {/* Footer de Firma */}
                  <div className="pt-20 grid grid-cols-2 gap-20 print:pt-40">
                     <div className="text-center space-y-2">
                        <div className="h-px bg-slate-300 w-full mb-4" />
