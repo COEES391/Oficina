@@ -116,7 +116,7 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Fallo de Conexión", 
-        description: "No se pudo sincronizar con la base de datos central. Verifique su internet." 
+        description: "No se pudo sincronizar con la base de datos central." 
       })
     } finally {
       setIsSaving(false)
@@ -140,7 +140,7 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Está seguro de eliminar este acceso? Se perderá la sincronización global.")) return
+    if (!confirm("¿Está seguro de eliminar este acceso?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
       toast({ title: "Acceso eliminado" })
@@ -161,16 +161,15 @@ export default function UsersPage() {
             <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales globales para acceso multi-equipo
           </p>
         </div>
-        <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 flex items-center gap-2 shadow-xl">
-          <UserPlus className="h-5 w-5" /> NUEVO ACCESO
+        <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
+          <UserPlus className="h-5 w-5 mr-2" /> NUEVO ACCESO
         </Button>
       </div>
 
       <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary shadow-2xl">
         <CardHeader className="bg-slate-50/50 p-8">
           <CardTitle className="flex items-center gap-4 text-primary uppercase font-black text-2xl">
-            <Users className="h-10 w-10 text-accent" />
-            Usuarios del Sistema
+            <Users className="h-10 w-10 text-accent" /> Usuarios del Sistema
           </CardTitle>
           <CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Base de datos centralizada en la nube</CardDescription>
         </CardHeader>
@@ -186,12 +185,12 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando datos...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando...</TableCell></TableRow>
               ) : users.length > 0 ? users.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-16">
                   <TableCell className="pl-10">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
+                      <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
                         <User className="h-5 w-5" />
                       </div>
                       <span className="font-black text-xs text-slate-700 uppercase">{user.name}</span>
@@ -209,67 +208,48 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="text-right pr-10">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-xl" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDelete(user.id!)}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600" onClick={() => handleDelete(user.id!)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs tracking-widest">Sin usuarios registrados en la nube</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs">Sin usuarios registrados</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); } else if(open) { setIsDialogOpen(true); } }}>
-        <DialogContent className="sm:max-w-[700px] h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 flex flex-col overflow-hidden bg-white">
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); } }}>
+        <DialogContent className="sm:max-w-[700px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0">
             <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
-              <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Institucional' : 'Nuevo Acceso Institucional'}
+              <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil' : 'Nuevo Acceso Institucional'}
             </DialogTitle>
-            <DialogDescription className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground mt-2">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Nombre Completo del Servidor</Label>
-                  <Input 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
-                    className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-black uppercase" 
-                    placeholder="APELLIDOS Y NOMBRE(S)..." 
-                  />
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre Completo</Label>
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-black uppercase" placeholder="APELLIDOS Y NOMBRES..." />
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Identificador (RFC/Usuario)</Label>
-                    <Input 
-                      value={formData.rfc} 
-                      onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
-                      className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 font-mono text-sm text-primary font-black uppercase" 
-                      placeholder="13 CARACTERES..." 
-                    />
+                    <Label className="text-[10px] font-black uppercase text-primary pl-1">RFC / Usuario</Label>
+                    <Input value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 font-mono text-primary font-black uppercase" placeholder="13 CARACTERES..." />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary tracking-widest pl-1">Contraseña</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary pl-1">Contraseña</Label>
                     <div className="flex gap-2">
-                      <Input 
-                        value={formData.password} 
-                        onChange={e => setFormData({...formData, password: e.target.value})} 
-                        className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-bold flex-1" 
-                        placeholder="MÍN. 6 CARACTERES"
-                      />
-                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-2xl border-primary/20 text-primary shadow-sm">
-                        <KeyRound className="h-5 w-5" />
-                      </Button>
+                      <Input value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-bold flex-1" placeholder="MÍN. 6 CARACT." />
+                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-2xl border-primary/20 text-primary shadow-sm"><KeyRound className="h-5 w-5" /></Button>
                     </div>
                   </div>
                 </div>
@@ -279,25 +259,9 @@ export default function UsersPage() {
                 <h4 className="text-[11px] font-black uppercase text-accent tracking-widest mb-4">Privilegios de Sección</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
-                    <div 
-                      key={section.id} 
-                      className={cn(
-                        "flex items-center space-x-4 p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm", 
-                        formData.privileges.includes(section.id) 
-                          ? "bg-primary/[0.04] border-primary/30" 
-                          : "bg-white border-slate-100 hover:border-primary/20"
-                      )} 
-                      onClick={() => handleTogglePrivilege(section.id)}
-                    >
-                        <Checkbox 
-                          id={`section-${section.id}`} 
-                          checked={formData.privileges.includes(section.id)} 
-                          onCheckedChange={() => handleTogglePrivilege(section.id)} 
-                          className="h-5 w-5 border-primary" 
-                        />
-                        <Label className="text-[10px] font-black uppercase cursor-pointer group-hover:text-primary transition-colors leading-tight">
-                          {section.name}
-                        </Label>
+                    <div key={section.id} className={cn("flex items-center space-x-4 p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm", formData.privileges.includes(section.id) ? "bg-primary/[0.04] border-primary/30" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => handleTogglePrivilege(section.id)}>
+                        <Checkbox id={`section-${section.id}`} checked={formData.privileges.includes(section.id)} onCheckedChange={() => handleTogglePrivilege(section.id)} className="h-5 w-5 border-primary" />
+                        <Label className="text-[10px] font-black uppercase cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
                     </div>
                   ))}
                 </div>
@@ -307,14 +271,9 @@ export default function UsersPage() {
 
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="font-black text-[10px] uppercase h-12 px-10 text-slate-400">Cancelar</Button>
-            <Button 
-              type="button"
-              onClick={handleSave} 
-              disabled={isSaving} 
-              className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3 shadow-2xl"
-            >
+            <Button type="button" onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3 shadow-2xl">
               {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} 
-              {editingId ? 'ACTUALIZAR CAMBIOS' : 'REGISTRAR'}
+              {editingId ? 'ACTUALIZAR' : 'REGISTRAR'}
             </Button>
           </DialogFooter>
         </DialogContent>
