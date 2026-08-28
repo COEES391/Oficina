@@ -608,12 +608,6 @@ export default function SupportPage() {
              )}
           </div>
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
-             <Button 
-                onClick={() => { setIsCriticalDialogOpen(false); setWarehouseActiveTab('movimientos'); }} 
-                className="btn-institutional h-12 px-8 text-[9px] gap-2"
-             >
-                <PlusCircle className="h-4 w-4" /> REGISTRAR ENTRADA
-             </Button>
              <Button variant="ghost" onClick={() => setIsCriticalDialogOpen(false)} className="rounded-xl h-12 px-6 text-[9px] font-black uppercase">CERRAR</Button>
           </DialogFooter>
         </DialogContent>
