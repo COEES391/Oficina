@@ -11,47 +11,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supportData, type SupportTicket } from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { 
   PlusCircle, 
   LifeBuoy, 
-  FileText, 
-  ImageIcon, 
-  X, 
-  Search, 
-  Eye, 
   Pencil, 
   Trash2,
-  School, 
-  Monitor, 
-  CalendarDays, 
   Archive, 
   Package,
   TrendingDown,
   TrendingUp,
   AlertTriangle,
-  ClipboardList,
-  FileSpreadsheet,
-  AlertCircle,
-  Plus,
-  Clock,
-  Download,
-  Printer,
-  Building2,
-  CheckCircle2,
-  Upload,
+  History,
   Save,
-  History
+  Monitor,
+  Search,
+  X,
+  Plus
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
-import Image from 'next/image'
-import { cn } from '@/lib/utils'
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
-import * as XLSX from 'xlsx'
+import { cn } from '@/lib/utils'
 
 const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Ecatepec",
@@ -60,8 +43,6 @@ const REGIONAL_OFFICES = [
   "Oficina de Tecnóloga Educativa Toluca",
   "Oficina de COEES Tultitlan"
 ];
-
-const FILE_SIZE_LIMIT = 2 * 1024 * 1024;
 
 type InventoryItem = {
   id: number;
@@ -110,18 +91,9 @@ export default function SupportPage() {
     folio: ''
   })
   
-  const pdfInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
   const [listSearchTerm, setListSearchTerm] = useState('') 
-  const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOfficeFilter] = useState('all')
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
-  const [evidenceToView, setEvidenceToView] = useState<{ 
-    pdfData?: string, 
-    images?: string[], 
-    title: string 
-  } | null>(null)
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
     id: '',
@@ -165,9 +137,6 @@ export default function SupportPage() {
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
     setTickets(stored.length === 0 ? supportData : stored)
 
-    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
-    setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
-
     const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]')
     setInventory(storedInv.length === 0 ? INITIAL_INVENTORY : storedInv)
 
@@ -185,19 +154,28 @@ export default function SupportPage() {
       ? tickets.map(t => t.id === editingTicketId ? { ...formData, status: t.status } as SupportTicket : t)
       : [{ ...formData, status: 'pendiente' } as SupportTicket, ...tickets];
     
-    try {
-      localStorage.setItem('support_tickets_full', JSON.stringify(updated));
-      setTickets(updated);
-      setIsDialogOpen(false);
-      resetForm();
-      setEditingTicketId(null);
-      toast({ title: "Reporte Guardado" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Error de Memoria" })
-    }
+    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    setTickets(updated);
+    setIsDialogOpen(false);
+    resetForm();
+    setEditingTicketId(null);
+    toast({ title: "Reporte Guardado" });
   }
 
   const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
+
+  const handleEdit = (ticket: SupportTicket) => {
+    setFormData({ ...ticket });
+    setEditingTicketId(ticket.id || null);
+    setIsDialogOpen(true);
+  }
+
+  const handleDeleteTicket = (id: string) => {
+    const updated = tickets.filter(t => t.id !== id);
+    setTickets(updated);
+    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    toast({ title: "Registro eliminado" });
+  }
 
   const handleRegisterMovement = () => {
     const { itemId, qty, type, recipient, folio } = movementForm;
@@ -215,8 +193,8 @@ export default function SupportPage() {
       itemName: item.name, 
       qty, 
       date: format(new Date(), 'dd/MM/yyyy HH:mm'), 
-      recipient, 
-      folio 
+      recipient: recipient?.toUpperCase(), 
+      folio: folio?.toUpperCase()
     };
     
     setInventory(updatedInventory);
@@ -308,9 +286,9 @@ export default function SupportPage() {
           <Tabs value={warehouseActiveTab} onValueChange={setWarehouseActiveTab} className="flex-1 flex flex-col overflow-hidden bg-white">
             <div className="px-8 border-b bg-slate-50/50">
               <TabsList className="bg-transparent h-14 p-0 gap-8">
-                <TabsTrigger value="resumen" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Dashboard</TabsTrigger>
-                <TabsTrigger value="inventario" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Inventario Actual</TabsTrigger>
-                <TabsTrigger value="movimientos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider">Registro de Flujo</TabsTrigger>
+                <TabsTrigger value="resumen" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">Dashboard</TabsTrigger>
+                <TabsTrigger value="inventario" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">Inventario Actual</TabsTrigger>
+                <TabsTrigger value="movimientos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">Registro de Flujo</TabsTrigger>
               </TabsList>
             </div>
             <div className="flex-1 overflow-hidden">
@@ -321,7 +299,7 @@ export default function SupportPage() {
                     <AlertTriangle className="h-10 w-10 text-primary opacity-20" />
                   </Card>
                   <Card className="executive-card p-6 bg-accent/5 border-l-8 border-l-accent flex justify-between items-start">
-                    <div><p className="text-[10px] font-black uppercase text-accent/60">Movimientos</p><h3 className="text-4xl font-black text-accent mt-1">{movements.length}</h3></div>
+                    <div><p className="text-[10px] font-black uppercase text-accent/60">Movimientos Hoy</p><h3 className="text-4xl font-black text-accent mt-1">{movements.length}</h3></div>
                     <TrendingUp className="h-10 w-10 text-accent opacity-20" />
                   </Card>
                   <Card className="executive-card p-6 bg-emerald-50 border-l-8 border-l-emerald-500 flex justify-between items-start">
@@ -354,24 +332,25 @@ export default function SupportPage() {
                    <Card className="p-6 bg-slate-50 border-t-4 border-t-accent rounded-[2rem] shadow-xl">
                       <div className="flex items-center gap-3 mb-6"><div className="h-10 w-10 bg-accent rounded-xl flex items-center justify-center text-white"><TrendingDown className="h-6 w-6" /></div><h4 className="text-sm font-black uppercase text-accent">Salida de Material</h4></div>
                       <div className="space-y-4">
-                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()}>{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select>
+                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
-                          <Input placeholder="FOLIO" className="h-12 bg-white rounded-xl uppercase font-mono" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
+                          <Input placeholder="FOLIO / SOLICITUD" className="h-12 bg-white rounded-xl uppercase font-mono px-4 text-xs font-black" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
                         </div>
-                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'salida'})); handleRegisterMovement(); }} className="w-full bg-accent hover:bg-accent/90 text-white h-14 rounded-xl font-black uppercase shadow-lg">Registrar Salida</Button>
+                        <Input placeholder="USUARIO A QUIEN SE LE DIO EL MATERIAL..." className="h-12 bg-white rounded-xl uppercase font-black px-6 text-xs" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'salida'})); handleRegisterMovement(); }} className="w-full bg-accent hover:bg-accent/90 text-white h-14 rounded-xl font-black uppercase shadow-lg transition-all active:scale-95">Registrar Salida</Button>
                       </div>
                    </Card>
                    {/* Entrada */}
                    <Card className="p-6 bg-slate-50 border-t-4 border-t-primary rounded-[2rem] shadow-xl">
                       <div className="flex items-center gap-3 mb-6"><div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white"><TrendingUp className="h-6 w-6" /></div><h4 className="text-sm font-black uppercase text-primary">Entrada de Material</h4></div>
                       <div className="space-y-4">
-                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()}>{i.name}</SelectItem>)}</SelectContent></Select>
+                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
-                          <Input placeholder="RECIBE" className="h-12 bg-white rounded-xl uppercase font-black" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                          <Input placeholder="QUIEN RECIBE..." className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
                         </div>
-                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'entrada'})); handleRegisterMovement(); }} className="w-full btn-institutional h-14 shadow-lg">Registrar Entrada</Button>
+                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'entrada'})); handleRegisterMovement(); }} className="w-full btn-institutional h-14 shadow-lg active:scale-95 transition-all">Registrar Entrada</Button>
                       </div>
                    </Card>
                 </div>
@@ -379,8 +358,8 @@ export default function SupportPage() {
                    <div className="p-4 bg-slate-50 border-b flex items-center justify-between"><div className="flex items-center gap-2"><History className="h-4 w-4 text-slate-400" /><span className="text-[10px] font-black uppercase text-slate-500">Historial de Registro de Flujo</span></div></div>
                    <ScrollArea className="flex-1">
                       <Table>
-                        <TableHeader className="bg-white sticky top-0 z-10 border-b"><TableRow><TableHead className="pl-8 py-3 text-[9px] font-black uppercase">Fecha</TableHead><TableHead className="text-[9px] font-black uppercase">Tipo</TableHead><TableHead className="text-[9px] font-black uppercase">Material</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Cant.</TableHead><TableHead className="text-[9px] font-black uppercase">Folio / Resguardo</TableHead></TableRow></TableHeader>
-                        <TableBody>{movements.map(m => (<TableRow key={m.id} className="h-12 hover:bg-slate-50 border-b border-slate-50"><TableCell className="pl-8 text-[9px] font-bold text-slate-400">{m.date}</TableCell><TableCell><Badge className={cn("text-[8px] font-black px-2", m.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>{m.type}</Badge></TableCell><TableCell className="text-[10px] font-black uppercase text-slate-700">{m.itemName}</TableCell><TableCell className="text-center font-black text-primary">{m.qty}</TableCell><TableCell><div className="flex flex-col"><span className="text-[9px] font-black text-primary leading-none">{m.folio || '-'}</span><span className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{m.recipient || '-'}</span></div></TableCell></TableRow>))}</TableBody>
+                        <TableHeader className="bg-white sticky top-0 z-10 border-b"><TableRow><TableHead className="pl-8 py-3 text-[9px] font-black uppercase">Fecha</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Tipo</TableHead><TableHead className="text-[9px] font-black uppercase">Material</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Cant.</TableHead><TableHead className="text-[9px] font-black uppercase">Folio / Usuario</TableHead></TableRow></TableHeader>
+                        <TableBody>{movements.map(m => (<TableRow key={m.id} className="h-12 hover:bg-slate-50 border-b border-slate-50"><TableCell className="pl-8 text-[9px] font-bold text-slate-400">{m.date}</TableCell><TableCell className="text-center"><Badge className={cn("text-[8px] font-black px-2 h-5", m.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>{m.type.toUpperCase()}</Badge></TableCell><TableCell className="text-[10px] font-black uppercase text-slate-700">{m.itemName}</TableCell><TableCell className="text-center font-black text-primary">{m.qty}</TableCell><TableCell><div className="flex flex-col"><span className="text-[9px] font-black text-primary leading-none">{m.folio || '-'}</span><span className="text-[8px] font-bold text-slate-400 uppercase mt-0.5 truncate max-w-[150px]">{m.recipient || '-'}</span></div></TableCell></TableRow>))}</TableBody>
                       </Table>
                    </ScrollArea>
                 </div>
@@ -394,4 +373,3 @@ export default function SupportPage() {
     </div>
   );
 }
-

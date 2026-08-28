@@ -72,7 +72,11 @@ export default function UsersPage() {
   }, [])
 
   const handleSave = async () => {
-    if (!formData.rfc || !formData.password || !formData.name) {
+    const cleanRfc = formData.rfc?.trim().toUpperCase()
+    const cleanName = formData.name?.trim().toUpperCase()
+    const cleanPassword = formData.password?.trim()
+
+    if (!cleanRfc || !cleanPassword || !cleanName) {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
@@ -83,16 +87,12 @@ export default function UsersPage() {
 
     setIsSaving(true)
     try {
-      const cleanRfc = formData.rfc.trim().toUpperCase()
-      const cleanName = formData.name.trim().toUpperCase()
-      const cleanPassword = formData.password.trim()
-
       const userData = {
         rfc: cleanRfc,
         name: cleanName,
         password: cleanPassword,
         role: 'user' as const,
-        privileges: formData.privileges || [],
+        privileges: formData.privileges || ['programas'],
         updatedAt: serverTimestamp()
       }
 
@@ -105,7 +105,7 @@ export default function UsersPage() {
           ...userData,
           createdAt: serverTimestamp()
         })
-        toast({ title: "Usuario Registrado" })
+        toast({ title: "Usuario Registrado en la Nube" })
       }
       
       setIsDialogOpen(false)
@@ -114,7 +114,7 @@ export default function UsersPage() {
       await fetchUsers()
     } catch (error: any) {
       console.error("Error saving user:", error)
-      toast({ variant: "destructive", title: "Error de Guardado" })
+      toast({ variant: "destructive", title: "Error de Guardado", description: "Verifique su conexión a internet." })
     } finally {
       setIsSaving(false)
     }
@@ -137,10 +137,10 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Está seguro de eliminar este acceso?")) return
+    if (!confirm("¿Está seguro de eliminar este acceso permanentemente?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso eliminado" })
+      toast({ title: "Acceso eliminado de la red" })
       fetchUsers()
     } catch (error) {
       toast({ variant: "destructive", title: "Error al eliminar" })
@@ -155,7 +155,7 @@ export default function UsersPage() {
         <div className="space-y-1">
           <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Gestión de Accesos Global</h2>
           <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales globales para acceso multi-equipo
+            <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas para acceso multi-equipo
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
@@ -168,7 +168,7 @@ export default function UsersPage() {
           <CardTitle className="flex items-center gap-4 text-primary uppercase font-black text-2xl">
             <Users className="h-10 w-10 text-accent" /> Usuarios del Sistema
           </CardTitle>
-          <CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Base de datos centralizada en la nube</CardDescription>
+          <CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Base de datos centralizada en tiempo real</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -182,7 +182,7 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando Nube...</TableCell></TableRow>
               ) : users.length > 0 ? users.map((user) => (
                 <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-16">
                   <TableCell className="pl-10">
@@ -205,17 +205,17 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="text-right pr-10">
                     <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-primary" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600" onClick={() => handleDelete(user.id!)}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(user.id!)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs">Sin usuarios registrados</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs tracking-widest">Sin usuarios en la red</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -223,11 +223,12 @@ export default function UsersPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); } }}>
-        <DialogContent className="sm:max-w-[700px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white">
+        <DialogContent className="sm:max-w-[700px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0">
             <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
-              <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil' : 'Nuevo Acceso Institucional'}
+              <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Global' : 'Nuevo Acceso Institucional'}
             </DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
@@ -256,8 +257,8 @@ export default function UsersPage() {
                 <h4 className="text-[11px] font-black uppercase text-accent tracking-widest mb-4">Privilegios de Sección</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
-                    <div key={section.id} className={cn("flex items-center space-x-4 p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm", formData.privileges.includes(section.id) ? "bg-primary/[0.04] border-primary/30" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => handleTogglePrivilege(section.id)}>
-                        <Checkbox id={`section-${section.id}`} checked={formData.privileges.includes(section.id)} onCheckedChange={() => handleTogglePrivilege(section.id)} className="h-5 w-5 border-primary" />
+                    <div key={section.id} className={cn("flex items-center space-x-4 p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm", formData.privileges?.includes(section.id) ? "bg-primary/[0.04] border-primary/30" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => handleTogglePrivilege(section.id)}>
+                        <Checkbox id={`section-${section.id}`} checked={formData.privileges?.includes(section.id)} onCheckedChange={() => handleTogglePrivilege(section.id)} className="h-5 w-5 border-primary" />
                         <Label className="text-[10px] font-black uppercase cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
                     </div>
                   ))}
