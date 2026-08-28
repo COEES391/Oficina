@@ -72,10 +72,12 @@ export default function SupportPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
   
-  // Se separaron los campos de entrada y salida para permitir escritura simultánea sin bloqueos
+  // Estados independientes para Entrada y Salida
   const [movementForm, setMovementForm] = useState({
-    itemId: '',
-    qty: 0,
+    itemIdEntrada: '',
+    itemIdSalida: '',
+    qtyEntrada: 0,
+    qtySalida: 0,
     recipientEntrada: '',
     recipientSalida: '',
     folio: ''
@@ -128,7 +130,10 @@ export default function SupportPage() {
   const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
 
   const handleRegisterMovement = (type: 'entrada' | 'salida') => {
-    const { itemId, qty, recipientEntrada, recipientSalida, folio } = movementForm;
+    const { itemIdEntrada, itemIdSalida, qtyEntrada, qtySalida, recipientEntrada, recipientSalida, folio } = movementForm;
+    
+    const itemId = type === 'entrada' ? itemIdEntrada : itemIdSalida;
+    const qty = type === 'entrada' ? qtyEntrada : qtySalida;
     const recipient = type === 'entrada' ? recipientEntrada : recipientSalida;
 
     if (!itemId || qty <= 0) { 
@@ -164,7 +169,13 @@ export default function SupportPage() {
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
     
-    setMovementForm({ itemId: '', qty: 0, recipientEntrada: '', recipientSalida: '', folio: '' });
+    // Limpiar solo los campos del tipo de movimiento realizado
+    if (type === 'entrada') {
+      setMovementForm({ ...movementForm, itemIdEntrada: '', qtyEntrada: 0, recipientEntrada: '' });
+    } else {
+      setMovementForm({ ...movementForm, itemIdSalida: '', qtySalida: 0, recipientSalida: '', folio: '' });
+    }
+    
     toast({ title: "Movimiento registrado" });
   }
 
@@ -314,9 +325,9 @@ export default function SupportPage() {
                    <Card className="p-6 bg-slate-50 border-t-4 border-t-accent rounded-[2rem] shadow-xl">
                       <div className="flex items-center gap-3 mb-6"><div className="h-10 w-10 bg-accent rounded-xl flex items-center justify-center text-white"><TrendingDown className="h-6 w-6" /></div><h4 className="text-sm font-black uppercase text-accent">Salida de Material</h4></div>
                       <div className="space-y-4">
-                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select>
+                        <Select value={movementForm.itemIdSalida} onValueChange={(val) => setMovementForm({...movementForm, itemIdSalida: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
-                          <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                          <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qtySalida || ''} onChange={e => setMovementForm({...movementForm, qtySalida: parseInt(e.target.value) || 0})} />
                           <Input placeholder="FOLIO / SOLICITUD" className="h-12 bg-white rounded-xl uppercase font-mono px-4 text-xs font-black" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
                         </div>
                         <Input 
@@ -332,9 +343,9 @@ export default function SupportPage() {
                    <Card className="p-6 bg-slate-50 border-t-4 border-t-primary rounded-[2rem] shadow-xl">
                       <div className="flex items-center gap-3 mb-6"><div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white"><TrendingUp className="h-6 w-6" /></div><h4 className="text-sm font-black uppercase text-primary">Entrada de Material</h4></div>
                       <div className="space-y-4">
-                        <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
+                        <Select value={movementForm.itemIdEntrada} onValueChange={(val) => setMovementForm({...movementForm, itemIdEntrada: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
-                          <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                          <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qtyEntrada || ''} onChange={e => setMovementForm({...movementForm, qtyEntrada: parseInt(e.target.value) || 0})} />
                           <Input 
                             placeholder="QUIEN RECIBE..." 
                             className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" 
