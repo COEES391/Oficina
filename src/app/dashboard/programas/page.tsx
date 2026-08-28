@@ -40,7 +40,6 @@ import {
   FileBox,
   User,
   History,
-  FileSpreadsheet,
   QrCode,
   Copy,
   X,
@@ -678,6 +677,8 @@ export default function ProgramsPage() {
                                { f: selectedReport?.bibliotecaFases?.fase2, l: 'F2: Conectividad' },
                                { f: selectedReport?.bibliotecaFases?.fase3, l: 'F3: Mobiliario' },
                                { f: selectedReport?.bibliotecaFases?.fase4, l: 'F4: Instalación' },
+                               { f: selectedReport?.bibliotecaFases?.fase4_1, l: '4.1 32 bits' },
+                               { f: selectedReport?.bibliotecaFases?.fase4_2, l: '4.2 64 bits' },
                                { f: selectedReport?.bibliotecaFases?.fase5, l: 'F5: Capacitación' },
                                { f: selectedReport?.bibliotecaFases?.fase6, l: 'F6: Puesta en Marcha' },
                                { f: selectedReport?.bibliotecaFases?.fase7, l: 'F7: Auditoría' },
@@ -686,7 +687,7 @@ export default function ProgramsPage() {
                                <div key={`rep-fase-${i}`} className={cn("flex items-center gap-3 p-3 rounded-2xl border transition-all", item.f ? "bg-white border-emerald-100 shadow-sm" : "bg-slate-50 border-slate-100 opacity-40")}>
                                   {item.f ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
                                   <span className="text-[9px] font-black uppercase text-slate-700">{item.l}</span>
-                               </div>
+                                </div>
                              ))}
                           </div>
                        </div>
@@ -699,7 +700,7 @@ export default function ProgramsPage() {
                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl">
                           <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform"><Monitor className="h-20 w-20" /></div>
                           <div className="relative z-10">
-                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest">Equipos de Cómputo</p>
+                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest">Equipo de Computo</p>
                             <h4 className="text-5xl font-black mt-2 leading-none">{selectedReport?.bibliotecaFases?.equiposHabilitados || 0}</h4>
                             <div className="mt-6 flex items-center gap-2">
                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -1114,7 +1115,7 @@ export default function ProgramsPage() {
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0 mt-auto">
             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
             <Button onClick={handleQuickAddCct} className="bg-[#9f2241] text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button>
           </DialogFooter>
