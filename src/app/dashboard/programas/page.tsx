@@ -1115,7 +1115,7 @@ export default function ProgramsPage() {
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0 mt-auto">
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
             <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-14 px-10 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
             <Button onClick={handleQuickAddCct} className="bg-[#9f2241] text-white h-14 px-16 rounded-2xl text-[11px] font-black uppercase shadow-2xl">Registrar y Seleccionar</Button>
           </DialogFooter>

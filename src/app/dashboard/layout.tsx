@@ -67,24 +67,29 @@ export default function DashboardLayout({
     router.push('/')
   }
 
-  const allMenuItems = [
-    { id: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { id: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
-    { id: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
-    { id: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
-    { id: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
-    { id: 'base-participantes', name: 'BASE PARTICIPANTES', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
-    { id: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
+  // Mapeo de privilegios a items de menú
+  const menuConfig = [
+    { privilege: 'bitacora-atres', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
+    { privilege: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { privilege: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
+    { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
+    { privilege: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
+    { privilege: 'base-participantes', name: 'BASE PARTICIPANTES', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
+    { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
   ]
 
   const allowedMenuItems = useMemo(() => {
     if (!currentUser) return []
-    return allMenuItems.filter(item => {
-      // Casos especiales de redirección: Bitácora ATRES y Programas van a Programas
-      if (item.id === 'programas') {
-        return currentUser.privileges.includes('programas') || currentUser.privileges.includes('bitacora-atres')
+    const seenPaths = new Set();
+    return menuConfig.filter(item => {
+      if (currentUser.privileges.includes(item.privilege)) {
+        // Evitar duplicados si tiene bitacora-atres y programas (ambos van a la misma ruta)
+        if (seenPaths.has(item.path)) return false;
+        seenPaths.add(item.path);
+        return true;
       }
-      return currentUser.privileges.includes(item.id)
+      return false;
     })
   }, [currentUser])
 
