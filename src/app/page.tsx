@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
-import { Eye, EyeOff, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, Loader2 } from 'lucide-react'
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { type AppUser } from '@/lib/planning-data'
@@ -42,14 +42,14 @@ export default function LoginPage() {
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
-        router.push('/dashboard')
+        router.push('/dashboard/programas') // Forzar Programas
         return
       }
 
       if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Administrativo", description: "Bienvenido, Admin Editorial." })
-        router.push('/dashboard')
+        router.push('/dashboard/programas') // Forzar Programas
         return
       }
 
@@ -64,21 +64,26 @@ export default function LoginPage() {
         toast({ title: "Acceso concedido", description: `Bienvenido, ${dynamicUser.name}.` })
         
         const privs = dynamicUser.privileges || []
+        
+        // Prioridad de Redirección Forzada
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
           router.push('/dashboard/soporte')
         } else if (privs.includes('capacitacion')) {
           router.push('/dashboard/capacitacion')
-        } else {
+        } else if (privs.includes('planeacion')) {
           router.push('/dashboard')
+        } else {
+          // Si tiene otros privilegios (Base CCT, Participantes, Usuarios)
+          router.push('/dashboard/base-cct')
         }
       } else {
-        toast({ variant: "destructive", title: "Credenciales incorrectas" })
+        toast({ variant: "destructive", title: "Credenciales incorrectas", description: "Verifique su identificador y contraseña oficial." })
       }
     } catch (error) {
       console.error("Login error:", error)
-      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su acceso a internet." })
+      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su acceso a internet para la validación en la nube." })
     } finally {
       setIsLoading(false)
     }
@@ -93,7 +98,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
+      <Card className="w-full max-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
         <CardHeader className="text-center pt-8 pb-4 space-y-6">
           <div className="mx-auto relative h-32 w-32 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image 
@@ -160,7 +165,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button type="submit" disabled={isLoading} className="w-full h-14 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-[#9f2241]/20 transition-all">
-              {isLoading ? "Verificando..." : "Entrar al Portal"}
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Entrar al Portal"}
             </Button>
           </form>
         </CardContent>
