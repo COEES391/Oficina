@@ -71,16 +71,17 @@ export default function SupportPage() {
   const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen')
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
+  
+  // Se separaron los campos de entrada y salida para permitir escritura simultánea sin bloqueos
   const [movementForm, setMovementForm] = useState({
-    type: 'salida' as 'entrada' | 'salida',
     itemId: '',
     qty: 0,
-    recipient: '',
+    recipientEntrada: '',
+    recipientSalida: '',
     folio: ''
   })
   
   const [listSearchTerm, setListSearchTerm] = useState('') 
-  const [officeFilter, setOfficeFilter] = useState('all')
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
@@ -126,15 +127,26 @@ export default function SupportPage() {
 
   const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
 
-  const handleRegisterMovement = () => {
-    const { itemId, qty, type, recipient, folio } = movementForm;
-    if (!itemId || qty <= 0) { toast({ variant: "destructive", title: "Datos incompletos" }); return; }
+  const handleRegisterMovement = (type: 'entrada' | 'salida') => {
+    const { itemId, qty, recipientEntrada, recipientSalida, folio } = movementForm;
+    const recipient = type === 'entrada' ? recipientEntrada : recipientSalida;
+
+    if (!itemId || qty <= 0) { 
+      toast({ variant: "destructive", title: "Datos incompletos", description: "Seleccione material y cantidad." }); 
+      return; 
+    }
+    
     const item = inventory.find(i => i.id === parseInt(itemId));
     if (!item) return;
-    if (type === 'salida' && item.qty < qty) { toast({ variant: "destructive", title: "Stock insuficiente" }); return; }
+    
+    if (type === 'salida' && item.qty < qty) { 
+      toast({ variant: "destructive", title: "Stock insuficiente" }); 
+      return; 
+    }
     
     const newQty = type === 'entrada' ? item.qty + qty : item.qty - qty;
     const updatedInventory = inventory.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
+    
     const newMovement: WarehouseMovement = { 
       id: `MOV-${Date.now()}`, 
       type, 
@@ -142,8 +154,8 @@ export default function SupportPage() {
       itemName: item.name, 
       qty, 
       date: format(new Date(), 'dd/MM/yyyy HH:mm'), 
-      recipient: recipient?.toUpperCase(), 
-      folio: folio?.toUpperCase()
+      recipient: recipient?.toUpperCase() || 'S/D', 
+      folio: folio?.toUpperCase() || 'S/F'
     };
     
     setInventory(updatedInventory);
@@ -151,8 +163,29 @@ export default function SupportPage() {
     setMovements(updatedMovements);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
-    setMovementForm({ type: 'salida', itemId: '', qty: 0, recipient: '', folio: '' });
+    
+    setMovementForm({ itemId: '', qty: 0, recipientEntrada: '', recipientSalida: '', folio: '' });
     toast({ title: "Movimiento registrado" });
+  }
+
+  const handleDeleteTicket = (id: string) => {
+    const updated = tickets.filter(t => t.id !== id);
+    setTickets(updated);
+    localStorage.setItem('support_tickets_full', JSON.stringify(updated));
+    toast({ title: "Reporte eliminado" });
+  }
+
+  const handleEdit = (ticket: SupportTicket) => {
+    setFormData({
+      id: ticket.id || '',
+      cct: ticket.cct || '',
+      schoolName: ticket.schoolName || '',
+      tecnicos: ticket.tecnicos || '',
+      fechaEntrada: ticket.fechaEntrada || '',
+      tipoIncidencia: ticket.tipoIncidencia || 'mantenimiento' as any,
+    });
+    setEditingTicketId(ticket.id!);
+    setIsDialogOpen(true);
   }
 
   const filteredTickets = tickets.filter(t => {
@@ -286,8 +319,13 @@ export default function SupportPage() {
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
                           <Input placeholder="FOLIO / SOLICITUD" className="h-12 bg-white rounded-xl uppercase font-mono px-4 text-xs font-black" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
                         </div>
-                        <Input placeholder="USUARIO A QUIEN SE LE DIO EL MATERIAL..." className="h-12 bg-white rounded-xl uppercase font-black px-6 text-xs" value={movementForm.type === 'salida' ? movementForm.recipient : ''} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
-                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'salida'})); handleRegisterMovement(); }} className="w-full bg-accent hover:bg-accent/90 text-white h-14 rounded-xl font-black uppercase shadow-lg transition-all active:scale-95">Registrar Salida</Button>
+                        <Input 
+                          placeholder="USUARIO A QUIEN SE LE DIO EL MATERIAL..." 
+                          className="h-12 bg-white rounded-xl uppercase font-black px-6 text-xs" 
+                          value={movementForm.recipientSalida} 
+                          onChange={e => setMovementForm({...movementForm, recipientSalida: e.target.value.toUpperCase()})} 
+                        />
+                        <Button onClick={() => handleRegisterMovement('salida')} className="w-full bg-accent hover:bg-accent/90 text-white h-14 rounded-xl font-black uppercase shadow-lg transition-all active:scale-95">Registrar Salida</Button>
                       </div>
                    </Card>
                    {/* Entrada */}
@@ -297,9 +335,14 @@ export default function SupportPage() {
                         <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-bold uppercase"><SelectValue placeholder="ELEGIR MATERIAL..." /></SelectTrigger><SelectContent className="rounded-xl">{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select>
                         <div className="grid grid-cols-2 gap-4">
                           <Input type="number" placeholder="CANTIDAD" className="h-12 bg-white rounded-xl text-center font-black" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
-                          <Input placeholder="QUIEN RECIBE..." className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" value={movementForm.type === 'entrada' ? movementForm.recipient : ''} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                          <Input 
+                            placeholder="QUIEN RECIBE..." 
+                            className="h-12 bg-white rounded-xl uppercase font-black px-4 text-xs" 
+                            value={movementForm.recipientEntrada} 
+                            onChange={e => setMovementForm({...movementForm, recipientEntrada: e.target.value.toUpperCase()})} 
+                          />
                         </div>
-                        <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'entrada'})); handleRegisterMovement(); }} className="w-full btn-institutional h-14 shadow-lg active:scale-95 transition-all">Registrar Entrada</Button>
+                        <Button onClick={() => handleRegisterMovement('entrada')} className="w-full btn-institutional h-14 shadow-lg active:scale-95 transition-all">Registrar Entrada</Button>
                       </div>
                    </Card>
                 </div>

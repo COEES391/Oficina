@@ -110,7 +110,7 @@ export default function UsersPage() {
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
-      await fetchUsers()
+      fetchUsers()
     } catch (error: any) {
       console.error("Error saving user:", error)
       toast({ variant: "destructive", title: "Error de Guardado", description: "Verifique su conexión a internet." })
