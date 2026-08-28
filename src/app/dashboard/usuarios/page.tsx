@@ -99,13 +99,13 @@ export default function UsersPage() {
       if (editingId) {
         const userRef = doc(db, 'users', editingId)
         await updateDoc(userRef, userData)
-        toast({ title: "Actualización Exitosa", description: "Credenciales sincronizadas." })
+        toast({ title: "Actualización Exitosa" })
       } else {
         await addDoc(collection(db, 'users'), {
           ...userData,
           createdAt: serverTimestamp()
         })
-        toast({ title: "Usuario Registrado", description: "Acceso global activado correctamente." })
+        toast({ title: "Usuario Registrado" })
       }
       
       setIsDialogOpen(false)
@@ -114,11 +114,7 @@ export default function UsersPage() {
       await fetchUsers()
     } catch (error: any) {
       console.error("Error saving user:", error)
-      toast({ 
-        variant: "destructive", 
-        title: "Error de Guardado", 
-        description: "No se pudo sincronizar con la nube." 
-      })
+      toast({ variant: "destructive", title: "Error de Guardado" })
     } finally {
       setIsSaving(false)
     }

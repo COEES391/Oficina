@@ -38,7 +38,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // 1. Usuarios Maestros hardcoded
+      // Usuarios Maestros
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso Maestro", description: "Bienvenido al Sistema Integral COEES." })
@@ -46,14 +46,6 @@ export default function LoginPage() {
         return
       }
 
-      if (cleanRfc === 'CEDITORIAL' && password === 'SEIEM') {
-        localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Acceso Administrativo", description: "Bienvenido, Admin Editorial." })
-        router.push('/dashboard/programas')
-        return
-      }
-
-      // 2. Verificar contra Firestore
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', password))
       const querySnapshot = await getDocs(q)
@@ -78,11 +70,11 @@ export default function LoginPage() {
           router.push('/dashboard/base-cct')
         }
       } else {
-        toast({ variant: "destructive", title: "Credenciales incorrectas", description: "Verifique su identificador y contraseña oficial." })
+        toast({ variant: "destructive", title: "Credenciales incorrectas" })
       }
     } catch (error) {
       console.error("Login error:", error)
-      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo validar el acceso en la nube." })
+      toast({ variant: "destructive", title: "Error de conexión" })
     } finally {
       setIsLoading(false)
     }
@@ -97,82 +89,36 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
+      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
         <CardHeader className="text-center pt-8 pb-4 space-y-6">
           <div className="mx-auto relative h-32 w-32 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
-            <Image 
-              src={logoData.imageUrl} 
-              alt="COEES Logo" 
-              fill
-              className="object-cover"
-              priority
-            />
+            <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
           </div>
-          
           <div className="space-y-2">
-            <CardTitle className="text-3xl font-black tracking-tighter text-[#9f2241] uppercase leading-[0.9]">
-              Portal <br /> Integral
-            </CardTitle>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <span className="h-0.5 w-12 bg-[#B38E5D]/30 rounded-full" />
-              <CardDescription className="text-slate-500 font-black text-[8px] uppercase tracking-[0.15em] text-center leading-tight max-w-[280px]">
-                COMPUTACIÓN ELECTRÓNICA EN LA EDUCACIÓN SECUNDARIA
-              </CardDescription>
-              <span className="h-0.5 w-12 bg-[#B38E5D]/30 rounded-full" />
-            </div>
+            <CardTitle className="text-3xl font-black tracking-tighter text-[#9f2241] uppercase leading-[0.9]">Portal <br /> Integral</CardTitle>
+            <CardDescription className="text-slate-500 font-black text-[8px] uppercase tracking-[0.15em]">COMPUTACIÓN ELECTRÓNICA EN LA EDUCACIÓN SECUNDARIA</CardDescription>
           </div>
         </CardHeader>
-
         <CardContent className="space-y-4 px-8 pb-6">
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rfc" className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
-                <User className="h-3 w-3 text-[#9f2241]" /> Identificador Operativo
-              </Label>
-              <Input
-                id="rfc"
-                placeholder="INGRESAR USUARIO"
-                className="h-12 rounded-xl bg-slate-50 border-slate-200 text-xs font-black uppercase px-6 shadow-inner"
-                value={rfc}
-                onChange={(e) => setRfc(e.target.value.toUpperCase())}
-                disabled={isLoading}
-              />
+              <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Identificador Operativo</Label>
+              <Input placeholder="INGRESAR USUARIO" className="h-12 rounded-xl bg-slate-50 border-slate-200 text-xs font-black uppercase px-6" value={rfc} onChange={(e) => setRfc(e.target.value.toUpperCase())} disabled={isLoading} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[9px] font-black uppercase text-slate-400 flex items-center gap-2 tracking-widest pl-2">
-                <Lock className="h-3 w-3 text-[#9f2241]" /> Contraseña Oficial
-              </Label>
+              <Label className="text-[9px] font-black uppercase text-slate-400 pl-2">Contraseña Oficial</Label>
               <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="h-12 rounded-xl bg-slate-50 pr-12 border-slate-200 text-xs font-bold px-6 shadow-inner"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1.5 h-9 w-9 text-slate-400 rounded-lg"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+                <Input type={showPassword ? "text" : "password"} placeholder="••••••••" className="h-12 rounded-xl bg-slate-50 pr-12 border-slate-200 text-xs font-bold px-6" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-1.5 h-9 w-9 text-slate-400" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button>
               </div>
             </div>
-            <Button type="submit" disabled={isLoading} className="w-full h-14 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl shadow-[#9f2241]/20 transition-all">
+            <Button type="submit" disabled={isLoading} className="w-full h-14 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all">
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Entrar al Portal"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="pt-0 pb-6 px-8">
-           <div className="w-full py-3 bg-slate-50/60 rounded-xl border border-slate-100 flex items-center justify-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SISTEMA SEGURO • EDOMÉX 2026</span>
-           </div>
+        <CardFooter className="pt-0 pb-6 px-8 text-center">
+           <div className="w-full py-3 bg-slate-50/60 rounded-xl border border-slate-100 flex items-center justify-center gap-2"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /><span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">SISTEMA SEGURO • EDOMÉX 2026</span></div>
         </CardFooter>
       </Card>
     </div>
