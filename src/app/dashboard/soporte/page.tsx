@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -44,7 +45,9 @@ import {
   CheckCircle2,
   Upload,
   Layers,
-  History
+  History,
+  Save,
+  ArrowRightCircle
 } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
@@ -341,20 +344,34 @@ export default function SupportPage() {
   // Almacén Logic
   const handleRegisterMovement = () => {
     const { itemId, qty, type, recipient, folio } = movementForm;
-    if (!itemId || qty <= 0) return;
+    if (!itemId || qty <= 0) {
+      toast({ variant: "destructive", title: "Incompleto", description: "Elegir insumo y cantidad válida." });
+      return;
+    }
     const item = inventory.find(i => i.id === parseInt(itemId));
     if (!item) return;
     if (type === 'salida' && item.qty < qty) { toast({ variant: "destructive", title: "Stock insuficiente" }); return; }
+    
     const newQty = type === 'entrada' ? item.qty + qty : item.qty - qty;
     const updatedInventory = inventory.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
-    const newMovement: WarehouseMovement = { id: `MOV-${Date.now()}`, type, itemId: item.id, itemName: item.name, qty, date: format(new Date(), 'yyyy-MM-dd HH:mm'), recipient, folio };
+    const newMovement: WarehouseMovement = { 
+      id: `MOV-${Date.now()}`, 
+      type, 
+      itemId: item.id, 
+      itemName: item.name, 
+      qty, 
+      date: format(new Date(), 'dd/MM/yyyy HH:mm'), 
+      recipient, 
+      folio 
+    };
+    
     setInventory(updatedInventory);
     const updatedMovements = [newMovement, ...movements];
     setMovements(updatedMovements);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
     setMovementForm({ type: 'salida', itemId: '', qty: 0, recipient: '', folio: '', observations: '' });
-    toast({ title: "Movimiento registrado" });
+    toast({ title: "Movimiento registrado con éxito" });
   }
 
   const handleEditInventoryItem = (item: InventoryItem) => { setEditingItem(item); setIsEditItemOpen(true); }
@@ -505,11 +522,124 @@ export default function SupportPage() {
                   <div className="border-2 border-slate-100 rounded-[2rem] bg-white overflow-hidden shadow-inner flex-1 flex flex-col"><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10 border-b"><TableRow><TableHead className="font-black uppercase text-[10px] pl-6 py-4">Insumo Técnico</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Stock</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Unidad</TableHead><TableHead className="font-black uppercase text-[10px] text-center">Resguardo</TableHead><TableHead className="text-right pr-6 font-black uppercase text-[10px]">Acción</TableHead></TableRow></TableHeader><TableBody>{inventory.map(item => (<TableRow key={`inv-${item.id}`} className="hover:bg-slate-50 border-b border-slate-50 h-16"><TableCell className="font-black text-slate-700 text-xs uppercase pl-6">{item.name}</TableCell><TableCell className="text-center"><span className={cn("inline-flex items-center justify-center h-9 w-14 rounded-xl text-sm font-black", item.qty <= item.minStock ? "bg-rose-50 text-rose-700 border border-rose-200" : "bg-primary/5 text-primary")}>{item.qty}</span></TableCell><TableCell className="text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</TableCell><TableCell className="text-center"><div className="flex justify-center gap-1">{item.locations?.map(loc => (<Badge key={loc} variant="secondary" className="text-[8px] font-black uppercase">{loc}</Badge>))}</div></TableCell><TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleEditInventoryItem(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300" onClick={() => handleDeleteInventoryItem(item.id)}><Trash2 className="h-4 w-4" /></Button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
                 </TabsContent>
                 <TabsContent value="movimientos" className="h-full m-0 flex flex-col gap-6 overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 shrink-0">
-                    <Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50"><h4 className="text-sm font-black uppercase text-accent mb-6 flex items-center gap-3"><TrendingDown className="h-5 w-5" /> Salida de Material</h4><div className="space-y-4"><Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 bg-white"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} ({i.qty})</SelectItem>)}</SelectContent></Select><div className="grid grid-cols-2 gap-4"><Input type="number" placeholder="CANT." className="h-12 bg-white" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /><Input placeholder="FOLIO" className="h-12 bg-white uppercase" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div><Button onClick={() => {movementForm.type='salida'; handleRegisterMovement()}} className="w-full btn-institutional h-14">Registrar Salida</Button></div></Card>
-                    <Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50"><h4 className="text-sm font-black uppercase text-primary mb-6 flex items-center gap-3"><TrendingUp className="h-5 w-5" /> Entrada de Material</h4><div className="space-y-4"><Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}><SelectTrigger className="h-12 bg-white"><SelectValue placeholder="ELIGE MATERIAL..." /></SelectTrigger><SelectContent>{inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}</SelectContent></Select><div className="grid grid-cols-2 gap-4"><Input type="number" placeholder="CANT." className="h-12 bg-white" value={movementForm.qty} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} /><Input placeholder="RECEPTOR" className="h-12 bg-white uppercase" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} /></div><Button onClick={() => {movementForm.type='entrada'; handleRegisterMovement()}} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px]">Registrar Entrada</Button></div></Card>
-                  </div>
-                  <div className="flex-1 flex flex-col min-h-0 border-2 border-slate-100 rounded-[2.5rem] bg-white overflow-hidden shadow-inner"><div className="p-4 bg-slate-50 border-b flex items-center gap-2"><History className="h-4 w-4 text-slate-400" /><span className="text-[10px] font-black uppercase text-slate-500">Historial de Registro de Flujo</span></div><ScrollArea className="flex-1"><Table><TableHeader className="bg-white sticky top-0 z-10 border-b"><TableRow><TableHead className="text-[9px] font-black uppercase pl-6 py-4">Fecha</TableHead><TableHead className="text-[9px] font-black uppercase">Tipo</TableHead><TableHead className="text-[9px] font-black uppercase">Insumo</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Cant.</TableHead><TableHead className="text-[9px] font-black uppercase">Folio / Destinatario</TableHead></TableRow></TableHeader><TableBody>{movements.map(mov => (<TableRow key={mov.id} className="hover:bg-slate-50 border-b border-slate-50 h-12"><TableCell className="pl-6 text-[9px] font-bold text-slate-400">{mov.date}</TableCell><TableCell><Badge className={cn("text-[8px] font-black uppercase h-5", mov.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>{mov.type}</Badge></TableCell><TableCell className="text-[10px] font-black text-slate-700 uppercase">{mov.itemName}</TableCell><TableCell className="text-center font-black text-primary text-xs">{mov.qty}</TableCell><TableCell><div className="flex flex-col"><span className="text-[9px] font-black text-primary leading-none">{mov.folio || '-'}</span><span className="text-[8px] font-bold text-slate-400 uppercase mt-1">{mov.recipient || '-'}</span></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 shrink-0">
+                      {/* Salida de Material */}
+                      <Card className="executive-card p-8 border-t-8 border-t-accent bg-slate-50/50 shadow-xl">
+                        <div className="flex items-center gap-3 mb-6">
+                           <div className="h-10 w-10 rounded-xl bg-accent text-white flex items-center justify-center shadow-lg"><TrendingDown className="h-6 w-6" /></div>
+                           <h4 className="text-sm font-black uppercase text-accent tracking-wider">Salida de Material</h4>
+                        </div>
+                        <div className="space-y-4">
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Insumo a Retirar</Label>
+                             <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}>
+                               <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 shadow-sm font-bold uppercase text-[10px]">
+                                 <SelectValue placeholder="ELIGE MATERIAL..." />
+                               </SelectTrigger>
+                               <SelectContent className="rounded-xl">
+                                 {inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name} (Disponible: {i.qty})</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad</Label>
+                                <Input type="number" placeholder="0" className="h-12 bg-white rounded-xl border-slate-200 text-center font-black text-lg" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio / Ticket</Label>
+                                <Input placeholder="SOL-..." className="h-12 bg-white rounded-xl border-slate-200 uppercase font-mono font-black" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} />
+                              </div>
+                           </div>
+                           <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'salida'})); handleRegisterMovement(); }} className="w-full btn-institutional h-14 bg-accent hover:bg-accent/90 shadow-accent/20">
+                             <Save className="h-5 w-5 mr-2" /> Registrar Salida de Stock
+                           </Button>
+                        </div>
+                      </Card>
+
+                      {/* Entrada de Material */}
+                      <Card className="executive-card p-8 border-t-8 border-t-primary bg-slate-50/50 shadow-xl">
+                        <div className="flex items-center gap-3 mb-6">
+                           <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg"><TrendingUp className="h-6 w-6" /></div>
+                           <h4 className="text-sm font-black uppercase text-primary tracking-wider">Entrada de Material</h4>
+                        </div>
+                        <div className="space-y-4">
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Insumo a Ingresar</Label>
+                             <Select value={movementForm.itemId} onValueChange={(val) => setMovementForm({...movementForm, itemId: val})}>
+                               <SelectTrigger className="h-12 bg-white rounded-xl border-slate-200 shadow-sm font-bold uppercase text-[10px]">
+                                 <SelectValue placeholder="ELIGE MATERIAL..." />
+                               </SelectTrigger>
+                               <SelectContent className="rounded-xl">
+                                 {inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[10px] font-bold uppercase">{i.name}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Cantidad</Label>
+                                <Input type="number" placeholder="0" className="h-12 bg-white rounded-xl border-slate-200 text-center font-black text-lg" value={movementForm.qty || ''} onChange={e => setMovementForm({...movementForm, qty: parseInt(e.target.value) || 0})} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Analista Receptor</Label>
+                                <Input placeholder="NOMBRE..." className="h-12 bg-white rounded-xl border-slate-200 uppercase font-black text-[10px]" value={movementForm.recipient} onChange={e => setMovementForm({...movementForm, recipient: e.target.value.toUpperCase()})} />
+                              </div>
+                           </div>
+                           <Button onClick={() => { setMovementForm(prev => ({...prev, type: 'entrada'})); handleRegisterMovement(); }} className="w-full bg-primary text-white h-14 rounded-xl shadow-lg font-black uppercase text-[11px] hover:scale-[1.02] transition-all">
+                             <Save className="h-5 w-5 mr-2" /> Registrar Entrada a Almacén
+                           </Button>
+                        </div>
+                      </Card>
+                   </div>
+
+                   {/* Historial de Movimientos */}
+                   <div className="flex-1 flex flex-col min-h-0 border-2 border-slate-100 rounded-[2.5rem] bg-white overflow-hidden shadow-inner">
+                      <div className="p-4 bg-slate-50 border-b flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                            <History className="h-4 w-4 text-slate-400" />
+                            <span className="text-[10px] font-black uppercase text-slate-500">Historial de Registro de Flujo</span>
+                         </div>
+                         <Badge variant="outline" className="text-[8px] font-black uppercase">{movements.length} Movimientos</Badge>
+                      </div>
+                      <ScrollArea className="flex-1">
+                        <Table>
+                          <TableHeader className="bg-white sticky top-0 z-10 border-b">
+                            <TableRow>
+                              <TableHead className="text-[9px] font-black uppercase pl-8 py-4">Fecha y Hora</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Tipo</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Insumo Técnico</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase text-center">Cantidad</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Folio / Responsable</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {movements.map(mov => (
+                              <TableRow key={mov.id} className="hover:bg-slate-50 border-b border-slate-50 h-14 group">
+                                <TableCell className="pl-8 text-[9px] font-bold text-slate-400">{mov.date}</TableCell>
+                                <TableCell>
+                                   <Badge className={cn("text-[8px] font-black uppercase h-5 px-3 rounded-full", mov.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>
+                                      {mov.type}
+                                   </Badge>
+                                </TableCell>
+                                <TableCell className="text-[10px] font-black text-slate-700 uppercase">{mov.itemName}</TableCell>
+                                <TableCell className="text-center font-black text-primary text-sm">{mov.qty}</TableCell>
+                                <TableCell>
+                                  <div className="flex flex-col">
+                                     <span className="text-[9px] font-black text-primary leading-none">{mov.folio || '-'}</span>
+                                     <span className="text-[8px] font-bold text-slate-400 uppercase mt-1 truncate max-w-[120px]">{mov.recipient || '-'}</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {movements.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-black uppercase italic">Sin movimientos registrados</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                   </div>
                 </TabsContent>
               </div>
             </Tabs>
@@ -605,6 +735,26 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0">
+             <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro Rápido de CCT</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" /></div>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
@@ -620,7 +770,7 @@ export default function SupportPage() {
             </div>
             <div className="flex-1 overflow-hidden bg-slate-100/50">
                <TabsContent value="pdf" className="h-full m-0 p-0">{evidenceToView?.pdfData ? <iframe src={evidenceToView.pdfData} className="w-full h-full border-none bg-white" title="PDF Viewer" /> : <div className="h-full flex items-center justify-center opacity-20"><FileText className="h-20 w-20" /></div>}</TabsContent>
-               <TabsContent value="gallery" className="h-full m-0 overflow-hidden"><ScrollArea className="h-full p-8"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{evidenceToView?.images?.map((img, idx) => (<div key={idx} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg"><Image src={img} alt="Evidencia" fill className="object-cover" /><div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div></div>))}</div></ScrollArea></TabsContent>
+               <TabsContent value="gallery" className="h-full m-0 overflow-hidden"><ScrollArea className="h-full p-8"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{evidenceToView?.images?.map((img, idx) => (<div key={idx} className="group relative aspect-video bg-white rounded-2xl overflow-hidden border-2 border-white shadow-lg transition-all hover:scale-[1.02]"><Image src={img} alt="Evidencia" fill className="object-cover" /><div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Eye className="h-8 w-8 text-white" /></div></div>))}</div></ScrollArea></TabsContent>
             </div>
           </Tabs>
           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-10 px-10 font-black uppercase text-[10px]">Cerrar Visor</Button></DialogFooter>

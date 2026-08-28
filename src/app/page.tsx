@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -96,7 +97,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
+      <Card className="w-full max-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.2)] border-none bg-white/95 backdrop-blur-2xl rounded-[3rem] overflow-hidden relative z-10">
         <CardHeader className="text-center pt-8 pb-4 space-y-6">
           <div className="mx-auto relative h-32 w-32 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image 

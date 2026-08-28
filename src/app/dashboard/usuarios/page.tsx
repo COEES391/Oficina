@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -90,7 +91,7 @@ export default function UsersPage() {
         rfc: cleanRfc,
         name: cleanName,
         password: cleanPassword,
-        role: 'user',
+        role: 'user' as const,
         privileges: formData.privileges || [],
         updatedAt: serverTimestamp()
       }
@@ -98,7 +99,7 @@ export default function UsersPage() {
       if (editingId) {
         const userRef = doc(db, 'users', editingId)
         await updateDoc(userRef, userData)
-        toast({ title: "Actualización Exitosa", description: "Las credenciales se han sincronizado en la nube." })
+        toast({ title: "Actualización Exitosa", description: "Credenciales sincronizadas." })
       } else {
         await addDoc(collection(db, 'users'), {
           ...userData,
@@ -115,8 +116,8 @@ export default function UsersPage() {
       console.error("Error saving user:", error)
       toast({ 
         variant: "destructive", 
-        title: "Fallo de Conexión", 
-        description: "No se pudo sincronizar con la base de datos central." 
+        title: "Error de Guardado", 
+        description: "No se pudo sincronizar con la nube." 
       })
     } finally {
       setIsSaving(false)
@@ -237,16 +238,16 @@ export default function UsersPage() {
             <div className="p-8 space-y-10">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre Completo</Label>
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre Completo del Servidor</Label>
                   <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-black uppercase" placeholder="APELLIDOS Y NOMBRES..." />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-1">RFC / Usuario</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary pl-1">RFC / Identificador</Label>
                     <Input value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 font-mono text-primary font-black uppercase" placeholder="13 CARACTERES..." />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-1">Contraseña</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary pl-1">Contraseña Oficial</Label>
                     <div className="flex gap-2">
                       <Input value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-bold flex-1" placeholder="MÍN. 6 CARACT." />
                       <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-2xl border-primary/20 text-primary shadow-sm"><KeyRound className="h-5 w-5" /></Button>
