@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
 import { 
   programsData, 
   type ProgramStatus, 
@@ -58,7 +59,10 @@ import {
   ChevronRight,
   Archive,
   Link as LinkIcon,
-  FileText
+  FileText,
+  FileCheck,
+  Zap,
+  MousePointer2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
@@ -183,6 +187,7 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
@@ -191,12 +196,15 @@ export default function ProgramsPage() {
   
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const reportRef = useRef<HTMLDivElement>(null)
   
   const [evidenceToView, setEvidenceToView] = useState<{ 
     pdfData?: string, 
     images?: string[], 
     title: string 
   } | null>(null)
+
+  const [selectedReport, setSelectedReport] = useState<ProgramStatus | null>(null)
 
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
@@ -355,6 +363,16 @@ export default function ProgramsPage() {
 
   const handleSave = () => {
     const recordToSave = { ...formData };
+    
+    // Calcular progreso para biblioteca digital
+    if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
+      const f = formData.bibliotecaFases;
+      const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
+      const count = phases.filter(v => v).length;
+      recordToSave.progress = Math.round((count / 7) * 100);
+      recordToSave.status = recordToSave.progress === 100 ? 'concluido' : 'activo';
+    }
+
     const updated = editingId 
       ? records.map(r => r.id === editingId ? recordToSave : r) 
       : [{...recordToSave, id: recordToSave.id || `SOL-${Date.now()}`}, ...records];
@@ -439,6 +457,10 @@ export default function ProgramsPage() {
     const win = window.open();
     if (!win) return;
     win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
+
+  const handlePrintReport = () => {
+    window.print();
   }
 
   if (!mounted) return null
@@ -581,6 +603,11 @@ export default function ProgramsPage() {
                     <TableCell><Badge variant="outline" className={cn("text-[8px] font-black uppercase py-0.5 px-2 rounded-full", (rec.status === 'activo' || rec.status === 'pendiente') ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50')}>{rec.status?.toUpperCase() || 'ACTIVO'}</Badge></TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-1">
+                        {isBibliotecaTab && (
+                          <button onClick={() => { setSelectedReport(rec); setIsReportDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-accent hover:bg-accent/5 rounded-lg" title="Informe Ejecutivo">
+                            <FileBox className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                         <button onClick={() => { setFormData({...rec}); setEditingId(rec.id); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
@@ -593,6 +620,165 @@ export default function ProgramsPage() {
           </Table>
         </div>
       </Card>
+
+      {/* Informe Ejecutivo de Biblioteca Digital */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="sm:max-w-[900px] h-[95vh] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col print:h-auto print:shadow-none">
+           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12 print:bg-white print:border-none">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white"><Layers className="h-6 w-6" /></div>
+                  <DialogTitle className="uppercase font-black text-primary text-xl">Informe Ejecutivo de Implementación</DialogTitle>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Biblioteca Digital • Sistema Integral COEES 2026</p>
+              </div>
+              <Button onClick={handlePrintReport} variant="outline" className="h-10 px-6 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2 hover:bg-primary/5 shadow-sm print:hidden">
+                <Printer className="h-4 w-4" /> Imprimir Informe
+              </Button>
+           </DialogHeader>
+
+           <ScrollArea className="flex-1 print:overflow-visible">
+              <div ref={reportRef} className="p-10 space-y-10 print:p-0">
+                 {/* I. Identificación del Plantel */}
+                 <div className="space-y-4">
+                    <div className="bg-primary/5 border-l-4 border-primary px-4 py-2 inline-block"><h3 className="text-xs font-black text-primary uppercase tracking-widest">I. Identificación Institucional</h3></div>
+                    <div className="grid grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100">
+                       <div className="space-y-3">
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase">Nombre del Centro de Trabajo</p><h4 className="text-base font-black text-slate-800 uppercase">{selectedReport?.schoolName}</h4></div>
+                          <div className="flex gap-4">
+                             <div><p className="text-[9px] font-black text-slate-400 uppercase">CCT Oficial</p><p className="text-sm font-mono font-black text-primary">{selectedReport?.cct}</p></div>
+                             <div><p className="text-[9px] font-black text-slate-400 uppercase">Municipio</p><p className="text-sm font-black text-slate-700 uppercase">{selectedReport?.municipio}</p></div>
+                          </div>
+                       </div>
+                       <div className="space-y-3">
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase">Valle / Región</p><p className="text-sm font-black text-slate-700 uppercase">{selectedReport?.valle} • {selectedReport?.region}</p></div>
+                          <div><p className="text-[9px] font-black text-slate-400 uppercase">Sector / Zona Escolar</p><p className="text-sm font-black text-slate-700 uppercase">{selectedReport?.sector} / {selectedReport?.zonaEscolar}</p></div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* II. Avance Técnico y Fases */}
+                 <div className="space-y-4">
+                    <div className="bg-accent/5 border-l-4 border-accent px-4 py-2 inline-block"><h3 className="text-xs font-black text-accent uppercase tracking-widest">II. Estatus de Implementación</h3></div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                       <div className="md:col-span-1 text-center space-y-3">
+                          <div className="relative h-32 w-32 mx-auto">
+                            <div className="absolute inset-0 rounded-full border-[10px] border-slate-100 shadow-inner" />
+                            <div className="absolute inset-0 rounded-full border-[10px] border-primary transition-all duration-700" style={{ clipPath: `inset(0 ${100 - (selectedReport?.progress || 0)}% 0 0)` }} />
+                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                               <span className="text-3xl font-black text-primary leading-none">{selectedReport?.progress}%</span>
+                               <span className="text-[8px] font-black uppercase text-slate-400">Avance</span>
+                            </div>
+                          </div>
+                          <Badge className={cn("px-4 py-1 rounded-full text-[10px] font-black uppercase shadow-lg", selectedReport?.status === 'concluido' ? 'bg-emerald-500' : 'bg-amber-500')}>
+                             {selectedReport?.status === 'concluido' ? 'PROYECTO CONCLUIDO' : 'EN PROCESO TÉCNICO'}
+                          </Badge>
+                       </div>
+                       <div className="md:col-span-2">
+                          <div className="grid grid-cols-2 gap-3">
+                             {[
+                               { f: selectedReport?.bibliotecaFases?.fase1, l: 'F1: Diagnóstico' },
+                               { f: selectedReport?.bibliotecaFases?.fase2, l: 'F2: Conectividad' },
+                               { f: selectedReport?.bibliotecaFases?.fase3, l: 'F3: Mobiliario' },
+                               { f: selectedReport?.bibliotecaFases?.fase4, l: 'F4: Instalación' },
+                               { f: selectedReport?.bibliotecaFases?.fase5, l: 'F5: Capacitación' },
+                               { f: selectedReport?.bibliotecaFases?.fase6, l: 'F6: Puesta en Marcha' },
+                               { f: selectedReport?.bibliotecaFases?.fase7, l: 'F7: Auditoría' },
+                               { f: selectedReport?.bibliotecaFases?.fase7_1, l: '7.1 Cuestionario' }
+                             ].map((item, i) => (
+                               <div key={`rep-fase-${i}`} className={cn("flex items-center gap-3 p-3 rounded-2xl border transition-all", item.f ? "bg-white border-emerald-100 shadow-sm" : "bg-slate-50 border-slate-100 opacity-40")}>
+                                  {item.f ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-slate-300" />}
+                                  <span className="text-[9px] font-black uppercase text-slate-700">{item.l}</span>
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* III. Recursos Habilitados */}
+                 <div className="space-y-4">
+                    <div className="bg-[#4a90e2]/5 border-l-4 border-[#4a90e2] px-4 py-2 inline-block"><h3 className="text-xs font-black text-[#4a90e2] uppercase tracking-widest">III. Auditoría de Recursos</h3></div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl">
+                          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform"><Monitor className="h-20 w-20" /></div>
+                          <div className="relative z-10">
+                            <p className="text-[10px] font-black uppercase text-white/50 tracking-widest">Equipos de Cómputo</p>
+                            <h4 className="text-5xl font-black mt-2 leading-none">{selectedReport?.bibliotecaFases?.equiposHabilitados || 0}</h4>
+                            <div className="mt-6 flex items-center gap-2">
+                               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                               <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Habilitados en Red Local</p>
+                            </div>
+                          </div>
+                          <div className="mt-8 flex gap-4">
+                             <div className={cn("px-4 py-2 rounded-xl text-[9px] font-black uppercase", selectedReport?.bibliotecaFases?.fase4_1 ? "bg-accent text-white" : "bg-white/5 text-white/20")}>32 BITS {selectedReport?.bibliotecaFases?.fase4_1 && '✓'}</div>
+                             <div className={cn("px-4 py-2 rounded-xl text-[9px] font-black uppercase", selectedReport?.bibliotecaFases?.fase4_2 ? "bg-accent text-white" : "bg-white/5 text-white/20")}>64 BITS {selectedReport?.bibliotecaFases?.fase4_2 && '✓'}</div>
+                          </div>
+                       </div>
+                       
+                       <div className="bg-white rounded-[2.5rem] p-8 border-2 border-primary/10 shadow-xl relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform"><Users className="h-20 w-20 text-primary" /></div>
+                          <div className="relative z-10">
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Capital Humano</p>
+                            <h4 className="text-5xl font-black mt-2 leading-none text-primary">{selectedReport?.bibliotecaFases?.personalCapacitado || 0}</h4>
+                            <div className="mt-6 space-y-4">
+                               <div className="p-4 bg-primary/5 rounded-2xl border border-primary/5">
+                                  <div className="flex justify-between items-center mb-1">
+                                     <span className="text-[10px] font-black text-primary uppercase">Asistencia Registrada</span>
+                                     <span className="text-[9px] font-bold text-slate-400">{selectedReport?.asistentes?.length || 0} de {selectedReport?.bibliotecaFases?.personalCapacitado || 0}</span>
+                                  </div>
+                                  <Progress value={selectedReport?.bibliotecaFases?.personalCapacitado ? ((selectedReport?.asistentes?.length || 0) / selectedReport.bibliotecaFases.personalCapacitado) * 100 : 0} className="h-1.5" />
+                               </div>
+                            </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 {/* IV. Evidencia y Enlaces */}
+                 {(selectedReport?.bibliotecaFases?.fase7_formsUrl || selectedReport?.observaciones) && (
+                   <div className="space-y-4">
+                      <div className="bg-slate-200/40 border-l-4 border-slate-400 px-4 py-2 inline-block"><h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">IV. Observaciones y Enlaces de Control</h3></div>
+                      <div className="space-y-4">
+                         {selectedReport?.bibliotecaFases?.fase7_formsUrl && (
+                           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                              <div className="flex items-center gap-4">
+                                 <div className="h-10 w-10 bg-white rounded-xl shadow-md flex items-center justify-center text-primary"><LinkIcon className="h-5 w-5" /></div>
+                                 <div><p className="text-[10px] font-black text-slate-800 uppercase">Cuestionario de Auditoría</p><p className="text-[9px] font-mono text-primary truncate max-w-[400px]">{selectedReport.bibliotecaFases.fase7_formsUrl}</p></div>
+                              </div>
+                              <Badge className="bg-emerald-500 text-white font-black text-[9px] uppercase px-4 h-8 rounded-xl shadow-lg">DOCUMENTADO</Badge>
+                           </div>
+                         )}
+                         {selectedReport?.observaciones && (
+                           <div className="p-6 bg-white rounded-[2rem] border-2 border-slate-50 italic text-[11px] font-semibold text-slate-600 leading-relaxed shadow-inner">
+                              "{selectedReport.observaciones}"
+                           </div>
+                         )}
+                      </div>
+                   </div>
+                 )}
+
+                 {/* Footer de Firma */}
+                 <div className="pt-20 grid grid-cols-2 gap-20 print:pt-40">
+                    <div className="text-center space-y-2">
+                       <div className="h-px bg-slate-300 w-full mb-4" />
+                       <p className="text-[10px] font-black uppercase text-slate-800">Analista Responsable</p>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Departamento de Tecnología Educativa</p>
+                    </div>
+                    <div className="text-center space-y-2">
+                       <div className="h-px bg-slate-300 w-full mb-4" />
+                       <p className="text-[10px] font-black uppercase text-slate-800">Dirección del Plantel</p>
+                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sello y Firma Institucional</p>
+                    </div>
+                 </div>
+              </div>
+           </ScrollArea>
+
+           <DialogFooter className="p-6 bg-slate-50 border-t print:hidden">
+              <Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="h-12 px-10 font-black uppercase text-slate-400 text-xs">Cerrar Informe</Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="programas" areaName="Programas" />
