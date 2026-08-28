@@ -561,6 +561,21 @@ export default function SupportPage() {
                     <Card className="executive-card p-6 bg-accent/5 border-l-8 border-l-accent flex justify-between items-start"><div><p className="text-[10px] font-black uppercase text-accent/60">Movimientos Mes</p><h3 className="text-4xl font-black text-accent mt-1">{movements.length}</h3></div><TrendingUp className="h-10 w-10 text-accent opacity-20" /></Card>
                     <Card className="executive-card p-6 bg-emerald-50 border-l-8 border-l-emerald-500 flex justify-between items-start"><div><p className="text-[10px] font-black uppercase text-emerald-600/60">Stock Operativo</p><h3 className="text-4xl font-black text-emerald-600 mt-1">{inventory.length}</h3></div><ClipboardList className="h-10 w-10 text-emerald-500 opacity-20" /></Card>
                   </div>
+                  <div className="pt-4">
+                    <h4 className="text-[11px] font-black uppercase text-slate-400 mb-4 tracking-widest pl-2">Insumos con Bajo Stock:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {lowStockItems.map(item => (
+                        <div key={`low-${item.id}`} className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-center justify-between shadow-sm animate-pulse">
+                          <div>
+                            <p className="text-[10px] font-black text-rose-800 uppercase">{item.name}</p>
+                            <p className="text-[8px] font-bold text-rose-600/60 uppercase">Actual: {item.qty} {item.unit}</p>
+                          </div>
+                          <Badge className="bg-rose-600 text-white font-black text-[10px]">REURGENTE</Badge>
+                        </div>
+                      ))}
+                      {lowStockItems.length === 0 && <p className="text-xs font-black uppercase text-slate-300 italic pl-2">Sin alertas críticas de stock.</p>}
+                    </div>
+                  </div>
                 </TabsContent>
                 <TabsContent value="inventario" className="h-full m-0 overflow-hidden flex flex-col gap-4">
                   <div className="flex justify-end gap-3 pr-4"><Button onClick={downloadInventoryExcel} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-sm"><FileSpreadsheet className="h-4 w-4" /> Exportar Inventario</Button><Button onClick={handleAddNewItem} className="btn-institutional h-10 px-6 text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> Añadir Insumo</Button></div>
@@ -670,7 +685,7 @@ export default function SupportPage() {
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><Archive className="h-7 w-7 text-accent" /> {evidenceToView?.title}</DialogTitle>
-              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Auditoría Digital de Soporte Técnico</DialogDescription>
+              <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Auditoría Digital de Soporte Técnico</DialogDescription>
             </div>
             <div className="flex gap-4">
               {evidenceToView?.pdfData && <Button onClick={() => printFile(evidenceToView.pdfData!)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir Reporte</Button>}

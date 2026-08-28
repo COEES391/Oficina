@@ -64,7 +64,7 @@ export default function LoginPage() {
         
         const privs = userData.privileges || []
         
-        // REDIRECCIÓN FORZADA: Prioridad Máxima a Programas
+        // REDIRECCIÓN FORZADA: Prioridad Máxima a Programas/Bitácora
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
