@@ -74,7 +74,6 @@ export default function SupportPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
   
-  // Estados independientes para evitar duplicidad
   const [movementForm, setMovementForm] = useState({
     itemIdEntrada: '',
     itemIdSalida: '',
@@ -171,7 +170,6 @@ export default function SupportPage() {
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
     
-    // Resetear solo los estados correspondientes
     if (type === 'entrada') {
       setMovementForm(prev => ({ ...prev, itemIdEntrada: '', qtyEntrada: 0, recipientEntrada: '' }));
     } else {
@@ -313,43 +311,47 @@ export default function SupportPage() {
               </TabsList>
             </div>
             <div className="flex-1 overflow-hidden">
-              <TabsContent value="resumen" className="h-full m-0 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <Card className="executive-card p-8 bg-primary/5 border-l-[12px] border-l-primary flex justify-between items-center shadow-xl">
-                    <div className="space-y-1"><p className="text-[11px] font-black uppercase text-primary/60 tracking-widest">Insumos Críticos</p><h3 className="text-6xl font-black text-primary leading-none">{lowStockItems.length}</h3></div>
-                    <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><AlertTriangle className="h-10 w-10" /></div>
-                  </Card>
-                  <Card className="executive-card p-8 bg-accent/5 border-l-[12px] border-l-accent flex justify-between items-center shadow-xl">
-                    <div className="space-y-1"><p className="text-[11px] font-black uppercase text-accent/60 tracking-widest">Movimientos Hoy</p><h3 className="text-6xl font-black text-accent leading-none">{movements.filter(m => m.date.includes(format(new Date(), 'dd/MM/yyyy'))).length}</h3></div>
-                    <div className="h-16 w-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent"><Activity className="h-10 w-10" /></div>
-                  </Card>
-                  <Card className="executive-card p-8 bg-emerald-50 border-l-[12px] border-l-emerald-500 flex justify-between items-center shadow-xl">
-                    <div className="space-y-1"><p className="text-[11px] font-black uppercase text-emerald-600/60 tracking-widest">Total de Insumos</p><h3 className="text-6xl font-black text-emerald-600 leading-none">{inventory.length}</h3></div>
-                    <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><Box className="h-10 w-10" /></div>
-                  </Card>
-                </div>
+              <TabsContent value="resumen" className="h-full m-0 p-0 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <Card className="executive-card p-8 bg-primary/5 border-l-[12px] border-l-primary flex justify-between items-center shadow-xl">
+                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-primary/60 tracking-widest">Insumos Críticos</p><h3 className="text-6xl font-black text-primary leading-none">{lowStockItems.length}</h3></div>
+                        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><AlertTriangle className="h-10 w-10" /></div>
+                      </Card>
+                      <Card className="executive-card p-8 bg-accent/5 border-l-[12px] border-l-accent flex justify-between items-center shadow-xl">
+                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-accent/60 tracking-widest">Movimientos Hoy</p><h3 className="text-6xl font-black text-accent leading-none">{movements.filter(m => m.date.includes(format(new Date(), 'dd/MM/yyyy'))).length}</h3></div>
+                        <div className="h-16 w-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent"><Activity className="h-10 w-10" /></div>
+                      </Card>
+                      <Card className="executive-card p-8 bg-emerald-50 border-l-[12px] border-l-emerald-500 flex justify-between items-center shadow-xl">
+                        <div className="space-y-1"><p className="text-[11px] font-black uppercase text-emerald-600/60 tracking-widest">Total de Insumos</p><h3 className="text-6xl font-black text-emerald-600 leading-none">{inventory.length}</h3></div>
+                        <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><Box className="h-10 w-10" /></div>
+                      </Card>
+                    </div>
 
-                <div className="mt-12 space-y-6">
-                  <h4 className="text-sm font-black uppercase text-slate-800 tracking-[0.2em] flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-primary" /> Alertas de Abastecimiento Inmediato
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {lowStockItems.map(item => (
-                      <div key={`alert-${item.id}`} className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-center justify-between shadow-sm">
-                         <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-rose-800 leading-none">{item.name}</span><span className="text-[8px] font-bold text-rose-400 mt-1 uppercase">Stock: {item.qty} {item.unit}</span></div>
-                         <Badge className="bg-rose-600 text-white font-black text-[9px]">CRÍTICO</Badge>
+                    <div className="mt-12 space-y-6">
+                      <h4 className="text-sm font-black uppercase text-slate-800 tracking-[0.2em] flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-primary" /> Alertas de Abastecimiento Inmediato
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {lowStockItems.map(item => (
+                          <div key={`alert-${item.id}`} className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex items-center justify-between shadow-sm">
+                            <div className="flex flex-col"><span className="text-[10px] font-black uppercase text-rose-800 leading-none">{item.name}</span><span className="text-[8px] font-bold text-rose-400 mt-1 uppercase">Stock: {item.qty} {item.unit}</span></div>
+                            <Badge className="bg-rose-600 text-white font-black text-[9px]">CRÍTICO</Badge>
+                          </div>
+                        ))}
+                        {lowStockItems.length === 0 && (
+                          <div className="col-span-full p-8 text-center border-2 border-dashed rounded-[2rem] opacity-30">
+                            <p className="text-xs font-black uppercase tracking-widest">Todos los insumos se encuentran en niveles óptimos</p>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {lowStockItems.length === 0 && (
-                      <div className="col-span-full p-8 text-center border-2 border-dashed rounded-[2rem] opacity-30">
-                        <p className="text-xs font-black uppercase tracking-widest">Todos los insumos se encuentran en niveles óptimos</p>
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="inventario" className="h-full m-0 p-0">
+              <TabsContent value="inventario" className="h-full m-0 p-0 overflow-hidden">
                 <ScrollArea className="h-full">
                   <Table className="w-full">
                     <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
@@ -392,132 +394,136 @@ export default function SupportPage() {
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="movimientos" className="h-full m-0 p-8 flex flex-col gap-10 overflow-hidden bg-slate-50/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 shrink-0">
-                   {/* Panel Salida - Basado en la imagen */}
-                   <Card className="executive-card p-10 border-t-[12px] border-t-accent bg-white shadow-2xl relative">
-                      <div className="absolute top-8 right-10 flex items-center gap-3">
-                         <div className="h-10 w-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent"><TrendingDown className="h-6 w-6" /></div>
-                         <h4 className="text-base font-black uppercase text-accent tracking-tighter">Salida de Material</h4>
-                      </div>
-                      <div className="space-y-6 mt-6">
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
-                           <Select value={movementForm.itemIdSalida} onValueChange={(val) => setMovementForm(prev => ({...prev, itemIdSalida: val}))}>
-                              <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black uppercase text-xs focus:ring-accent shadow-inner">
-                                 <SelectValue placeholder="SELECCIONAR INSUMO..." />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
-                                 {inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name} (Disponibles: {i.qty})</SelectItem>)}
-                              </SelectContent>
-                           </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CANTIDAD</Label>
-                             <Input type="number" placeholder="0" className="h-14 bg-slate-50 border-none rounded-2xl text-center font-black text-2xl shadow-inner" value={movementForm.qtySalida || ''} onChange={e => setMovementForm(prev => ({...prev, qtySalida: parseInt(e.target.value) || 0}))} />
+              <TabsContent value="movimientos" className="h-full m-0 p-0 bg-slate-50/50 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-8 space-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      {/* Panel Salida */}
+                      <Card className="executive-card p-10 border-t-[12px] border-t-accent bg-white shadow-2xl relative">
+                          <div className="absolute top-8 right-10 flex items-center gap-3">
+                            <div className="h-10 w-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent"><TrendingDown className="h-6 w-6" /></div>
+                            <h4 className="text-base font-black uppercase text-accent tracking-tighter">Salida de Material</h4>
                           </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">FOLIO / SOLICITUD</Label>
-                             <Input placeholder="S/F" className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-mono px-6 text-sm font-black shadow-inner" value={movementForm.folio} onChange={e => setMovementForm(prev => ({...prev, folio: e.target.value.toUpperCase()}))} />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">USUARIO A QUIEN SE LE DIO EL MATERIAL...</Label>
-                           <Input 
-                              placeholder="NOMBRE DEL ANALISTA O DOCENTE..." 
-                              className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 
-                              value={movementForm.recipientSalida} 
-                              onChange={e => setMovementForm(prev => ({...prev, recipientSalida: e.target.value.toUpperCase()}))} 
-                           />
-                        </div>
-                        <Button onClick={() => handleRegisterMovement('salida')} className="w-full bg-accent hover:bg-accent/90 text-white h-16 rounded-[1.5rem] font-black uppercase shadow-2xl shadow-accent/20 transition-all active:scale-[0.98] mt-4">REGISTRAR SALIDA</Button>
-                      </div>
-                   </Card>
-
-                   {/* Panel Entrada - Basado en la imagen */}
-                   <Card className="executive-card p-10 border-t-[12px] border-t-primary bg-white shadow-2xl relative">
-                      <div className="absolute top-8 right-10 flex items-center gap-3">
-                         <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><TrendingUp className="h-6 w-6" /></div>
-                         <h4 className="text-base font-black uppercase text-primary tracking-tighter">Entrada de Material</h4>
-                      </div>
-                      <div className="space-y-6 mt-6">
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
-                           <Select value={movementForm.itemIdEntrada} onValueChange={(val) => setMovementForm(prev => ({...prev, itemIdEntrada: val}))}>
-                              <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black uppercase text-xs shadow-inner">
-                                 <SelectValue placeholder="SELECCIONAR INSUMO..." />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
-                                 {inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}
-                              </SelectContent>
-                           </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <div className="space-y-2">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CANTIDAD</Label>
-                              <Input type="number" placeholder="0" className="h-14 bg-slate-50 border-none rounded-2xl text-center font-black text-2xl shadow-inner" value={movementForm.qtyEntrada || ''} onChange={e => setMovementForm(prev => ({...prev, qtyEntrada: parseInt(e.target.value) || 0}))} />
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">QUIEN RECIBE...</Label>
+                          <div className="space-y-6 mt-6">
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
+                              <Select value={movementForm.itemIdSalida} onValueChange={(val) => setMovementForm(prev => ({...prev, itemIdSalida: val}))}>
+                                  <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black uppercase text-xs focus:ring-accent shadow-inner">
+                                    <SelectValue placeholder="SELECCIONAR INSUMO..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
+                                    {inventory.map(i => <SelectItem key={`sal-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name} (Disponibles: {i.qty})</SelectItem>)}
+                                  </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CANTIDAD</Label>
+                                <Input type="number" placeholder="0" className="h-14 bg-slate-50 border-none rounded-2xl text-center font-black text-2xl shadow-inner" value={movementForm.qtySalida || ''} onChange={e => setMovementForm(prev => ({...prev, qtySalida: parseInt(e.target.value) || 0}))} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">FOLIO / SOLICITUD</Label>
+                                <Input placeholder="S/F" className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-mono px-6 text-sm font-black shadow-inner" value={movementForm.folio} onChange={e => setMovementForm(prev => ({...prev, folio: e.target.value.toUpperCase()}))} />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">USUARIO A QUIEN SE LE DIO EL MATERIAL...</Label>
                               <Input 
-                                placeholder="ANALISTA RESPONSABLE..." 
-                                className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 
-                                value={movementForm.recipientEntrada} 
-                                onChange={e => setMovementForm(prev => ({...prev, recipientEntrada: e.target.value.toUpperCase()}))} 
+                                  placeholder="NOMBRE DEL ANALISTA O DOCENTE..." 
+                                  className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 
+                                  value={movementForm.recipientSalida} 
+                                  onChange={e => setMovementForm(prev => ({...prev, recipientSalida: e.target.value.toUpperCase()}))} 
                               />
-                           </div>
-                        </div>
-                        <div className="pt-20"> {/* Espaciado para equilibrar visualmente con el de salida */}
-                           <Button onClick={() => handleRegisterMovement('entrada')} className="w-full btn-institutional h-16 shadow-2xl shadow-primary/20 active:scale-[0.98] transition-all rounded-[1.5rem]">REGISTRAR ENTRADA</Button>
-                        </div>
-                      </div>
-                   </Card>
-                </div>
+                            </div>
+                            <Button onClick={() => handleRegisterMovement('salida')} className="w-full bg-accent hover:bg-accent/90 text-white h-16 rounded-[1.5rem] font-black uppercase shadow-2xl shadow-accent/20 transition-all active:scale-[0.98] mt-4">REGISTRAR SALIDA</Button>
+                          </div>
+                      </Card>
 
-                <div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2.5rem] bg-white shadow-2xl flex flex-col">
-                   <div className="p-5 bg-slate-50 border-b flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                         <History className="h-5 w-5 text-slate-400" />
-                         <span className="text-xs font-black uppercase text-slate-500 tracking-widest">Historial de Registro de Flujo en Tiempo Real</span>
+                      {/* Panel Entrada */}
+                      <Card className="executive-card p-10 border-t-[12px] border-t-primary bg-white shadow-2xl relative">
+                          <div className="absolute top-8 right-10 flex items-center gap-3">
+                            <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><TrendingUp className="h-6 w-6" /></div>
+                            <h4 className="text-base font-black uppercase text-primary tracking-tighter">Entrada de Material</h4>
+                          </div>
+                          <div className="space-y-6 mt-6">
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
+                              <Select value={movementForm.itemIdEntrada} onValueChange={(val) => setMovementForm(prev => ({...prev, itemIdEntrada: val}))}>
+                                  <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black uppercase text-xs shadow-inner">
+                                    <SelectValue placeholder="SELECCIONAR INSUMO..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
+                                    {inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}
+                                  </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CANTIDAD</Label>
+                                  <Input type="number" placeholder="0" className="h-14 bg-slate-50 border-none rounded-2xl text-center font-black text-2xl shadow-inner" value={movementForm.qtyEntrada || ''} onChange={e => setMovementForm(prev => ({...prev, qtyEntrada: parseInt(e.target.value) || 0}))} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">QUIEN RECIBE...</Label>
+                                  <Input 
+                                    placeholder="ANALISTA RESPONSABLE..." 
+                                    className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 
+                                    value={movementForm.recipientEntrada} 
+                                    onChange={e => setMovementForm(prev => ({...prev, recipientEntrada: e.target.value.toUpperCase()}))} 
+                                  />
+                              </div>
+                            </div>
+                            <div className="pt-4">
+                              <Button onClick={() => handleRegisterMovement('entrada')} className="w-full btn-institutional h-16 shadow-2xl shadow-primary/20 active:scale-[0.98] transition-all rounded-[1.5rem]">REGISTRAR ENTRADA</Button>
+                            </div>
+                          </div>
+                      </Card>
+                    </div>
+
+                    <div className="overflow-hidden border-2 border-slate-100 rounded-[2.5rem] bg-white shadow-2xl flex flex-col">
+                      <div className="p-5 bg-slate-50 border-b flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <History className="h-5 w-5 text-slate-400" />
+                            <span className="text-xs font-black uppercase text-slate-500 tracking-widest">Historial de Registro de Flujo en Tiempo Real</span>
+                          </div>
+                          <Badge variant="outline" className="bg-white text-primary font-black border-primary/20 px-3">{movements.length} Movimientos</Badge>
                       </div>
-                      <Badge variant="outline" className="bg-white text-primary font-black border-primary/20 px-3">{movements.length} Movimientos</Badge>
-                   </div>
-                   <ScrollArea className="flex-1">
-                      <Table>
-                        <TableHeader className="bg-white sticky top-0 z-10 border-b shadow-sm">
-                           <TableRow>
-                              <TableHead className="pl-10 py-4 text-[10px] font-black uppercase text-slate-400">Fecha y Hora</TableHead>
-                              <TableHead className="text-center text-[10px] font-black uppercase text-slate-400">Operación</TableHead>
-                              <TableHead className="text-[10px] font-black uppercase text-slate-400">Material Insumo</TableHead>
-                              <TableHead className="text-center text-[10px] font-black uppercase text-slate-400">Cantidad</TableHead>
-                              <TableHead className="text-[10px] font-black uppercase text-slate-400">Folio / Responsable</TableHead>
-                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {movements.map(m => (
-                            <TableRow key={m.id} className="h-14 hover:bg-slate-50 border-b border-slate-50 transition-colors">
-                              <TableCell className="pl-10 text-[10px] font-bold text-slate-400">{m.date}</TableCell>
-                              <TableCell className="text-center">
-                                 <Badge className={cn("text-[8px] font-black px-3 h-5 rounded-full", m.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>{m.type.toUpperCase()}</Badge>
-                              </TableCell>
-                              <TableCell className="text-[11px] font-black uppercase text-slate-700">{m.itemName}</TableCell>
-                              <TableCell className="text-center font-black text-primary text-base">{m.qty}</TableCell>
-                              <TableCell>
-                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-primary leading-none">{m.folio || 'INGRESO'}</span>
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase mt-1 truncate max-w-[180px]">{m.recipient || 'S/D'}</span>
-                                 </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {movements.length === 0 && (
-                            <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-20 font-black uppercase text-xs">Sin movimientos registrados recientemente</TableCell></TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                   </ScrollArea>
-                </div>
+                      <div className="w-full overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-white sticky top-0 z-10 border-b shadow-sm">
+                              <TableRow>
+                                  <TableHead className="pl-10 py-4 text-[10px] font-black uppercase text-slate-400">Fecha y Hora</TableHead>
+                                  <TableHead className="text-center text-[10px] font-black uppercase text-slate-400">Operación</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-slate-400">Material Insumo</TableHead>
+                                  <TableHead className="text-center text-[10px] font-black uppercase text-slate-400">Cantidad</TableHead>
+                                  <TableHead className="text-[10px] font-black uppercase text-slate-400">Folio / Responsable</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {movements.map(m => (
+                                <TableRow key={m.id} className="h-14 hover:bg-slate-50 border-b border-slate-50 transition-colors">
+                                  <TableCell className="pl-10 text-[10px] font-bold text-slate-400">{m.date}</TableCell>
+                                  <TableCell className="text-center">
+                                    <Badge className={cn("text-[8px] font-black px-3 h-5 rounded-full", m.type === 'entrada' ? "bg-emerald-500" : "bg-accent")}>{m.type.toUpperCase()}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-[11px] font-black uppercase text-slate-700">{m.itemName}</TableCell>
+                                  <TableCell className="text-center font-black text-primary text-base">{m.qty}</TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-primary leading-none">{m.folio || 'INGRESO'}</span>
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase mt-1 truncate max-w-[180px]">{m.recipient || 'S/D'}</span>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                              {movements.length === 0 && (
+                                <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-20 font-black uppercase text-xs">Sin movimientos registrados recientemente</TableCell></TableRow>
+                              )}
+                            </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                </ScrollArea>
               </TabsContent>
             </div>
           </Tabs>
