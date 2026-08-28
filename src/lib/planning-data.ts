@@ -1,15 +1,15 @@
 
 export type AppUser = {
-  id: string;
+  id?: string;
   rfc: string;
   name: string;
   password: string;
   role: 'admin' | 'user';
-  privileges: string[]; // ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'usuarios']
+  privileges: string[]; 
 };
 
 export type BitacoraEntry = {
-  id: string;
+  id?: string;
   folio: string;
   cct: string;
   schoolName: string;
@@ -30,8 +30,8 @@ export type BitacoraEntry = {
 };
 
 export type VisitSchedule = {
-  id: string;
-  areaId: string; // 'soporte' | 'capacitacion' | 'programas'
+  id?: string;
+  areaId: string; 
   cct: string;
   schoolName: string;
   date: string;
@@ -42,7 +42,7 @@ export type VisitSchedule = {
 };
 
 export type ProgramStatus = {
-  id: string;
+  id?: string;
   name: string;
   progress: number;
   status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente';
@@ -73,60 +73,29 @@ export type ProgramStatus = {
   serviciosMP?: number;
   reportPdf?: string;
   evidencePhotos?: string[];
-  lugarServicio?: string;
-  lugarServicioOtro?: string;
-  diagnosticoRed?: 'ampliacion' | 'mantenimiento' | 'nueva red' | '';
-  cuentaRedLocal?: 'S' | 'N' | '';
-  electricaAdecuada?: 'S' | 'N' | '';
-  cuentaInternet?: 'S' | 'N' | '';
-  proveedorInternet?: string;
-  anchoBanda?: string;
-  numNodos?: number;
-  mantenimientoChecklist?: string[];
-  numDecodificadores?: number;
-  numSerie?: string;
-  estatusSeñal?: 'débil' | 'estable' | 'excelente' | '';
-  numReportes?: number;
   bibliotecaFases?: {
     fase1: boolean;
     fase2: boolean;
     fase3: boolean;
     fase4: boolean;
-    fase4_1: boolean; // 32 bits
-    fase4_2: boolean; // 64 bits
+    fase4_1: boolean;
+    fase4_2: boolean;
     fase5: boolean;
     fase6: boolean;
     fase7: boolean;
-    fase7_1: boolean; // Cuestionario
+    fase7_1: boolean;
     fase7_formsUrl?: string;
     personalCapacitado: number;
     equiposHabilitados: number;
   };
-  mantenimientoDetalle?: {
-    equipoTecnologico: 'HDT' | 'EQUIPO DE COMPUTO' | 'OTRO' | '';
-    equipoTecnologicoOtro?: string;
-    equipos: Array<{ equipo: string; marca: string; serie: string; censal: string }>;
-    fallaIdentificada: string;
-    servicioRealizado: string;
-  };
-  edusatDetalle?: {
-    micropak: string[];
-    antena: string[];
-    decodificadorAcciones: string[];
-    cableado: string[];
-    preventivo: string[];
-    numCensal: string;
-    numSerie: string;
-    calidadSeñal: string;
-    materiales: Array<{ material: string; cantidad: string; actividades: string }>;
-  };
 };
 
-export const programsData: ProgramStatus[] = [];
-export const supportData: any[] = [];
-export const trainingRecords: TrainingRecord[] = [];
+export type SupportTicket = ProgramStatus & {
+  status: 'atendido' | 'en proceso' | 'pendiente';
+};
+
 export type TrainingRecord = {
-  id: string;
+  id?: string;
   cursoGrupo: string;
   cursoNombre: string;
   duracionHoras: number;
@@ -158,3 +127,8 @@ export type TrainingRecord = {
   alumnosBeneficiados: number;
   docentesBeneficiados: number;
 };
+
+// Datos maestros iniciales ahora vacíos para favorecer Firestore
+export const programsData: ProgramStatus[] = [];
+export const supportData: any[] = [];
+export const trainingRecords: TrainingRecord[] = [];
