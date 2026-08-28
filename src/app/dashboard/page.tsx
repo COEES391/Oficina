@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { 
   LayoutDashboard,
@@ -40,7 +41,7 @@ import {
   Cell,
   Legend
 } from 'recharts'
-import { supportData, type SupportTicket, type TrainingRecord, type ProgramStatus, programsData } from '@/lib/planning-data'
+import { supportData, type SupportTicket, type TrainingRecord, type ProgramStatus, programsData, type AppUser } from '@/lib/planning-data'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,6 +66,7 @@ type DashboardGoals = {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [activeReport, setActiveReport] = useState('soporte')
   const [tickets, setTickets] = useState<SupportTicket[]>([])
@@ -116,6 +118,26 @@ export default function DashboardPage() {
     setMounted(true)
     syncData()
 
+    // GUARDIA DE ACCESO: Si el usuario llega aquí pero no tiene privilegio de Planeación, redirigir a su sección principal
+    const rfc = localStorage.getItem('userRfc')
+    if (rfc && rfc !== 'COEES' && rfc !== 'CEDITORIAL') {
+      const storedUsers: AppUser[] = JSON.parse(localStorage.getItem('app_users_v1') || '[]')
+      const user = storedUsers.find(u => u.rfc.toUpperCase() === rfc.toUpperCase())
+      if (user && !user.privileges.includes('planeacion')) {
+        if (user.privileges.includes('programas') || user.privileges.includes('bitacora-atres')) {
+          router.push('/dashboard/programas')
+        } else if (user.privileges.includes('soporte')) {
+          router.push('/dashboard/soporte')
+        } else if (user.privileges.includes('capacitacion')) {
+          router.push('/dashboard/capacitacion')
+        } else if (user.privileges.includes('base-cct')) {
+          router.push('/dashboard/base-cct')
+        } else if (user.privileges.includes('base-participantes')) {
+          router.push('/dashboard/base-participantes')
+        }
+      }
+    }
+
     window.addEventListener('storage', syncData)
     window.addEventListener('focus', syncData)
     
@@ -123,7 +145,7 @@ export default function DashboardPage() {
       window.removeEventListener('storage', syncData)
       window.removeEventListener('focus', syncData)
     }
-  }, [syncData])
+  }, [syncData, router])
 
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
@@ -780,7 +802,7 @@ export default function DashboardPage() {
 
       <div className="flex items-center gap-2 p-2 bg-accent/5 border border-accent/10 rounded-xl">
          <AlertCircle className="h-3 w-3 text-accent" />
-         <p className="text-[8px] font-black uppercase tracking-[0.1em] text-accent">
+         <p className="text-[8px] font-black uppercase tracking-[0.15em] text-accent">
             Información operativa auditada en tiempo real. Sistema Integral COEES 2026.
          </p>
       </div>

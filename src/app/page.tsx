@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -36,7 +35,26 @@ export default function LoginPage() {
     if (dynamicUser) {
       localStorage.setItem('userRfc', cleanRfc)
       toast({ title: "Acceso concedido", description: `Bienvenido, ${dynamicUser.name}.` })
-      router.push('/dashboard')
+      
+      // FORZAR REDIRECCIÓN SEGÚN PRIVILEGIOS (Prioridad: Programas > Soporte > Capacitación > Planeación)
+      const privs = dynamicUser.privileges;
+      if (privs.includes('programas') || privs.includes('bitacora-atres')) {
+        router.push('/dashboard/programas')
+      } else if (privs.includes('soporte')) {
+        router.push('/dashboard/soporte')
+      } else if (privs.includes('capacitacion')) {
+        router.push('/dashboard/capacitacion')
+      } else if (privs.includes('planeacion')) {
+        router.push('/dashboard')
+      } else if (privs.includes('base-cct')) {
+        router.push('/dashboard/base-cct')
+      } else if (privs.includes('base-participantes')) {
+        router.push('/dashboard/base-participantes')
+      } else if (privs.includes('usuarios')) {
+        router.push('/dashboard/usuarios')
+      } else {
+        router.push('/dashboard')
+      }
       return
     }
 
