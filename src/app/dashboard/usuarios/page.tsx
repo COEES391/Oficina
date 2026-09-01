@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Shield, Save, KeyRound, Loader2, User, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { type AppUser } from '@/lib/planning-data'
 import { cn } from "@/lib/utils"
 
@@ -50,16 +51,14 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      const q = query(collection(db, 'users'))
-      const querySnapshot = await getDocs(q)
+      const querySnapshot = await getDocs(collection(db, 'users'))
       const fetchedUsers = querySnapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id
       })) as AppUser[]
-      
       setUsers(fetchedUsers.sort((a, b) => (a.name || '').localeCompare(b.name || '')))
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error al cargar usuarios:", error)
     } finally {
       setIsLoading(false)
     }
@@ -76,16 +75,11 @@ export default function UsersPage() {
     const cleanPassword = (formData.password || '').trim()
 
     if (!cleanRfc || !cleanPassword || !cleanName) {
-      toast({ 
-        variant: "destructive", 
-        title: "Campos incompletos", 
-        description: "El nombre, RFC y la contraseña son obligatorios." 
-      })
+      toast({ variant: "destructive", title: "Campos obligatorios", description: "El nombre, RFC y contraseña son necesarios." })
       return
     }
 
     setIsSaving(true)
-
     try {
       const userData = {
         rfc: cleanRfc,
@@ -96,43 +90,20 @@ export default function UsersPage() {
         updatedAt: serverTimestamp()
       }
 
-      // Definimos un tiempo máximo de espera de 12 segundos para la nube
-      const savePromise = editingId 
-        ? updateDoc(doc(db, 'users', editingId), userData)
-        : addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() });
+      if (editingId) {
+        await updateDoc(doc(db, 'users', editingId), userData)
+      } else {
+        await addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() })
+      }
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 12000)
-      );
-
-      // Carrera de promesas: o se guarda o se agota el tiempo
-      await Promise.race([savePromise, timeoutPromise]);
-
-      toast({ 
-        title: editingId ? "Acceso actualizado" : "Acceso registrado", 
-        description: `El servidor público ${cleanName} ya puede operar el sistema.` 
-      })
-
+      toast({ title: "Acceso actualizado", description: `El servidor público ${cleanName} ha sido registrado exitosamente.` })
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
-      fetchUsers() // Actualización prioritaria de la tabla
+      await fetchUsers()
     } catch (error: any) {
       console.error("Save error:", error)
-      if (error.message === 'timeout') {
-        toast({ 
-          variant: "destructive", 
-          title: "Sincronización lenta", 
-          description: "La información se está procesando en la nube. Verifique la lista en un momento." 
-        })
-        setIsDialogOpen(false) // Cerramos para no bloquear al analista
-      } else {
-        toast({ 
-          variant: "destructive", 
-          title: "Error de guardado", 
-          description: "No se pudo establecer conexión con el servidor. Reintente." 
-        })
-      }
+      toast({ variant: "destructive", title: "Error de guardado", description: "Hubo un problema al conectar con el servidor de seguridad." })
     } finally {
       setIsSaving(false)
     }
@@ -171,9 +142,9 @@ export default function UsersPage() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de accesos institucional</h2>
-          <p className="text-muted-foreground font-bold text-xs flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-accent" /> Control de identidades sincronizadas en tiempo real
+          <h2 className="text-2xl font-black text-primary">Gestión de accesos</h2>
+          <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-accent" /> Control de identidades oficiales en tiempo real
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
@@ -181,65 +152,63 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary shadow-2xl">
+      <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary">
         <CardHeader className="bg-slate-50/50 p-8 border-b">
           <CardTitle className="flex items-center gap-4 text-primary font-black text-2xl">
-            <Users className="h-10 w-10 text-accent" /> Usuarios del sistema
+            <Users className="h-10 w-10 text-accent" /> Servidores registrados
           </CardTitle>
-          <CardDescription className="font-bold text-xs tracking-widest text-muted-foreground mt-2">Censo de personal con acceso autorizado</CardDescription>
+          <CardDescription className="font-bold text-xs tracking-widest mt-2">Censo de personal con acceso autorizado al sistema</CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-100/50">
-                <TableRow>
-                  <TableHead className="font-bold text-[11px] pl-10 h-14 text-slate-500">Nombre del servidor público</TableHead>
-                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Identificador (RFC)</TableHead>
-                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Privilegios de sección</TableHead>
-                  <TableHead className="text-right font-bold text-[11px] pr-10 h-14 text-slate-500">Acciones</TableHead>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-100/50">
+              <TableRow>
+                <TableHead className="font-bold text-xs pl-10 h-14">Nombre del servidor público</TableHead>
+                <TableHead className="font-bold text-xs h-14">Identificador (RFC)</TableHead>
+                <TableHead className="font-bold text-xs h-14">Privilegios asignados</TableHead>
+                <TableHead className="text-right font-bold text-xs pr-10 h-14">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-20 opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando accesos...</TableCell></TableRow>
+              ) : users.length > 0 ? users.map((user) => (
+                <TableRow key={user.id} className="hover:bg-slate-50 h-20 border-b border-slate-50 transition-colors">
+                  <TableCell className="pl-10">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <span className="font-bold text-sm text-slate-700">{user.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs font-black text-primary">{user.rfc}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1.5 max-w-[400px]">
+                      {(user.privileges || []).map(p => (
+                        <Badge key={p} variant="outline" className="text-[10px] font-bold border-slate-200 bg-white px-2 py-0.5 text-slate-500">
+                          {SECTIONS.find(s => s.id === p)?.name || p}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right pr-10">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-primary hover:bg-primary/5 rounded-xl" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDelete(user.id!)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando accesos...</TableCell></TableRow>
-                ) : users.length > 0 ? users.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-20 border-b border-slate-50">
-                    <TableCell className="pl-10">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                          <User className="h-5 w-5" />
-                        </div>
-                        <span className="font-bold text-sm text-slate-700">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs font-black text-primary">{user.rfc}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1.5 max-w-[400px]">
-                        {(user.privileges || []).map(p => (
-                          <Badge key={p} variant="outline" className="text-[10px] font-bold border-slate-200 bg-white px-2 py-0.5 text-slate-500">
-                            {SECTIONS.find(s => s.id === p)?.name || p}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right pr-10">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-10 w-10 text-primary hover:bg-primary/5 rounded-xl transition-all" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" onClick={() => handleDelete(user.id!)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-bold text-sm tracking-widest uppercase">Sin registros en la nube</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+              )) : (
+                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 text-sm font-bold uppercase tracking-widest">Sin registros institucionales</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); } }}>
@@ -249,7 +218,7 @@ export default function UsersPage() {
               <DialogTitle className="font-black text-primary text-2xl flex items-center gap-4">
                 <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar perfil institucional' : 'Nuevo acceso institucional'}
               </DialogTitle>
-              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y privilegios para este servidor público.</DialogDescription>
+              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
             </div>
             <button onClick={() => !isSaving && setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
               <X className="h-5 w-5 text-slate-500" />
@@ -275,7 +244,7 @@ export default function UsersPage() {
                     <Input 
                       value={formData.rfc} 
                       onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
-                      className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black text-lg" 
+                      className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black text-lg uppercase" 
                       placeholder="13 caracteres" 
                       maxLength={13}
                       disabled={isSaving}
@@ -302,7 +271,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Niveles de acceso autorizados</h4>
+                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Privilegios de sección asignados</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
@@ -332,22 +301,10 @@ export default function UsersPage() {
           </ScrollArea>
 
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0 shadow-inner">
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsDialogOpen(false)} 
-              disabled={isSaving} 
-              className="font-bold text-xs uppercase h-14 px-10 text-slate-400 hover:text-slate-600"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleSave} 
-              disabled={isSaving} 
-              className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[240px]"
-            >
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="font-bold text-xs uppercase h-14 px-10 text-slate-400">Cancelar</Button>
+            <Button type="button" onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[240px]">
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
-              {isSaving ? 'Sincronizando...' : (editingId ? 'Guardar cambios' : 'Registrar acceso')}
+              {isSaving ? 'Registrando...' : (editingId ? 'Guardar cambios' : 'Registrar acceso')}
             </Button>
           </DialogFooter>
         </DialogContent>
