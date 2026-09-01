@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -414,7 +415,7 @@ export default function ProgramsPage() {
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ID Servidor (RFC/CURP)</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ID Servidor (NOMBRE/CORREO)</Label>
               <div className="flex gap-2">
                 <Input placeholder="INGRESAR DATO..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black text-center uppercase" value={verifySearch} onChange={e => setVerifySearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
                 <Button onClick={handleVerifyAccount} disabled={isVerifying || !verifySearch} className="h-12 w-12 rounded-xl bg-accent shadow-lg p-0"><Search className={cn("h-5 w-5", isVerifying && "animate-spin")} /></Button>

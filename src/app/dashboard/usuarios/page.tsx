@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -113,7 +114,11 @@ export default function UsersPage() {
       fetchUsers()
     } catch (error: any) {
       console.error("Error saving user:", error)
-      toast({ variant: "destructive", title: "Error de Guardado", description: "Verifique su conexión a internet." })
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Guardado", 
+        description: error.message || "No se pudo conectar con la base de datos." 
+      })
     } finally {
       setIsSaving(false)
     }
