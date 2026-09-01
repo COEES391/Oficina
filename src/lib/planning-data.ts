@@ -1,4 +1,3 @@
-
 export type AppUser = {
   id?: string;
   rfc: string;
@@ -45,12 +44,12 @@ export type ProgramStatus = {
   id?: string;
   name: string;
   progress: number;
-  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente';
+  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente' | 'suspendida';
   date: string;
   requestDate?: string;
   cct?: string;
   schoolName?: string;
-  userName?: string; // Campo añadido para Cuentas Institucionales
+  userName?: string; 
   zonaEscolar?: string;
   sector?: string;
   modalidad?: string;
@@ -89,44 +88,6 @@ export type ProgramStatus = {
     personalCapacitado: number;
     equiposHabilitados: number;
   };
-};
-
-export type SupportTicket = ProgramStatus & {
-  status: 'atendido' | 'en proceso' | 'pendiente';
-};
-
-export type TrainingRecord = {
-  id?: string;
-  cursoGrupo: string;
-  cursoNombre: string;
-  duracionHoras: number;
-  fechaInicio: string;
-  fechaTermino: string;
-  instructores: string[];
-  numeroOficio: string;
-  materialUtilizado: string;
-  cctSede: string;
-  setes: 'S' | 'N';
-  asistentePaterno: string;
-  asistenteMaterno: string;
-  asistenteNombres: string;
-  asistenteRFC: string;
-  asistenteGenero: 'MASCULINO' | 'FEMENINO' | '';
-  asistenteFuncion: string;
-  asistenteEmail: string;
-  asistenteCCT: string;
-  asistenteNombreCT: string;
-  asistenteZE: string;
-  asistenteSector: string;
-  asistenteModalidad: string;
-  asistenteMunicipio: string;
-  asistenteRegion: string;
-  asistenteValle: string;
-  reportPdf?: string;
-  evidencePhotos: string[];
-  observaciones: string;
-  alumnosBeneficiados: number;
-  docentesBeneficiados: number;
 };
 
 // Datos maestros iniciales ahora vacíos para favorecer Firestore
