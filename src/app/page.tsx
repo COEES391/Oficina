@@ -76,7 +76,6 @@ export default function LoginPage() {
         } else if (privs.includes('base-cct') || privs.includes('base-participantes')) {
           router.push('/dashboard/base-cct')
         } else {
-          // Si no tiene privilegios específicos, se envía a la raíz del dashboard
           router.push('/dashboard/base-cct')
         }
       } else {
@@ -102,7 +101,6 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-[#ddc8a4] overflow-hidden p-4 font-sans">
-      {/* Fondo Decorativo */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#9f2241] blur-[160px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#B38E5D] blur-[160px]" />
@@ -114,16 +112,16 @@ export default function LoginPage() {
             <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-3xl font-black tracking-tighter text-[#9f2241] uppercase leading-[0.9]">Portal <br /> Integral</CardTitle>
-            <CardDescription className="text-slate-500 font-black text-[8px] uppercase tracking-[0.15em]">COMPUTACIÓN ELECTRÓNICA EN LA EDUCACIÓN SECUNDARIA</CardDescription>
+            <CardTitle className="text-3xl font-black tracking-tighter text-[#9f2241] leading-[0.9]">Portal <br /> Integral</CardTitle>
+            <CardDescription className="text-slate-500 font-bold text-[10px] tracking-widest uppercase">Computación Electrónica en la Educación Secundaria</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 px-8 pb-6">
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Identificador de Usuario (RFC)</Label>
+              <Label className="text-[10px] font-black text-slate-400 pl-2 uppercase">Identificador de Usuario (RFC)</Label>
               <Input 
-                placeholder="INGRESAR RFC..." 
+                placeholder="Ingresar RFC..." 
                 className="h-14 rounded-2xl bg-slate-50 border-slate-200 text-sm font-black uppercase px-6 focus:ring-4 focus:ring-primary/5 transition-all" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
@@ -132,7 +130,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-2">Contraseña Institucional</Label>
+              <Label className="text-[10px] font-black text-slate-400 pl-2 uppercase">Contraseña Institucional</Label>
               <div className="relative">
                 <Input 
                   type={showPassword ? "text" : "password"} 
@@ -156,7 +154,7 @@ export default function LoginPage() {
             <Button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full h-16 text-[10px] font-black uppercase tracking-[0.25em] rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all active:scale-[0.98]"
+              className="w-full h-16 text-xs font-black uppercase tracking-[0.2em] rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all active:scale-[0.98]"
             >
               {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : "Iniciar Sesión"}
             </Button>
@@ -165,7 +163,7 @@ export default function LoginPage() {
         <CardFooter className="pt-0 pb-8 px-8 text-center">
            <div className="w-full py-4 bg-slate-50/60 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA DE ACCESO SEGURO • EDOMÉX 2026</span>
+             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sistema de Acceso Seguro • Edoméx 2026</span>
            </div>
         </CardFooter>
       </Card>

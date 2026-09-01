@@ -82,13 +82,12 @@ export default function DashboardLayout({
   }
 
   const menuConfig = [
-    { privilege: 'bitacora-atres', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
-    { privilege: 'planeacion', name: 'PLANEACIÓN', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { privilege: 'planeacion', name: 'Planeación', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
     { privilege: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
-    { privilege: 'base-cct', name: 'BASE CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
-    { privilege: 'base-participantes', name: 'BASE PARTICIPANTES', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
+    { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
+    { privilege: 'base-participantes', name: 'Base Participantes', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
     { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
   ]
 
@@ -130,7 +129,7 @@ export default function DashboardLayout({
                   onClick={() => router.push(item.path)}
                   isActive={pathname === item.path}
                   tooltip={item.name}
-                  className={`h-10 rounded-lg font-black uppercase text-[9px] tracking-widest px-3 transition-all duration-300 ${
+                  className={`h-11 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300 ${
                     pathname === item.path 
                       ? 'bg-white text-[#9f2241] shadow-lg' 
                       : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -149,7 +148,7 @@ export default function DashboardLayout({
         </SidebarContent>
         <div className="mt-auto p-4 opacity-30 group-data-[collapsible=icon]:hidden">
            <div className="h-px bg-white/20 w-full mb-3" />
-           <p className="text-[6px] text-white font-black uppercase tracking-[0.2em] text-center leading-tight">
+           <p className="text-[7px] text-white font-bold uppercase tracking-[0.1em] text-center leading-tight">
              Dirección de Educación Secundaria
            </p>
         </div>
@@ -160,7 +159,7 @@ export default function DashboardLayout({
             <SidebarTrigger className="text-primary" />
             <div className="flex items-center gap-3">
                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <h1 className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Sistema Integral COEES</h1>
+               <h1 className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sistema Integral COEES</h1>
             </div>
           </div>
 
@@ -168,14 +167,14 @@ export default function DashboardLayout({
             <div className="hidden xs:flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-inner group transition-all hover:bg-white">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
               <div className="flex flex-col">
-                <span className="text-[8px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[9px] font-black uppercase text-primary leading-none">{userRfc}</span>
               </div>
             </div>
 
             <Button 
               variant="ghost" 
               onClick={handleLogout}
-              className="h-8 px-2 md:px-4 rounded-xl text-rose-600 font-black uppercase text-[8px] tracking-widest hover:bg-rose-50 flex items-center gap-2 transition-all active:scale-95"
+              className="h-8 px-2 md:px-4 rounded-xl text-rose-600 font-bold text-[10px] tracking-wide hover:bg-rose-50 flex items-center gap-2 transition-all active:scale-95"
             >
               <LogOut className="h-3.5 w-3.5" /> 
               <span className="hidden sm:inline">Salir</span>

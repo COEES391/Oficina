@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -19,12 +18,12 @@ import { cn } from "@/lib/utils"
 
 const SECTIONS = [
   { id: 'bitacora-atres', name: 'Bitácora ATRES' },
-  { id: 'planeacion', name: 'PLANEACIÓN' },
+  { id: 'planeacion', name: 'Planeación' },
   { id: 'soporte', name: 'Soporte Técnico' },
   { id: 'capacitacion', name: 'Capacitación' },
   { id: 'programas', name: 'Programas' },
-  { id: 'base-cct', name: 'BASE CCT' },
-  { id: 'base-participantes', name: 'BASE PARTICIPANTES' },
+  { id: 'base-cct', name: 'Base CCT' },
+  { id: 'base-participantes', name: 'Base Participantes' },
   { id: 'usuarios', name: 'Usuarios' },
 ]
 
@@ -157,37 +156,37 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary uppercase leading-none">Gestión de Accesos Global</h2>
-          <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+          <h2 className="text-3xl font-black tracking-tight text-primary">Gestión de Accesos Global</h2>
+          <p className="text-muted-foreground font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas para acceso multi-equipo
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
-          <UserPlus className="h-5 w-5 mr-2" /> NUEVO ACCESO
+          <UserPlus className="h-5 w-5 mr-2" /> Nuevo Acceso
         </Button>
       </div>
 
       <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary shadow-2xl">
         <CardHeader className="bg-slate-50/50 p-8">
-          <CardTitle className="flex items-center gap-4 text-primary uppercase font-black text-2xl">
+          <CardTitle className="flex items-center gap-4 text-primary font-black text-2xl">
             <Users className="h-10 w-10 text-accent" /> Usuarios del Sistema
           </CardTitle>
-          <CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Base de datos centralizada en tiempo real</CardDescription>
+          <CardDescription className="font-bold text-xs uppercase tracking-widest text-muted-foreground mt-2">Base de datos centralizada en tiempo real</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-100/50">
                 <TableRow>
-                  <TableHead className="font-black text-[10px] uppercase pl-10 h-12">Nombre del Servidor</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase h-12">ID (RFC)</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase h-12">Privilegios</TableHead>
-                  <TableHead className="text-right font-black text-[10px] uppercase pr-10 h-12">Acción</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase pl-10 h-12">Nombre del Servidor</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase h-12">ID (RFC)</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase h-12">Privilegios</TableHead>
+                  <TableHead className="text-right font-bold text-[11px] uppercase pr-10 h-12">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando Nube...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando Nube...</TableCell></TableRow>
                 ) : users.length > 0 ? users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-16">
                     <TableCell className="pl-10">
@@ -195,14 +194,14 @@ export default function UsersPage() {
                         <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
                           <User className="h-5 w-5" />
                         </div>
-                        <span className="font-black text-xs text-slate-700 uppercase">{user.name}</span>
+                        <span className="font-bold text-[13px] text-slate-700">{user.name}</span>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs uppercase font-black text-primary">{user.rfc}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1 max-w-[300px]">
                         {(user.privileges || []).map(p => (
-                          <Badge key={p} variant="outline" className="text-[8px] font-black uppercase border-slate-200 bg-white px-2">
+                          <Badge key={p} variant="outline" className="text-[9px] font-bold border-slate-200 bg-white px-2">
                             {SECTIONS.find(s => s.id === p)?.name || p}
                           </Badge>
                         ))}
@@ -220,7 +219,7 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs tracking-widest">Sin usuarios en la red</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-bold uppercase text-xs tracking-widest">Sin usuarios en la red</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -232,10 +231,10 @@ export default function UsersPage() {
         <DialogContent className="sm:max-w-[750px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl">
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
+              <DialogTitle className="font-black text-primary text-2xl flex items-center gap-4">
                 <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Global' : 'Nuevo Acceso Institucional'}
               </DialogTitle>
-              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
+              <DialogDescription className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
             </div>
             <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
               <X className="h-5 w-5 text-slate-500" />
@@ -246,33 +245,33 @@ export default function UsersPage() {
             <div className="p-8 space-y-10">
               <div className="space-y-8 bg-slate-50 p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre Completo del Servidor</Label>
+                  <Label className="text-[11px] font-black text-primary pl-2 uppercase">Nombre Completo del Servidor</Label>
                   <Input 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
-                    className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-black uppercase placeholder:text-slate-300" 
-                    placeholder="APELLIDOS Y NOMBRES..." 
+                    className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-bold placeholder:text-slate-300" 
+                    placeholder="Apellidos y Nombres..." 
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-2">RFC / Identificador de Acceso</Label>
+                    <Label className="text-[11px] font-black text-primary pl-2 uppercase">RFC / Identificador de Acceso</Label>
                     <Input 
                       value={formData.rfc} 
                       onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
                       className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black uppercase text-lg" 
-                      placeholder="13 CARACTERES..." 
+                      placeholder="13 Caracteres..." 
                       maxLength={13}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Contraseña Oficial</Label>
+                    <Label className="text-[11px] font-black text-primary pl-2 uppercase">Contraseña Oficial</Label>
                     <div className="flex gap-2">
                       <Input 
                         value={formData.password} 
                         onChange={e => setFormData({...formData, password: e.target.value})} 
                         className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
-                        placeholder="MÍN. 6 CARACT." 
+                        placeholder="Mín. 6 caract." 
                       />
                       <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5">
                         <KeyRound className="h-5 w-5" />
@@ -285,7 +284,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-[11px] font-black uppercase text-accent tracking-[0.2em]">Privilegios de Sección</h4>
+                   <h4 className="text-[11px] font-black text-accent tracking-widest uppercase">Privilegios de Sección</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
@@ -305,7 +304,7 @@ export default function UsersPage() {
                           onCheckedChange={() => handleTogglePrivilege(section.id)} 
                           className="h-5 w-5 border-primary data-[state=checked]:bg-primary" 
                         />
-                        <Label className="text-[10px] font-black uppercase cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
+                        <Label className="text-[11px] font-bold cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
                     </div>
                   ))}
                 </div>
@@ -318,7 +317,7 @@ export default function UsersPage() {
               variant="ghost" 
               onClick={() => setIsDialogOpen(false)} 
               disabled={isSaving} 
-              className="font-black text-[10px] uppercase h-14 px-10 text-slate-400 hover:text-slate-600"
+              className="font-bold text-[11px] uppercase h-14 px-10 text-slate-400 hover:text-slate-600"
             >
               Cancelar
             </Button>
@@ -326,10 +325,10 @@ export default function UsersPage() {
               type="button" 
               onClick={handleSave} 
               disabled={isSaving} 
-              className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-4 shadow-2xl min-w-[220px]"
+              className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[220px]"
             >
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
-              {editingId ? 'ACTUALIZAR ACCESO' : 'REGISTRAR ACCESO'}
+              {editingId ? 'Actualizar Acceso' : 'Registrar Acceso'}
             </Button>
           </DialogFooter>
         </DialogContent>
