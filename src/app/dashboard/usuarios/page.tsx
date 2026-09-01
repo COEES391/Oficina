@@ -72,7 +72,7 @@ export default function UsersPage() {
 
   const handleSave = async () => {
     const cleanRfc = (formData.rfc || '').trim().toUpperCase()
-    const cleanName = (formData.name || '').trim().toUpperCase()
+    const cleanName = (formData.name || '').trim()
     const cleanPassword = (formData.password || '').trim()
 
     if (!cleanRfc || !cleanPassword || !cleanName) {
@@ -97,22 +97,27 @@ export default function UsersPage() {
       }
 
       if (editingId) {
-        await updateDoc(doc(db, 'users', editingId), userData)
+        const userRef = doc(db, 'users', editingId)
+        await updateDoc(userRef, userData)
+        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron correctamente.` })
       } else {
-        await addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() })
+        await addDoc(collection(db, 'users'), {
+          ...userData,
+          createdAt: serverTimestamp()
+        })
+        toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
       }
 
-      toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
       await fetchUsers()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving user:", error)
       toast({ 
         variant: "destructive", 
-        title: "Error de conexión", 
-        description: "No se pudo sincronizar con la base de datos. Intente de nuevo." 
+        title: "Error de sincronización", 
+        description: "No se pudo guardar en la nube. Verifique su conexión a internet." 
       })
     } finally {
       setIsSaving(false)
@@ -139,7 +144,7 @@ export default function UsersPage() {
     if (!confirm("¿Está seguro de eliminar este acceso permanentemente?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso removido" })
+      toast({ title: "Acceso removido", description: "Las credenciales han sido dadas de baja." })
       fetchUsers()
     } catch (error) {
       toast({ variant: "destructive", title: "Error al procesar la baja" })
@@ -152,7 +157,7 @@ export default function UsersPage() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary">Gestión de Accesos Global</h2>
+          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de Accesos Global</h2>
           <p className="text-muted-foreground font-bold text-xs flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas para acceso multi-equipo
           </p>
@@ -174,10 +179,10 @@ export default function UsersPage() {
             <Table>
               <TableHeader className="bg-slate-100/50">
                 <TableRow>
-                  <TableHead className="font-bold text-[11px] uppercase pl-10 h-14 text-slate-500">Nombre del servidor</TableHead>
-                  <TableHead className="font-bold text-[11px] uppercase h-14 text-slate-500">Identificador (RFC)</TableHead>
-                  <TableHead className="font-bold text-[11px] uppercase h-14 text-slate-500">Privilegios asignados</TableHead>
-                  <TableHead className="text-right font-bold text-[11px] uppercase pr-10 h-14 text-slate-500">Acciones</TableHead>
+                  <TableHead className="font-bold text-[11px] pl-10 h-14 text-slate-500">Nombre del servidor</TableHead>
+                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Identificador (RFC)</TableHead>
+                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Privilegios asignados</TableHead>
+                  <TableHead className="text-right font-bold text-[11px] pr-10 h-14 text-slate-500">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,7 +249,7 @@ export default function UsersPage() {
                   <Label className="text-xs font-black text-primary pl-2">Nombre completo del servidor público</Label>
                   <Input 
                     value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
                     className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-bold placeholder:text-slate-300" 
                     placeholder="Apellidos y nombres..." 
                     disabled={isSaving}

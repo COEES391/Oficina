@@ -51,7 +51,6 @@ export default function LoginPage() {
         return
       }
 
-      // Consulta directa a Firestore para validar los usuarios registrados
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', password))
       const querySnapshot = await getDocs(q)
@@ -63,7 +62,6 @@ export default function LoginPage() {
         
         const privs = userData.privileges || []
         
-        // Redirección inteligente basada en privilegios
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
@@ -79,7 +77,7 @@ export default function LoginPage() {
         toast({ 
           variant: "destructive", 
           title: "Acceso denegado", 
-          description: "Las credenciales no coinciden con nuestros registros en la nube." 
+          description: "Las credenciales no coinciden con nuestros registros oficiales." 
         })
       }
     } catch (error: any) {
@@ -109,16 +107,16 @@ export default function LoginPage() {
             <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-4xl font-black tracking-tighter text-[#9f2241] leading-[0.9]">Portal<br />Integral</CardTitle>
-            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest uppercase">Gestión técnica COEES Edoméx</CardDescription>
+            <CardTitle className="text-4xl font-black tracking-tighter text-[#9f2241] leading-[0.9]">Portal Integral</CardTitle>
+            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest">Gestión Técnica COEES Edoméx</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 px-10 pb-8">
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-xs font-black text-slate-400 pl-2">Identificador (RFC)</Label>
+              <Label className="text-xs font-black text-slate-400 pl-2">Identificador de acceso (RFC)</Label>
               <Input 
-                placeholder="Ingresar su RFC..." 
+                placeholder="Ingrese su RFC..." 
                 className="h-14 rounded-2xl bg-slate-50 border-slate-200 text-base font-black uppercase px-6 focus:ring-4 focus:ring-primary/5 transition-all shadow-inner" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
@@ -137,15 +135,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)} 
                   disabled={isLoading} 
                 />
-                <Button 
+                <button 
                   type="button" 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-2 top-2 h-10 w-10 text-slate-400 hover:bg-transparent" 
+                  className="absolute right-4 top-4 h-6 w-6 text-slate-400 hover:text-primary transition-colors" 
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </Button>
+                </button>
               </div>
             </div>
             <Button 
