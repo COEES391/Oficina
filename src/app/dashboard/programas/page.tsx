@@ -406,7 +406,13 @@ export default function ProgramsPage() {
                   <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground uppercase opacity-70 truncate">{rec.municipio}</span></div></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                       {activeTab === 'Cuentas Institucionales' ? <StatusLight status={rec.status} /> : <Badge variant="outline" className="text-[8px] font-bold uppercase">{rec.status}</Badge>}
+                       <Badge variant="outline" className={cn("text-[8px] font-bold uppercase px-2 h-5 rounded-full border-2", 
+                         rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
+                         rec.status === 'inactivo' ? "bg-rose-50 text-rose-700 border-rose-200" : 
+                         "bg-amber-50 text-amber-700 border-amber-200"
+                       )}>
+                        {rec.status}
+                      </Badge>
                     </div>
                   </TableCell>
                   <TableCell className="text-right pr-6">
@@ -454,11 +460,6 @@ export default function ProgramsPage() {
                         </div>
                       ))}
                    </div>
-                   <div className="flex items-center gap-2 pt-1">
-                      <Badge className={cn("text-[8px] font-bold h-5 px-3 uppercase shadow-lg", verifiedAccount.status === 'activo' ? "bg-emerald-500" : verifiedAccount.status === 'suspendida' ? "bg-amber-500" : "bg-rose-500")}>
-                        {verifiedAccount.status}
-                      </Badge>
-                   </div>
                 </div>
               </div>
             ) : (<div className="p-8 border-2 border-dashed rounded-[2rem] text-center opacity-20"><p className="text-[11px] font-bold tracking-widest uppercase">Ingrese un ID para validar</p></div>)}
@@ -473,7 +474,7 @@ export default function ProgramsPage() {
              <DialogTitle className="font-black text-lg">Gestión de {activeTab}</DialogTitle>
              {activeTab === 'Cuentas Institucionales' && (
                 <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
-                   <StatusLight status={formData.status} />
+                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                    <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
                       <SelectTrigger className="h-8 w-32 bg-transparent border-none text-white font-bold text-[10px] uppercase"><SelectValue /></SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -568,9 +569,9 @@ export default function ProgramsPage() {
                             <Input placeholder="Ingresar CCT o nombre del plantel..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                             {dialogSearchTerm.length > 2 && (
                               <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
-                                {schoolSearchResults.map(s => (
-                                  <div key={`sede-res-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                                    <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
+                                {schoolSearchResults.map((s, sidx) => (
+                                  <div key={`sede-res-${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                                    <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
                                     <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                                   </div>
                                 ))}
