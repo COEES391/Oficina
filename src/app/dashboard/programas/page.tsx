@@ -241,34 +241,32 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
-        <div className="flex flex-col md:flex-row items-end gap-4">
+        <div className="flex flex-col lg:flex-row items-end gap-6">
            <div className="flex-1 w-full space-y-1">
               <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Seleccionar Módulo Institucional</Label>
               <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
                 {PROGRAM_RUBROS.map(rubro => (
-                  <button key={`rubro-${rubro}`} onClick={() => { setActiveTab(rubro); setSearchTerm(''); setVerifiedAccount(null); }} className={cn("px-5 h-10 text-[10px] font-black uppercase rounded-xl transition-all border shadow-sm", activeTab === rubro ? "bg-primary text-white border-primary shadow-primary/20" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>{rubro}</button>
+                  <button key={`rubro-${rubro}`} onClick={() => { setActiveTab(rubro); setSearchTerm(''); setVerifiedAccount(null); }} className={cn("px-5 h-10 text-[10px] font-black uppercase rounded-xl transition-all border shadow-sm shrink-0", activeTab === rubro ? "bg-primary text-white border-primary shadow-primary/20" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>{rubro}</button>
                 ))}
               </div>
            </div>
            
-           <div className="flex items-center gap-3 w-full md:w-auto">
-             <div className="relative flex-1 md:w-[350px]">
-                <div className="relative">
-                  <Input 
-                    placeholder="CCT, PLANTEL O USUARIO..." 
-                    className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                  />
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-300" />
-                </div>
+           <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto shrink-0">
+             <div className="relative w-full md:w-[320px]">
+                <Input 
+                  placeholder="CCT, PLANTEL O USUARIO..." 
+                  className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                />
+                <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-10 px-8 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-primary/10 whitespace-nowrap group"
+                className="btn-institutional h-12 px-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 min-w-max flex items-center justify-center"
               >
-                <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
+                <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
              </Button>
            </div>
         </div>
