@@ -234,10 +234,9 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (<Button onClick={() => setIsHelpDeskOpen(true)} className="h-10 px-6 rounded-xl bg-emerald-600 font-black uppercase text-[10px] gap-2 shadow-lg"><Headset className="h-4 w-4" /> Mesa de Ayuda ATRES</Button>)}
           {activeTab === 'Cuentas Institucionales' && (
             <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-10 px-6 rounded-xl bg-accent font-black uppercase text-[10px] gap-2 shadow-lg">
-              <ShieldCheck className="h-4 w-4" /> Verificador de Cuenta
+              <ShieldCheck className="h-4 w-4" /> Verificador de Cuenta Oficial
             </Button>
           )}
-          <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-10 px-8 rounded-xl text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro</Button>
         </div>
       </div>
 
@@ -251,8 +250,26 @@ export default function ProgramsPage() {
                 ))}
               </div>
            </div>
-           <div className="relative flex-1 w-full md:max-w-[300px]">
-              <div className="relative"><Input placeholder="CCT, PLANTEL O USUARIO..." className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /><Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
+           
+           <div className="flex items-center gap-3 w-full md:w-auto">
+             <div className="relative flex-1 md:w-[300px]">
+                <div className="relative">
+                  <Input 
+                    placeholder="CCT, PLANTEL O USUARIO..." 
+                    className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase w-full shadow-inner" 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                  />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                </div>
+             </div>
+             
+             <Button 
+                onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
+                className="btn-institutional h-10 px-6 rounded-xl text-[10px] shadow-lg whitespace-nowrap"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
+             </Button>
            </div>
         </div>
       </Card>
@@ -520,7 +537,7 @@ export default function ProgramsPage() {
                 <ShieldCheck className="h-7 w-7 text-accent" />
               </div>
               <div>
-                <DialogTitle className="uppercase font-black text-xl leading-none">Verificador de Cuenta</DialogTitle>
+                <DialogTitle className="uppercase font-black text-xl leading-none">Verificador de Cuenta Oficial</DialogTitle>
                 <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest mt-2">Validación de identidad digital @desysa.edu.mx</DialogDescription>
               </div>
             </div>
