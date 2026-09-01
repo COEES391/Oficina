@@ -233,7 +233,8 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
-        <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6">
+        <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-4">
+           {/* APARTADO DE MODULO */}
            <div className="flex-1 w-full space-y-1 min-w-0">
               <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Seleccionar Módulo Institucional</Label>
               <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
@@ -243,28 +244,30 @@ export default function ProgramsPage() {
               </div>
            </div>
            
-           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
-             {/* Verificador Condicional para Cuentas Institucionales */}
+           {/* BOTÓN DE VERIFICACIÓN (INTERMEDIO) */}
+           <div className="shrink-0 flex items-center justify-center">
              {activeTab === 'Cuentas Institucionales' && (
                <Button 
                 onClick={() => setIsVerifyDialogOpen(true)} 
-                className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-xl shrink-0 transition-all active:scale-95"
+                className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-xl transition-all active:scale-95"
                >
                  <ShieldCheck className="h-5 w-5" /> VERIFICADOR
                </Button>
              )}
 
-             {/* HelpDesk Condicional para ATRES */}
              {activeTab === 'ATRES' && (
                <Button 
                 onClick={() => setIsHelpDeskOpen(true)} 
-                className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-xl shrink-0 transition-all active:scale-95"
+                className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-xl transition-all active:scale-95"
                >
                  <Headset className="h-5 w-5" /> MESA AYUDA
                </Button>
              )}
+           </div>
 
-             <div className="relative w-full sm:w-[220px] md:w-[260px]">
+           {/* LISTA (BUSCADOR) Y NUEVO REGISTRO */}
+           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
+             <div className="relative w-full sm:w-[240px] md:w-[280px]">
                 <Input 
                   placeholder="CCT, PLANTEL O USUARIO..." 
                   className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
@@ -276,7 +279,7 @@ export default function ProgramsPage() {
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 flex items-center justify-center min-w-[170px]"
+                className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 min-w-fit"
               >
                 <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
              </Button>
@@ -364,7 +367,6 @@ export default function ProgramsPage() {
                         )}
                      </div>
 
-                     {/* Campos específicos por Módulo */}
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {activeTab === 'Biblioteca Digital' && (
                           <>
