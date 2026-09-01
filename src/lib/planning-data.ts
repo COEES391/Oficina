@@ -50,6 +50,7 @@ export type ProgramStatus = {
   requestDate?: string;
   cct?: string;
   schoolName?: string;
+  userName?: string; // Campo añadido para Cuentas Institucionales
   zonaEscolar?: string;
   sector?: string;
   modalidad?: string;

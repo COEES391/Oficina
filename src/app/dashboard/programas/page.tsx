@@ -98,6 +98,7 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
+    userName: '', email: '',
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     asistentes: [],
     latitud: '',
@@ -139,6 +140,8 @@ export default function ProgramsPage() {
           sector: match.sector, 
           modalidad: match.modalidad 
         }))
+      } else {
+        setFormData(prev => ({ ...prev, schoolName: '', municipio: '', valle: '', region: '', zonaEscolar: '', sector: '', modalidad: '' }))
       }
     }
   }
@@ -234,7 +237,6 @@ export default function ProgramsPage() {
       <Card className="executive-card p-6 bg-white border-none shadow-xl mt-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
            
-           {/* GRUPO 1: SELECTOR (5 Columnas) */}
            <div className="lg:col-span-5 space-y-2 overflow-hidden">
               <Label className="text-[9px] font-black uppercase text-slate-400 block pl-1">Módulo Institucional</Label>
               <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
@@ -253,7 +255,6 @@ export default function ProgramsPage() {
               </div>
            </div>
            
-           {/* GRUPO 2: ACCIÓN CENTRAL (2 Columnas) */}
            <div className="lg:col-span-2 flex items-center justify-center">
              {activeTab === 'Cuentas Institucionales' && (
                <Button 
@@ -274,7 +275,6 @@ export default function ProgramsPage() {
              )}
            </div>
 
-           {/* GRUPO 3: BÚSQUEDA Y REGISTRO (5 Columnas) */}
            <div className="lg:col-span-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
              <div className="relative flex-1 w-full">
                 <Input 
@@ -288,7 +288,7 @@ export default function ProgramsPage() {
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl flex-shrink-0 min-w-fit"
+                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl flex-shrink-0 min-w-fit whitespace-nowrap"
               >
                 <PlusCircle className="h-5 w-5 mr-2" /> NUEVO REGISTRO
              </Button>
@@ -429,30 +429,137 @@ export default function ProgramsPage() {
                <TabsContent value="datos" className="h-full m-0 p-8">
                  <ScrollArea className="h-full">
                    <div className="space-y-10">
-                     <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 relative">
-                        <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2 pl-1"><Search className="h-5 w-5 text-accent" /> Identificación del Plantel</Label>
-                        <div className="relative">
-                          <Input placeholder="ESCRIBIR CCT O NOMBRE..." className="h-16 rounded-2xl bg-white border-primary/10 font-black text-lg uppercase shadow-sm pr-12" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
-                          {dialogSearchTerm.length > 2 && (
-                            <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
-                              {schoolSearchResults.map(s => (
-                                <div key={`sede-res-${s.cct}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                                  <div className="flex flex-col"><span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct}</span></div>
-                                  <ChevronRight className="h-4 w-4 text-slate-300" />
-                                </div>
-                              ))}
+                     {activeTab !== 'Cuentas Institucionales' && (
+                       <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 relative">
+                          <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2 pl-1"><Search className="h-5 w-5 text-accent" /> Identificación del Plantel</Label>
+                          <div className="relative">
+                            <Input placeholder="ESCRIBIR CCT O NOMBRE..." className="h-16 rounded-2xl bg-white border-primary/10 font-black text-lg uppercase shadow-sm pr-12" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                            {dialogSearchTerm.length > 2 && (
+                              <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
+                                {schoolSearchResults.map(s => (
+                                  <div key={`sede-res-${s.cct}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                                    <div className="flex flex-col"><span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct}</span></div>
+                                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {formData.cct && (
+                            <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 animate-in zoom-in-95">
+                              <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-9 w-9" /></div>
+                              <div><h4 className="text-xl font-black uppercase text-slate-800 leading-tight">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-muted-foreground mt-1">CCT: {formData.cct} • {formData.municipio} • {formData.valle}</p></div>
                             </div>
                           )}
-                        </div>
-                        {formData.cct && (
-                          <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 animate-in zoom-in-95">
-                            <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-9 w-9" /></div>
-                            <div><h4 className="text-xl font-black uppercase text-slate-800 leading-tight">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-muted-foreground mt-1">CCT: {formData.cct} • {formData.municipio} • {formData.valle}</p></div>
-                          </div>
-                        )}
-                     </div>
+                       </div>
+                     )}
 
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {activeTab === 'Cuentas Institucionales' && (
+                           <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8">
+                              <div className="flex items-center gap-4 border-b border-primary/10 pb-4">
+                                 <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                                    <ShieldCheck className="h-7 w-7" />
+                                 </div>
+                                 <div>
+                                    <h3 className="text-lg font-black uppercase text-primary leading-none">Registro de Cuenta Oficial</h3>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Identidad Digital @desysa.edu.mx</p>
+                                 </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                 <div className="md:col-span-12 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">1.- Nombre Completo del Usuario</Label>
+                                    <Input 
+                                       placeholder="ESCRIBIR APELLIDOS Y NOMBRE(S)..." 
+                                       className="h-14 rounded-2xl bg-white border-primary/10 font-black text-base uppercase shadow-sm"
+                                       value={formData.userName || ''}
+                                       onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})}
+                                    />
+                                 </div>
+
+                                 <div className="md:col-span-6 space-y-2 relative">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">2.- CCT (Identificador de Plantel)</Label>
+                                    <Input 
+                                       placeholder="15DES0000X" 
+                                       className="h-14 rounded-2xl bg-white border-primary/10 font-mono font-black text-lg uppercase shadow-sm"
+                                       value={formData.cct || ''}
+                                       onChange={e => handleCctChange(e.target.value)}
+                                       maxLength={10}
+                                    />
+                                    {formData.schoolName && (
+                                      <div className="absolute -bottom-6 left-1 flex items-center gap-1">
+                                         <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                         <span className="text-[8px] font-black text-emerald-600 uppercase truncate max-w-[200px]">{formData.schoolName}</span>
+                                      </div>
+                                    )}
+                                 </div>
+
+                                 <div className="md:col-span-6 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">7.- Correo Electrónico Institucional</Label>
+                                    <Input 
+                                       placeholder="ejemplo@desysa.edu.mx" 
+                                       className="h-14 rounded-2xl bg-white border-primary/10 font-bold text-base lowercase shadow-sm"
+                                       value={formData.email || ''}
+                                       onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})}
+                                    />
+                                 </div>
+
+                                 <div className="md:col-span-4 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">3.- Sector</Label>
+                                    <Input 
+                                       placeholder="SECTOR..." 
+                                       className="h-12 rounded-xl bg-white border-primary/10 font-black uppercase shadow-sm"
+                                       value={formData.sector || ''}
+                                       onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})}
+                                    />
+                                 </div>
+
+                                 <div className="md:col-span-4 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">4.- Zona</Label>
+                                    <Input 
+                                       placeholder="ZONA ESCOLAR..." 
+                                       className="h-12 rounded-xl bg-white border-primary/10 font-black uppercase shadow-sm"
+                                       value={formData.zonaEscolar || ''}
+                                       onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})}
+                                    />
+                                 </div>
+
+                                 <div className="md:col-span-4 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">5.- Modalidad</Label>
+                                    <Input 
+                                       placeholder="DES / DST / DTV..." 
+                                       className="h-12 rounded-xl bg-white border-primary/10 font-black uppercase shadow-sm"
+                                       value={formData.modalidad || ''}
+                                       onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})}
+                                    />
+                                 </div>
+
+                                 <div className="md:col-span-6 space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 pl-1">6.- Valle</Label>
+                                    <Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}>
+                                       <SelectTrigger className="h-12 rounded-xl bg-white border-primary/10 font-black uppercase shadow-sm">
+                                          <SelectValue placeholder="SELECCIONAR VALLE..." />
+                                       </SelectTrigger>
+                                       <SelectContent className="rounded-xl border-slate-200">
+                                          <SelectItem value="MEXICO" className="font-black text-[10px]">MÉXICO</SelectItem>
+                                          <SelectItem value="TOLUCA" className="font-black text-[10px]">TOLUCA</SelectItem>
+                                       </SelectContent>
+                                    </Select>
+                                 </div>
+
+                                 <div className="md:col-span-12 pt-4">
+                                   <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center gap-4">
+                                     <Info className="h-6 w-6 text-primary shrink-0" />
+                                     <p className="text-[9px] font-bold text-slate-500 uppercase leading-tight">
+                                       Al capturar el CCT, el sistema intentará auto-completar los datos de Sector, Zona, Modalidad y Valle desde la base maestra institucional.
+                                     </p>
+                                   </div>
+                                 </div>
+                              </div>
+                           </div>
+                        )}
+
                         {activeTab === 'Biblioteca Digital' && (
                           <>
                             <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6">
@@ -516,7 +623,7 @@ export default function ProgramsPage() {
                           </div>
                         )}
 
-                        {(activeTab === 'Conoce mi Escuela' || activeTab === 'ATRES' || activeTab === 'Cuentas Institucionales') && (
+                        {(activeTab === 'Conoce mi Escuela' || activeTab === 'ATRES') && (
                           <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6">
                              <h3 className="text-sm font-black uppercase text-primary tracking-widest border-b pb-2 flex items-center gap-2"><FileText className="h-5 w-5" /> Detalle del Estatus / Observaciones</h3>
                              <div className="space-y-4">
