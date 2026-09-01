@@ -71,6 +71,7 @@ type AssistantEntry = {
   materno: string;
   nombres: string;
   rfc: string;
+  curp: string;
   genero: 'MASCULINO' | 'FEMENINO' | '';
   funcion: string;
   email: string;
@@ -130,7 +131,7 @@ export default function ProgramsPage() {
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
 
   const [assistants, setAssistants] = useState<AssistantEntry[]>([
-    { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
+    { paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
   ])
 
   const initialFormState: ProgramStatus = {
@@ -184,7 +185,7 @@ export default function ProgramsPage() {
   }
 
   const handleAddAssistantRow = () => {
-    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
   }
 
   const handleRemoveAssistantRow = (index: number) => {
@@ -290,7 +291,6 @@ export default function ProgramsPage() {
 
       <Card className="executive-card p-4 sm:p-6 bg-white border-none shadow-xl mt-4">
         <div className="grid grid-cols-12 items-end gap-4">
-           {/* Selector de Módulos (Columnas 1-5) */}
            <div className="col-span-12 lg:col-span-5 space-y-2 min-w-0">
               <Label className="text-[9px] font-black uppercase text-slate-400 block pl-1">Módulo Institucional</Label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -309,7 +309,6 @@ export default function ProgramsPage() {
               </div>
            </div>
            
-           {/* Acciones Contextuales Centrales (Columnas 6-7) */}
            <div className="col-span-12 lg:col-span-2 flex justify-center pb-2">
              {activeTab === 'Cuentas Institucionales' && (
                <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-lg w-full">
@@ -323,14 +322,13 @@ export default function ProgramsPage() {
              )}
            </div>
 
-           {/* Búsqueda y Registro (Columnas 8-12) */}
            <div className="col-span-12 lg:col-span-5 flex items-center gap-3 pb-2">
              <div className="relative flex-1">
                 <Input placeholder="FILTRAR..." className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase shadow-xl flex-shrink-0 min-w-fit">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase shadow-xl flex-shrink-0 min-w-fit">
                 <PlusCircle className="h-5 w-5 mr-2" /> NUEVO REGISTRO
              </Button>
            </div>
@@ -564,15 +562,42 @@ export default function ProgramsPage() {
                          <Button onClick={handleAddAssistantRow} size="sm" className="h-8 px-4 text-[9px] font-black uppercase"><Plus className="h-3.5 w-3.5 mr-1" /> AÑADIR</Button>
                       </div>
                       <ScrollArea className="flex-1">
-                         <div className="p-4 w-full overflow-x-auto min-w-0">
-                            <Table className="min-w-[800px]">
-                               <TableHeader className="bg-slate-100/50"><TableRow className="h-10"><TableHead className="w-10 text-[8px] font-black uppercase text-center">#</TableHead><TableHead className="text-[8px] font-black uppercase">Nombre del Servidor</TableHead><TableHead className="text-[8px] font-black uppercase w-[120px]">RFC</TableHead><TableHead className="text-[8px] font-black uppercase w-[100px]">CCT</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-                               <TableBody>{assistants.map((ast, idx) => (
-                                 <TableRow key={`ast-${idx}`} className="h-14"><TableCell className="text-center font-black text-[10px] text-slate-400">{idx+1}</TableCell>
-                                    <TableCell className="p-1"><div className="grid grid-cols-2 gap-1"><Input placeholder="PATERNO" className="h-7 text-[8px] uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} /><Input placeholder="NOMBRES" className="h-7 text-[8px] uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} /></div></TableCell>
-                                    <TableCell className="p-1"><Input placeholder="13 DÍGITOS" className="h-8 text-[9px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} /></TableCell>
-                                    <TableCell className="p-1"><Input placeholder="15DES..." className="h-8 text-[9px] font-mono" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} /></TableCell>
-                                    <TableCell className="p-1"><Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
+                         <div className="p-4 w-full overflow-x-auto">
+                            <Table className="min-w-[900px]">
+                               <TableHeader className="bg-slate-100/50">
+                                 <TableRow className="h-10">
+                                   <TableHead className="w-10 text-[8px] font-black uppercase text-center">#</TableHead>
+                                   <TableHead className="text-[8px] font-black uppercase min-w-[200px]">Nombre del Servidor</TableHead>
+                                   <TableHead className="text-[8px] font-black uppercase w-[120px]">RFC</TableHead>
+                                   <TableHead className="text-[8px] font-black uppercase w-[140px]">CURP</TableHead>
+                                   <TableHead className="text-[8px] font-black uppercase w-[100px]">CCT</TableHead>
+                                   <TableHead className="w-10"></TableHead>
+                                 </TableRow>
+                               </TableHeader>
+                               <TableBody>
+                                 {assistants.map((ast, idx) => (
+                                 <TableRow key={`ast-${idx}`} className="h-14">
+                                    <TableCell className="text-center font-black text-[10px] text-slate-400">{idx+1}</TableCell>
+                                    <TableCell className="p-1">
+                                      <div className="grid grid-cols-2 gap-1">
+                                        <Input placeholder="PATERNO" className="h-7 text-[8px] uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} />
+                                        <Input placeholder="NOMBRES" className="h-7 text-[8px] uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} />
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <Input placeholder="13 DÍGITOS" className="h-8 text-[9px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <Input placeholder="18 DÍGITOS" className="h-8 text-[9px] font-mono uppercase" value={ast.curp} onChange={e => updateAssistant(idx, 'curp', e.target.value.toUpperCase())} maxLength={18} />
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <Input placeholder="15DES..." className="h-8 text-[9px] font-mono" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </TableCell>
                                  </TableRow>
                                ))}</TableBody>
                             </Table>
