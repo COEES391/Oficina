@@ -137,7 +137,7 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
-    userName: '', email: '',
+    userName: '', email: '', emails: [''],
     zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     asistentes: [],
     latitud: '',
@@ -309,6 +309,24 @@ export default function ProgramsPage() {
     return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
   }, [allSchools, dialogSearchTerm]);
 
+  const updateEmail = (index: number, value: string) => {
+    const newEmails = [...(formData.emails || [])];
+    newEmails[index] = value;
+    setFormData({ ...formData, emails: newEmails });
+  }
+
+  const addEmailField = () => {
+    if ((formData.emails || []).length < 3) {
+      setFormData({ ...formData, emails: [...(formData.emails || []), ''] });
+    }
+  }
+
+  const removeEmailField = (index: number) => {
+    if ((formData.emails || []).length > 1) {
+      setFormData({ ...formData, emails: (formData.emails || []).filter((_, i) => i !== index) });
+    }
+  }
+
   if (!mounted) return null
 
   const showAssistantsTab = activeTab === 'Biblioteca Digital' && (formData.bibliotecaFases?.personalCapacitado || 0) >= 1;
@@ -394,7 +412,7 @@ export default function ProgramsPage() {
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-1">
                       {activeTab === 'Biblioteca Digital' && (<button onClick={() => { setSelectedReport(rec); setIsReportDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-accent hover:bg-accent/5 rounded-lg"><FileBox className="h-3.5 w-3.5" /></button>)}
-                      <button onClick={() => { setFormData({...rec}); setAssistants(rec.asistentes || []); setEditingId(rec.id!); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setAssistants(rec.asistentes || []); setEditingId(rec.id!); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </TableCell>
@@ -428,7 +446,11 @@ export default function ProgramsPage() {
                 </div>
                 <div className="space-y-2">
                    <p className="text-[8px] font-bold uppercase text-white/40 leading-none">Correo Institucional</p>
-                   <p className="text-[10px] font-mono font-bold text-accent truncate">{verifiedAccount.email || 'S/D'}</p>
+                   <div className="space-y-1">
+                      {(verifiedAccount.emails || [verifiedAccount.email]).map((em: string, i: number) => (
+                        <p key={i} className="text-[10px] font-mono font-bold text-accent truncate">{em || 'S/D'}</p>
+                      ))}
+                   </div>
                    <div className="flex items-center gap-2 pt-1">
                       <StatusLight status={verifiedAccount.status} />
                       <Badge className="text-[8px] font-bold h-4 px-2 uppercase bg-emerald-500">{verifiedAccount.status}</Badge>
@@ -464,8 +486,8 @@ export default function ProgramsPage() {
              {showAssistantsTab && (
                <div className="px-6 border-b bg-slate-50/50 shrink-0">
                   <TabsList className="bg-transparent h-14 p-0 gap-8">
-                    <TabsTrigger value="datos" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">1. Fases Técnicas</TabsTrigger>
-                    <TabsTrigger value="asistentes" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">2. Lista de Participantes</TabsTrigger>
+                    <TabsTrigger value="datos" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">Fases Técnicas</TabsTrigger>
+                    <TabsTrigger value="asistentes" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">Lista de Participantes</TabsTrigger>
                   </TabsList>
                </div>
              )}
@@ -478,32 +500,55 @@ export default function ProgramsPage() {
                          <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8 shadow-inner max-w-6xl mx-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                <div className="md:col-span-2 space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">1. Nombre Completo del Usuario</Label>
+                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">Nombre Completo del Usuario</Label>
                                   <Input className="h-14 font-bold text-lg border-primary/10 bg-white rounded-xl shadow-sm uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
                                </div>
                                <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">2. CCT</Label>
+                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">CCT</Label>
                                   <Input className="h-12 font-mono font-bold uppercase border-primary/10 bg-white rounded-xl" value={formData.cct || ''} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
                                </div>
-                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">7. Correo Institucional</Label>
-                                  <Input className="h-12 font-bold lowercase border-primary/10 bg-white rounded-xl" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="usuario@desysa.edu.mx" />
+                               <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Correo Institucional (1 a 3)</Label>
+                                    {(formData.emails || []).length < 3 && (
+                                      <Button variant="ghost" size="sm" onClick={addEmailField} className="h-7 px-2 text-[8px] font-black uppercase text-primary border border-primary/10">
+                                        <Plus className="h-3 w-3 mr-1" /> Añadir Otro
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <div className="space-y-2">
+                                     {(formData.emails || ['']).map((email, idx) => (
+                                       <div key={idx} className="flex gap-2 animate-in slide-in-from-left-2 duration-300">
+                                          <Input 
+                                            className="h-11 font-bold lowercase border-primary/10 bg-white rounded-xl flex-1" 
+                                            value={email} 
+                                            onChange={e => updateEmail(idx, e.target.value.toLowerCase())} 
+                                            placeholder={`Correo institucional ${idx + 1}...`}
+                                          />
+                                          {(formData.emails || []).length > 1 && (
+                                            <Button variant="ghost" size="icon" onClick={() => removeEmailField(idx)} className="h-11 w-11 rounded-xl text-rose-500 hover:bg-rose-50">
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                       </div>
+                                     ))}
+                                  </div>
                                </div>
                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">3. Sector</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Sector</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.sector || ''} onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">4. Zona</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Zona</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.zonaEscolar || ''} onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">5. Modalidad</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Modalidad</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.modalidad || ''} onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">6. Valle</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Valle</Label>
                                     <Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}>
                                        <SelectTrigger className="h-11 font-bold text-[11px] bg-white rounded-xl uppercase"><SelectValue /></SelectTrigger>
                                        <SelectContent className="rounded-xl"><SelectItem value="MEXICO" className="text-[11px]">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[11px]">TOLUCA</SelectItem></SelectContent>
@@ -651,7 +696,7 @@ export default function ProgramsPage() {
                       <div className="p-6 bg-slate-50 border-b flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm">
                          <div className="flex items-center gap-4">
                            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Users className="h-6 w-6" /></div>
-                           <p className="text-sm font-black text-primary tracking-widest uppercase">Lista de Participantes (Setes)</p>
+                           <p className="text-sm font-black text-primary tracking-widest uppercase">Lista de Participantes</p>
                          </div>
                          <Button onClick={handleAddAssistantRow} className="btn-institutional h-12 px-10 text-xs shadow-xl"><Plus className="h-5 w-5 mr-2" /> Añadir Servidor</Button>
                       </div>
@@ -698,7 +743,7 @@ export default function ProgramsPage() {
                                        <SelectContent className="rounded-xl shadow-2xl">{FUNCIONES.map(f => (<SelectItem key={f} value={f} className="text-[11px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
                                      </Select>
                                    </TableCell>
-                                   <TableCell className="p-2">
+                                   <TableCell className="p-2 text-center">
                                       <Input placeholder="CCT..." className="h-12 text-sm font-mono font-black uppercase border-primary/20 bg-white text-center shadow-sm" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
                                    </TableCell>
                                    <TableCell className="p-2">

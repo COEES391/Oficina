@@ -60,6 +60,7 @@ export type ProgramStatus = {
   observaciones?: string;
   capacitacion?: 'S' | 'N';
   email?: string;
+  emails?: string[]; // Soporte para múltiples correos
   asistentes?: any[];
   latitud?: string;
   longitud?: string;
@@ -88,6 +89,40 @@ export type ProgramStatus = {
     personalCapacitado: number;
     equiposHabilitados: number;
   };
+};
+
+export type TrainingRecord = {
+  id: string;
+  cursoGrupo: string;
+  cursoNombre: string;
+  duracionHoras: number;
+  fechaInicio: string;
+  fechaTermino: string;
+  instructores: string[];
+  numeroOficio: string;
+  materialUtilizado: string;
+  cctSede: string;
+  setes: 'S' | 'N';
+  asistentePaterno: string;
+  asistenteMaterno: string;
+  asistenteNombres: string;
+  asistenteRFC: string;
+  asistenteGenero: 'MASCULINO' | 'FEMENINO' | '';
+  asistenteFuncion: string;
+  asistenteEmail: string;
+  asistenteCCT: string;
+  asistenteNombreCT: string;
+  asistenteZE: string;
+  asistenteSector: string;
+  asistenteModalidad: string;
+  asistenteMunicipio: string;
+  asistenteRegion: string;
+  asistenteValle: string;
+  reportPdf?: string;
+  evidencePhotos?: string[];
+  observaciones?: string;
+  alumnosBeneficiados?: number;
+  docentesBeneficiados?: number;
 };
 
 // Datos maestros iniciales ahora vacíos para favorecer Firestore
