@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -45,10 +45,13 @@ import {
   Monitor,
   MapPin,
   Navigation,
-  Mail
+  Mail,
+  Upload,
+  ImageIcon
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
+import Image from 'next/image'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -125,6 +128,9 @@ export default function ProgramsPage() {
   const [selectedReport, setSelectedReport] = useState<ProgramStatus | null>(null)
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
 
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
   const [assistants, setAssistants] = useState<AssistantEntry[]>([
     { paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
   ])
@@ -137,6 +143,8 @@ export default function ProgramsPage() {
     latitud: '',
     longitud: '',
     observaciones: '',
+    reportPdf: '',
+    evidencePhotos: [] as string[],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
       fase5: false, fase6: false, fase7: false, fase7_1: false, personalCapacitado: 0, equiposHabilitados: 0
@@ -177,6 +185,36 @@ export default function ProgramsPage() {
         setFormData(prev => ({ ...prev, schoolName: '', municipio: '', valle: '', region: '', zonaEscolar: '', sector: '', modalidad: '' }))
       }
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) { // 2.0 MB
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "Límite: 2.0 MB" })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (type === 'pdf') {
+        setFormData(prev => ({ ...prev, reportPdf: base64 }))
+      } else {
+        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
+      }
+      toast({ title: "Evidencia añadida" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
+    }))
   }
 
   const handleAddAssistantRow = () => {
@@ -529,6 +567,61 @@ export default function ProgramsPage() {
                                 </div>
                                 <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center justify-between"><span className="text-[11px] font-black uppercase text-primary">Avance del Proyecto</span><Badge className="text-xl font-black h-12 w-24 flex items-center justify-center rounded-xl bg-primary text-white">{formData.progress}%</Badge></div>
                             </div>
+
+                            <div className="md:col-span-2 space-y-6 pt-6 border-t-2 border-primary/5 max-w-6xl mx-auto w-full">
+                                <h3 className="text-sm font-black uppercase text-primary tracking-wider flex items-center gap-2">
+                                  <Archive className="h-5 w-5" /> Evidencia Digital (PDF e imágenes PNG)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                  <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative group transition-all hover:border-primary/30">
+                                    {formData.reportPdf ? (
+                                      <div className="flex flex-col items-center gap-3">
+                                        <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600">
+                                          <FileText className="h-8 w-8" />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase text-emerald-700">REPORTE CARGADO</p>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="absolute top-4 right-4 h-8 w-8 text-rose-500 rounded-full hover:bg-rose-50" 
+                                          onClick={() => setFormData(prev => ({...prev, reportPdf: ''}))}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <Upload className="h-8 w-8 text-slate-300 group-hover:text-primary transition-colors" />
+                                        <p className="text-[10px] font-black uppercase text-slate-700">Subir Formato PDF (Máx 2.0MB)</p>
+                                        <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Seleccionar</Button>
+                                      </>
+                                    )}
+                                    <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
+                                  </div>
+                                  <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative transition-all hover:border-primary/30">
+                                    <ImageIcon className="h-8 w-8 text-slate-300" />
+                                    <p className="text-[10px] font-black uppercase text-slate-700">Adjuntar Imágenes PNG (Máx 2.0MB)</p>
+                                    <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 hover:bg-primary/5">Añadir Imagen</Button>
+                                    <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                                    
+                                    {formData.evidencePhotos && formData.evidencePhotos.length > 0 && (
+                                      <div className="grid grid-cols-4 gap-3 mt-4 w-full">
+                                        {formData.evidencePhotos.map((img, idx) => (
+                                          <div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group">
+                                            <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); removeImage(idx); }} 
+                                              className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                            </div>
                           </>
                         )}
 
@@ -629,7 +722,7 @@ export default function ProgramsPage() {
                                      </Button>
                                    </TableCell>
                                 </TableRow>
-                               ))}</TableBody>
+                                ))}</TableBody>
                            </Table>
                         </div>
                       </div>
