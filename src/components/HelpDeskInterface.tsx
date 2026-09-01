@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -121,6 +122,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [mounted, setMounted] = useState(false)
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
+  const [currentOrigin, setCurrentOrigin] = useState('')
   
   const [isRemoteHelpRequested, setIsRemoteHelpRequested] = useState(false)
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
@@ -187,13 +189,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const copySupportLink = () => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '/helpdesk';
+    const url = `${currentOrigin}/helpdesk`;
     navigator.clipboard.writeText(url);
     toast({ title: "Enlace Copiado", description: "La liga de la Mesa de Ayuda está lista para compartir." });
   }
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      setCurrentOrigin(window.location.origin);
+    }
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]');
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory);
 
@@ -494,7 +499,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                   <div className="flex gap-2">
                     <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-[9px] font-mono font-bold text-slate-500 truncate shadow-inner">
-                       {typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '/helpdesk'}
+                       {currentOrigin ? `${currentOrigin}/helpdesk` : 'Cargando enlace...'}
                     </div>
                     <Button 
                       variant="outline" 
@@ -600,6 +605,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-800 uppercase leading-none">{isPublic ? "Mesa de Ayuda ATRES" : "Centro de Control Operativo"}</h2>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Asistente virtual y soporte técnico remoto para el sistema de seguimiento ATRES.</p>
                   <div className="flex items-center gap-3 mt-1.5">
                     <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5">{activeChatId}</Badge>
                     {isPublic && (
