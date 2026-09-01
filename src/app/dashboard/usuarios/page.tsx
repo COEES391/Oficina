@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Shield, Save, KeyRound, Loader2, User, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, serverTimestamp } from 'firebase/firestore'
 import { type AppUser } from '@/lib/planning-data'
 import { cn } from "@/lib/utils"
 
@@ -50,16 +50,19 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      const q = query(collection(db, 'users'), orderBy('name', 'asc'))
+      // Quitamos orderBy para evitar errores de índices no creados en Firestore
+      const q = query(collection(db, 'users'))
       const querySnapshot = await getDocs(q)
       const fetchedUsers = querySnapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id
       })) as AppUser[]
-      setUsers(fetchedUsers)
+      
+      // Ordenamos localmente por nombre
+      setUsers(fetchedUsers.sort((a, b) => (a.name || '').localeCompare(b.name || '')))
     } catch (error) {
       console.error("Error fetching users:", error)
-      toast({ variant: "destructive", title: "Error al cargar la lista", description: "No se pudo sincronizar con la nube." })
+      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo sincronizar la lista de usuarios." })
     } finally {
       setIsLoading(false)
     }
@@ -79,7 +82,7 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "El nombre, RFC y contraseña son obligatorios." 
+        description: "El nombre, RFC y contraseña son necesarios." 
       })
       return
     }
@@ -87,40 +90,25 @@ export default function UsersPage() {
     setIsSaving(true)
 
     try {
-      const performSave = async () => {
-        const userData = {
-          rfc: cleanRfc,
-          name: cleanName,
-          password: cleanPassword,
-          role: 'user' as const,
-          privileges: formData.privileges || ['programas'],
-          updatedAt: serverTimestamp()
-        }
-
-        if (editingId) {
-          const userRef = doc(db, 'users', editingId)
-          await updateDoc(userRef, userData)
-          return "update"
-        } else {
-          await addDoc(collection(db, 'users'), {
-            ...userData,
-            createdAt: serverTimestamp()
-          })
-          return "add"
-        }
+      const userData = {
+        rfc: cleanRfc,
+        name: cleanName,
+        password: cleanPassword,
+        role: 'user' as const,
+        privileges: formData.privileges || ['programas'],
+        updatedAt: serverTimestamp()
       }
 
-      // Timeout de 12 segundos para evitar que la interfaz se bloquee
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 12000)
-      )
-
-      const result = await Promise.race([performSave(), timeoutPromise])
-
-      if (result === "update") {
-        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron.` })
+      if (editingId) {
+        const userRef = doc(db, 'users', editingId)
+        await updateDoc(userRef, userData)
+        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron correctamente.` })
       } else {
-        toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya tiene acceso.` })
+        await addDoc(collection(db, 'users'), {
+          ...userData,
+          createdAt: serverTimestamp()
+        })
+        toast({ title: "Acceso registrado", description: `El servidor público ${cleanRfc} ya tiene acceso al sistema.` })
       }
 
       setIsDialogOpen(false)
@@ -129,19 +117,11 @@ export default function UsersPage() {
       await fetchUsers()
     } catch (error: any) {
       console.error("Save error:", error)
-      if (error.message === 'timeout') {
-        toast({ 
-          variant: "destructive", 
-          title: "Tiempo de espera agotado", 
-          description: "La nube no respondió a tiempo. Verifique su conexión e intente de nuevo." 
-        })
-      } else {
-        toast({ 
-          variant: "destructive", 
-          title: "Error de guardado", 
-          description: "No se pudieron subir los datos. Verifique permisos de Firestore." 
-        })
-      }
+      toast({ 
+        variant: "destructive", 
+        title: "Error al guardar", 
+        description: "No se pudo registrar en la nube. Verifique su conexión o permisos." 
+      })
     } finally {
       setIsSaving(false)
     }
@@ -164,13 +144,13 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Desea eliminar este acceso permanentemente?")) return
+    if (!confirm("¿Desea eliminar este acceso institucional permanentemente?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso removido" })
+      toast({ title: "Acceso removido", description: "El usuario ya no tiene entrada al sistema." })
       fetchUsers()
     } catch (error) {
-      toast({ variant: "destructive", title: "Error al procesar la baja" })
+      toast({ variant: "destructive", title: "Error al borrar", description: "No se pudo procesar la baja en la nube." })
     }
   }
 
@@ -180,9 +160,9 @@ export default function UsersPage() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de accesos global</h2>
+          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de accesos institucional</h2>
           <p className="text-muted-foreground font-bold text-xs flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas en tiempo real
+            <ShieldCheck className="h-4 w-4 text-accent" /> Control de identidades sincronizadas en tiempo real
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
@@ -202,15 +182,15 @@ export default function UsersPage() {
             <Table>
               <TableHeader className="bg-slate-100/50">
                 <TableRow>
-                  <TableHead className="font-bold text-[11px] pl-10 h-14 text-slate-500">Nombre del servidor</TableHead>
+                  <TableHead className="font-bold text-[11px] pl-10 h-14 text-slate-500">Nombre del servidor público</TableHead>
                   <TableHead className="font-bold text-[11px] h-14 text-slate-500">Identificador (RFC)</TableHead>
-                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Privilegios asignados</TableHead>
+                  <TableHead className="font-bold text-[11px] h-14 text-slate-500">Privilegios de sección</TableHead>
                   <TableHead className="text-right font-bold text-[11px] pr-10 h-14 text-slate-500">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando datos...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando accesos...</TableCell></TableRow>
                 ) : users.length > 0 ? users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-20 border-b border-slate-50">
                     <TableCell className="pl-10">
@@ -258,7 +238,7 @@ export default function UsersPage() {
               <DialogTitle className="font-black text-primary text-2xl flex items-center gap-4">
                 <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar perfil institucional' : 'Nuevo acceso institucional'}
               </DialogTitle>
-              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y privilegios para este servidor.</DialogDescription>
+              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y privilegios para este servidor público.</DialogDescription>
             </div>
             <button onClick={() => !isSaving && setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
               <X className="h-5 w-5 text-slate-500" />
@@ -297,7 +277,7 @@ export default function UsersPage() {
                         value={formData.password} 
                         onChange={e => setFormData({...formData, password: e.target.value})} 
                         className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
-                        placeholder="Contraseña..." 
+                        placeholder="Mínimo 6 caracteres..." 
                         disabled={isSaving}
                       />
                       <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5" disabled={isSaving}>
@@ -311,7 +291,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-xs font-black text-accent tracking-widest">Privilegios de sección asignados</h4>
+                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Niveles de acceso autorizados</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
@@ -356,7 +336,7 @@ export default function UsersPage() {
               className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[240px]"
             >
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
-              {isSaving ? 'Registrando...' : (editingId ? 'Guardar cambios' : 'Registrar acceso')}
+              {isSaving ? 'Sincronizando...' : (editingId ? 'Guardar cambios' : 'Registrar acceso')}
             </Button>
           </DialogFooter>
         </DialogContent>

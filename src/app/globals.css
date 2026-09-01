@@ -33,14 +33,15 @@
 @layer base {
   * {
     @apply border-border;
-    font-family: var(--font-sans), sans-serif;
+    font-family: 'Montserrat', sans-serif !important;
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans), sans-serif;
+    font-family: 'Montserrat', sans-serif !important;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-black tracking-tight;
+    text-transform: none;
   }
 }
 
@@ -51,6 +52,7 @@
 
   .btn-institutional {
     @apply bg-primary hover:bg-primary/95 text-white font-black tracking-[0.05em] shadow-2xl shadow-primary/20 transition-all duration-500 rounded-2xl h-12 hover:scale-[1.02] active:scale-95;
+    text-transform: none;
   }
 
   .glass-panel {

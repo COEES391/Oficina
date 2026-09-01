@@ -39,7 +39,7 @@ export default function LoginPage() {
     try {
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Acceso maestro", description: "Bienvenido, administrador." })
+        toast({ title: "Acceso maestro", description: "Bienvenido al centro de control, Administrador." })
         router.push('/dashboard/programas') 
         return
       }
@@ -51,7 +51,7 @@ export default function LoginPage() {
       if (!querySnapshot.empty) {
         const userData = querySnapshot.docs[0].data() as AppUser
         localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Identidad validada", description: `Bienvenido, ${userData.name}.` })
+        toast({ title: "Identidad validada", description: `Bienvenido al sistema, ${userData.name}.` })
         
         const privs = userData.privileges || []
         
@@ -68,7 +68,7 @@ export default function LoginPage() {
         toast({ 
           variant: "destructive", 
           title: "Acceso denegado", 
-          description: "Credenciales incorrectas." 
+          description: "Las credenciales ingresadas no son correctas." 
         })
       }
     } catch (error: any) {
@@ -76,7 +76,7 @@ export default function LoginPage() {
       toast({ 
         variant: "destructive", 
         title: "Error de sistema", 
-        description: "No se pudo conectar con el servidor." 
+        description: "No se pudo establecer conexión con el servidor de seguridad." 
       })
     } finally {
       setIsLoading(false)
@@ -99,7 +99,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tighter text-[#9f2241]">Portal integral</CardTitle>
-            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest">Gestión técnica COEES Edoméx</CardDescription>
+            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest uppercase">Gestión técnica Coees Edoméx</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 px-10 pb-8">
@@ -107,7 +107,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label className="text-xs font-black text-slate-400 pl-2">Identificador de acceso (RFC)</Label>
               <Input 
-                placeholder="RFC..." 
+                placeholder="Ingresar RFC..." 
                 className="h-14 rounded-2xl bg-slate-50 border-slate-200 text-base font-black px-6 shadow-inner" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
@@ -140,14 +140,14 @@ export default function LoginPage() {
               disabled={isLoading} 
               className="w-full h-16 text-sm font-black uppercase tracking-[0.2em] rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl mt-4"
             >
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : "Iniciar sesión"}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : "Iniciar sesión oficial"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="pt-0 pb-10 px-10">
            <div className="w-full py-4 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
              <ShieldCheck className="h-4 w-4 text-emerald-500" />
-             <span className="text-[10px] font-bold text-slate-400 tracking-widest">Acceso seguro 2026</span>
+             <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Acceso seguro ciclo 2025-2026</span>
            </div>
         </CardFooter>
       </Card>
