@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -162,7 +163,6 @@ export default function SupportPage() {
     setInventory(updatedInventory);
     localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
     
-    // Auto-seleccionar en el formulario de entrada
     setMovementForm(prev => ({ ...prev, itemIdEntrada: newItem.id.toString() }));
     setIsNewItemDialogOpen(false);
     setNewItemForm({ name: '', unit: 'Pieza', minStock: 5 });
@@ -487,7 +487,7 @@ export default function SupportPage() {
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">USUARIO A QUIEN SE LE DIO EL MATERIAL...</Label>
+                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ENTREGADO A / USUARIO</Label>
                               <Input 
                                   placeholder="NOMBRE DEL ANALISTA O DOCENTE..." 
                                   className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 
@@ -534,7 +534,7 @@ export default function SupportPage() {
                                   <Input type="number" placeholder="0" className="h-14 bg-slate-50 border-none rounded-2xl text-center font-black text-2xl shadow-inner" value={movementForm.qtyEntrada || ''} onChange={e => setMovementForm(prev => ({...prev, qtyEntrada: parseInt(e.target.value) || 0}))} />
                               </div>
                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">QUIEN RECIBE...</Label>
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">QUIEN RECIBE / ANALISTA</Label>
                                   <Input 
                                     placeholder="ANALISTA RESPONSABLE..." 
                                     className="h-14 bg-slate-50 border-none rounded-2xl uppercase font-black px-8 text-xs shadow-inner" 

@@ -45,7 +45,8 @@ import {
   Printer,
   Archive,
   Link as LinkIcon,
-  FileText
+  FileText,
+  X
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -90,7 +91,6 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
-  const [pendingCount, setPendingRequestsCount] = useState(0)
   
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -136,7 +136,16 @@ export default function ProgramsPage() {
     if (cleanValue.length === 10) {
       const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
-        setFormData(prev => ({ ...prev, schoolName: match.nombre, municipio: match.municipio, valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, sector: match.sector, modalidad: match.modalidad }))
+        setFormData(prev => ({ 
+          ...prev, 
+          schoolName: match.nombre, 
+          municipio: match.municipio, 
+          valle: match.valle, 
+          region: match.region, 
+          zonaEscolar: match.zonaEscolar, 
+          sector: match.sector, 
+          modalidad: match.modalidad 
+        }))
       }
     }
   }
@@ -155,7 +164,21 @@ export default function ProgramsPage() {
     toast({ title: "Registro exitoso" })
   }
 
-  const filteredRecords = records.filter(r => r.name === activeTab && (!searchTerm || r.cct?.includes(searchTerm.toUpperCase()) || r.schoolName?.includes(searchTerm.toUpperCase())));
+  const filteredRecords = records.filter(r => r.name === activeTab && (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase()))));
+
+  const openEvidenceViewer = (record: ProgramStatus) => {
+    setEvidenceToView({
+      pdfData: record.reportPdf,
+      images: record.evidencePhotos || [],
+      title: `Evidencia: ${record.schoolName}`
+    });
+  }
+
+  const printFile = (data: string) => {
+    const win = window.open();
+    if (!win) return;
+    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+  }
 
   if (!mounted) return null
 
@@ -190,7 +213,7 @@ export default function ProgramsPage() {
 
       <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4">
         <div className="overflow-x-auto w-full">
-          <Table className="w-full">
+          <Table>
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
                   <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
