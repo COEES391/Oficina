@@ -60,7 +60,6 @@ export default function UsersPage() {
       setUsers(fetchedUsers.sort((a, b) => (a.name || '').localeCompare(b.name || '')))
     } catch (error) {
       console.error("Error fetching users:", error)
-      // No mostramos error destructivo para no asustar al usuario si la DB está cargando
     } finally {
       setIsLoading(false)
     }
