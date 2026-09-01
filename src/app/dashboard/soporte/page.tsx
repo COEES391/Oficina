@@ -1,17 +1,17 @@
-'use client'
-import { useState, useEffect, useMemo } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { supportData, type SupportTicket } from "@/lib/planning-data"
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supportData, type SupportTicket } from "@/lib/planning-data";
 import { 
   PlusCircle, 
   LifeBuoy, 
@@ -29,12 +29,14 @@ import {
   Activity,
   Box,
   ShoppingCart,
-  CheckCircle2
-} from "lucide-react"
-import { format } from "date-fns"
-import { useToast } from "@/hooks/use-toast"
-import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog'
-import { cn } from '@/lib/utils'
+  CheckCircle2,
+  Plus,
+  Layers
+} from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog';
+import { cn } from '@/lib/utils';
 
 type InventoryItem = {
   id: number;
@@ -66,17 +68,24 @@ const INITIAL_INVENTORY: InventoryItem[] = [
 ];
 
 export default function SupportPage() {
-  const { toast } = useToast()
-  const [mounted, setMounted] = useState(false)
-  const [tickets, setTickets] = useState<SupportTicket[]>([])
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
-  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false)
-  const [isCriticalDialogOpen, setIsCriticalDialogOpen] = useState(false)
-  const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen')
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [movements, setMovements] = useState<WarehouseMovement[]>([])
+  const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
+  const [isCriticalDialogOpen, setIsCriticalDialogOpen] = useState(false);
+  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
+  const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen');
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [movements, setMovements] = useState<WarehouseMovement[]>([]);
   
+  const [newItemForm, setNewItemForm] = useState({
+    name: '',
+    unit: 'Pieza',
+    minStock: 5
+  });
+
   const [movementForm, setMovementForm] = useState({
     itemIdEntrada: '',
     itemIdSalida: '',
@@ -85,10 +94,10 @@ export default function SupportPage() {
     recipientEntrada: '',
     recipientSalida: '',
     folio: ''
-  })
+  });
   
-  const [listSearchTerm, setListSearchTerm] = useState('') 
-  const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
+  const [listSearchTerm, setListSearchTerm] = useState(''); 
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
 
   const initialFormState: Omit<SupportTicket, 'status'> = {
     id: '',
@@ -97,23 +106,23 @@ export default function SupportPage() {
     tecnicos: '',
     fechaEntrada: '',
     tipoIncidencia: 'mantenimiento' as any,
-  }
+  };
 
-  const [formData, setFormData] = useState(initialFormState)
+  const [formData, setFormData] = useState(initialFormState);
 
   useEffect(() => {
-    setMounted(true)
-    const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]')
-    setTickets(stored.length === 0 ? supportData : stored)
+    setMounted(true);
+    const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]');
+    setTickets(stored.length === 0 ? supportData : stored);
 
-    const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]')
-    setInventory(storedInv.length === 0 ? INITIAL_INVENTORY : storedInv)
+    const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]');
+    setInventory(storedInv.length === 0 ? INITIAL_INVENTORY : storedInv);
 
-    const storedMovs = JSON.parse(localStorage.getItem('coees_movements_v1') || '[]')
-    setMovements(storedMovs)
+    const storedMovs = JSON.parse(localStorage.getItem('coees_movements_v1') || '[]');
+    setMovements(storedMovs);
 
-    setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }))
-  }, [])
+    setFormData(prev => ({ ...prev, fechaEntrada: format(new Date(), 'yyyy-MM-dd') }));
+  }, []);
 
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
@@ -131,7 +140,34 @@ export default function SupportPage() {
     toast({ title: "Reporte Guardado" });
   }
 
-  const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') })
+  const resetForm = () => setFormData({ ...initialFormState, id: '', fechaEntrada: format(new Date(), 'yyyy-MM-dd') });
+
+  const handleAddNewItem = () => {
+    if (!newItemForm.name || !newItemForm.unit) {
+      toast({ variant: "destructive", title: "Datos incompletos" });
+      return;
+    }
+
+    const newItem: InventoryItem = {
+      id: Date.now(),
+      name: newItemForm.name.toUpperCase(),
+      qty: 0,
+      unit: newItemForm.unit,
+      minStock: newItemForm.minStock,
+      category: 'GENERAL',
+      locations: ['TOLUCA']
+    };
+
+    const updatedInventory = [...inventory, newItem];
+    setInventory(updatedInventory);
+    localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
+    
+    // Auto-seleccionar en el formulario de entrada
+    setMovementForm(prev => ({ ...prev, itemIdEntrada: newItem.id.toString() }));
+    setIsNewItemDialogOpen(false);
+    setNewItemForm({ name: '', unit: 'Pieza', minStock: 5 });
+    toast({ title: "Nuevo material registrado", description: newItem.name });
+  };
 
   const handleRegisterMovement = (type: 'entrada' | 'salida') => {
     const { itemIdEntrada, itemIdSalida, qtyEntrada, qtySalida, recipientEntrada, recipientSalida, folio } = movementForm;
@@ -471,10 +507,21 @@ export default function SupportPage() {
                           </div>
                           <div className="space-y-6 mt-6">
                             <div className="space-y-2">
-                              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
+                              <div className="flex justify-between items-center pr-1">
+                                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">ELEGIR MATERIAL...</Label>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6 text-primary hover:bg-primary/5 rounded-lg"
+                                  onClick={() => setIsNewItemDialogOpen(true)}
+                                  title="Registrar Nuevo Insumo"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
                               <Select value={movementForm.itemIdEntrada} onValueChange={(val) => setMovementForm(prev => ({...prev, itemIdEntrada: val}))}>
                                   <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-black uppercase text-xs shadow-inner">
-                                    <SelectValue placeholder="SELECCIONAR INSUMO..." />
+                                    <SelectValue placeholder="SELECCIONAR O CREAR NUEVO..." />
                                   </SelectTrigger>
                                   <SelectContent className="rounded-2xl shadow-2xl border-slate-100">
                                     {inventory.map(i => <SelectItem key={`ent-${i.id}`} value={i.id.toString()} className="text-[11px] font-bold uppercase">{i.name}</SelectItem>)}
@@ -557,7 +604,7 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Ventana Emergente de Insumos Críticos */}
+      {/* Ventana de Insumos Críticos */}
       <Dialog open={isCriticalDialogOpen} onOpenChange={setIsCriticalDialogOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
@@ -613,9 +660,67 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Diálogo de Nuevo Material */}
+      <Dialog open={isNewItemDialogOpen} onOpenChange={setIsNewItemDialogOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+             <div className="flex items-center gap-4">
+                <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
+                   <Layers className="h-6 w-6" />
+                </div>
+                <div>
+                   <DialogTitle className="uppercase font-black text-xl leading-none">Alta de Insumo</DialogTitle>
+                   <p className="text-white/60 text-[9px] font-bold uppercase mt-2">Registrar nuevo material en el catálogo</p>
+                </div>
+             </div>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre del Material</Label>
+              <Input 
+                placeholder="EJ. DISCO DURO SSD 1TB..." 
+                className="h-12 bg-slate-50 border-none rounded-xl font-black uppercase px-6 shadow-inner" 
+                value={newItemForm.name} 
+                onChange={e => setNewItemForm({...newItemForm, name: e.target.value.toUpperCase()})} 
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary pl-1">Unidad</Label>
+                <Select value={newItemForm.unit} onValueChange={v => setNewItemForm({...newItemForm, unit: v})}>
+                  <SelectTrigger className="h-12 bg-slate-50 border-none rounded-xl font-bold shadow-inner">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pieza">Pieza</SelectItem>
+                    <SelectItem value="Bobina">Bobina</SelectItem>
+                    <SelectItem value="Bolsa">Bolsa</SelectItem>
+                    <SelectItem value="Kit">Kit</SelectItem>
+                    <SelectItem value="Metro">Metro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-primary pl-1">Stock Mínimo</Label>
+                <Input 
+                  type="number" 
+                  className="h-12 bg-slate-50 border-none rounded-xl text-center font-black text-lg shadow-inner" 
+                  value={newItemForm.minStock} 
+                  onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} 
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+             <Button variant="ghost" onClick={() => setIsNewItemDialogOpen(false)} className="rounded-xl h-12 px-6 text-[9px] font-black uppercase">Cancelar</Button>
+             <Button onClick={handleAddNewItem} className="btn-institutional h-12 px-10"><Save className="h-4 w-4 mr-2" /> Registrar Insumo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte Técnico" />
 
-      {/* Diálogo de Nuevo Reporte */}
+      {/* Diálogo de Nuevo Reporte de Servicio */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
