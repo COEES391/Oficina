@@ -37,19 +37,27 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // Accesos Maestros y Especiales
+      // Acceso Maestro
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Acceso maestro", description: "Bienvenido al Centro de Control." })
+        toast({ title: "Acceso maestro", description: "Bienvenido al Centro de Control Integral." })
         router.push('/dashboard/programas') 
         return
       }
       
-      // Usuario solicitado: CISF840114L34 / Chimal12
+      // Usuario Programas: CISF840114L34 / Chimal12
       if (cleanRfc === 'CISF840114L34' && password === 'Chimal12') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Identidad validada", description: "Bienvenido al Módulo de Programas." })
         router.push('/dashboard/programas')
+        return
+      }
+
+      // Usuario Soporte: HEAS740508Q23 / Soporte12
+      if (cleanRfc === 'HEAS740508Q23' && password === 'Soporte12') {
+        localStorage.setItem('userRfc', cleanRfc)
+        toast({ title: "Identidad validada", description: "Bienvenido al Módulo de Soporte Técnico." })
+        router.push('/dashboard/soporte')
         return
       }
       
@@ -60,7 +68,7 @@ export default function LoginPage() {
       if (!querySnapshot.empty) {
         const userData = querySnapshot.docs[0].data() as AppUser
         localStorage.setItem('userRfc', cleanRfc)
-        toast({ title: "Identidad validada", description: `Bienvenido, ${userData.name}.` })
+        toast({ title: "Identidad validada", description: `Bienvenido al sistema, ${userData.name}.` })
         
         const privs = userData.privileges || []
         if (privs.includes('programas')) {
@@ -69,8 +77,10 @@ export default function LoginPage() {
           router.push('/dashboard/soporte')
         } else if (privs.includes('capacitacion')) {
           router.push('/dashboard/capacitacion')
-        } else {
+        } else if (privs.includes('planeacion')) {
           router.push('/dashboard')
+        } else {
+          router.push('/dashboard/' + privs[0])
         }
       } else {
         toast({ 

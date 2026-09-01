@@ -51,12 +51,12 @@ export default function DashboardLayout({
     setUserRfc(rfc)
 
     const fetchUserData = async () => {
-      // Casos especiales hardcoded
-      if (rfc === 'COEES' || rfc === 'CEDITORIAL') {
+      // Casos especiales pre-configurados
+      if (rfc === 'COEES') {
         setCurrentUser({
           id: 'master',
           rfc: rfc,
-          name: rfc === 'COEES' ? 'Administrador Maestro' : 'Admin Editorial',
+          name: 'Administrador Maestro',
           password: '',
           role: 'admin',
           privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'bitacora-atres', 'base-cct', 'base-participantes', 'usuarios']
@@ -64,15 +64,28 @@ export default function DashboardLayout({
         return
       }
       
-      // Usuario especial con privilegios restringidos
+      // Usuario Programas (Chimal)
       if (rfc === 'CISF840114L34') {
         setCurrentUser({
-          id: 'special-user',
+          id: 'special-user-programas',
           rfc: rfc,
-          name: 'Usuario Programas',
+          name: 'Usuario de Programas',
           password: '',
           role: 'user',
           privileges: ['programas']
+        })
+        return
+      }
+
+      // Usuario Soporte Técnico
+      if (rfc === 'HEAS740508Q23') {
+        setCurrentUser({
+          id: 'special-user-soporte',
+          rfc: rfc,
+          name: 'Usuario de Soporte Técnico',
+          password: '',
+          role: 'user',
+          privileges: ['soporte']
         })
         return
       }
