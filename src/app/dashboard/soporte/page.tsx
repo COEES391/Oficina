@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -36,7 +35,8 @@ import {
   Wrench,
   Wifi,
   Settings,
-  ClipboardCheck
+  ClipboardCheck,
+  Monitor
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -455,7 +455,7 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
-      {/* DIÁLOGO DE ALMACÉN TÉCNICO (Sin cambios estructurales, solo Montserrat Altas y Bajas) */}
+      {/* DIÁLOGO DE ALMACÉN TÉCNICO */}
       <Dialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen}>
         <DialogContent className="sm:max-w-[1200px] rounded-[2.5rem] h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
