@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supportData, type SupportTicket } from "@/lib/planning-data";
 import { 
@@ -19,19 +18,10 @@ import {
   Pencil, 
   Trash2,
   Archive, 
-  Package,
-  TrendingDown,
-  TrendingUp,
-  AlertTriangle,
   History,
   Save,
   Search,
   X,
-  Activity,
-  Box,
-  CheckCircle2,
-  Plus,
-  Layers,
   Wrench,
   Wifi,
   Settings,
@@ -43,35 +33,6 @@ import { useToast } from "@/hooks/use-toast";
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog';
 import { cn } from '@/lib/utils';
 
-type InventoryItem = {
-  id: number;
-  name: string;
-  qty: number;
-  unit: string;
-  minStock: number;
-  category: string;
-  locations: string[];
-};
-
-type WarehouseMovement = {
-  id: string;
-  type: 'entrada' | 'salida';
-  itemId: number;
-  itemName: string;
-  qty: number;
-  date: string;
-  recipient?: string;
-  folio?: string;
-};
-
-const INITIAL_INVENTORY: InventoryItem[] = [
-  { id: 1, name: 'Cable UTP Categoría 6', qty: 4, unit: 'Bobina (305m)', minStock: 2, category: 'REDES', locations: ['TOLUCA'] },
-  { id: 2, name: 'Conectores RJ45 (Bolsa)', qty: 2, unit: 'Bolsa 100pzs', minStock: 5, category: 'REDES', locations: ['ECATEPEC'] },
-  { id: 3, name: 'Pasta Térmica Jeringa', qty: 15, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['TOLUCA'] },
-  { id: 4, name: 'Limpiador de Contactos (Spray)', qty: 10, unit: 'Pieza', minStock: 5, category: 'MTTO', locations: ['NEZAHUALCÓYOTL'] },
-  { id: 5, name: 'Aire Comprimido', qty: 18, unit: 'Pieza', minStock: 10, category: 'MTTO', locations: ['NAUCALPAN'] },
-];
-
 export default function SupportPage() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
@@ -79,27 +40,6 @@ export default function SupportPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
-  const [isCriticalDialogOpen, setIsCriticalDialogOpen] = useState(false);
-  const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
-  const [warehouseActiveTab, setWarehouseActiveTab] = useState('resumen');
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [movements, setMovements] = useState<WarehouseMovement[]>([]);
-  
-  const [newItemForm, setNewItemForm] = useState({
-    name: '',
-    unit: 'Pieza',
-    minStock: 5
-  });
-
-  const [movementForm, setMovementForm] = useState({
-    itemIdEntrada: '',
-    itemIdSalida: '',
-    qtyEntrada: 0,
-    qtySalida: 0,
-    recipientEntrada: '',
-    recipientSalida: '',
-    folio: ''
-  });
   
   const [listSearchTerm, setListSearchTerm] = useState(''); 
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
@@ -119,8 +59,7 @@ export default function SupportPage() {
       limpieza: false,
       configuracion: false,
       pruebas: false
-    },
-    consumibles: []
+    }
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -129,17 +68,12 @@ export default function SupportPage() {
     setMounted(true);
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]');
     setTickets(stored.length === 0 ? supportData : stored);
-
-    const storedInv = JSON.parse(localStorage.getItem('coees_inventory_v1') || '[]');
-    setInventory(storedInv.length === 0 ? INITIAL_INVENTORY : storedInv);
-
-    const storedMovs = JSON.parse(localStorage.getItem('coees_movements_v1') || '[]');
-    setMovements(storedMovs);
   }, []);
 
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
-      toast({ variant: "destructive", title: "Faltan datos obligatorios", description: "El folio y CCT son necesarios." }); return;
+      toast({ variant: "destructive", title: "Datos incompletos", description: "El folio y CCT son obligatorios." });
+      return;
     }
     const updated = editingTicketId 
       ? tickets.map(t => t.id === editingTicketId ? { ...formData, status: t.status } : t)
@@ -150,69 +84,13 @@ export default function SupportPage() {
     setIsDialogOpen(false);
     resetForm();
     setEditingTicketId(null);
-    toast({ title: "Reporte guardado con éxito" });
+    toast({ title: "Registro guardado" });
   }
 
   const resetForm = () => setFormData(initialFormState);
 
-  const handleAddNewItem = () => {
-    if (!newItemForm.name || !newItemForm.unit) {
-      toast({ variant: "destructive", title: "Datos incompletos" }); return;
-    }
-    const newItem: InventoryItem = {
-      id: Date.now(),
-      name: newItemForm.name.toUpperCase(),
-      qty: 0,
-      unit: newItemForm.unit,
-      minStock: newItemForm.minStock,
-      category: 'GENERAL',
-      locations: ['TOLUCA']
-    };
-    const updatedInventory = [...inventory, newItem];
-    setInventory(updatedInventory);
-    localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
-    setMovementForm(prev => ({ ...prev, itemIdEntrada: newItem.id.toString() }));
-    setIsNewItemDialogOpen(false);
-    setNewItemForm({ name: '', unit: 'Pieza', minStock: 5 });
-    toast({ title: "Nuevo material registrado" });
-  };
-
-  const handleRegisterMovement = (type: 'entrada' | 'salida') => {
-    const { itemIdEntrada, itemIdSalida, qtyEntrada, qtySalida, recipientEntrada, recipientSalida, folio } = movementForm;
-    const itemId = type === 'entrada' ? itemIdEntrada : itemIdSalida;
-    const qty = type === 'entrada' ? qtyEntrada : qtySalida;
-    const recipient = type === 'entrada' ? recipientEntrada : recipientSalida;
-
-    if (!itemId || qty <= 0) { 
-      toast({ variant: "destructive", title: "Datos incompletos" }); return; 
-    }
-    const item = inventory.find(i => i.id === parseInt(itemId));
-    if (!item) return;
-    if (type === 'salida' && item.qty < qty) { 
-      toast({ variant: "destructive", title: "Stock insuficiente" }); return; 
-    }
-    const newQty = type === 'entrada' ? item.qty + qty : item.qty - qty;
-    const updatedInventory = inventory.map(i => i.id === item.id ? { ...i, qty: newQty } : i);
-    const newMovement: WarehouseMovement = { 
-      id: `MOV-${Date.now()}`, 
-      type, 
-      itemId: item.id, 
-      itemName: item.name, 
-      qty, 
-      date: format(new Date(), 'dd/MM/yyyy HH:mm'), 
-      recipient: recipient?.toUpperCase() || 'S/D', 
-      folio: folio?.toUpperCase() || 'S/F'
-    };
-    setInventory(updatedInventory);
-    const updatedMovements = [newMovement, ...movements];
-    setMovements(updatedMovements);
-    localStorage.setItem('coees_inventory_v1', JSON.stringify(updatedInventory));
-    localStorage.setItem('coees_movements_v1', JSON.stringify(updatedMovements));
-    setMovementForm({ itemIdEntrada: '', itemIdSalida: '', qtyEntrada: 0, qtySalida: 0, recipientEntrada: '', recipientSalida: '', folio: '' });
-    toast({ title: "Movimiento registrado" });
-  }
-
   const handleDeleteTicket = (id: string) => {
+    if (!confirm("¿Desea eliminar este reporte?")) return;
     const updated = tickets.filter(t => t.id !== id);
     setTickets(updated);
     localStorage.setItem('support_tickets_full', JSON.stringify(updated));
@@ -235,8 +113,6 @@ export default function SupportPage() {
     return matchSearch;
   });
 
-  const lowStockItems = useMemo(() => inventory.filter(i => i.qty <= i.minStock), [inventory]);
-
   const toggleFase = (faseKey: string) => {
     setFormData({
       ...formData,
@@ -253,17 +129,17 @@ export default function SupportPage() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-1">
-          <h2 className="text-3xl font-black tracking-tight text-primary">Soporte Técnico</h2>
+          <h2 className="text-2xl font-black tracking-tight text-primary">Soporte técnico</h2>
           <p className="text-xs font-bold text-muted-foreground flex items-center gap-2">
             <LifeBuoy className="h-4 w-4 text-accent" /> Centro de control operativo institucional
           </p>
         </div>
         
         <div className="flex items-center gap-4">
-          <Button onClick={() => setIsWarehouseOpen(true)} variant="outline" className="h-12 px-8 rounded-xl border-primary/20 text-primary font-bold text-xs gap-2 shadow-md hover:bg-primary/5">
-            <Archive className="h-5 w-5" /> Almacén técnico
+          <Button onClick={() => setIsSchedulerOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
+            <ClipboardCheck className="h-5 w-5" /> Agenda de visitas
           </Button>
-          <Button onClick={() => { resetForm(); setEditingTicketId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
+          <Button onClick={() => { resetForm(); setEditingTicketId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo reporte de servicio
           </Button>
         </div>
@@ -277,7 +153,7 @@ export default function SupportPage() {
                     <History className="h-6 w-6" />
                  </div>
                  <div>
-                    <CardTitle className="text-base font-black">Reportes de servicio</CardTitle>
+                    <CardTitle className="text-base font-black">Historial de servicios</CardTitle>
                     <CardDescription className="text-xs font-bold text-slate-400">Seguimiento de folios de atención técnica</CardDescription>
                  </div>
               </div>
@@ -298,8 +174,8 @@ export default function SupportPage() {
               <TableRow>
                 <TableHead className="w-24 text-xs font-bold pl-6">Folio</TableHead>
                 <TableHead className="min-w-[200px] text-xs font-bold">Centro de trabajo</TableHead>
-                <TableHead className="text-xs font-bold">Tipo de servicio</TableHead>
-                <TableHead className="text-xs font-bold">Fecha programada</TableHead>
+                <TableHead className="text-xs font-bold">Servicio</TableHead>
+                <TableHead className="text-xs font-bold">Fecha</TableHead>
                 <TableHead className="text-xs font-bold text-center">Estatus</TableHead>
                 <TableHead className="text-right text-xs font-bold pr-10">Acciones</TableHead>
               </TableRow>
@@ -325,7 +201,7 @@ export default function SupportPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right pr-8">
-                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-xl" onClick={() => handleEdit(ticket)}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => ticket.id && handleDeleteTicket(ticket.id)}><Trash2 className="h-4 w-4" /></Button>
                      </div>
@@ -340,15 +216,16 @@ export default function SupportPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingTicketId(null); }}>
-        <DialogContent className="sm:max-w-[800px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[90vh]">
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[90vh]">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
             <DialogTitle className="font-black text-2xl flex items-center gap-4">
-              <PlusCircle className="h-8 w-8 text-accent" /> {editingTicketId ? 'Editar folio de servicio' : 'Alta de reporte de servicio'}
+              <PlusCircle className="h-8 w-8 text-accent" /> {editingTicketId ? 'Editar reporte de servicio' : 'Nuevo reporte de servicio'}
             </DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-8">
+               {/* Sección de Identificación */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
                   <div className="space-y-2">
                     <Label className="text-xs font-black text-primary pl-1">Folio oficial</Label>
@@ -370,7 +247,7 @@ export default function SupportPage() {
                     />
                   </div>
                   <div className="md:col-span-2 space-y-2">
-                    <Label className="text-xs font-black text-primary pl-1">Nombre institucional del plantel</Label>
+                    <Label className="text-xs font-black text-primary pl-1">Nombre del plantel</Label>
                     <Input 
                       placeholder="Nombre del centro de trabajo..." 
                       className="h-12 bg-white rounded-xl border-primary/10 font-bold px-6 shadow-sm uppercase" 
@@ -379,7 +256,7 @@ export default function SupportPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                     <Label className="text-xs font-black text-primary pl-1">Tipo de incidencia</Label>
+                     <Label className="text-xs font-black text-primary pl-1">Tipo de servicio</Label>
                      <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
                         <SelectTrigger className="h-12 bg-white border-primary/10 rounded-xl font-bold px-6 shadow-sm uppercase">
                            <SelectValue />
@@ -394,22 +271,22 @@ export default function SupportPage() {
                      </Select>
                   </div>
                   <div className="space-y-2">
-                     <Label className="text-xs font-black text-primary pl-1">Fecha programada</Label>
+                     <Label className="text-xs font-black text-primary pl-1">Fecha de atención</Label>
                      <Input type="date" className="h-12 bg-white border-primary/10 rounded-xl font-bold px-6 shadow-sm" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} />
                   </div>
                </div>
 
-               {/* SECCIÓN DINÁMICA: FASES TÉCNICAS (FICHA TÉCNICA) */}
+               {/* SECCIÓN DE FASES TÉCNICAS - SIEMPRE VISIBLE */}
                <div className="space-y-6 pt-2 animate-in zoom-in-95 duration-500">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                      <Wrench className="h-5 w-5 text-accent" />
-                     <h4 className="text-xs font-black text-accent tracking-widest">Fases de atención técnica</h4>
+                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica: Fases de atención</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {[
                        { id: 'diagnostico', label: 'Diagnóstico integral inicial', icon: <Search className="h-4 w-4" /> },
                        { id: 'cableado', label: 'Revisión física de cableado', icon: <Wifi className="h-4 w-4" /> },
-                       { id: 'conectores', label: 'Ponchado de conectores RJ45', icon: <Layers className="h-4 w-4" /> },
+                       { id: 'conectores', label: 'Ponchado de conectores RJ45', icon: <Settings className="h-4 w-4" /> },
                        { id: 'pastaTermica', label: 'Cambio de pasta térmica', icon: <Settings className="h-4 w-4" /> },
                        { id: 'limpieza', label: 'Limpieza interna de equipo', icon: <Wrench className="h-4 w-4" /> },
                        { id: 'configuracion', label: 'Configuración lógica / IPs', icon: <Monitor className="h-4 w-4" /> },
@@ -419,17 +296,17 @@ export default function SupportPage() {
                          key={fase.id} 
                          className={cn(
                            "flex items-center space-x-4 p-5 rounded-[1.5rem] border transition-all cursor-pointer group shadow-sm", 
-                           formData.fases[fase.id] ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-100 shadow-md" : "bg-white border-slate-100 hover:border-primary/20"
+                           formData.fases?.[fase.id] ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-100 shadow-md" : "bg-white border-slate-100 hover:border-primary/20"
                          )} 
                          onClick={() => toggleFase(fase.id)}
                        >
                           <Checkbox 
-                            checked={formData.fases[fase.id]} 
+                            checked={formData.fases?.[fase.id] || false} 
                             onCheckedChange={() => toggleFase(fase.id)} 
                             className="h-6 w-6 border-primary data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-600 rounded-lg" 
                           />
                           <div className="flex items-center gap-3">
-                             <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center transition-colors", formData.fases[fase.id] ? "bg-emerald-100 text-emerald-600" : "bg-slate-50 text-slate-400")}>
+                             <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center transition-colors", formData.fases?.[fase.id] ? "bg-emerald-100 text-emerald-600" : "bg-slate-50 text-slate-400")}>
                                {fase.icon}
                              </div>
                              <Label className="text-sm font-bold cursor-pointer group-hover:text-primary transition-colors leading-tight">{fase.label}</Label>
@@ -440,8 +317,8 @@ export default function SupportPage() {
                </div>
 
                <div className="space-y-4">
-                  <Label className="text-xs font-black text-primary pl-2">Personal técnico comisionado</Label>
-                  <Input placeholder="Nombres de los analistas responsables..." className="h-12 bg-slate-50 border-none rounded-xl font-bold px-6 shadow-inner uppercase" value={formData.tecnicos} onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} />
+                  <Label className="text-xs font-black text-primary pl-2">Analistas responsables</Label>
+                  <Input placeholder="Nombres del personal comisionado..." className="h-12 bg-slate-50 border-none rounded-xl font-bold px-6 shadow-inner uppercase" value={formData.tecnicos} onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} />
                </div>
             </div>
           </ScrollArea>

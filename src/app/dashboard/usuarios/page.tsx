@@ -74,7 +74,7 @@ export default function UsersPage() {
     const cleanPassword = (formData.password || '').trim()
 
     if (!cleanRfc || !cleanPassword || !cleanName) {
-      toast({ variant: "destructive", title: "Campos obligatorios", description: "El nombre, RFC y contraseña son necesarios." })
+      toast({ variant: "destructive", title: "Faltan datos", description: "El nombre, RFC y contraseña son obligatorios." })
       return
     }
 
@@ -102,7 +102,7 @@ export default function UsersPage() {
       await fetchUsers()
     } catch (error: any) {
       console.error("Save error:", error)
-      toast({ variant: "destructive", title: "Error de guardado", description: "Hubo un problema al conectar con el servidor." })
+      toast({ variant: "destructive", title: "Error", description: "Hubo un problema al conectar con el servidor." })
     } finally {
       setIsSaving(false)
     }
@@ -146,7 +146,7 @@ export default function UsersPage() {
             <ShieldCheck className="h-4 w-4 text-accent" /> Control de identidades oficiales en tiempo real
           </p>
         </div>
-        <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
+        <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl text-[11px]">
           <UserPlus className="h-5 w-5 mr-2" /> Nuevo acceso institucional
         </Button>
       </div>
@@ -270,7 +270,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-xs font-black text-accent tracking-widest">Privilegios de sección asignados</h4>
+                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Privilegios de sección asignados</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
