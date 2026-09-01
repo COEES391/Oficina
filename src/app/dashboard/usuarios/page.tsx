@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Shield, Save, KeyRound, Loader2, User } from "lucide-react"
+import { Users, UserPlus, Pencil, Trash2, ShieldCheck, Shield, Save, KeyRound, Loader2, User, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from 'firebase/firestore'
@@ -98,13 +98,13 @@ export default function UsersPage() {
       if (editingId) {
         const userRef = doc(db, 'users', editingId)
         await updateDoc(userRef, userData)
-        toast({ title: "Actualización Exitosa" })
+        toast({ title: "Actualización Exitosa", description: `El usuario ${cleanRfc} ha sido actualizado.` })
       } else {
         await addDoc(collection(db, 'users'), {
           ...userData,
           createdAt: serverTimestamp()
         })
-        toast({ title: "Usuario Registrado en la Nube" })
+        toast({ title: "Usuario Registrado", description: `Acceso habilitado para ${cleanRfc}.` })
       }
       
       setIsDialogOpen(false)
@@ -170,94 +170,136 @@ export default function UsersPage() {
           <CardDescription className="font-bold text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Base de datos centralizada en tiempo real</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-100/50">
-              <TableRow>
-                <TableHead className="font-black text-[10px] uppercase pl-10 h-12">Nombre del Servidor</TableHead>
-                <TableHead className="font-black text-[10px] uppercase h-12">ID (RFC)</TableHead>
-                <TableHead className="font-black text-[10px] uppercase h-12">Privilegios</TableHead>
-                <TableHead className="text-right font-black text-[10px] uppercase pr-10 h-12">Acción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando Nube...</TableCell></TableRow>
-              ) : users.length > 0 ? users.map((user) => (
-                <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-16">
-                  <TableCell className="pl-10">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
-                        <User className="h-5 w-5" />
-                      </div>
-                      <span className="font-black text-xs text-slate-700 uppercase">{user.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs uppercase font-black text-primary">{user.rfc}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1 max-w-[300px]">
-                      {(user.privileges || []).map(p => (
-                        <Badge key={p} variant="outline" className="text-[8px] font-black uppercase border-slate-200 bg-white px-2">
-                          {SECTIONS.find(s => s.id === p)?.name || p}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right pr-10">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(user.id!)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-100/50">
+                <TableRow>
+                  <TableHead className="font-black text-[10px] uppercase pl-10 h-12">Nombre del Servidor</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase h-12">ID (RFC)</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase h-12">Privilegios</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase pr-10 h-12">Acción</TableHead>
                 </TableRow>
-              )) : (
-                <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs tracking-widest">Sin usuarios en la red</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-black uppercase opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Sincronizando Nube...</TableCell></TableRow>
+                ) : users.length > 0 ? users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-16">
+                    <TableCell className="pl-10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary shadow-inner">
+                          <User className="h-5 w-5" />
+                        </div>
+                        <span className="font-black text-xs text-slate-700 uppercase">{user.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs uppercase font-black text-primary">{user.rfc}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-[300px]">
+                        {(user.privileges || []).map(p => (
+                          <Badge key={p} variant="outline" className="text-[8px] font-black uppercase border-slate-200 bg-white px-2">
+                            {SECTIONS.find(s => s.id === p)?.name || p}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right pr-10">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-lg" onClick={() => { setFormData(user); setEditingId(user.id!); setIsDialogOpen(true); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-lg" onClick={() => handleDelete(user.id!)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-black uppercase text-xs tracking-widest">Sin usuarios en la red</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState); } }}>
-        <DialogContent className="sm:max-w-[700px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-slate-50 border-b shrink-0">
-            <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
-              <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Global' : 'Nuevo Acceso Institucional'}
-            </DialogTitle>
-            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
+        <DialogContent className="sm:max-w-[750px] h-[90vh] rounded-[3rem] p-0 flex flex-col overflow-hidden bg-white border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-primary text-2xl flex items-center gap-4">
+                <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Global' : 'Nuevo Acceso Institucional'}
+              </DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
+            </div>
+            <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
+              <X className="h-5 w-5 text-slate-500" />
+            </button>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10">
-              <div className="space-y-6">
+              <div className="space-y-8 bg-slate-50 p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Nombre Completo del Servidor</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-black uppercase" placeholder="APELLIDOS Y NOMBRES..." />
+                  <Label className="text-[10px] font-black uppercase text-primary pl-2">Nombre Completo del Servidor</Label>
+                  <Input 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
+                    className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-black uppercase placeholder:text-slate-300" 
+                    placeholder="APELLIDOS Y NOMBRES..." 
+                  />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-1">RFC / Identificador</Label>
-                    <Input value={formData.rfc} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 font-mono text-primary font-black uppercase" placeholder="13 CARACTERES..." />
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">RFC / Identificador de Acceso</Label>
+                    <Input 
+                      value={formData.rfc} 
+                      onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
+                      className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black uppercase text-lg" 
+                      placeholder="13 CARACTERES..." 
+                      maxLength={13}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-primary pl-1">Contraseña Oficial</Label>
+                    <Label className="text-[10px] font-black uppercase text-primary pl-2">Contraseña Oficial</Label>
                     <div className="flex gap-2">
-                      <Input value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner px-6 text-sm font-bold flex-1" placeholder="MÍN. 6 CARACT." />
-                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-2xl border-primary/20 text-primary shadow-sm"><KeyRound className="h-5 w-5" /></Button>
+                      <Input 
+                        value={formData.password} 
+                        onChange={e => setFormData({...formData, password: e.target.value})} 
+                        className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
+                        placeholder="MÍN. 6 CARACT." 
+                      />
+                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5">
+                        <KeyRound className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t border-slate-100">
-                <h4 className="text-[11px] font-black uppercase text-accent tracking-widest mb-4">Privilegios de Sección</h4>
+              <div className="space-y-6 pt-2">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                   <ShieldCheck className="h-5 w-5 text-accent" />
+                   <h4 className="text-[11px] font-black uppercase text-accent tracking-[0.2em]">Privilegios de Sección</h4>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
-                    <div key={section.id} className={cn("flex items-center space-x-4 p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm", formData.privileges?.includes(section.id) ? "bg-primary/[0.04] border-primary/30" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => handleTogglePrivilege(section.id)}>
-                        <Checkbox id={`section-${section.id}`} checked={formData.privileges?.includes(section.id)} onCheckedChange={() => handleTogglePrivilege(section.id)} className="h-5 w-5 border-primary" />
+                    <div 
+                      key={section.id} 
+                      className={cn(
+                        "flex items-center space-x-4 p-5 rounded-[1.5rem] border transition-all cursor-pointer group shadow-sm", 
+                        formData.privileges?.includes(section.id) 
+                          ? "bg-primary/[0.04] border-primary/30 ring-1 ring-primary/10" 
+                          : "bg-white border-slate-100 hover:border-primary/20"
+                      )} 
+                      onClick={() => handleTogglePrivilege(section.id)}
+                    >
+                        <Checkbox 
+                          id={`section-${section.id}`} 
+                          checked={formData.privileges?.includes(section.id)} 
+                          onCheckedChange={() => handleTogglePrivilege(section.id)} 
+                          className="h-5 w-5 border-primary data-[state=checked]:bg-primary" 
+                        />
                         <Label className="text-[10px] font-black uppercase cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
                     </div>
                   ))}
@@ -266,11 +308,23 @@ export default function UsersPage() {
             </div>
           </ScrollArea>
 
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="font-black text-[10px] uppercase h-12 px-10 text-slate-400">Cancelar</Button>
-            <Button type="button" onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3 shadow-2xl">
-              {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} 
-              {editingId ? 'ACTUALIZAR' : 'REGISTRAR'}
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0 shadow-inner">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsDialogOpen(false)} 
+              disabled={isSaving} 
+              className="font-black text-[10px] uppercase h-14 px-10 text-slate-400 hover:text-slate-600"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSave} 
+              disabled={isSaving} 
+              className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-4 shadow-2xl min-w-[220px]"
+            >
+              {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
+              {editingId ? 'ACTUALIZAR ACCESO' : 'REGISTRAR ACCESO'}
             </Button>
           </DialogFooter>
         </DialogContent>
