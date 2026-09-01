@@ -289,9 +289,9 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="executive-card p-4 sm:p-6 bg-white border-none shadow-xl mt-4">
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-           
-           <div className="space-y-2 flex-1 min-w-0">
+        <div className="grid grid-cols-12 items-end gap-4">
+           {/* Selector de Módulos (Columnas 1-5) */}
+           <div className="col-span-12 lg:col-span-5 space-y-2 min-w-0">
               <Label className="text-[9px] font-black uppercase text-slate-400 block pl-1">Módulo Institucional</Label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {PROGRAM_RUBROS.map(rubro => (
@@ -309,33 +309,37 @@ export default function ProgramsPage() {
               </div>
            </div>
            
-           <div className="flex flex-wrap items-center gap-3 shrink-0">
+           {/* Acciones Contextuales Centrales (Columnas 6-7) */}
+           <div className="col-span-12 lg:col-span-2 flex justify-center pb-2">
              {activeTab === 'Cuentas Institucionales' && (
-               <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-lg shrink-0">
+               <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-lg w-full">
                  <ShieldCheck className="h-5 w-5" /> VERIFICADOR
                </Button>
              )}
              {activeTab === 'ATRES' && (
-               <Button onClick={() => setIsHelpDeskOpen(true)} className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-lg shrink-0">
+               <Button onClick={() => setIsHelpDeskOpen(true)} className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-lg w-full">
                  <Headset className="h-5 w-5" /> MESA AYUDA
                </Button>
              )}
-             
-             <div className="relative w-full sm:w-64">
+           </div>
+
+           {/* Búsqueda y Registro (Columnas 8-12) */}
+           <div className="col-span-12 lg:col-span-5 flex items-center gap-3 pb-2">
+             <div className="relative flex-1">
                 <Input placeholder="FILTRAR..." className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shrink-0 whitespace-nowrap">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase shadow-xl flex-shrink-0 min-w-fit">
                 <PlusCircle className="h-5 w-5 mr-2" /> NUEVO REGISTRO
              </Button>
            </div>
         </div>
       </Card>
 
-      <div className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4 animate-in slide-in-from-bottom-4 duration-500 w-full">
         <div className="overflow-x-auto w-full">
-          <Table>
+          <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
                   <TableHead className="w-12 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
@@ -408,8 +412,21 @@ export default function ProgramsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData(initialFormState); }}>
         <DialogContent className="w-[95vw] lg:max-w-[1100px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="uppercase font-black text-lg">Gestión de {activeTab}</DialogTitle>
+             {activeTab === 'Cuentas Institucionales' && (
+                <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
+                   <StatusLight status={formData.status} />
+                   <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
+                      <SelectTrigger className="h-8 w-32 bg-transparent border-none text-white font-black uppercase text-[9px]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-xl border-none shadow-2xl">
+                         <SelectItem value="activo" className="font-black text-[9px] text-emerald-600">ACTIVO</SelectItem>
+                         <SelectItem value="suspendida" className="font-black text-[9px] text-amber-600">SUSPENDIDA</SelectItem>
+                         <SelectItem value="inactivo" className="font-black text-[9px] text-rose-600">INACTIVO</SelectItem>
+                      </SelectContent>
+                   </Select>
+                </div>
+             )}
           </DialogHeader>
           
           <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
@@ -417,7 +434,7 @@ export default function ProgramsPage() {
                <div className="px-6 border-b bg-slate-50/50 shrink-0">
                   <TabsList className="bg-transparent h-12 p-0 gap-6">
                     <TabsTrigger value="datos" className="text-[10px] font-black uppercase">1. Fases Técnicas</TabsTrigger>
-                    <TabsTrigger value="asistentes" className="text-[10px] font-black uppercase">2. Censo SETES</TabsTrigger>
+                    <TabsTrigger value="asistentes" className="text-[10px] font-black uppercase">2. LISTA DE PARTICIPANTES</TabsTrigger>
                   </TabsList>
                </div>
              )}
@@ -426,7 +443,43 @@ export default function ProgramsPage() {
                 <TabsContent value="datos" className="h-full m-0 p-0">
                   <ScrollArea className="h-full">
                     <div className="p-6 space-y-8">
-                      {activeTab !== 'Cuentas Institucionales' && (
+                      {activeTab === 'Cuentas Institucionales' ? (
+                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="md:col-span-2 space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">1. Nombre Completo del Usuario</Label>
+                                  <Input className="h-14 font-black uppercase text-base border-primary/10" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">2. CCT</Label>
+                                  <Input className="h-12 font-mono font-black uppercase border-primary/10" value={formData.cct || ''} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">7. Correo Institucional</Label>
+                                  <Input className="h-12 font-bold lowercase border-primary/10" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} placeholder="usuario@desysa.edu.mx" />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">3. Sector</Label>
+                                  <Input className="h-10 uppercase font-black" value={formData.sector || ''} onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})} />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">4. Zona</Label>
+                                  <Input className="h-10 uppercase font-black" value={formData.zonaEscolar || ''} onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})} />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">5. Modalidad</Label>
+                                  <Input className="h-10 uppercase font-black" value={formData.modalidad || ''} onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})} />
+                               </div>
+                               <div className="space-y-1">
+                                  <Label className="text-[9px] font-black uppercase text-slate-500">6. Valle</Label>
+                                  <Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}>
+                                     <SelectTrigger className="h-10 font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                                     <SelectContent><SelectItem value="MEXICO" className="text-[10px]">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[10px]">TOLUCA</SelectItem></SelectContent>
+                                  </Select>
+                               </div>
+                            </div>
+                         </div>
+                      ) : (
                         <div className="p-6 bg-slate-50 rounded-[2rem] border border-primary/10 space-y-4">
                           <Label className="text-[10px] font-black uppercase text-primary">Identificación del Plantel</Label>
                           <div className="relative">
@@ -452,33 +505,6 @@ export default function ProgramsPage() {
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {activeTab === 'Cuentas Institucionales' && (
-                           <div className="md:col-span-2 p-6 bg-slate-50 rounded-[2rem] space-y-6">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-primary/5 pb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white"><ShieldCheck className="h-6 w-6" /></div>
-                                  <h3 className="text-sm font-black uppercase text-primary leading-none">Registro de Cuenta</h3>
-                                </div>
-                                <div className="flex items-center gap-3 bg-white p-2 rounded-xl border">
-                                   <StatusLight status={formData.status} />
-                                   <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
-                                      <SelectTrigger className="h-8 w-32 bg-slate-50 border-none font-black uppercase text-[9px]"><SelectValue /></SelectTrigger>
-                                      <SelectContent><SelectItem value="activo" className="font-black text-[9px] text-emerald-600">ACTIVO</SelectItem><SelectItem value="suspendida" className="font-black text-[9px] text-amber-600">SUSPENDIDA</SelectItem><SelectItem value="inactivo" className="font-black text-[9px] text-rose-600">INACTIVO</SelectItem></SelectContent>
-                                   </Select>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                 <div className="md:col-span-2 space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">1. Nombre Completo</Label><Input className="h-12 font-black uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">2. CCT</Label><Input className="h-12 font-mono font-black" value={formData.cct || ''} onChange={e => handleCctChange(e.target.value)} maxLength={10} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">7. Correo Institucional</Label><Input className="h-12 font-bold lowercase" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">3. Sector</Label><Input className="h-10 uppercase" value={formData.sector || ''} onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">4. Zona</Label><Input className="h-10 uppercase" value={formData.zonaEscolar || ''} onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">5. Modalidad</Label><Input className="h-10 uppercase" value={formData.modalidad || ''} onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})} /></div>
-                                 <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-slate-500">6. Valle</Label><Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}><SelectTrigger className="h-10 font-black uppercase text-[10px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO" className="text-[10px]">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[10px]">TOLUCA</SelectItem></SelectContent></Select></div>
-                              </div>
-                           </div>
-                        )}
-
                         {activeTab === 'Biblioteca Digital' && (
                           <>
                             <div className="p-6 bg-slate-50 rounded-[2rem] space-y-4">
@@ -534,7 +560,7 @@ export default function ProgramsPage() {
                 {showAssistantsTab && (
                    <TabsContent value="asistentes" className="h-full m-0 p-0 flex flex-col overflow-hidden">
                       <div className="p-4 bg-slate-50 border-b flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0">
-                         <p className="text-[9px] font-black uppercase text-primary">Censo de Personal Capacitado</p>
+                         <p className="text-[9px] font-black uppercase text-primary">LISTA DE PARTICIPANTES</p>
                          <Button onClick={handleAddAssistantRow} size="sm" className="h-8 px-4 text-[9px] font-black uppercase"><Plus className="h-3.5 w-3.5 mr-1" /> AÑADIR</Button>
                       </div>
                       <ScrollArea className="flex-1">
