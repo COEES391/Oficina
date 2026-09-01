@@ -70,7 +70,7 @@ export default function UsersPage() {
     fetchUsers()
   }, [])
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const cleanRfc = (formData.rfc || '').trim().toUpperCase()
     const cleanName = (formData.name || '').trim().toUpperCase()
     const cleanPassword = (formData.password || '').trim()
@@ -79,48 +79,47 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "El nombre, identificador (RFC) y contraseña son campos obligatorios para el registro." 
+        description: "El nombre, RFC y contraseña son obligatorios." 
       })
       return
     }
 
     setIsSaving(true)
-    try {
-      const userData = {
-        rfc: cleanRfc,
-        name: cleanName,
-        password: cleanPassword,
-        role: 'user' as const,
-        privileges: formData.privileges || ['programas'],
-        updatedAt: serverTimestamp()
-      }
-
-      if (editingId) {
-        const userRef = doc(db, 'users', editingId)
-        await updateDoc(userRef, userData)
-        toast({ title: "Actualización Exitosa", description: `Los datos de acceso para ${cleanRfc} han sido guardados.` })
-      } else {
-        await addDoc(collection(db, 'users'), {
-          ...userData,
-          createdAt: serverTimestamp()
-        })
-        toast({ title: "Acceso Registrado", description: `El nuevo servidor público ya puede ingresar con su RFC y contraseña.` })
-      }
-      
-      setIsDialogOpen(false)
-      setEditingId(null)
-      setFormData(initialFormState)
-      fetchUsers()
-    } catch (error: any) {
-      console.error("Error saving user:", error)
-      toast({ 
-        variant: "destructive", 
-        title: "Error de Conexión", 
-        description: "Hubo un problema al sincronizar con la nube. Intente nuevamente." 
-      })
-    } finally {
-      setIsSaving(false)
+    
+    const userData = {
+      rfc: cleanRfc,
+      name: cleanName,
+      password: cleanPassword,
+      role: 'user' as const,
+      privileges: formData.privileges || ['programas'],
+      updatedAt: serverTimestamp()
     }
+
+    // Proceso no bloqueante para evitar que se quede "pensando"
+    const usersRef = collection(db, 'users')
+    const operation = editingId 
+      ? updateDoc(doc(db, 'users', editingId), userData)
+      : addDoc(usersRef, { ...userData, createdAt: serverTimestamp() })
+
+    // Liberar UI inmediatamente
+    setIsSaving(false)
+    setIsDialogOpen(false)
+    setEditingId(null)
+    setFormData(initialFormState)
+
+    operation
+      .then(() => {
+        toast({ title: "Registro guardado", description: `Acceso para ${cleanRfc} actualizado.` })
+        fetchUsers()
+      })
+      .catch((error) => {
+        console.error("Error saving user:", error)
+        toast({ 
+          variant: "destructive", 
+          title: "Error de sincronización", 
+          description: "No se pudo guardar en la nube. Verifique su conexión." 
+        })
+      })
   }
 
   const handleTogglePrivilege = (sectionId: string) => {
@@ -232,7 +231,7 @@ export default function UsersPage() {
           <DialogHeader className="p-8 bg-slate-50 border-b shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="font-black text-primary text-2xl flex items-center gap-4">
-                <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar Perfil Institucional' : 'Nuevo Acceso Institucional'}
+                <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar perfil institucional' : 'Nuevo acceso institucional'}
               </DialogTitle>
               <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
             </div>
@@ -245,7 +244,7 @@ export default function UsersPage() {
             <div className="p-10 space-y-10">
               <div className="space-y-8 bg-slate-50 p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
                 <div className="space-y-2">
-                  <Label className="text-xs font-black text-primary pl-2 uppercase">Nombre completo del servidor público</Label>
+                  <Label className="text-xs font-black text-primary pl-2">Nombre completo del servidor público</Label>
                   <Input 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
@@ -255,17 +254,17 @@ export default function UsersPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <Label className="text-xs font-black text-primary pl-2 uppercase">Identificador de acceso (RFC)</Label>
+                    <Label className="text-xs font-black text-primary pl-2">Identificador de acceso (RFC)</Label>
                     <Input 
                       value={formData.rfc} 
                       onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
-                      className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black uppercase text-lg" 
-                      placeholder="13 Caracteres..." 
+                      className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black text-lg" 
+                      placeholder="13 caracteres..." 
                       maxLength={13}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-black text-primary pl-2 uppercase">Contraseña oficial</Label>
+                    <Label className="text-xs font-black text-primary pl-2">Contraseña oficial</Label>
                     <div className="flex gap-2">
                       <Input 
                         value={formData.password} 
@@ -328,7 +327,7 @@ export default function UsersPage() {
               className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[240px]"
             >
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
-              {editingId ? 'Guardar Cambios' : 'Registrar Acceso'}
+              {editingId ? 'Guardar cambios' : 'Registrar acceso'}
             </Button>
           </DialogFooter>
         </DialogContent>

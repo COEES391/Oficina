@@ -21,7 +21,8 @@ import {
   Monitor,
   ShieldCheck,
   Database,
-  Users
+  Users,
+  History
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
@@ -83,11 +84,12 @@ export default function DashboardLayout({
 
   const menuConfig = [
     { privilege: 'planeacion', name: 'Planeación', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { privilege: 'soporte', name: 'Soporte Técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
+    { privilege: 'bitacora-atres', name: 'Bitácora ATRES', path: '/dashboard/bitacora-atres', icon: <History className="h-5 w-5" /> },
+    { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
     { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
-    { privilege: 'base-participantes', name: 'Base Participantes', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
+    { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
     { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
   ]
 
@@ -159,7 +161,7 @@ export default function DashboardLayout({
             <SidebarTrigger className="text-primary" />
             <div className="flex items-center gap-3">
                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <h1 className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sistema Integral COEES</h1>
+               <h1 className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Sistema integral COEES</h1>
             </div>
           </div>
 
