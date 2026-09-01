@@ -95,14 +95,14 @@ export default function UsersPage() {
         await addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() })
       }
 
-      toast({ title: "Acceso actualizado", description: `El servidor público ${cleanName} ha sido registrado exitosamente.` })
+      toast({ title: "Acceso actualizado", description: `El servidor público ${cleanName} ha sido registrado.` })
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
       await fetchUsers()
     } catch (error: any) {
       console.error("Save error:", error)
-      toast({ variant: "destructive", title: "Error de guardado", description: "Hubo un problema al conectar con el servidor de seguridad." })
+      toast({ variant: "destructive", title: "Error de guardado", description: "Hubo un problema al conectar con el servidor." })
     } finally {
       setIsSaving(false)
     }
@@ -270,7 +270,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Privilegios de sección asignados</h4>
+                   <h4 className="text-xs font-black text-accent tracking-widest">Privilegios de sección asignados</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
