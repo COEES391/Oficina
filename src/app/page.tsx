@@ -37,7 +37,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      // Acceso Maestro
+      // Casos especiales para asegurar acceso inmediato
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso maestro", description: "Bienvenido al Centro de Control Integral." })
@@ -45,7 +45,6 @@ export default function LoginPage() {
         return
       }
       
-      // Usuario Programas: CISF840114L34 / Chimal12
       if (cleanRfc === 'CISF840114L34' && password === 'Chimal12') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Identidad validada", description: "Bienvenido al Módulo de Programas." })
@@ -53,7 +52,6 @@ export default function LoginPage() {
         return
       }
 
-      // Usuario Soporte: HEAS740508Q23 / Soporte12
       if (cleanRfc === 'HEAS740508Q23' && password === 'Soporte12') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Identidad validada", description: "Bienvenido al Módulo de Soporte Técnico." })
@@ -61,6 +59,7 @@ export default function LoginPage() {
         return
       }
       
+      // Búsqueda en base de datos
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', password))
       const querySnapshot = await getDocs(q)

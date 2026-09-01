@@ -79,7 +79,7 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "Nombre, RFC y contraseña son necesarios." 
+        description: "El nombre, RFC y la contraseña son obligatorios." 
       })
       return
     }
@@ -96,29 +96,43 @@ export default function UsersPage() {
         updatedAt: serverTimestamp()
       }
 
-      if (editingId) {
-        const userRef = doc(db, 'users', editingId)
-        await updateDoc(userRef, userData)
-        toast({ title: "Acceso actualizado", description: "Los cambios se guardaron correctamente." })
-      } else {
-        await addDoc(collection(db, 'users'), {
-          ...userData,
-          createdAt: serverTimestamp()
-        })
-        toast({ title: "Acceso registrado", description: "El servidor público ya tiene acceso al sistema." })
-      }
+      // Definimos un tiempo máximo de espera de 12 segundos para la nube
+      const savePromise = editingId 
+        ? updateDoc(doc(db, 'users', editingId), userData)
+        : addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 12000)
+      );
+
+      // Carrera de promesas: o se guarda o se agota el tiempo
+      await Promise.race([savePromise, timeoutPromise]);
+
+      toast({ 
+        title: editingId ? "Acceso actualizado" : "Acceso registrado", 
+        description: `El servidor público ${cleanName} ya puede operar el sistema.` 
+      })
 
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
-      await fetchUsers()
+      fetchUsers() // Actualización prioritaria de la tabla
     } catch (error: any) {
       console.error("Save error:", error)
-      toast({ 
-        variant: "destructive", 
-        title: "Error de guardado", 
-        description: "No se pudo sincronizar en la nube. Reintente en un momento." 
-      })
+      if (error.message === 'timeout') {
+        toast({ 
+          variant: "destructive", 
+          title: "Sincronización lenta", 
+          description: "La información se está procesando en la nube. Verifique la lista en un momento." 
+        })
+        setIsDialogOpen(false) // Cerramos para no bloquear al analista
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Error de guardado", 
+          description: "No se pudo establecer conexión con el servidor. Reintente." 
+        })
+      }
     } finally {
       setIsSaving(false)
     }

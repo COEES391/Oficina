@@ -69,7 +69,7 @@ export default function DashboardLayout({
         setCurrentUser({
           id: 'special-user-programas',
           rfc: rfc,
-          name: 'Usuario de Programas',
+          name: 'Analista de Programas',
           password: '',
           role: 'user',
           privileges: ['programas']
@@ -82,7 +82,7 @@ export default function DashboardLayout({
         setCurrentUser({
           id: 'special-user-soporte',
           rfc: rfc,
-          name: 'Usuario de Soporte Técnico',
+          name: 'Analista de Soporte Técnico',
           password: '',
           role: 'user',
           privileges: ['soporte']
