@@ -50,7 +50,9 @@ import {
   History,
   Circle,
   PlusCircle,
-  Plus
+  Plus,
+  Globe,
+  Copy
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -184,9 +186,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `COEES-${year}-${randomSuffix}`;
   }
 
+  const copySupportLink = () => {
+    const url = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '/helpdesk';
+    navigator.clipboard.writeText(url);
+    toast({ title: "Enlace Copiado", description: "La liga de la Mesa de Ayuda está lista para compartir." });
+  }
+
   useEffect(() => {
     setMounted(true);
-    // Cargar escuelas
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]');
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory);
 
@@ -203,14 +210,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }, [isPublic, generateTurnSessionId]);
 
-  // Suscribirse a la Bitácora (Nube)
   useEffect(() => {
     if (!mounted) return;
     const q = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[];
       setFormalRequests(allEntries.filter(b => b.status === 'pendiente' || b.status === 'proceso'));
-      
       const today = format(new Date(), 'dd/MM/yyyy');
       setAttendanceHistory(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)));
       setAttendedTodayCount(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)).length);
@@ -218,14 +223,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return () => unsubscribe();
   }, [mounted]);
 
-  // Suscribirse a la Cola de Soporte (Nube)
   useEffect(() => {
     if (!mounted) return;
     const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const currentQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
       setQueue(currentQueue);
-      
       if (isPublic && sessionKey) {
         const myReq = currentQueue.find(r => r.chatKey === sessionKey);
         if (myReq) setActiveTicketNumber(myReq.ticketNumber);
@@ -234,7 +237,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return () => unsubscribe();
   }, [mounted, isPublic, sessionKey]);
 
-  // Suscribirse al Chat Activo (Nube)
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
@@ -265,7 +267,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!textToSend.trim() && !msgData?.fileData) return;
     const chatId = activeChatId || sessionKey;
 
-    // Si es público y no está en la cola, agregarlo
     if (isPublic) {
       const alreadyInQueue = queue.find(r => r.chatKey === sessionKey);
       if (!alreadyInQueue) {
@@ -278,7 +279,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           chatKey: sessionKey
         });
       }
-      
       const lowerInput = textToSend.toLowerCase();
       if (['office', 'windows', 'controlador', 'driver', 'impresora', 'imprimir'].some(word => lowerInput.includes(word))) {
         setIsRemoteHelpRequested(true);
@@ -304,10 +304,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "ID Inválido" });
       return;
     }
-    
     const turn = activeTicketNumber || generateTurnSessionId();
     const existing = queue.find(r => r.chatKey === sessionKey);
-
     if (existing) {
       await updateDoc(doc(db, 'atres_support_queue', existing.id), {
         remoteId,
@@ -324,7 +322,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         chatKey: sessionKey
       });
     }
-
     await handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
     toast({ title: "Soporte Solicitado", description: `Turno: ${turn}` });
   }
@@ -334,15 +331,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Datos Incompletos" });
       return;
     }
-    
     try {
       const folio = generateSequentialFolio();
       let pdfContent = "";
       let excelContent = "";
-      
       if (pdfFile) pdfContent = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(pdfFile); });
       if (excelFile) excelContent = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(excelFile); });
-      
       const school = allSchools.find(s => s.cct === ticketCct.toUpperCase());
       await addDoc(collection(db, 'atres_bitacora'), {
         folio,
@@ -362,12 +356,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         helpTopic,
         ticketDetail
       });
-
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
       resetRequestForm();
-      toast({ title: "Solicitud enviada a la nube" });
+      toast({ title: "Solicitud enviada" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al enviar", description: e.message });
     }
@@ -383,11 +376,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Faltan datos" });
       return;
     }
-    
     const folio = selectedRequest?.ticketNumber || selectedFormal?.folio;
     if (!folio) return;
-
-    // Actualizar Bitácora
     const targetBitacora = selectedFormal || formalRequests.find(b => b.folio === folio);
     if (targetBitacora?.id) {
       await updateDoc(doc(db, 'atres_bitacora', targetBitacora.id), {
@@ -398,14 +388,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         schoolName: finishForm.schoolName
       });
     }
-
-    // Eliminar de la cola si existe
     if (selectedRequest?.id) {
       await deleteDoc(doc(db, 'atres_support_queue', selectedRequest.id));
     }
-
     setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null);
-    toast({ title: "Atención Finalizada en la Nube" });
+    toast({ title: "Atención Finalizada" });
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > FILE_SIZE_LIMIT) {
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "Límite: 2.0 MB" })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      handleSendMessage({ fileData: { data: base64, name: file.name, type: file.type } })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const getFileIcon = (type: string) => {
@@ -469,7 +472,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <Button variant="ghost" onClick={() => setIsRemoteHelpRequested(false)} className="mt-auto text-[10px] font-black uppercase text-slate-400 gap-2"><X className="h-4 w-4" /> Cerrar Panel</Button>
              </div>
            ) : (
-             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+             <div className="flex-1 flex flex-col gap-5 overflow-hidden">
                 <div 
                   onClick={() => { setShowHistory(true); setSelectedFormal(null); setSelectedRequest(null); }}
                   className="bg-primary p-4 rounded-[1.5rem] text-white shadow-xl relative overflow-hidden shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all group"
@@ -485,7 +488,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0">
+                <div className="bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100 shadow-sm space-y-3 shrink-0">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
+                    <Globe className="h-3.5 w-3.5 text-accent" /> Enlace para el Docente
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-[9px] font-mono font-bold text-slate-500 truncate shadow-inner">
+                       {typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '/helpdesk'}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-xl shrink-0 border-primary/20 text-primary hover:bg-primary/5" 
+                      onClick={copySupportLink}
+                      title="Copiar liga para el usuario"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[7px] font-bold text-slate-400 uppercase tracking-wider leading-tight px-1">
+                    Comparte esta liga para que el docente inicie el chat o solicite apoyo remoto AnyDesk.
+                  </p>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0 pt-2">
                    <div className="space-y-3 flex flex-col h-[50%] overflow-hidden">
                      <div className="text-[11px] font-black uppercase text-primary border-b-2 border-primary/10 pb-1 flex items-center justify-between">
                        Solicitudes (Bitácora)
@@ -563,6 +589,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 opacity-30">
             <MessageSquare className="h-16 w-16" />
             <h3 className="text-3xl font-black uppercase">Panel de Analista</h3>
+            <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Seleccione un chat o solicitud para iniciar la atención técnica.</p>
           </div>
         ) : (
           <>
@@ -642,58 +669,62 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </div>
 
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col">
-          <DialogHeader className="p-8 bg-[#9f2241] text-white">
+        <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-2xl">Solicitud de Servicio ATRES</DialogTitle>
+            <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2">
+              Capture los detalles para generar su folio oficial de atención técnica.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-10 space-y-8">
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400">Datos de Identificación</Label>
-               <Input placeholder="NOMBRE COMPLETO..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
-               <Input placeholder="CORREO INSTITUCIONAL..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
-               <Input placeholder="CCT DEL PLANTEL..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
+               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Datos de Identificación</Label>
+               <Input placeholder="NOMBRE COMPLETO DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
+               <Input placeholder="CORREO INSTITUCIONAL (@DESYSA.EDU.MX)..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
+               <Input placeholder="CCT DEL PLANTEL (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
              </div>
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400">Detalles Técnicos</Label>
-               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black"><SelectValue placeholder="TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent><SelectItem value="cuenta">Cuentas Institucionales</SelectItem><SelectItem value="atres">Sistema ATRES</SelectItem><SelectItem value="hardware">Soporte Hardware</SelectItem><SelectItem value="redes">Red Local / Edusat</SelectItem></SelectContent></Select>
-               <Textarea placeholder="DESCRIBA SU SOLICITUD..." className="h-24 bg-slate-50 border-none rounded-xl p-4 text-xs font-semibold shadow-inner" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
+               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Detalles Técnicos</Label>
+               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="ELEGIR TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
+               <Textarea placeholder="DESCRIBA SU SOLICITUD A DETALLE..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner resize-none focus:bg-white transition-all" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
              </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)}>CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-12 px-12">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8 text-slate-400">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-12 px-12 text-[10px] shadow-2xl">ENVIAR SOLICITUD</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
-        <DialogContent className="sm:max-w-[400px] rounded-[3rem] p-10 bg-white text-center">
+        <DialogContent className="sm:max-w-[400px] rounded-[3rem] p-10 bg-white text-center border-none shadow-2xl">
             <div className="h-20 w-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-10 w-10 text-emerald-500" /></div>
-            <DialogTitle className="text-2xl font-black uppercase">Folio Generado</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase text-primary">Folio Generado</DialogTitle>
             <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner my-8">
-               <p className="text-[10px] font-black text-primary uppercase mb-2">FOLIO ATRES</p>
+               <p className="text-[10px] font-black text-primary uppercase mb-2">FOLIO OFICIAL ATRES</p>
                <h4 className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
             </div>
-            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-14">ACEPTAR</Button>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-6">Su solicitud ha sido registrada en el sistema de auditoría COEES 2026. Un analista le brindará seguimiento a la brevedad.</p>
+            <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-14 shadow-2xl">ENTENDIDO</Button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-6 bg-[#9f2241] text-white">
-            <DialogTitle className="uppercase font-black text-lg">Concluir Turno</DialogTitle>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-[#9f2241] text-white">
+            <DialogTitle className="uppercase font-black text-lg">Concluir Atención Técnica</DialogTitle>
           </DialogHeader>
           <div className="p-8 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary">Identificar Plantel</Label>
+              <Label className="text-[10px] font-black uppercase text-primary pl-1">Identificar Plantel</Label>
               <Input placeholder="CCT O NOMBRE..." className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
-              {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 animate-in zoom-in-95"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4><p className="text-[8px] font-mono text-emerald-700">{finishForm.cct}</p></div></div>}
+              {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 animate-in zoom-in-95 mt-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4><p className="text-[8px] font-mono text-emerald-700">{finishForm.cct}</p></div></div>}
             </div>
             <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase text-slate-400">Oficina Regional</Label>
-              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent>{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
-              <Label className="text-[10px] font-black uppercase text-primary">Servicio Realizado</Label>
-              <Textarea placeholder="ACCIONES TÉCNICAS..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
+              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina Regional Responsable</Label>
+              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
+              <Label className="text-[10px] font-black uppercase text-primary pl-1">Resumen del Servicio Realizado</Label>
+              <Textarea placeholder="DETALLE LAS ACCIONES TÉCNICAS APLICADAS..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
             </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)}>CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[11px] gap-2"><Save className="h-5 w-5" /> REGISTRAR CIERRE</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="font-black text-[10px] uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl"><Save className="h-5 w-5" /> REGISTRAR CIERRE</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
