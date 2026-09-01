@@ -44,7 +44,8 @@ import {
   ChevronRight,
   Monitor,
   MapPin,
-  Navigation
+  Navigation,
+  Mail
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -120,12 +121,6 @@ export default function ProgramsPage() {
   const [verifySearch, setVerifySearch] = useState('')
   const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
   const [isVerifying, setIsVerifying] = useState(false)
-
-  const [evidenceToView, setEvidenceToView] = useState<{ 
-    pdfData?: string, 
-    images?: string[], 
-    title: string 
-  } | null>(null)
 
   const [selectedReport, setSelectedReport] = useState<ProgramStatus | null>(null)
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
@@ -409,7 +404,7 @@ export default function ProgramsPage() {
       </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData(initialFormState); }}>
-        <DialogContent className="w-[95vw] lg:max-w-[1100px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col">
+        <DialogContent className="w-[95vw] lg:max-w-[1200px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="uppercase font-black text-lg">Gestión de {activeTab}</DialogTitle>
              {activeTab === 'Cuentas Institucionales' && (
@@ -558,44 +553,69 @@ export default function ProgramsPage() {
                 {showAssistantsTab && (
                    <TabsContent value="asistentes" className="h-full m-0 p-0 flex flex-col overflow-hidden">
                       <div className="p-4 bg-slate-50 border-b flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0">
-                         <p className="text-[9px] font-black uppercase text-primary">LISTA DE PARTICIPANTES</p>
-                         <Button onClick={handleAddAssistantRow} size="sm" className="h-8 px-4 text-[9px] font-black uppercase"><Plus className="h-3.5 w-3.5 mr-1" /> AÑADIR</Button>
+                         <div className="flex items-center gap-3">
+                           <Users className="h-5 w-5 text-primary" />
+                           <p className="text-[11px] font-black uppercase text-primary tracking-widest">LISTA DE PARTICIPANTES (SETES)</p>
+                         </div>
+                         <Button onClick={handleAddAssistantRow} className="btn-institutional h-10 px-8 text-[10px] shadow-md"><Plus className="h-4 w-4 mr-2" /> AÑADIR SERVIDOR</Button>
                       </div>
                       <ScrollArea className="flex-1">
                          <div className="p-4 w-full overflow-x-auto">
-                            <Table className="min-w-[900px]">
-                               <TableHeader className="bg-slate-100/50">
-                                 <TableRow className="h-10">
-                                   <TableHead className="w-10 text-[8px] font-black uppercase text-center">#</TableHead>
-                                   <TableHead className="text-[8px] font-black uppercase min-w-[200px]">Nombre del Servidor</TableHead>
-                                   <TableHead className="text-[8px] font-black uppercase w-[120px]">RFC</TableHead>
-                                   <TableHead className="text-[8px] font-black uppercase w-[140px]">CURP</TableHead>
-                                   <TableHead className="text-[8px] font-black uppercase w-[100px]">CCT</TableHead>
-                                   <TableHead className="w-10"></TableHead>
+                            <Table className="min-w-[1300px]">
+                               <TableHeader className="bg-slate-100/50 sticky top-0 z-10">
+                                 <TableRow>
+                                   <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
+                                   <TableHead className="w-[280px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                                   <TableHead className="w-[140px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
+                                   <TableHead className="w-[180px] text-[10px] font-black uppercase">CURP</TableHead>
+                                   <TableHead className="w-[180px] text-[10px] font-black uppercase">Función</TableHead>
+                                   <TableHead className="w-[130px] text-[10px] font-black uppercase">CCT</TableHead>
+                                   <TableHead className="w-[100px] text-[10px] font-black uppercase text-center">Sector</TableHead>
+                                   <TableHead className="w-[250px] text-[10px] font-black uppercase">Email Institucional</TableHead>
+                                   <TableHead className="w-16 sticky right-0 bg-slate-100/50"></TableHead>
                                  </TableRow>
                                </TableHeader>
                                <TableBody>
                                  {assistants.map((ast, idx) => (
-                                 <TableRow key={`ast-${idx}`} className="h-14">
-                                    <TableCell className="text-center font-black text-[10px] text-slate-400">{idx+1}</TableCell>
+                                 <TableRow key={`ast-${idx}`} className="h-16 hover:bg-slate-50 transition-colors">
+                                    <TableCell className="text-center font-black text-xs text-slate-400">{idx+1}</TableCell>
                                     <TableCell className="p-1">
-                                      <div className="grid grid-cols-2 gap-1">
-                                        <Input placeholder="PATERNO" className="h-7 text-[8px] uppercase" value={ast.paterno} onChange={e => updateAssistant(idx, 'paterno', e.target.value.toUpperCase())} />
-                                        <Input placeholder="NOMBRES" className="h-7 text-[8px] uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} />
+                                      <div className="grid grid-cols-1 gap-1">
+                                        <Input placeholder="APELLIDO PATERNO / MATERNO" className="h-8 text-[9px] uppercase font-bold" value={`${ast.paterno} ${ast.materno}`.trim()} onChange={e => {
+                                          const parts = e.target.value.split(' ');
+                                          updateAssistant(idx, 'paterno', parts[0]?.toUpperCase() || '');
+                                          updateAssistant(idx, 'materno', parts.slice(1).join(' ').toUpperCase() || '');
+                                        }} />
+                                        <Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} />
                                       </div>
                                     </TableCell>
                                     <TableCell className="p-1">
-                                      <Input placeholder="13 DÍGITOS" className="h-8 text-[9px] font-mono uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
+                                      <Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono font-black uppercase border-slate-200" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
                                     </TableCell>
                                     <TableCell className="p-1">
-                                      <Input placeholder="18 DÍGITOS" className="h-8 text-[9px] font-mono uppercase" value={ast.curp} onChange={e => updateAssistant(idx, 'curp', e.target.value.toUpperCase())} maxLength={18} />
+                                      <Input placeholder="18 DÍGITOS" className="h-9 text-[11px] font-mono font-bold uppercase border-slate-200" value={ast.curp} onChange={e => updateAssistant(idx, 'curp', e.target.value.toUpperCase())} maxLength={18} />
                                     </TableCell>
                                     <TableCell className="p-1">
-                                      <Input placeholder="15DES..." className="h-8 text-[9px] font-mono" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                      <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                        <SelectTrigger className="h-9 text-[9px] font-bold uppercase border-slate-200"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
+                                        <SelectContent>{FUNCIONES.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
+                                      </Select>
                                     </TableCell>
                                     <TableCell className="p-1">
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                      <Input placeholder="15DES..." className="h-9 text-[11px] font-mono font-black uppercase border-primary/30 bg-white" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <Input value={ast.sector} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black text-slate-600" />
+                                    </TableCell>
+                                    <TableCell className="p-1">
+                                      <div className="relative">
+                                        <Input placeholder="usuario@desysa.edu.mx" className="h-9 pl-8 text-[10px] font-bold border-slate-200" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
+                                        <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-300" />
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="p-1 sticky right-0 bg-white group-hover:bg-slate-50 shadow-l">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </TableCell>
                                  </TableRow>
