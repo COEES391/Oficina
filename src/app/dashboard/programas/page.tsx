@@ -405,7 +405,7 @@ export default function ProgramsPage() {
       </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData(initialFormState); }}>
-        <DialogContent className="w-[95vw] lg:max-w-[1400px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
+        <DialogContent className="w-[98vw] lg:max-w-[1400px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="uppercase font-black text-lg">Gestión de {activeTab}</DialogTitle>
              {activeTab === 'Cuentas Institucionales' && (
@@ -436,9 +436,9 @@ export default function ProgramsPage() {
              <div className="flex-1 overflow-hidden">
                 <TabsContent value="datos" className="h-full m-0 p-0">
                   <ScrollArea className="h-full">
-                    <div className="p-8 space-y-8 max-w-6xl mx-auto">
+                    <div className="p-8 space-y-8 w-full">
                       {activeTab === 'Cuentas Institucionales' ? (
-                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8 shadow-inner">
+                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8 shadow-inner max-w-6xl mx-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                <div className="md:col-span-2 space-y-2">
                                   <Label className="text-[10px] font-black uppercase text-primary pl-1">1. Nombre Completo del Usuario</Label>
@@ -476,7 +476,7 @@ export default function ProgramsPage() {
                             </div>
                          </div>
                       ) : (
-                        <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner">
+                        <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner max-w-6xl mx-auto">
                           <Label className="text-[11px] font-black uppercase text-primary tracking-widest block pl-1">Identificación del Plantel</Label>
                           <div className="relative">
                             <Input placeholder="INGRESAR CCT O NOMBRE DEL PLANTEL..." className="h-16 rounded-2xl bg-white border-primary/20 font-black text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
@@ -500,7 +500,7 @@ export default function ProgramsPage() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
                         {activeTab === 'Biblioteca Digital' && (
                           <>
                             <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
@@ -563,20 +563,20 @@ export default function ProgramsPage() {
                          </div>
                          <Button onClick={handleAddAssistantRow} className="btn-institutional h-12 px-10 text-[11px] shadow-xl"><Plus className="h-5 w-5 mr-2" /> AÑADIR SERVIDOR</Button>
                       </div>
-                      <ScrollArea className="flex-1">
-                         <div className="p-8 w-full overflow-x-auto">
-                            <Table className="min-w-[1600px] border-separate border-spacing-y-2">
-                               <TableHeader className="bg-slate-100/50 sticky top-0 z-10">
+                      <ScrollArea className="flex-1 overflow-auto">
+                         <div className="p-8 min-w-max">
+                            <Table className="table-fixed border-separate border-spacing-y-2" style={{ width: '1800px' }}>
+                               <TableHeader className="bg-slate-100/50 sticky top-0 z-20">
                                  <TableRow className="h-12 border-none">
                                    <TableHead className="w-16 text-[10px] font-black uppercase text-center rounded-l-xl">#</TableHead>
-                                   <TableHead className="w-[350px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
-                                   <TableHead className="w-[160px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
-                                   <TableHead className="w-[200px] text-[10px] font-black uppercase">CURP Oficial</TableHead>
-                                   <TableHead className="w-[220px] text-[10px] font-black uppercase">Función</TableHead>
-                                   <TableHead className="w-[150px] text-[10px] font-black uppercase">CCT Adscripción</TableHead>
+                                   <TableHead className="w-[450px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                                   <TableHead className="w-[180px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
+                                   <TableHead className="w-[220px] text-[10px] font-black uppercase">CURP Oficial</TableHead>
+                                   <TableHead className="w-[240px] text-[10px] font-black uppercase">Función</TableHead>
+                                   <TableHead className="w-[180px] text-[10px] font-black uppercase text-center">CCT Adscripción</TableHead>
                                    <TableHead className="w-[140px] text-[10px] font-black uppercase text-center">Sector</TableHead>
-                                   <TableHead className="w-[300px] text-[10px] font-black uppercase">Email Institucional</TableHead>
-                                   <TableHead className="w-20 sticky right-0 bg-slate-100/50 rounded-r-xl"></TableHead>
+                                   <TableHead className="w-[320px] text-[10px] font-black uppercase">Email Institucional</TableHead>
+                                   <TableHead className="w-20 sticky right-0 bg-slate-100/50 z-30 rounded-r-xl"></TableHead>
                                  </TableRow>
                                </TableHeader>
                                <TableBody>
@@ -585,7 +585,7 @@ export default function ProgramsPage() {
                                     <TableCell className="text-center font-black text-sm text-slate-300 rounded-l-xl">{idx+1}</TableCell>
                                     <TableCell className="p-2">
                                       <div className="grid grid-cols-1 gap-2">
-                                        <Input placeholder="APELLIDO PATERNO / MATERNO" className="h-9 text-[11px] uppercase font-bold border-slate-100 shadow-inner px-4" value={`${ast.paterno} ${ast.materno}`.trim()} onChange={e => {
+                                        <Input placeholder="APELLIDO PATERNO / MATERNO" className="h-10 text-[11px] uppercase font-bold border-slate-100 shadow-inner px-4 bg-slate-50/50" value={`${ast.paterno} ${ast.materno}`.trim()} onChange={e => {
                                           const parts = e.target.value.split(' ');
                                           updateAssistant(idx, 'paterno', parts[0]?.toUpperCase() || '');
                                           updateAssistant(idx, 'materno', parts.slice(1).join(' ').toUpperCase() || '');
@@ -606,13 +606,14 @@ export default function ProgramsPage() {
                                       </Select>
                                     </TableCell>
                                     <TableCell className="p-2">
-                                      <Input placeholder="CCT..." className="h-12 text-sm font-mono font-black uppercase border-primary/20 bg-white text-center shadow-sm" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                                    </TableCell>
-                                    <TableCell className="p-2">
-                                      <div className="flex flex-col items-center gap-1">
-                                        <Input value={ast.sector} readOnly className="h-10 text-center text-sm bg-slate-100 border-none font-black text-slate-600 rounded-xl" />
-                                        <span className="text-[8px] font-black uppercase text-slate-400">SECTOR</span>
+                                      <div className="flex flex-col gap-1">
+                                        <Input placeholder="CCT..." className="h-12 text-sm font-mono font-black uppercase border-primary/20 bg-white text-center shadow-sm" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
+                                        {ast.nombreCT && <span className="text-[7px] font-black text-emerald-600 uppercase text-center truncate px-1">{ast.nombreCT}</span>}
                                       </div>
+                                    </TableCell>
+                                    <TableCell className="p-2 text-center">
+                                      <Input value={ast.sector} readOnly className="h-10 text-center text-sm bg-slate-100 border-none font-black text-slate-600 rounded-xl mb-1" />
+                                      <span className="text-[8px] font-black uppercase text-slate-400">SECTOR</span>
                                     </TableCell>
                                     <TableCell className="p-2">
                                       <div className="relative group/mail">
@@ -620,7 +621,7 @@ export default function ProgramsPage() {
                                         <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within/mail:text-primary transition-colors" />
                                       </div>
                                     </TableCell>
-                                    <TableCell className="p-2 sticky right-0 bg-white group-hover:bg-slate-50 shadow-l rounded-r-xl transition-colors">
+                                    <TableCell className="p-2 sticky right-0 bg-white group-hover:bg-slate-50 z-30 shadow-l rounded-r-xl transition-colors">
                                       <Button variant="ghost" size="icon" className="h-12 w-12 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
                                         <Trash2 className="h-6 w-6" />
                                       </Button>
