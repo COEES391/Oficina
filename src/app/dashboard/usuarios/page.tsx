@@ -59,7 +59,7 @@ export default function UsersPage() {
       setUsers(fetchedUsers)
     } catch (error) {
       console.error("Error fetching users:", error)
-      toast({ variant: "destructive", title: "Error al cargar usuarios" })
+      toast({ variant: "destructive", title: "Error al cargar la lista" })
     } finally {
       setIsLoading(false)
     }
@@ -70,7 +70,7 @@ export default function UsersPage() {
     fetchUsers()
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const cleanRfc = (formData.rfc || '').trim().toUpperCase()
     const cleanName = (formData.name || '').trim().toUpperCase()
     const cleanPassword = (formData.password || '').trim()
@@ -79,47 +79,44 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "El nombre, RFC y contraseña son obligatorios." 
+        description: "El nombre, RFC y contraseña son obligatorios para el acceso." 
       })
       return
     }
 
     setIsSaving(true)
     
-    const userData = {
-      rfc: cleanRfc,
-      name: cleanName,
-      password: cleanPassword,
-      role: 'user' as const,
-      privileges: formData.privileges || ['programas'],
-      updatedAt: serverTimestamp()
+    try {
+      const userData = {
+        rfc: cleanRfc,
+        name: cleanName,
+        password: cleanPassword,
+        role: 'user' as const,
+        privileges: formData.privileges || ['programas'],
+        updatedAt: serverTimestamp()
+      }
+
+      if (editingId) {
+        await updateDoc(doc(db, 'users', editingId), userData)
+      } else {
+        await addDoc(collection(db, 'users'), { ...userData, createdAt: serverTimestamp() })
+      }
+
+      toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
+      setIsDialogOpen(false)
+      setEditingId(null)
+      setFormData(initialFormState)
+      await fetchUsers()
+    } catch (error) {
+      console.error("Error saving user:", error)
+      toast({ 
+        variant: "destructive", 
+        title: "Error de conexión", 
+        description: "No se pudo sincronizar con la base de datos. Intente de nuevo." 
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    // Proceso no bloqueante para evitar que se quede "pensando"
-    const usersRef = collection(db, 'users')
-    const operation = editingId 
-      ? updateDoc(doc(db, 'users', editingId), userData)
-      : addDoc(usersRef, { ...userData, createdAt: serverTimestamp() })
-
-    // Liberar UI inmediatamente
-    setIsSaving(false)
-    setIsDialogOpen(false)
-    setEditingId(null)
-    setFormData(initialFormState)
-
-    operation
-      .then(() => {
-        toast({ title: "Registro guardado", description: `Acceso para ${cleanRfc} actualizado.` })
-        fetchUsers()
-      })
-      .catch((error) => {
-        console.error("Error saving user:", error)
-        toast({ 
-          variant: "destructive", 
-          title: "Error de sincronización", 
-          description: "No se pudo guardar en la nube. Verifique su conexión." 
-        })
-      })
   }
 
   const handleTogglePrivilege = (sectionId: string) => {
@@ -142,10 +139,10 @@ export default function UsersPage() {
     if (!confirm("¿Está seguro de eliminar este acceso permanentemente?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso eliminado" })
+      toast({ title: "Acceso removido" })
       fetchUsers()
     } catch (error) {
-      toast({ variant: "destructive", title: "Error al procesar la solicitud" })
+      toast({ variant: "destructive", title: "Error al procesar la baja" })
     }
   }
 
@@ -177,15 +174,15 @@ export default function UsersPage() {
             <Table>
               <TableHeader className="bg-slate-100/50">
                 <TableRow>
-                  <TableHead className="font-bold text-xs uppercase pl-10 h-14">Nombre del Servidor</TableHead>
-                  <TableHead className="font-bold text-xs uppercase h-14">Identificador (RFC)</TableHead>
-                  <TableHead className="font-bold text-xs uppercase h-14">Privilegios Asignados</TableHead>
-                  <TableHead className="text-right font-bold text-xs uppercase pr-10 h-14">Acciones</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase pl-10 h-14 text-slate-500">Nombre del servidor</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase h-14 text-slate-500">Identificador (RFC)</TableHead>
+                  <TableHead className="font-bold text-[11px] uppercase h-14 text-slate-500">Privilegios asignados</TableHead>
+                  <TableHead className="text-right font-bold text-[11px] uppercase pr-10 h-14 text-slate-500">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando con la red...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-20 font-bold opacity-50"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" /> Sincronizando datos...</TableCell></TableRow>
                 ) : users.length > 0 ? users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-slate-50 transition-colors h-20 border-b border-slate-50">
                     <TableCell className="pl-10">
@@ -218,7 +215,7 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 )) : (
-                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-bold text-sm tracking-widest uppercase">No se encontraron accesos registrados</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center py-24 opacity-30 font-bold text-sm tracking-widest uppercase">Sin registros en la nube</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -235,7 +232,7 @@ export default function UsersPage() {
               </DialogTitle>
               <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
             </div>
-            <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <button onClick={() => !isSaving && setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
               <X className="h-5 w-5 text-slate-500" />
             </button>
           </DialogHeader>
@@ -250,6 +247,7 @@ export default function UsersPage() {
                     onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} 
                     className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-bold placeholder:text-slate-300" 
                     placeholder="Apellidos y nombres..." 
+                    disabled={isSaving}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -261,6 +259,7 @@ export default function UsersPage() {
                       className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black text-lg" 
                       placeholder="13 caracteres..." 
                       maxLength={13}
+                      disabled={isSaving}
                     />
                   </div>
                   <div className="space-y-2">
@@ -271,8 +270,9 @@ export default function UsersPage() {
                         onChange={e => setFormData({...formData, password: e.target.value})} 
                         className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
                         placeholder="Mínimo 6 caracteres..." 
+                        disabled={isSaving}
                       />
-                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5">
+                      <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5" disabled={isSaving}>
                         <KeyRound className="h-5 w-5" />
                       </Button>
                     </div>
@@ -295,13 +295,14 @@ export default function UsersPage() {
                           ? "bg-primary/[0.04] border-primary/30 ring-1 ring-primary/10 shadow-lg" 
                           : "bg-white border-slate-100 hover:border-primary/20"
                       )} 
-                      onClick={() => handleTogglePrivilege(section.id)}
+                      onClick={() => !isSaving && handleTogglePrivilege(section.id)}
                     >
                         <Checkbox 
                           id={`section-${section.id}`} 
                           checked={formData.privileges?.includes(section.id)} 
-                          onCheckedChange={() => handleTogglePrivilege(section.id)} 
+                          onCheckedChange={() => !isSaving && handleTogglePrivilege(section.id)} 
                           className="h-6 w-6 border-primary data-[state=checked]:bg-primary rounded-lg" 
+                          disabled={isSaving}
                         />
                         <Label className="text-sm font-bold cursor-pointer group-hover:text-primary transition-colors leading-tight">{section.name}</Label>
                     </div>
@@ -327,7 +328,7 @@ export default function UsersPage() {
               className="btn-institutional h-14 px-16 text-xs flex items-center gap-4 shadow-2xl min-w-[240px]"
             >
               {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />} 
-              {editingId ? 'Guardar cambios' : 'Registrar acceso'}
+              {isSaving ? 'Registrando...' : (editingId ? 'Guardar cambios' : 'Registrar acceso')}
             </Button>
           </DialogFooter>
         </DialogContent>

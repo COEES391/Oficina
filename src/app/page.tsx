@@ -51,6 +51,7 @@ export default function LoginPage() {
         return
       }
 
+      // Consulta directa a Firestore para validar los usuarios registrados
       const usersRef = collection(db, 'users')
       const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', password))
       const querySnapshot = await getDocs(q)
@@ -62,6 +63,7 @@ export default function LoginPage() {
         
         const privs = userData.privileges || []
         
+        // Redirección inteligente basada en privilegios
         if (privs.includes('programas') || privs.includes('bitacora-atres')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
@@ -77,7 +79,7 @@ export default function LoginPage() {
         toast({ 
           variant: "destructive", 
           title: "Acceso denegado", 
-          description: "Las credenciales no coinciden con nuestros registros." 
+          description: "Las credenciales no coinciden con nuestros registros en la nube." 
         })
       }
     } catch (error: any) {
@@ -101,7 +103,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.25)] border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-md shadow-[0_48px_96px_-12px_rgba(98,17,50,0.25)] border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-700">
         <CardHeader className="text-center pt-10 pb-4 space-y-6">
           <div className="mx-auto relative h-36 w-36 rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
