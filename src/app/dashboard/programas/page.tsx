@@ -254,7 +254,7 @@ export default function ProgramsPage() {
 
   const handleSave = () => {
     if (!formData.cct) {
-      toast({ variant: "destructive", title: "CCT Obligatorio" });
+      toast({ variant: "destructive", title: "CCT obligatorio" });
       return;
     }
 
@@ -335,15 +335,15 @@ export default function ProgramsPage() {
     <div className="space-y-4 animate-in fade-in duration-700 w-full min-w-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-primary leading-none">Módulos Técnicos COEES</h2>
-          <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Auditoría 2026</p>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-primary leading-none">Módulos técnicos Coees</h2>
+          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Auditoría 2026</p>
         </div>
       </div>
 
       <Card className="executive-card p-4 sm:p-6 bg-white border-none shadow-xl mt-4">
         <div className="grid grid-cols-12 items-end gap-4">
            <div className="col-span-12 lg:col-span-5 space-y-2 min-w-0">
-              <Label className="text-[10px] font-black uppercase text-slate-400 block pl-1">Módulo Institucional</Label>
+              <Label className="text-[10px] font-black text-slate-400 block pl-1">Módulo institucional</Label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {PROGRAM_RUBROS.map(rubro => (
                   <button 
@@ -368,7 +368,7 @@ export default function ProgramsPage() {
              )}
              {activeTab === 'ATRES' && (
                <Button onClick={() => setIsHelpDeskOpen(true)} className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] gap-2 shadow-lg w-full">
-                 <Headset className="h-5 w-5" /> Mesa de Ayuda
+                 <Headset className="h-5 w-5" /> Mesa de ayuda
                </Button>
              )}
            </div>
@@ -380,7 +380,7 @@ export default function ProgramsPage() {
              </div>
              
              <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-6 rounded-xl text-[11px] font-bold shadow-xl flex-shrink-0 min-w-fit">
-                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo registro
              </Button>
            </div>
         </div>
@@ -391,11 +391,11 @@ export default function ProgramsPage() {
           <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
-                  <TableHead className="w-12 text-[10px] font-bold uppercase text-center pl-4">#</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-primary w-[110px]">CCT</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-primary min-w-[200px]">Identificación</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-primary w-[100px]">Estatus</TableHead>
-                  <TableHead className="text-right text-[10px] font-bold uppercase pr-6 w-24">Acción</TableHead>
+                  <TableHead className="w-12 text-[10px] font-bold pl-4">#</TableHead>
+                  <TableHead className="text-[10px] font-bold text-primary w-[110px]">CCT</TableHead>
+                  <TableHead className="text-[10px] font-bold text-primary min-w-[200px]">Identificación</TableHead>
+                  <TableHead className="text-[10px] font-bold text-primary w-[100px]">Estatus</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold pr-6 w-24">Acción</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -403,10 +403,10 @@ export default function ProgramsPage() {
                 <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14">
                   <TableCell className="text-center font-bold text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
                   <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
-                  <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground uppercase opacity-70 truncate">{rec.municipio}</span></div></TableCell>
+                  <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio}</span></div></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                       <Badge variant="outline" className={cn("text-[8px] font-bold uppercase px-2 h-5 rounded-full border-2", 
+                       <Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2", 
                          rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
                          rec.status === 'inactivo' ? "bg-rose-50 text-rose-700 border-rose-200" : 
                          "bg-amber-50 text-amber-700 border-amber-200"
@@ -434,11 +434,11 @@ export default function ProgramsPage() {
       <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[500px] rounded-[2rem] p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-primary text-white">
-             <DialogTitle className="font-black text-lg">Verificador Oficial</DialogTitle>
+             <DialogTitle className="font-black text-lg">Verificador oficial</DialogTitle>
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">ID Servidor (Nombre/Correo)</Label>
+              <Label className="text-[10px] font-black text-slate-400 pl-1">ID servidor (Nombre/Correo)</Label>
               <div className="flex gap-2">
                 <Input placeholder="Ingresar dato..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-center uppercase" value={verifySearch} onChange={e => setVerifySearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
                 <Button onClick={handleVerifyAccount} disabled={isVerifying || !verifySearch} className="h-12 w-12 rounded-xl bg-accent shadow-lg p-0"><Search className={cn("h-5 w-5", isVerifying && "animate-spin")} /></Button>
@@ -448,10 +448,10 @@ export default function ProgramsPage() {
               <div className="p-5 rounded-[1.5rem] bg-slate-900 text-white shadow-2xl animate-in zoom-in-95">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-3">
                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center"><UserCheck className="h-5 w-5 text-accent" /></div>
-                   <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 uppercase mt-1">{verifiedAccount.cct}</p></div>
+                   <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 mt-1 uppercase">{verifiedAccount.cct}</p></div>
                 </div>
                 <div className="space-y-4">
-                   <p className="text-[8px] font-bold uppercase text-white/40 leading-none">Cuentas Registradas</p>
+                   <p className="text-[8px] font-bold text-white/40 leading-none">Cuentas registradas</p>
                    <div className="space-y-3">
                       {(verifiedAccount.emails || [verifiedAccount.email]).map((em: string, i: number) => (
                         <div key={i} className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/10 animate-in slide-in-from-left-2" style={{ animationDelay: `${i * 100}ms` }}>
@@ -462,9 +462,9 @@ export default function ProgramsPage() {
                    </div>
                 </div>
               </div>
-            ) : (<div className="p-8 border-2 border-dashed rounded-[2rem] text-center opacity-20"><p className="text-[11px] font-bold tracking-widest uppercase">Ingrese un ID para validar</p></div>)}
+            ) : (<div className="p-8 border-2 border-dashed rounded-[2rem] text-center opacity-20"><p className="text-[11px] font-bold tracking-widest">Ingrese un ID para validar</p></div>)}
           </div>
-          <DialogFooter className="p-4 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="w-full h-11 font-bold text-xs uppercase">Cerrar</Button></DialogFooter>
+          <DialogFooter className="p-4 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="w-full h-11 font-bold text-xs">Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -491,8 +491,8 @@ export default function ProgramsPage() {
              {showAssistantsTab && (
                <div className="px-6 border-b bg-slate-50/50 shrink-0">
                   <TabsList className="bg-transparent h-14 p-0 gap-8">
-                    <TabsTrigger value="datos" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">Fases Técnicas</TabsTrigger>
-                    <TabsTrigger value="asistentes" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4 uppercase">Lista de Participantes</TabsTrigger>
+                    <TabsTrigger value="datos" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4">Fases técnicas</TabsTrigger>
+                    <TabsTrigger value="asistentes" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4">Lista de participantes</TabsTrigger>
                   </TabsList>
                </div>
              )}
@@ -505,19 +505,19 @@ export default function ProgramsPage() {
                          <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8 shadow-inner max-w-6xl mx-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                <div className="md:col-span-2 space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">Nombre Completo del Usuario</Label>
+                                  <Label className="text-[10px] font-black text-primary pl-1">Nombre completo del usuario</Label>
                                   <Input className="h-14 font-bold text-lg border-primary/10 bg-white rounded-xl shadow-sm uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
                                </div>
                                <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">CCT</Label>
+                                  <Label className="text-[10px] font-black text-primary pl-1">CCT</Label>
                                   <Input className="h-12 font-mono font-bold uppercase border-primary/10 bg-white rounded-xl" value={formData.cct || ''} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
                                </div>
                                <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Correo Institucional (1 a 3)</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1">Correo institucional</Label>
                                     {(formData.emails || []).length < 3 && (
-                                      <Button variant="ghost" size="sm" onClick={addEmailField} className="h-7 px-2 text-[8px] font-black uppercase text-primary border border-primary/10">
-                                        <Plus className="h-3 w-3 mr-1" /> Añadir Otro
+                                      <Button variant="ghost" size="sm" onClick={addEmailField} className="h-7 px-2 text-[8px] font-black text-primary border border-primary/10">
+                                        <Plus className="h-3 w-3 mr-1" /> Añadir otro
                                       </Button>
                                     )}
                                   </div>
@@ -541,19 +541,19 @@ export default function ProgramsPage() {
                                </div>
                                <div className="grid grid-cols-2 gap-4 md:col-span-2">
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Sector</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1">Sector</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.sector || ''} onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Zona</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1">Zona</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.zonaEscolar || ''} onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Modalidad</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1">Modalidad</Label>
                                     <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.modalidad || ''} onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})} />
                                  </div>
                                  <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Valle</Label>
+                                    <Label className="text-[10px] font-black text-primary pl-1">Valle</Label>
                                     <Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}>
                                        <SelectTrigger className="h-11 font-bold text-[11px] bg-white rounded-xl uppercase"><SelectValue /></SelectTrigger>
                                        <SelectContent className="rounded-xl"><SelectItem value="MEXICO" className="text-[11px]">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[11px]">TOLUCA</SelectItem></SelectContent>
@@ -564,9 +564,9 @@ export default function ProgramsPage() {
                          </div>
                       ) : (
                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner max-w-6xl mx-auto">
-                          <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Identificación del Plantel</Label>
+                          <Label className="text-[11px] font-black text-primary tracking-widest block pl-1">Identificación del plantel</Label>
                           <div className="relative">
-                            <Input placeholder="Ingresar CCT o nombre del plantel..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                            <Input placeholder="Ingresar CCT o nombre..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                             {dialogSearchTerm.length > 2 && (
                               <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
                                 {schoolSearchResults.map((s, sidx) => (
@@ -581,7 +581,7 @@ export default function ProgramsPage() {
                           {formData.cct && (
                             <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
                               <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
-                              <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT Oficial: {formData.cct}</p></div>
+                              <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT oficial: {formData.cct}</p></div>
                             </div>
                           )}
                         </div>
@@ -591,15 +591,15 @@ export default function ProgramsPage() {
                         {activeTab === 'Biblioteca Digital' && (
                           <>
                             <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest uppercase">Fases Técnicas de Implementación</h3>
+                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Fases técnicas de implementación</h3>
                                 <div className="space-y-3">
                                   {[
-                                    { id: 'fase1', label: 'Fase 1: Diagnóstico Integral' },
-                                    { id: 'fase2', label: 'Fase 2: Conectividad y Red' },
-                                    { id: 'fase3', label: 'Fase 3: Mobiliario y Espacio' },
-                                    { id: 'fase4', label: 'Fase 4: Instalación Hardware' },
+                                    { id: 'fase1', label: 'Fase 1: Diagnóstico integral' },
+                                    { id: 'fase2', label: 'Fase 2: Conectividad y red' },
+                                    { id: 'fase3', label: 'Fase 3: Mobiliario y espacio' },
+                                    { id: 'fase4', label: 'Fase 4: Instalación hardware' },
                                     { id: 'fase5', label: 'Fase 5: Capacitación Setes' },
-                                    { id: 'fase6', label: 'Fase 6: Operación Escolar' },
+                                    { id: 'fase6', label: 'Fase 6: Operación escolar' },
                                     { id: 'fase7', label: 'Fase 7: Auditoría Coees' },
                                   ].map(fase => (
                                     <div key={fase.id} className={cn("flex items-center gap-4 p-3 rounded-2xl border transition-all cursor-pointer group", formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, [fase.id]: !formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases]} as any})}>
@@ -610,17 +610,17 @@ export default function ProgramsPage() {
                                 </div>
                             </div>
                             <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-8 shadow-inner border border-slate-100">
-                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest uppercase">Métricas y Estadística</h3>
+                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Métricas y estadística</h3>
                                 <div className="grid grid-cols-1 gap-6">
-                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Equipos Habilitados</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, equiposHabilitados: parseInt(e.target.value) || 0} as any})} /></div>
-                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Personal Capacitado (Setes)</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, personalCapacitado: parseInt(e.target.value) || 0} as any})} /></div>
+                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1">Equipos habilitados</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, equiposHabilitados: parseInt(e.target.value) || 0} as any})} /></div>
+                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1">Personal capacitado (Setes)</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, personalCapacitado: parseInt(e.target.value) || 0} as any})} /></div>
                                 </div>
-                                <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center justify-between"><span className="text-[12px] font-bold text-primary">Avance del Proyecto</span><Badge className="text-xl font-black h-12 w-24 flex items-center justify-center rounded-xl bg-primary text-white">{formData.progress}%</Badge></div>
+                                <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center justify-between"><span className="text-[12px] font-bold text-primary">Avance del proyecto</span><Badge className="text-xl font-black h-12 w-24 flex items-center justify-center rounded-xl bg-primary text-white">{formData.progress}%</Badge></div>
                             </div>
 
                             <div className="md:col-span-2 space-y-6 pt-6 border-t-2 border-primary/5 max-w-6xl mx-auto w-full">
-                                <h3 className="text-sm font-black text-primary tracking-wider flex items-center gap-2 uppercase">
-                                  <Archive className="h-5 w-5" /> Evidencia Digital (PDF e imágenes PNG)
+                                <h3 className="text-sm font-black text-primary tracking-wider flex items-center gap-2">
+                                  <Archive className="h-5 w-5" /> Evidencia digital (PDF e imágenes PNG)
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                   <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative group transition-all hover:border-primary/30">
@@ -629,7 +629,7 @@ export default function ProgramsPage() {
                                         <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600">
                                           <FileText className="h-8 w-8" />
                                         </div>
-                                        <p className="text-[10px] font-bold text-emerald-700 uppercase">Reporte cargado</p>
+                                        <p className="text-[10px] font-bold text-emerald-700">Reporte cargado</p>
                                         <Button 
                                           variant="ghost" 
                                           size="icon" 
@@ -642,16 +642,16 @@ export default function ProgramsPage() {
                                     ) : (
                                       <>
                                         <Upload className="h-8 w-8 text-slate-300 group-hover:text-primary transition-colors" />
-                                        <p className="text-[11px] font-bold text-slate-700">Subir Formato PDF (Máx 2.0MB)</p>
-                                        <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold uppercase">Seleccionar</Button>
+                                        <p className="text-[11px] font-bold text-slate-700">Subir formato PDF (Máx 2.0MB)</p>
+                                        <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold">Seleccionar</Button>
                                       </>
                                     )}
                                     <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
                                   </div>
                                   <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative transition-all hover:border-primary/30">
                                     <ImageIcon className="h-8 w-8 text-slate-300" />
-                                    <p className="text-[11px] font-bold text-slate-700">Adjuntar Imágenes PNG (Máx 2.0MB)</p>
-                                    <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold uppercase">Añadir Imagen</Button>
+                                    <p className="text-[11px] font-bold text-slate-700">Adjuntar imágenes PNG (Máx 2.0MB)</p>
+                                    <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold">Añadir imagen</Button>
                                     <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
                                     
                                     {formData.evidencePhotos && formData.evidencePhotos.length > 0 && (
@@ -677,18 +677,18 @@ export default function ProgramsPage() {
 
                         {activeTab === 'Geoposición' && (
                           <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                             <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest uppercase">Coordenadas de Ubicación</h3>
+                             <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Coordenadas de ubicación</h3>
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1 uppercase">Latitud</Label><Input placeholder="19.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1 uppercase">Longitud</Label><Input placeholder="-99.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Latitud</Label><Input placeholder="19.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Longitud</Label><Input placeholder="-99.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                              </div>
                           </div>
                         )}
 
                         {(activeTab === 'Conoce mi Escuela' || activeTab === 'ATRES') && (
                           <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1 uppercase">Estatus de Operación</Label><Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}><SelectTrigger className="h-12 font-bold text-[11px] bg-white rounded-xl shadow-sm uppercase"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="activo" className="text-[11px] font-bold text-emerald-600">Activo</SelectItem><SelectItem value="planeacion" className="text-[11px] font-bold text-amber-600">En planeación</SelectItem><SelectItem value="concluido" className="text-[11px] font-bold text-primary">Concluido</SelectItem></SelectContent></Select></div>
-                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1 uppercase">Observaciones Operativas</Label><Textarea placeholder="Detalles técnicos y administrativos..." className="min-h-[160px] rounded-[1.5rem] p-6 text-[13px] font-semibold bg-white shadow-sm resize-none uppercase" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} /></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Estatus de operación</Label><Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}><SelectTrigger className="h-12 font-bold text-[11px] bg-white rounded-xl shadow-sm uppercase"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="activo" className="text-[11px] font-bold text-emerald-600">Activo</SelectItem><SelectItem value="planeacion" className="text-[11px] font-bold text-amber-600">En planeación</SelectItem><SelectItem value="concluido" className="text-[11px] font-bold text-primary">Concluido</SelectItem></SelectContent></Select></div>
+                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Observaciones operativas</Label><Textarea placeholder="Detalles técnicos y administrativos..." className="min-h-[160px] rounded-[1.5rem] p-6 text-[13px] font-semibold bg-white shadow-sm resize-none uppercase" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} /></div>
                           </div>
                         )}
                       </div>
@@ -701,9 +701,9 @@ export default function ProgramsPage() {
                       <div className="p-6 bg-slate-50 border-b flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm">
                          <div className="flex items-center gap-4">
                            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Users className="h-6 w-6" /></div>
-                           <p className="text-sm font-black text-primary tracking-widest uppercase">Lista de Participantes</p>
+                           <p className="text-sm font-black text-primary tracking-widest uppercase">Lista de participantes</p>
                          </div>
-                         <Button onClick={handleAddAssistantRow} className="btn-institutional h-12 px-10 text-xs shadow-xl"><Plus className="h-5 w-5 mr-2" /> Añadir Servidor</Button>
+                         <Button onClick={handleAddAssistantRow} className="btn-institutional h-12 px-10 text-xs shadow-xl"><Plus className="h-5 w-5 mr-2" /> Añadir servidor</Button>
                       </div>
                       <div className="flex-1 overflow-x-auto">
                         <div className="p-8" style={{ width: '1800px' }}>
@@ -711,14 +711,14 @@ export default function ProgramsPage() {
                               <TableHeader className="bg-slate-100/50 sticky top-0 z-20">
                                 <TableRow className="h-12 border-none">
                                   <TableHead className="w-[60px] text-[10px] font-bold uppercase text-center rounded-l-xl">#</TableHead>
-                                  <TableHead className="w-[400px] text-[10px] font-bold uppercase">Apellidos y Nombre(s)</TableHead>
-                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase">RFC Oficial</TableHead>
-                                  <TableHead className="w-[220px] text-[10px] font-bold uppercase">CURP Oficial</TableHead>
+                                  <TableHead className="w-[400px] text-[10px] font-bold uppercase">Apellidos y nombre(s)</TableHead>
+                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase">RFC oficial</TableHead>
+                                  <TableHead className="w-[220px] text-[10px] font-bold uppercase">CURP oficial</TableHead>
                                   <TableHead className="w-[200px] text-[10px] font-bold uppercase">Función</TableHead>
-                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase text-center">CCT Adscripción</TableHead>
+                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase text-center">CCT adscripción</TableHead>
                                   <TableHead className="w-[250px] text-[10px] font-bold uppercase">Plantel (Base Maestra)</TableHead>
                                   <TableHead className="w-[140px] text-[10px] font-bold uppercase text-center">Sector</TableHead>
-                                  <TableHead className="w-[300px] text-[10px] font-bold uppercase">Email Institucional</TableHead>
+                                  <TableHead className="w-[300px] text-[10px] font-bold uppercase">Email institucional</TableHead>
                                   <TableHead className="w-[80px] rounded-r-xl"></TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -782,15 +782,15 @@ export default function ProgramsPage() {
           </Tabs>
 
           <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-6 shrink-0 shadow-inner">
-             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] uppercase text-slate-400 hover:text-primary transition-all">Cancelar</Button>
-             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl"><Save className="h-6 w-6" /> Guardar Registro</Button>
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all">Cancelar</Button>
+             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl"><Save className="h-6 w-6" /> Guardar registro</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent className="w-[95vw] lg:max-w-[800px] h-[85vh] rounded-[2rem] p-0 overflow-hidden flex flex-col bg-white">
-           <DialogHeader className="p-6 bg-slate-50 border-b shrink-0"><DialogTitle className="font-black text-lg">Informe de Implementación</DialogTitle></DialogHeader>
+           <DialogHeader className="p-6 bg-slate-50 border-b shrink-0"><DialogTitle className="font-black text-lg">Informe de implementación</DialogTitle></DialogHeader>
            <ScrollArea className="flex-1 p-6">
               {selectedReport && (
                 <div className="space-y-6">
@@ -804,7 +804,7 @@ export default function ProgramsPage() {
                 </div>
               )}
            </ScrollArea>
-           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="w-full text-xs font-bold uppercase">Cerrar</Button></DialogFooter>
+           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="w-full text-xs font-bold">Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

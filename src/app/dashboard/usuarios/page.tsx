@@ -59,7 +59,7 @@ export default function UsersPage() {
       setUsers(fetchedUsers)
     } catch (error) {
       console.error("Error fetching users:", error)
-      toast({ variant: "destructive", title: "Error al cargar la lista" })
+      toast({ variant: "destructive", title: "Error al cargar la lista", description: "No se pudo sincronizar con la nube." })
     } finally {
       setIsLoading(false)
     }
@@ -79,7 +79,7 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "El nombre, RFC y contraseña son obligatorios para el acceso." 
+        description: "El nombre, RFC y contraseña son obligatorios." 
       })
       return
     }
@@ -87,7 +87,6 @@ export default function UsersPage() {
     setIsSaving(true)
 
     try {
-      // Definimos la operación de guardado
       const performSave = async () => {
         const userData = {
           rfc: cleanRfc,
@@ -111,18 +110,17 @@ export default function UsersPage() {
         }
       }
 
-      // Definimos un timeout de 10 segundos
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 10000)
+      // Timeout de 12 segundos para evitar que la interfaz se bloquee
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 12000)
       )
 
-      // Ejecutamos la carrera
-      const result = await Promise.race([performSave(), timeout])
+      const result = await Promise.race([performSave(), timeoutPromise])
 
       if (result === "update") {
-        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron correctamente.` })
+        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron.` })
       } else {
-        toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
+        toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya tiene acceso.` })
       }
 
       setIsDialogOpen(false)
@@ -130,18 +128,18 @@ export default function UsersPage() {
       setFormData(initialFormState)
       await fetchUsers()
     } catch (error: any) {
-      console.error("Error saving user:", error)
+      console.error("Save error:", error)
       if (error.message === 'timeout') {
         toast({ 
           variant: "destructive", 
           title: "Tiempo de espera agotado", 
-          description: "La base de datos no respondió. Verifique su conexión o permisos en Firestore e intente de nuevo." 
+          description: "La nube no respondió a tiempo. Verifique su conexión e intente de nuevo." 
         })
       } else {
         toast({ 
           variant: "destructive", 
-          title: "Error de sincronización", 
-          description: "No se pudo conectar con la nube. Verifique su conexión a internet." 
+          title: "Error de guardado", 
+          description: "No se pudieron subir los datos. Verifique permisos de Firestore." 
         })
       }
     } finally {
@@ -166,10 +164,10 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Está seguro de eliminar este acceso permanentemente?")) return
+    if (!confirm("¿Desea eliminar este acceso permanentemente?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso removido", description: "Las credenciales han sido dadas de baja." })
+      toast({ title: "Acceso removido" })
       fetchUsers()
     } catch (error) {
       toast({ variant: "destructive", title: "Error al procesar la baja" })
@@ -184,7 +182,7 @@ export default function UsersPage() {
         <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de accesos global</h2>
           <p className="text-muted-foreground font-bold text-xs flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas para acceso multi-equipo
+            <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas en tiempo real
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
@@ -197,7 +195,7 @@ export default function UsersPage() {
           <CardTitle className="flex items-center gap-4 text-primary font-black text-2xl">
             <Users className="h-10 w-10 text-accent" /> Usuarios del sistema
           </CardTitle>
-          <CardDescription className="font-bold text-xs tracking-widest text-muted-foreground mt-2">Base de datos centralizada en tiempo real para auditoría 2026</CardDescription>
+          <CardDescription className="font-bold text-xs tracking-widest text-muted-foreground mt-2">Censo de personal con acceso autorizado</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -260,7 +258,7 @@ export default function UsersPage() {
               <DialogTitle className="font-black text-primary text-2xl flex items-center gap-4">
                 <Shield className="h-8 w-8 text-accent" /> {editingId ? 'Editar perfil institucional' : 'Nuevo acceso institucional'}
               </DialogTitle>
-              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y el nivel de acceso para este servidor público.</DialogDescription>
+              <DialogDescription className="text-xs font-bold text-slate-400 mt-1">Configure las credenciales y privilegios para este servidor.</DialogDescription>
             </div>
             <button onClick={() => !isSaving && setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-slate-200 flex items-center justify-center transition-colors">
               <X className="h-5 w-5 text-slate-500" />
@@ -299,7 +297,7 @@ export default function UsersPage() {
                         value={formData.password} 
                         onChange={e => setFormData({...formData, password: e.target.value})} 
                         className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
-                        placeholder="Mínimo 6 caracteres..." 
+                        placeholder="Contraseña..." 
                         disabled={isSaving}
                       />
                       <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5" disabled={isSaving}>
