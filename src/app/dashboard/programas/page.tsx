@@ -252,23 +252,23 @@ export default function ProgramsPage() {
            </div>
            
            <div className="flex items-center gap-3 w-full md:w-auto">
-             <div className="relative flex-1 md:w-[300px]">
+             <div className="relative flex-1 md:w-[350px]">
                 <div className="relative">
                   <Input 
                     placeholder="CCT, PLANTEL O USUARIO..." 
-                    className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-9 text-[10px] font-black uppercase w-full shadow-inner" 
+                    className="h-10 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
                   />
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-300" />
                 </div>
              </div>
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-10 px-6 rounded-xl text-[10px] shadow-lg whitespace-nowrap"
+                className="btn-institutional h-10 px-8 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-primary/10 whitespace-nowrap group"
               >
-                <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
+                <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
              </Button>
            </div>
         </div>
@@ -368,7 +368,7 @@ export default function ProgramsPage() {
                                     { id: 'fase4', label: 'FASE 4: INSTALACIÓN DE EQUIPOS' },
                                     { id: 'fase5', label: 'FASE 5: CAPACITACIÓN DOCENTE' },
                                     { id: 'fase6', label: 'FASE 6: PUESTA EN MARCHA' },
-                                    { id: 'fase7', label: 'FASE 7: AUDITORÍA TÉCNICA' },
+                                    { id: 'fase7', label: 'FASE 7: AUDITORÍA TÉCNÍA' },
                                   ].map(fase => (
                                     <div key={fase.id} className="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
                                       <Checkbox id={fase.id} checked={formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] as boolean} onCheckedChange={(val) => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, [fase.id]: !!val} as any})} />
