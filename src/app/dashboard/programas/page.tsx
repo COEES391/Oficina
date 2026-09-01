@@ -444,16 +444,20 @@ export default function ProgramsPage() {
                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center"><UserCheck className="h-5 w-5 text-accent" /></div>
                    <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 uppercase mt-1">{verifiedAccount.cct}</p></div>
                 </div>
-                <div className="space-y-2">
-                   <p className="text-[8px] font-bold uppercase text-white/40 leading-none">Correo Institucional</p>
-                   <div className="space-y-1">
+                <div className="space-y-4">
+                   <p className="text-[8px] font-bold uppercase text-white/40 leading-none">Cuentas Registradas</p>
+                   <div className="space-y-3">
                       {(verifiedAccount.emails || [verifiedAccount.email]).map((em: string, i: number) => (
-                        <p key={i} className="text-[10px] font-mono font-bold text-accent truncate">{em || 'S/D'}</p>
+                        <div key={i} className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/10 animate-in slide-in-from-left-2" style={{ animationDelay: `${i * 100}ms` }}>
+                           <StatusLight status={verifiedAccount.status} />
+                           <p className="text-[10px] font-mono font-bold text-accent truncate flex-1">{em || 'S/D'}</p>
+                        </div>
                       ))}
                    </div>
                    <div className="flex items-center gap-2 pt-1">
-                      <StatusLight status={verifiedAccount.status} />
-                      <Badge className="text-[8px] font-bold h-4 px-2 uppercase bg-emerald-500">{verifiedAccount.status}</Badge>
+                      <Badge className={cn("text-[8px] font-bold h-5 px-3 uppercase shadow-lg", verifiedAccount.status === 'activo' ? "bg-emerald-500" : verifiedAccount.status === 'suspendida' ? "bg-amber-500" : "bg-rose-500")}>
+                        {verifiedAccount.status}
+                      </Badge>
                    </div>
                 </div>
               </div>
