@@ -38,7 +38,6 @@ import {
   Clock,
   Save,
   Layers,
-  Monitor,
   Upload,
   ImageIcon,
   Eye,
@@ -53,7 +52,9 @@ import {
   AlertCircle,
   UserCheck,
   Smartphone,
-  Trash2
+  Trash2,
+  ChevronRight,
+  Monitor
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -76,21 +77,10 @@ const FUNCIONES = [
   "ASESOR TECNICO PEDAGOGICO"
 ]
 
-const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
-  return (
-    <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
-      <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'pendiente' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse" : "bg-rose-900/30 grayscale")} />
-      <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'proceso' ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-amber-900/30 grayscale")} />
-      <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'atendido' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale")} />
-    </div>
-  );
-}
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
-  const [bitacoraRecords, setBitacoraRecords] = useState<BitacoraEntry[]>([])
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
@@ -105,9 +95,6 @@ export default function ProgramsPage() {
   const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
   const [isVerifying, setIsVerifying] = useState(false)
 
-  const pdfInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  
   const [evidenceToView, setEvidenceToView] = useState<{ 
     pdfData?: string, 
     images?: string[], 
@@ -132,8 +119,6 @@ export default function ProgramsPage() {
   const syncData = useCallback(() => {
     const storedV24 = localStorage.getItem('programs_full_v24')
     setRecords(storedV24 ? JSON.parse(storedV24) : programsData)
-    const storedBitacora = localStorage.getItem('atres_bitacora')
-    setBitacoraRecords(storedBitacora ? JSON.parse(storedBitacora) : [])
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
   }, [])
@@ -163,6 +148,23 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleAddAssistant = () => {
+    const newAst = { paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', status: 'pendiente' };
+    setFormData({ ...formData, asistentes: [...(formData.asistentes || []), newAst] });
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    const updated = [...(formData.asistentes || [])];
+    updated.splice(index, 1);
+    setFormData({ ...formData, asistentes: updated });
+  }
+
+  const updateAssistant = (index: number, field: string, value: string) => {
+    const updated = [...(formData.asistentes || [])];
+    updated[index] = { ...updated[index], [field]: value.toUpperCase() };
+    setFormData({ ...formData, asistentes: updated });
+  }
+
   const handleSave = () => {
     const recordToSave = { ...formData };
     if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
@@ -188,57 +190,33 @@ export default function ProgramsPage() {
   const handleVerifyAccount = () => {
     if (!verifySearch) return;
     setIsVerifying(true);
-    
     setTimeout(() => {
       const term = verifySearch.toUpperCase();
-      const accounts = records.filter(r => r.name === 'Cuentas Institucionales');
-      
       let found = null;
-      for (const rec of accounts) {
+      for (const rec of records.filter(r => r.name === 'Cuentas Institucionales')) {
         const assistant = rec.asistentes?.find(a => 
           (a.rfc || '').toUpperCase() === term || 
           (a.curp || '').toUpperCase() === term ||
           (a.email || '').toUpperCase().includes(term)
         );
         if (assistant) {
-          found = {
-            ...assistant,
-            cct: rec.cct,
-            schoolName: rec.schoolName,
-            status: rec.status,
-            date: rec.date
-          };
+          found = { ...assistant, cct: rec.cct, schoolName: rec.schoolName, status: rec.status, date: rec.date };
           break;
         }
       }
-
       setVerifiedAccount(found);
       setIsVerifying(false);
-      if (!found) {
-        toast({ 
-          variant: "destructive", 
-          title: "Cuenta no localizada", 
-          description: "No se encontró registro asociado a este identificador." 
-        });
-      }
+      if (!found) toast({ variant: "destructive", title: "Cuenta no localizada" });
     }, 800);
   }
 
   const filteredRecords = records.filter(r => r.name === activeTab && (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase()))));
 
-  const openEvidenceViewer = (record: ProgramStatus) => {
-    setEvidenceToView({
-      pdfData: record.reportPdf,
-      images: record.evidencePhotos || [],
-      title: `Evidencia: ${record.schoolName}`
-    });
-  }
-
-  const printFile = (data: string) => {
-    const win = window.open();
-    if (!win) return;
-    win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-  }
+  const schoolSearchResults = useMemo(() => {
+    if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
+    const term = dialogSearchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
+  }, [allSchools, dialogSearchTerm]);
 
   if (!mounted) return null
 
@@ -309,6 +287,164 @@ export default function ProgramsPage() {
         </div>
       </Card>
 
+      <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[1400px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+             <DialogTitle className="uppercase font-black text-white text-2xl">Gestión de {activeTab}</DialogTitle>
+             <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">
+               Captura de datos operativos y censo institucional 2026.
+             </DialogDescription>
+          </DialogHeader>
+          <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50/50">
+              <TabsList className="bg-transparent h-14 p-0 gap-8">
+                <TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase transition-all">1. Datos Técnicos</TabsTrigger>
+                <TabsTrigger value="censo" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase transition-all">2. Censo de Personal</TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="flex-1 overflow-hidden">
+               <TabsContent value="datos" className="h-full m-0 p-8">
+                 <ScrollArea className="h-full">
+                   <div className="space-y-10">
+                     <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 relative">
+                        <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2 pl-1"><Search className="h-5 w-5 text-accent" /> Identificación del Plantel</Label>
+                        <div className="relative">
+                          <Input placeholder="ESCRIBIR CCT O NOMBRE..." className="h-16 rounded-2xl bg-white border-primary/10 font-black text-lg uppercase shadow-sm pr-12" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                          {dialogSearchTerm.length > 2 && (
+                            <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
+                              {schoolSearchResults.map(s => (
+                                <div key={`sede-res-${s.cct}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                                  <div className="flex flex-col"><span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct}</span></div>
+                                  <ChevronRight className="h-4 w-4 text-slate-300" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {formData.cct && (
+                          <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 animate-in zoom-in-95">
+                            <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-9 w-9" /></div>
+                            <div><h4 className="text-xl font-black uppercase text-slate-800 leading-tight">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-muted-foreground mt-1">CCT: {formData.cct} • {formData.municipio} • {formData.valle}</p></div>
+                          </div>
+                        )}
+                     </div>
+
+                     {activeTab === 'Biblioteca Digital' && (
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6">
+                            <h3 className="text-sm font-black uppercase text-primary tracking-widest border-b pb-2 flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> Fases de Implementación</h3>
+                            <div className="grid grid-cols-1 gap-4">
+                              {[
+                                { id: 'fase1', label: 'FASE 1: DIAGNÓSTICO INICIAL' },
+                                { id: 'fase2', label: 'FASE 2: CONECTIVIDAD Y RED' },
+                                { id: 'fase3', label: 'FASE 3: MOBILIARIO INSTITUCIONAL' },
+                                { id: 'fase4', label: 'FASE 4: INSTALACIÓN DE EQUIPOS' },
+                                { id: 'fase5', label: 'FASE 5: CAPACITACIÓN DOCENTE' },
+                                { id: 'fase6', label: 'FASE 6: PUESTA EN MARCHA' },
+                                { id: 'fase7', label: 'FASE 7: AUDITORÍA TÉCNICA' },
+                              ].map(fase => (
+                                <div key={fase.id} className="flex items-center space-x-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                  <Checkbox id={fase.id} checked={formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] as boolean} onCheckedChange={(val) => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, [fase.id]: !!val} as any})} />
+                                  <Label htmlFor={fase.id} className="text-[10px] font-black uppercase cursor-pointer">{fase.label}</Label>
+                                </div>
+                              ))}
+                            </div>
+                         </div>
+                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6">
+                            <h3 className="text-sm font-black uppercase text-primary tracking-widest border-b pb-2 flex items-center gap-2"><Monitor className="h-5 w-5" /> Estadísticas de Biblioteca</h3>
+                            <div className="space-y-4">
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400">Equipos Habilitados</Label>
+                                  <Input type="number" className="h-12 rounded-xl border-none shadow-inner text-xl font-black text-center" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, equiposHabilitados: parseInt(e.target.value) || 0} as any})} />
+                               </div>
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400">Personal Capacitado (SETES)</Label>
+                                  <Input type="number" className="h-12 rounded-xl border-none shadow-inner text-xl font-black text-center" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, personalCapacitado: parseInt(e.target.value) || 0} as any})} />
+                               </div>
+                            </div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </ScrollArea>
+               </TabsContent>
+               <TabsContent value="censo" className="h-full m-0 p-8 flex flex-col">
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4 shadow-sm">
+                      <Users className="h-8 w-8 text-primary" />
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-black text-primary uppercase leading-none">Censo de Personal Afectado</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Registre a los servidores públicos vinculados a este programa.</p>
+                      </div>
+                    </div>
+                    <Button onClick={handleAddAssistant} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-xl"><Plus className="h-5 w-5" /> Añadir Servidor Público</Button>
+                  </div>
+                  <div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2.5rem] bg-white shadow-2xl">
+                    <ScrollArea className="h-full">
+                      <Table className="min-w-[1200px]">
+                        <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
+                           <TableRow>
+                              <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
+                              <TableHead className="w-[300px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                              <TableHead className="w-[150px] text-[10px] font-black uppercase">RFC / CURP</TableHead>
+                              <TableHead className="w-[180px] text-[10px] font-black uppercase">Función</TableHead>
+                              <TableHead className="w-[250px] text-[10px] font-black uppercase">Correo Institucional</TableHead>
+                              <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
+                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(formData.asistentes || []).map((ast, idx) => (
+                            <TableRow key={`ast-${idx}`} className="hover:bg-slate-50/50">
+                              <TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell>
+                              <TableCell className="p-2">
+                                <div className="grid grid-cols-1 gap-1">
+                                  <Input placeholder="APELLIDOS..." className="h-8 text-[9px] uppercase font-bold" value={`${ast.paterno} ${ast.materno}`} onChange={e => { 
+                                    const parts = e.target.value.split(' ');
+                                    updateAssistant(idx, 'paterno', parts[0] || '');
+                                    updateAssistant(idx, 'materno', parts[1] || '');
+                                  }} />
+                                  <Input placeholder="NOMBRE(S)..." className="h-9 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5 shadow-inner" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <div className="space-y-1">
+                                  <Input placeholder="RFC" className="h-8 text-[10px] font-mono font-black uppercase" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value)} maxLength={13} />
+                                  <Input placeholder="CURP" className="h-8 text-[10px] font-mono font-bold uppercase text-muted-foreground" value={ast.curp} onChange={e => updateAssistant(idx, 'curp', e.target.value)} maxLength={18} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
+                                  <SelectTrigger className="h-10 text-[9px] font-black uppercase shadow-sm"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
+                                  <SelectContent>{FUNCIONES.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2">
+                                <Input placeholder="ejemplo@desysa.edu.mx" className="h-10 text-[10px] font-bold lowercase bg-slate-50 border-none shadow-inner" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
+                              </TableCell>
+                              <TableCell className="p-2 sticky right-0 bg-white/80 backdrop-blur-md shadow-l">
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleRemoveAssistant(idx)}><Trash2 className="h-4 w-4" /></Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {(formData.asistentes || []).length === 0 && (
+                            <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-20 font-black uppercase text-xs">Sin personal registrado para este programa</TableCell></TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+               </TabsContent>
+            </div>
+          </Tabs>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 px-8 font-black uppercase text-xs">Cancelar</Button>
+             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3 shadow-2xl"><Save className="h-5 w-5" /> Guardar Registro</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
@@ -355,7 +491,6 @@ export default function ProgramsPage() {
                       <p className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">{verifiedAccount.rfc}</p>
                    </div>
                 </div>
-                
                 <div className="space-y-3">
                    <div className="space-y-1">
                       <p className="text-[7px] font-black uppercase text-white/40">Correo Institucional</p>
@@ -372,15 +507,6 @@ export default function ProgramsPage() {
                       </div>
                    </div>
                 </div>
-                
-                <div className="mt-6 flex gap-2">
-                   <Button variant="outline" className="flex-1 h-9 bg-white/5 border-white/10 text-white font-black uppercase text-[8px] hover:bg-white/10">
-                      <Key className="h-3 w-3 mr-2" /> Reset Pass
-                   </Button>
-                   <Button variant="outline" className="flex-1 h-9 bg-white/5 border-white/10 text-white font-black uppercase text-[8px] hover:bg-white/10">
-                      <Smartphone className="h-3 w-3 mr-2" /> Vincular
-                   </Button>
-                </div>
               </div>
             ) : (
               <div className="p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 opacity-20">
@@ -389,9 +515,7 @@ export default function ProgramsPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t">
-            <Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="h-11 px-8 rounded-xl font-black uppercase text-xs">Cerrar</Button>
-          </DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="h-11 px-8 rounded-xl font-black uppercase text-xs">Cerrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -446,51 +570,6 @@ export default function ProgramsPage() {
               </div>
            </ScrollArea>
            <DialogFooter className="p-6 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="h-12 px-10 font-black uppercase text-slate-400 text-xs">Cerrar</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[1400px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-             <DialogTitle className="uppercase font-black text-white text-2xl">Gestión de {activeTab}</DialogTitle>
-          </DialogHeader>
-          <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b bg-slate-50/50"><TabsList className="bg-transparent h-14 p-0 gap-8"><TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase transition-all">1. Datos Técnicos</TabsTrigger><TabsTrigger value="censo" className={cn("rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase transition-all", (formData.bibliotecaFases?.personalCapacitado || 0) === 0 && activeTab === 'Biblioteca Digital' ? "hidden" : "block")}>2. Censo de Personal</TabsTrigger></TabsList></div>
-            <div className="flex-1 overflow-hidden">
-               <TabsContent value="datos" className="h-full m-0 p-8"><ScrollArea className="h-full space-y-10"><div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6"><Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2"><Search className="h-5 w-5 text-accent" /> Identificación del Plantel</Label><Input placeholder="CCT O NOMBRE..." className="h-16 rounded-2xl bg-white border-primary/10 font-black text-lg uppercase shadow-sm" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />{formData.cct && (<div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100"><div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-9 w-9" /></div><div><h4 className="text-xl font-black uppercase text-slate-800 leading-tight">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-muted-foreground mt-1">{formData.cct}</p></div></div>)}</div></ScrollArea></TabsContent>
-               <TabsContent value="censo" className="h-full m-0 p-8"><div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2.5rem] bg-white shadow-2xl flex flex-col items-center justify-center opacity-30"><Users className="h-12 w-12" /><p className="text-xs font-black uppercase mt-4">Módulo de Censo en Desarrollo</p></div></TabsContent>
-            </div>
-          </Tabs>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3"><Save className="h-5 w-5" /> Guardar Registro</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!evidenceToView} onOpenChange={(open) => !open && setEvidenceToView(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
-            <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-                <Archive className="h-7 w-7 text-accent" /> VISOR COEES
-              </DialogTitle>
-            </div>
-            <button onClick={() => setEvidenceToView(null)} className="text-white hover:bg-white/10 h-10 w-10 p-0 rounded-full border border-white/20 flex items-center justify-center">
-              <X className="h-5 w-5" />
-            </button>
-          </DialogHeader>
-          <div className="flex-1 bg-slate-800 p-1">
-            {evidenceToView?.pdfData ? (
-              <iframe src={evidenceToView.pdfData} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
-            ) : (
-              <div className="h-full flex items-center justify-center opacity-20">
-                <FileText className="h-20 w-20" />
-              </div>
-            )}
-          </div>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-            <Button variant="ghost" onClick={() => setEvidenceToView(null)} className="h-11 px-10 font-black uppercase text-xs">Cerrar Visor</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
