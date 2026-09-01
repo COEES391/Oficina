@@ -51,6 +51,7 @@ export default function DashboardLayout({
     setUserRfc(rfc)
 
     const fetchUserData = async () => {
+      // Casos especiales hardcoded
       if (rfc === 'COEES' || rfc === 'CEDITORIAL') {
         setCurrentUser({
           id: 'master',
@@ -59,6 +60,18 @@ export default function DashboardLayout({
           password: '',
           role: 'admin',
           privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'bitacora-atres', 'base-cct', 'base-participantes', 'usuarios']
+        })
+        return
+      }
+      
+      if (rfc === 'CISF840114L34') {
+        setCurrentUser({
+          id: 'special-user',
+          rfc: rfc,
+          name: 'Usuario Programas',
+          password: '',
+          role: 'user',
+          privileges: ['programas']
         })
         return
       }

@@ -37,10 +37,18 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
+      // Accesos Maestros y Especiales (Hardcoded para evitar problemas de DB)
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         toast({ title: "Acceso maestro", description: "Bienvenido al centro de control, Administrador." })
         router.push('/dashboard/programas') 
+        return
+      }
+      
+      if (cleanRfc === 'CISF840114L34' && password === 'Chimal12') {
+        localStorage.setItem('userRfc', cleanRfc)
+        toast({ title: "Identidad validada", description: "Bienvenido al módulo de programas." })
+        router.push('/dashboard/programas')
         return
       }
       
@@ -92,7 +100,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-15%] right-[-15%] w-[60%] h-[60%] rounded-full bg-[#B38E5D] blur-[160px]" />
       </div>
 
-      <Card className="w-full max-md shadow-2xl border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-w-md shadow-2xl border-none bg-white/95 backdrop-blur-2xl rounded-[3.5rem] overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-700">
         <CardHeader className="text-center pt-10 pb-4 space-y-6">
           <div className="mx-auto relative h-32 w-32 rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white transition-transform duration-700 hover:scale-110 bg-white">
             <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
@@ -107,7 +115,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label className="text-xs font-black text-slate-400 pl-2">Identificador de acceso (RFC)</Label>
               <Input 
-                placeholder="Ingresar RFC..." 
+                placeholder="Ingresar RFC" 
                 className="h-14 rounded-2xl bg-slate-50 border-slate-200 text-base font-black px-6 shadow-inner" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 

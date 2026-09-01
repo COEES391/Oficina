@@ -50,7 +50,6 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      // Quitamos orderBy para evitar errores de índices no creados en Firestore
       const q = query(collection(db, 'users'))
       const querySnapshot = await getDocs(q)
       const fetchedUsers = querySnapshot.docs.map(doc => ({
@@ -58,11 +57,10 @@ export default function UsersPage() {
         id: doc.id
       })) as AppUser[]
       
-      // Ordenamos localmente por nombre
       setUsers(fetchedUsers.sort((a, b) => (a.name || '').localeCompare(b.name || '')))
     } catch (error) {
       console.error("Error fetching users:", error)
-      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo sincronizar la lista de usuarios." })
+      // No mostramos error destructivo para no asustar al usuario si la DB está cargando
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +80,7 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos incompletos", 
-        description: "El nombre, RFC y contraseña son necesarios." 
+        description: "Nombre, RFC y contraseña son necesarios." 
       })
       return
     }
@@ -102,13 +100,13 @@ export default function UsersPage() {
       if (editingId) {
         const userRef = doc(db, 'users', editingId)
         await updateDoc(userRef, userData)
-        toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron correctamente.` })
+        toast({ title: "Acceso actualizado", description: "Los cambios se guardaron correctamente." })
       } else {
         await addDoc(collection(db, 'users'), {
           ...userData,
           createdAt: serverTimestamp()
         })
-        toast({ title: "Acceso registrado", description: `El servidor público ${cleanRfc} ya tiene acceso al sistema.` })
+        toast({ title: "Acceso registrado", description: "El servidor público ya tiene acceso al sistema." })
       }
 
       setIsDialogOpen(false)
@@ -119,8 +117,8 @@ export default function UsersPage() {
       console.error("Save error:", error)
       toast({ 
         variant: "destructive", 
-        title: "Error al guardar", 
-        description: "No se pudo registrar en la nube. Verifique su conexión o permisos." 
+        title: "Error de guardado", 
+        description: "No se pudo sincronizar en la nube. Reintente en un momento." 
       })
     } finally {
       setIsSaving(false)
@@ -144,13 +142,13 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Desea eliminar este acceso institucional permanentemente?")) return
+    if (!confirm("¿Desea eliminar este acceso institucional?")) return
     try {
       await deleteDoc(doc(db, 'users', id))
-      toast({ title: "Acceso removido", description: "El usuario ya no tiene entrada al sistema." })
+      toast({ title: "Acceso removido" })
       fetchUsers()
     } catch (error) {
-      toast({ variant: "destructive", title: "Error al borrar", description: "No se pudo procesar la baja en la nube." })
+      toast({ variant: "destructive", title: "Error al borrar" })
     }
   }
 
@@ -254,7 +252,7 @@ export default function UsersPage() {
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                     className="h-14 rounded-2xl bg-white border-primary/10 shadow-sm px-6 text-base font-bold placeholder:text-slate-300" 
-                    placeholder="Apellidos y nombres..." 
+                    placeholder="Apellidos y nombres" 
                     disabled={isSaving}
                   />
                 </div>
@@ -265,7 +263,7 @@ export default function UsersPage() {
                       value={formData.rfc} 
                       onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} 
                       className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 font-mono text-primary font-black text-lg" 
-                      placeholder="13 caracteres..." 
+                      placeholder="13 caracteres" 
                       maxLength={13}
                       disabled={isSaving}
                     />
@@ -277,7 +275,7 @@ export default function UsersPage() {
                         value={formData.password} 
                         onChange={e => setFormData({...formData, password: e.target.value})} 
                         className="h-12 rounded-xl bg-white border-primary/10 shadow-sm px-6 text-sm font-bold flex-1" 
-                        placeholder="Mínimo 6 caracteres..." 
+                        placeholder="Mínimo 6 caracteres" 
                         disabled={isSaving}
                       />
                       <Button type="button" onClick={generateRandomPassword} variant="outline" className="h-12 w-12 rounded-xl border-primary/20 text-primary shadow-sm hover:bg-primary/5" disabled={isSaving}>
