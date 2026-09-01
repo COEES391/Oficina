@@ -85,56 +85,67 @@ export default function UsersPage() {
     }
 
     setIsSaving(true)
-    
-    // Timer de seguridad para evitar que se quede pasmada la interfaz
-    const timeout = setTimeout(() => {
-      if (isSaving) {
-        setIsSaving(false)
-        toast({ 
-          variant: "destructive", 
-          title: "Tiempo de espera agotado", 
-          description: "La base de datos no respondió a tiempo. Intente de nuevo." 
-        })
-      }
-    }, 8000)
 
     try {
-      const userData = {
-        rfc: cleanRfc,
-        name: cleanName,
-        password: cleanPassword,
-        role: 'user' as const,
-        privileges: formData.privileges || ['programas'],
-        updatedAt: serverTimestamp()
+      // Definimos la operación de guardado
+      const performSave = async () => {
+        const userData = {
+          rfc: cleanRfc,
+          name: cleanName,
+          password: cleanPassword,
+          role: 'user' as const,
+          privileges: formData.privileges || ['programas'],
+          updatedAt: serverTimestamp()
+        }
+
+        if (editingId) {
+          const userRef = doc(db, 'users', editingId)
+          await updateDoc(userRef, userData)
+          return "update"
+        } else {
+          await addDoc(collection(db, 'users'), {
+            ...userData,
+            createdAt: serverTimestamp()
+          })
+          return "add"
+        }
       }
 
-      if (editingId) {
-        const userRef = doc(db, 'users', editingId)
-        await updateDoc(userRef, userData)
+      // Definimos un timeout de 10 segundos
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 10000)
+      )
+
+      // Ejecutamos la carrera
+      const result = await Promise.race([performSave(), timeout])
+
+      if (result === "update") {
         toast({ title: "Acceso actualizado", description: `Los cambios para ${cleanRfc} se guardaron correctamente.` })
       } else {
-        await addDoc(collection(db, 'users'), {
-          ...userData,
-          createdAt: serverTimestamp()
-        })
         toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
       }
 
-      clearTimeout(timeout)
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
       await fetchUsers()
     } catch (error: any) {
       console.error("Error saving user:", error)
-      toast({ 
-        variant: "destructive", 
-        title: "Error de sincronización", 
-        description: "No se pudo conectar con la nube. Verifique su conexión." 
-      })
+      if (error.message === 'timeout') {
+        toast({ 
+          variant: "destructive", 
+          title: "Tiempo de espera agotado", 
+          description: "La base de datos no respondió. Verifique su conexión o permisos en Firestore e intente de nuevo." 
+        })
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Error de sincronización", 
+          description: "No se pudo conectar con la nube. Verifique su conexión a internet." 
+        })
+      }
     } finally {
       setIsSaving(false)
-      clearTimeout(timeout)
     }
   }
 
@@ -302,7 +313,7 @@ export default function UsersPage() {
               <div className="space-y-6 pt-2">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                    <ShieldCheck className="h-5 w-5 text-accent" />
-                   <h4 className="text-xs font-black text-accent tracking-widest uppercase">Privilegios de sección asignados</h4>
+                   <h4 className="text-xs font-black text-accent tracking-widest">Privilegios de sección asignados</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {SECTIONS.map(section => (
