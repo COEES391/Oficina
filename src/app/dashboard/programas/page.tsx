@@ -241,8 +241,8 @@ export default function ProgramsPage() {
       </div>
 
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
-        <div className="flex flex-col lg:flex-row items-end gap-6">
-           <div className="flex-1 w-full space-y-1">
+        <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6">
+           <div className="flex-1 w-full space-y-1 min-w-0">
               <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Seleccionar Módulo Institucional</Label>
               <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
                 {PROGRAM_RUBROS.map(rubro => (
@@ -251,8 +251,8 @@ export default function ProgramsPage() {
               </div>
            </div>
            
-           <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto shrink-0">
-             <div className="relative w-full md:w-[320px]">
+           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
+             <div className="relative w-full sm:w-[260px] md:w-[320px]">
                 <Input 
                   placeholder="CCT, PLANTEL O USUARIO..." 
                   className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
@@ -264,7 +264,7 @@ export default function ProgramsPage() {
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-12 px-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 min-w-max flex items-center justify-center"
+                className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 flex items-center justify-center min-w-[170px]"
               >
                 <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
              </Button>
