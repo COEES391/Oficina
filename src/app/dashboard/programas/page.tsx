@@ -230,14 +230,6 @@ export default function ProgramsPage() {
           <h2 className="text-2xl font-black tracking-tight text-primary uppercase leading-none">Módulos Técnicos COEES</h2>
           <div className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-accent" /><p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.1em]">Control de Programas y Auditoría 2026</p></div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          {activeTab === 'ATRES' && (<Button onClick={() => setIsHelpDeskOpen(true)} className="h-10 px-6 rounded-xl bg-emerald-600 font-black uppercase text-[10px] gap-2 shadow-lg"><Headset className="h-4 w-4" /> Mesa de Ayuda ATRES</Button>)}
-          {activeTab === 'Cuentas Institucionales' && (
-            <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-10 px-6 rounded-xl bg-accent font-black uppercase text-[10px] gap-2 shadow-lg">
-              <ShieldCheck className="h-4 w-4" /> Verificador de Cuenta Oficial
-            </Button>
-          )}
-        </div>
       </div>
 
       <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
@@ -252,7 +244,27 @@ export default function ProgramsPage() {
            </div>
            
            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
-             <div className="relative w-full sm:w-[260px] md:w-[320px]">
+             {/* Verificador Condicional para Cuentas Institucionales */}
+             {activeTab === 'Cuentas Institucionales' && (
+               <Button 
+                onClick={() => setIsVerifyDialogOpen(true)} 
+                className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-xl shrink-0 transition-all active:scale-95"
+               >
+                 <ShieldCheck className="h-5 w-5" /> VERIFICADOR
+               </Button>
+             )}
+
+             {/* HelpDesk Condicional para ATRES */}
+             {activeTab === 'ATRES' && (
+               <Button 
+                onClick={() => setIsHelpDeskOpen(true)} 
+                className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-xl shrink-0 transition-all active:scale-95"
+               >
+                 <Headset className="h-5 w-5" /> MESA AYUDA
+               </Button>
+             )}
+
+             <div className="relative w-full sm:w-[220px] md:w-[260px]">
                 <Input 
                   placeholder="CCT, PLANTEL O USUARIO..." 
                   className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
@@ -264,7 +276,7 @@ export default function ProgramsPage() {
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-12 px-6 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 flex items-center justify-center min-w-[170px]"
+                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 flex items-center justify-center min-w-[170px]"
               >
                 <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
              </Button>
