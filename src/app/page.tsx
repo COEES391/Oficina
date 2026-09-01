@@ -62,7 +62,7 @@ export default function LoginPage() {
         
         const privs = userData.privileges || []
         
-        if (privs.includes('programas') || privs.includes('bitacora-atres')) {
+        if (privs.includes('programas')) {
           router.push('/dashboard/programas')
         } else if (privs.includes('soporte')) {
           router.push('/dashboard/soporte')
@@ -107,8 +107,8 @@ export default function LoginPage() {
             <Image src={logoData.imageUrl} alt="COEES Logo" fill className="object-cover" priority />
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-4xl font-black tracking-tighter text-[#9f2241] leading-[0.9]">Portal Integral</CardTitle>
-            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest">Gestión Técnica COEES Edoméx</CardDescription>
+            <CardTitle className="text-4xl font-black tracking-tighter text-[#9f2241] leading-[0.9]">Portal integral</CardTitle>
+            <CardDescription className="text-slate-500 font-bold text-xs tracking-widest">Gestión técnica COEES Edoméx</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 px-10 pb-8">

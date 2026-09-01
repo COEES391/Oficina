@@ -17,13 +17,13 @@ import { type AppUser } from '@/lib/planning-data'
 import { cn } from "@/lib/utils"
 
 const SECTIONS = [
-  { id: 'bitacora-atres', name: 'Bitácora ATRES' },
+  { id: 'bitacora-atres', name: 'Bitácora Atres' },
   { id: 'planeacion', name: 'Planeación' },
-  { id: 'soporte', name: 'Soporte Técnico' },
+  { id: 'soporte', name: 'Soporte técnico' },
   { id: 'capacitacion', name: 'Capacitación' },
   { id: 'programas', name: 'Programas' },
   { id: 'base-cct', name: 'Base CCT' },
-  { id: 'base-participantes', name: 'Base Participantes' },
+  { id: 'base-participantes', name: 'Base participantes' },
   { id: 'usuarios', name: 'Usuarios' },
 ]
 
@@ -86,6 +86,18 @@ export default function UsersPage() {
 
     setIsSaving(true)
     
+    // Timer de seguridad para evitar que se quede pasmada la interfaz
+    const timeout = setTimeout(() => {
+      if (isSaving) {
+        setIsSaving(false)
+        toast({ 
+          variant: "destructive", 
+          title: "Tiempo de espera agotado", 
+          description: "La base de datos no respondió a tiempo. Intente de nuevo." 
+        })
+      }
+    }, 8000)
+
     try {
       const userData = {
         rfc: cleanRfc,
@@ -108,6 +120,7 @@ export default function UsersPage() {
         toast({ title: "Acceso registrado", description: `El servidor ${cleanRfc} ya puede ingresar al sistema.` })
       }
 
+      clearTimeout(timeout)
       setIsDialogOpen(false)
       setEditingId(null)
       setFormData(initialFormState)
@@ -117,10 +130,11 @@ export default function UsersPage() {
       toast({ 
         variant: "destructive", 
         title: "Error de sincronización", 
-        description: "No se pudo guardar en la nube. Verifique su conexión a internet." 
+        description: "No se pudo conectar con la nube. Verifique su conexión." 
       })
     } finally {
       setIsSaving(false)
+      clearTimeout(timeout)
     }
   }
 
@@ -157,20 +171,20 @@ export default function UsersPage() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de Accesos Global</h2>
+          <h2 className="text-2xl font-black tracking-tight text-primary">Gestión de accesos global</h2>
           <p className="text-muted-foreground font-bold text-xs flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-accent" /> Credenciales sincronizadas para acceso multi-equipo
           </p>
         </div>
         <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-10 shadow-xl">
-          <UserPlus className="h-5 w-5 mr-2" /> Nuevo Acceso Institucional
+          <UserPlus className="h-5 w-5 mr-2" /> Nuevo acceso institucional
         </Button>
       </div>
 
       <Card className="executive-card p-0 overflow-hidden border-t-8 border-t-primary shadow-2xl">
         <CardHeader className="bg-slate-50/50 p-8 border-b">
           <CardTitle className="flex items-center gap-4 text-primary font-black text-2xl">
-            <Users className="h-10 w-10 text-accent" /> Usuarios del Sistema
+            <Users className="h-10 w-10 text-accent" /> Usuarios del sistema
           </CardTitle>
           <CardDescription className="font-bold text-xs tracking-widest text-muted-foreground mt-2">Base de datos centralizada en tiempo real para auditoría 2026</CardDescription>
         </CardHeader>
