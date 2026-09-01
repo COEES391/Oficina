@@ -113,7 +113,7 @@ export default function ProgramsPage() {
 
   const syncData = useCallback(() => {
     const storedV24 = localStorage.getItem('programs_full_v24')
-    setRecords(storedV24 ? JSON.parse(storedV24) : programsData)
+    setRecords(storedV24 ? JSON.parse(storedV24) : [])
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
   }, [])
@@ -168,7 +168,6 @@ export default function ProgramsPage() {
 
     const recordToSave = { ...formData, name: activeTab };
     
-    // Lógica específica para Biblioteca
     if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
       const f = formData.bibliotecaFases;
       const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
@@ -232,24 +231,34 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      <Card className="executive-card p-4 bg-white/80 border-none shadow-lg mt-4">
-        <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6">
-           {/* APARTADO DE MODULO (Izquierda) */}
-           <div className="flex-1 w-full lg:max-w-[45%] space-y-1 min-w-0">
-              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1 block pl-1">Seleccionar Módulo Institucional</Label>
+      <Card className="executive-card p-6 bg-white border-none shadow-xl mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+           
+           {/* GRUPO 1: SELECTOR (5 Columnas) */}
+           <div className="lg:col-span-5 space-y-2 overflow-hidden">
+              <Label className="text-[9px] font-black uppercase text-slate-400 block pl-1">Módulo Institucional</Label>
               <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
                 {PROGRAM_RUBROS.map(rubro => (
-                  <button key={`rubro-${rubro}`} onClick={() => { setActiveTab(rubro); setSearchTerm(''); setVerifiedAccount(null); }} className={cn("px-4 h-10 text-[9px] font-black uppercase rounded-xl transition-all border shadow-sm shrink-0", activeTab === rubro ? "bg-primary text-white border-primary shadow-primary/20" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50")}>{rubro}</button>
+                  <button 
+                    key={`rubro-${rubro}`} 
+                    onClick={() => { setActiveTab(rubro); setSearchTerm(''); setVerifiedAccount(null); }} 
+                    className={cn(
+                      "px-4 h-10 text-[9px] font-black uppercase rounded-xl transition-all border shadow-sm shrink-0", 
+                      activeTab === rubro ? "bg-primary text-white border-primary" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
+                    )}
+                  >
+                    {rubro}
+                  </button>
                 ))}
               </div>
            </div>
            
-           {/* BOTÓN DE VERIFICACIÓN / MESA AYUDA (Centro) */}
-           <div className="shrink-0 flex items-center justify-center min-w-[150px]">
+           {/* GRUPO 2: ACCIÓN CENTRAL (2 Columnas) */}
+           <div className="lg:col-span-2 flex items-center justify-center">
              {activeTab === 'Cuentas Institucionales' && (
                <Button 
                 onClick={() => setIsVerifyDialogOpen(true)} 
-                className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-xl transition-all active:scale-95 animate-in zoom-in-95"
+                className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-black uppercase text-[9px] gap-2 shadow-lg animate-in zoom-in-95 w-full"
                >
                  <ShieldCheck className="h-5 w-5" /> VERIFICADOR
                </Button>
@@ -258,19 +267,19 @@ export default function ProgramsPage() {
              {activeTab === 'ATRES' && (
                <Button 
                 onClick={() => setIsHelpDeskOpen(true)} 
-                className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-xl transition-all active:scale-95 animate-in zoom-in-95"
+                className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[9px] gap-2 shadow-lg animate-in zoom-in-95 w-full"
                >
                  <Headset className="h-5 w-5" /> MESA AYUDA
                </Button>
              )}
            </div>
 
-           {/* BUSCADOR Y NUEVO REGISTRO (Derecha) */}
-           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto lg:flex-1 justify-end shrink-0">
-             <div className="relative w-full sm:w-[200px] md:w-[240px]">
+           {/* GRUPO 3: BÚSQUEDA Y REGISTRO (5 Columnas) */}
+           <div className="lg:col-span-5 flex flex-col sm:flex-row items-center gap-3 justify-end">
+             <div className="relative flex-1 w-full">
                 <Input 
-                  placeholder="BUSCAR CCT..." 
-                  className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner focus:bg-white transition-all" 
+                  placeholder="LOCALIZAR CCT..." 
+                  className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-[10px] font-black uppercase w-full shadow-inner" 
                   value={searchTerm} 
                   onChange={(e) => setSearchTerm(e.target.value)} 
                 />
@@ -279,9 +288,9 @@ export default function ProgramsPage() {
              
              <Button 
                 onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} 
-                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl shadow-primary/20 whitespace-nowrap group shrink-0 min-w-fit"
+                className="btn-institutional h-12 px-8 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-xl flex-shrink-0 min-w-fit"
               >
-                <PlusCircle className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" /> NUEVO REGISTRO
+                <PlusCircle className="h-5 w-5 mr-2" /> NUEVO REGISTRO
              </Button>
            </div>
         </div>
@@ -292,7 +301,7 @@ export default function ProgramsPage() {
           <Table>
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
-                  <TableHead className="w-10 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
+                  <TableHead className="w-12 text-[9px] font-black uppercase text-center pl-4">#</TableHead>
                   <TableHead className="text-[9px] font-black uppercase text-primary w-[110px]">CCT</TableHead>
                   <TableHead className="text-[9px] font-black uppercase text-primary min-w-[200px]">Identificación del Plantel</TableHead>
                   <TableHead className="text-[9px] font-black uppercase text-primary w-[100px]">Estatus</TableHead>
@@ -321,6 +330,82 @@ export default function ProgramsPage() {
       </Card>
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
+
+      <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner">
+                <ShieldCheck className="h-7 w-7 text-accent" />
+              </div>
+              <div>
+                <DialogTitle className="uppercase font-black text-xl leading-none">Verificador de Cuenta Oficial</DialogTitle>
+                <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest mt-2">Validación de identidad digital @desysa.edu.mx</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificador del Servidor (RFC/CURP)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="INGRESAR DATO..." 
+                  className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black text-center uppercase"
+                  value={verifySearch}
+                  onChange={e => setVerifySearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()}
+                />
+                <Button 
+                  onClick={handleVerifyAccount} 
+                  disabled={isVerifying || !verifySearch}
+                  className="h-12 w-12 rounded-xl bg-accent hover:bg-accent/90 shadow-lg p-0"
+                >
+                  <Search className={cn("h-5 w-5", isVerifying && "animate-spin")} />
+                </Button>
+              </div>
+            </div>
+
+            {verifiedAccount ? (
+              <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><MailCheck className="h-20 w-20" /></div>
+                <div className="flex items-center gap-4 border-b border-white/10 pb-4 mb-4">
+                   <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
+                      <UserCheck className="h-6 w-6 text-accent" />
+                   </div>
+                   <div>
+                      <h4 className="text-xs font-black uppercase leading-none">{verifiedAccount.nombres} {verifiedAccount.paterno}</h4>
+                      <p className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">{verifiedAccount.rfc}</p>
+                   </div>
+                </div>
+                <div className="space-y-3">
+                   <div className="space-y-1">
+                      <p className="text-[7px] font-black uppercase text-white/40">Correo Institucional</p>
+                      <p className="text-[10px] font-mono font-black text-accent">{verifiedAccount.email || 'SIN CORREO ASIGNADO'}</p>
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[7px] font-black uppercase text-white/40">CCT Adscripción</p>
+                        <p className="text-[9px] font-black">{verifiedAccount.cct}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[7px] font-black uppercase text-white/40">Estatus Global</p>
+                        <Badge className="bg-emerald-500 text-white text-[7px] font-black h-4 px-2 uppercase">{verifiedAccount.status}</Badge>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 opacity-20">
+                 <PlusCircle className="h-10 w-10" />
+                 <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Ingrese un identificador para validar<br/>estatus de cuenta institucional</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end">
+            <Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="h-11 px-8 rounded-xl font-black uppercase text-xs">Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData(initialFormState); }}>
         <DialogContent className="sm:max-w-[1400px] rounded-[3rem] h-[95vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white">
@@ -536,83 +621,6 @@ export default function ProgramsPage() {
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-12 px-8 font-black uppercase text-xs">Cancelar</Button>
              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-[11px] flex items-center gap-3 shadow-2xl"><Save className="h-5 w-5" /> Guardar Registro Global</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Ventana de Verificación de Cuentas */}
-      <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner">
-                <ShieldCheck className="h-7 w-7 text-accent" />
-              </div>
-              <div>
-                <DialogTitle className="uppercase font-black text-xl leading-none">Verificador de Cuenta Oficial</DialogTitle>
-                <DialogDescription className="text-white/60 text-[9px] font-bold uppercase tracking-widest mt-2">Validación de identidad digital @desysa.edu.mx</DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="p-8 space-y-6">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificador del Servidor (RFC/CURP)</Label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="INGRESAR DATO..." 
-                  className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black text-center uppercase"
-                  value={verifySearch}
-                  onChange={e => setVerifySearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()}
-                />
-                <Button 
-                  onClick={handleVerifyAccount} 
-                  disabled={isVerifying || !verifySearch}
-                  className="h-12 w-12 rounded-xl bg-accent hover:bg-accent/90 shadow-lg p-0"
-                >
-                  <Search className={cn("h-5 w-5", isVerifying && "animate-spin")} />
-                </Button>
-              </div>
-            </div>
-
-            {verifiedAccount ? (
-              <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
-                <div className="absolute top-0 right-0 p-4 opacity-10"><MailCheck className="h-20 w-20" /></div>
-                <div className="flex items-center gap-4 border-b border-white/10 pb-4 mb-4">
-                   <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
-                      <UserCheck className="h-6 w-6 text-accent" />
-                   </div>
-                   <div>
-                      <h4 className="text-xs font-black uppercase leading-none">{verifiedAccount.nombres} {verifiedAccount.paterno}</h4>
-                      <p className="text-[8px] font-bold text-white/50 uppercase tracking-widest mt-1">{verifiedAccount.rfc}</p>
-                   </div>
-                </div>
-                <div className="space-y-3">
-                   <div className="space-y-1">
-                      <p className="text-[7px] font-black uppercase text-white/40">Correo Institucional</p>
-                      <p className="text-[10px] font-mono font-black text-accent">{verifiedAccount.email || 'SIN CORREO ASIGNADO'}</p>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-[7px] font-black uppercase text-white/40">CCT Adscripción</p>
-                        <p className="text-[9px] font-black">{verifiedAccount.cct}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[7px] font-black uppercase text-white/40">Estatus Global</p>
-                        <Badge className="bg-emerald-500 text-white text-[7px] font-black h-4 px-2 uppercase">{verifiedAccount.status}</Badge>
-                      </div>
-                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 opacity-20">
-                 <PlusCircle className="h-10 w-10" />
-                 <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Ingrese un identificador para validar<br/>estatus de cuenta institucional</p>
-              </div>
-            )}
-          </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end">
-            <Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="h-11 px-8 rounded-xl font-black uppercase text-xs">Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
