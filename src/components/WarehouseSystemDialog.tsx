@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
@@ -711,7 +710,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                           <TableHeader className="bg-slate-900 border-b sticky top-0 z-10 shadow-lg">
                             <TableRow className="h-10">
                               <TableHead className="font-black text-[8px] uppercase text-white pl-6">Fecha</TableHead>
-                              <TableHead className="font-black text-[8px] uppercase text-white">N_Doc</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">N_Requisición</TableHead>
                               <TableHead className="font-black text-[8px] uppercase text-white">Proveedor</TableHead>
                               <TableHead className="font-black text-[8px] uppercase text-white">Código</TableHead>
                               <TableHead className="font-black text-[8px] uppercase text-white">Categoría</TableHead>
@@ -832,7 +831,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
                             <div className="grid grid-cols-2 gap-4">
                                <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Folio Factura / N_Doc' : 'Folio de Salida'}</Label>
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Numero de requisición' : 'Folio de Salida'}</Label>
                                   <Input placeholder="EJ. 001/2026" className="h-11 rounded-xl bg-slate-50 border-none font-mono font-black text-center shadow-inner uppercase" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
                                </div>
                                <div className="space-y-2">
@@ -918,7 +917,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
              <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase">Proveedor Recomendado</Label>
                 <Select value={newItemForm.provider} onValueChange={v => setNewItemForm({...newItemForm, provider: v})}>
-                   <SelectTrigger className="h-11 font-bold uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                   <SelectTrigger className="h-11 font-bold uppercase text-[10px] shadow-lg z-[200]"><SelectValue /></SelectTrigger>
                    <SelectContent className="z-[300]">{providers.map(p => (<SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>))}</SelectContent>
                 </Select>
              </div>
