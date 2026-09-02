@@ -403,7 +403,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   <NavigationButton icon={School} label="Base Clientes (CCT)" target="clientes" color="bg-rose-500" />
                   <NavigationButton icon={ArrowUpRight} label="Base Entradas" target="entradas" color="bg-emerald-600" />
                   <NavigationButton icon={ArrowDownRight} label="Base Salidas" target="salidas" color="bg-rose-600" />
-                  <NavigationButton icon={ShoppingBag} label="Compras / Ingresos" target="registro" color="bg-indigo-600" />
+                  <NavigationButton icon={ShoppingBag} label="Requisiciones" target="registro" color="bg-indigo-600" />
                   <NavigationButton icon={HandCoins} label="Entregas / Salidas" target="registro" color="bg-teal-600" />
                   <button 
                     onClick={() => onOpenChange(false)}
