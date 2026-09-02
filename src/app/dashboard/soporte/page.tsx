@@ -42,7 +42,8 @@ import {
   ChevronRight,
   Server,
   Cpu,
-  MonitorCheck
+  MonitorCheck,
+  School
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -283,7 +284,7 @@ export default function SupportPage() {
 
   const toggleEdusatField = (section: keyof NonNullable<SupportTicket['edusatFicha']>, field: string) => {
     if (!formData.edusatFicha) return;
-    const currentSection = formData.edusatFicha[section] as any;
+    const currentSection = (formData.edusatFicha as any)[section];
     setFormData({
       ...formData,
       edusatFicha: {
@@ -298,7 +299,7 @@ export default function SupportPage() {
 
   const toggleRedLocalField = (section: 'mantenimientoAula' | 'mantenimientoEquipos' | 'ubicacionAula', field: string) => {
     if (!formData.redLocalFicha) return;
-    const currentSection = formData.redLocalFicha[section] as any;
+    const currentSection = (formData.redLocalFicha as any)[section];
     setFormData({
       ...formData,
       redLocalFicha: {
@@ -324,7 +325,7 @@ export default function SupportPage() {
   const updateMantenimientoEquipo = (index: number, field: string, value: string) => {
     if (!formData.mantenimientoFicha) return;
     const list = [...formData.mantenimientoFicha.equiposList];
-    list[index] = { ...list[index], [field]: value.toUpperCase() };
+    (list[index] as any)[field] = value.toUpperCase();
     setFormData({
       ...formData,
       mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
@@ -625,7 +626,7 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Ficha Técnica de Atención Mantenimiento (NUEVO F4) */}
+               {/* Ficha Técnica de Atención Mantenimiento (F4) */}
                {formData.tipoIncidencias?.includes('mantenimiento') && (
                  <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
@@ -697,7 +698,7 @@ export default function SupportPage() {
                  </div>
                )}
 
-               {/* Ficha Técnica de Atención Red Local (NUEVO F5) */}
+               {/* Ficha Técnica de Atención Red Local (F5) */}
                {formData.tipoIncidencias?.includes('red local') && (
                  <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
