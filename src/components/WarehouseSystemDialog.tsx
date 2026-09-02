@@ -224,18 +224,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Movimiento registrado" })
   }
 
-  const quickAdjustStock = (item: WarehouseItem, type: 'entrada' | 'salida') => {
-    setMovementForm({
-      itemId: item.id,
-      type: type,
-      quantity: 1,
-      reason: `AJUSTE RÁPIDO DESDE INVENTARIO`,
-      technician: 'SISTEMA COEES'
-    })
-    setActiveTab('movimientos')
-    toast({ title: "Ajuste listo", description: `Configure la cantidad para ${item.name}` })
-  }
-
   const handleDeleteItem = (id: string) => {
     if (!confirm("¿Desea eliminar este insumo?")) return
     const updated = items.filter(i => i.id !== id)
@@ -338,8 +326,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                     </TableCell>
                                     <TableCell className="text-right pr-8">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="icon" title="Entrada Rápida" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50" onClick={() => quickAdjustStock(item, 'entrada')}><Plus className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" title="Salida Rápida" className="h-8 w-8 text-rose-600 hover:bg-rose-50" onClick={() => quickAdjustStock(item, 'salida')}><Minus className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" title="Editar" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEditItem(item)}><Pencil className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" title="Borrar" className="h-8 w-8 text-slate-300 hover:text-rose-600" onClick={() => handleDeleteItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
@@ -395,7 +381,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     <div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase leading-none">Bitácora de Auditoría de Almacén</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro inalterable de flujo técnico</p></div>
                     <Badge variant="outline" className="h-9 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">{movements.length} Movimientos</Badge>
                   </div>
-                  <div className="flex-1 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-hidden"><ScrollArea className="h-full"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10 border-b"><TableRow className="h-12"><TableHead className="font-black text-[10px] uppercase pl-8">Fecha</TableHead><TableHead className="font-black text-[10px] uppercase">Tipo</TableHead><TableHead className="font-black text-[10px] uppercase">Insumo</TableHead><TableHead className="font-black text-[10px] uppercase">Técnico</TableHead><TableHead className="font-black text-[10px] uppercase">Observaciones</TableHead><TableHead className="text-center font-black text-[10px] uppercase pr-8">Cant.</TableHead></TableRow></TableHeader><TableBody>{movements.map((move) => (<TableRow key={move.id} className="hover:bg-slate-50 transition-colors h-16 border-b border-slate-50"><TableCell className="pl-8 text-[9px] font-black text-slate-400 uppercase">{move.date}</TableCell><TableCell><Badge className={cn("font-black text-[8px] h-5 uppercase border-none", move.type === 'entrada' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{move.type}</Badge></TableCell><TableCell className="text-[10px] font-black text-slate-700 uppercase">{move.itemName}</TableCell><TableCell className="text-[10px] font-bold text-slate-600 uppercase">{move.technician}</TableCell><TableCell className="text-[10px] font-medium text-slate-500 italic truncate max-w-[200px]">"{move.reason}"</TableCell><TableCell className="text-center pr-8 font-black text-sm">{move.type === 'entrada' ? '+' : '-'}{move.quantity}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
+                  <div className="flex-1 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-hidden"><ScrollArea className="h-full"><Table><TableHeader className="bg-slate-50 sticky top-0 z-10 border-b"><TableRow className="h-12"><TableHead className="font-black text-[10px] uppercase pl-8">Fecha</TableHead><TableHead className="font-black text-[10px] uppercase">Tipo</TableHead><TableHead className="font-black text-[10px] uppercase">Insumo</TableHead><TableHead className="font-black text-[10px] uppercase">Técnico</TableHead><TableHead className="font-black text-[10px] uppercase">Observaciones</TableHead><TableHead className="text-center font-black text-[10px] uppercase pr-8">Cant.</TableHead></TableRow></TableHeader><TableBody>{movements.length > 0 ? movements.map((move) => (<TableRow key={move.id} className="hover:bg-slate-50 transition-colors h-16 border-b border-slate-50"><TableCell className="pl-8 text-[9px] font-black text-slate-400 uppercase">{move.date}</TableCell><TableCell><Badge className={cn("font-black text-[8px] h-5 uppercase border-none", move.type === 'entrada' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{move.type}</Badge></TableCell><TableCell className="text-[10px] font-black text-slate-700 uppercase">{move.itemName}</TableCell><TableCell className="text-[10px] font-bold text-slate-600 uppercase">{move.technician}</TableCell><TableCell className="text-[10px] font-medium text-slate-500 italic truncate max-w-[200px]">"{move.reason}"</TableCell><TableCell className="text-center pr-8 font-black text-sm">{move.type === 'entrada' ? '+' : '-'}{move.quantity}</TableCell></TableRow>)) : (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-black uppercase">Sin registros en bitácora</TableCell></TableRow>)}</TableBody></Table></ScrollArea></div>
               </TabsContent>
             </div>
           </Tabs>
@@ -406,7 +392,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo Secundario HERMANO para evitar Focus Trap */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white">
