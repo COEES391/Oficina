@@ -36,7 +36,8 @@ import {
   UserCheck,
   ClipboardList,
   Save,
-  Calendar
+  Calendar,
+  CheckCircle2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -441,7 +442,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                  <p className="text-[10px] font-medium text-slate-500 italic max-w-[300px] truncate">"{move.reason}"</p>
                               </TableCell>
                               <TableCell className="text-center pr-8">
-                                 <Badge className={cn("font-black text-[11px] h-6 w-12 flex items-center justify-center rounded-lg border-none shadow-sm", move.type === 'entrada' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
+                                 <Badge className={cn("font-black text-[11px] h-6 w-12 flex items-center justify-center rounded-lg border-none shadow-sm", move.type === 'entrada' ? "bg-emerald-50 text-white" : "bg-rose-50 text-white")}>
                                     {move.type === 'entrada' ? '+' : '-'}{move.quantity}
                                  </Badge>
                               </TableCell>
@@ -478,7 +479,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
              <div className="space-y-2">
                 <Label className="text-[10px] font-black text-primary pl-1 uppercase">Categoría Técnica</Label>
                 <Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}>
-                   <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue /></SelectTrigger>
+                   <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue placeholder="ELEGIR..." /></SelectTrigger>
                    <SelectContent className="rounded-xl border-none shadow-2xl">
                       <SelectItem value="Cómputo" className="font-bold text-xs uppercase">Cómputo</SelectItem>
                       <SelectItem value="Redes" className="font-bold text-xs uppercase">Redes</SelectItem>
