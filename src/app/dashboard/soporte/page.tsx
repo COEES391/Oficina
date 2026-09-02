@@ -33,7 +33,9 @@ import {
   CalendarDays,
   Target,
   Layers,
-  Archive
+  Archive,
+  Plus,
+  UserPlus
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -88,8 +90,7 @@ export default function SupportPage() {
     redLocalInst: false,
     redLocalMant: false,
     observaciones1: '',
-    responsable1: '',
-    responsable2: '',
+    responsablesList: [''],
     fases: {
       diagnostico: false,
       cableado: false,
@@ -127,7 +128,7 @@ export default function SupportPage() {
           region: match.region,
           valle: match.valle
         }));
-        toast({ title: "Plantel Identificado", description: match.nombre });
+        toast({ title: "Plantel identificado", description: match.nombre });
       }
     }
   };
@@ -161,7 +162,8 @@ export default function SupportPage() {
     setFormData({
       ...ticket,
       tipoIncidencias: ticket.tipoIncidencias || [ticket.tipoIncidencia],
-      fases: ticket.fases || initialFormState.fases
+      fases: ticket.fases || initialFormState.fases,
+      responsablesList: ticket.responsablesList || [ticket.responsable1 || '', ticket.responsable2 || ''].filter(r => r)
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
@@ -198,6 +200,28 @@ export default function SupportPage() {
         [faseKey]: !formData.fases[faseKey]
       }
     });
+  }
+
+  const updateResponsable = (index: number, value: string) => {
+    const list = [...(formData.responsablesList || [])];
+    list[index] = value.toUpperCase();
+    setFormData({ ...formData, responsablesList: list });
+  }
+
+  const addResponsable = () => {
+    const list = [...(formData.responsablesList || [])];
+    if (list.length < 6) {
+      list.push('');
+      setFormData({ ...formData, responsablesList: list });
+    }
+  }
+
+  const removeResponsable = (index: number) => {
+    const list = [...(formData.responsablesList || [])];
+    if (list.length > 1) {
+      list.splice(index, 1);
+      setFormData({ ...formData, responsablesList: list });
+    }
   }
 
   if (!mounted) return null;
@@ -299,7 +323,7 @@ export default function SupportPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingTicketId(null); }}>
-        <DialogContent className="sm:max-w-[850px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
+        <DialogContent className="sm:max-w-[900px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
           <DialogHeader className="p-8 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="font-black text-2xl flex items-center gap-4">
@@ -376,6 +400,10 @@ export default function SupportPage() {
                           <Checkbox checked={formData.tipoIncidencias?.includes('mantenimiento')} onCheckedChange={() => toggleTipoIncidencia('mantenimiento')} />
                           <Label className="text-[11px] font-bold cursor-pointer">Mantenimiento (F4)</Label>
                        </div>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('teleplanteles') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('teleplanteles')}>
+                          <Checkbox checked={formData.tipoIncidencias?.includes('teleplanteles')} onCheckedChange={() => toggleTipoIncidencia('teleplanteles')} />
+                          <Label className="text-[11px] font-bold cursor-pointer">Teleplanteles</Label>
+                       </div>
                     </div>
                   </div>
 
@@ -397,35 +425,7 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Detalles de Red (Formato F5) - Visible si se selecciona Red Local o Edusat */}
-               {(formData.tipoIncidencias?.includes('red edusat') || formData.tipoIncidencias?.includes('red local')) && (
-                 <div className="p-8 bg-primary/[0.03] rounded-[2.5rem] border border-primary/10 space-y-6 animate-in zoom-in-95">
-                    <h4 className="text-xs font-black text-primary uppercase flex items-center gap-3"><Wifi className="h-5 w-5" /> Detalle de servicios a redes (F5)</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatInst} onCheckedChange={(v) => setFormData({...formData, redEdusatInst: !!v})} /><Label className="text-[10px] font-bold">Edusat: Instalación</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatMant} onCheckedChange={(v) => setFormData({...formData, redEdusatMant: !!v})} /><Label className="text-[10px] font-bold">Edusat: Mantenimiento</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalInst} onCheckedChange={(v) => setFormData({...formData, redLocalInst: !!v})} /><Label className="text-[10px] font-bold">Local: Instalación</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalMant} onCheckedChange={(v) => setFormData({...formData, redLocalMant: !!v})} /><Label className="text-[10px] font-bold">Local: Mantenimiento</Label></div>
-                    </div>
-                 </div>
-               )}
-
-               {/* Detalles de Mantenimiento (Formato F4) - Visible si se selecciona Mantenimiento */}
-               {formData.tipoIncidencias?.includes('mantenimiento') && (
-                 <div className="p-8 bg-accent/[0.03] rounded-[2.5rem] border border-accent/10 space-y-8 animate-in zoom-in-95">
-                    <h4 className="text-xs font-black text-accent uppercase flex items-center gap-3"><Monitor className="h-5 w-5" /> Detalle de mantenimiento a equipo (F4)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold uppercase" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value.toUpperCase()})} /></div>
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.C.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.P.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                          <div className="col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-500">Fecha de salida</Label><Input type="date" className="h-10 font-bold bg-white border-slate-200" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} /></div>
-                       </div>
-                    </div>
-                 </div>
-               )}
-
-               {/* Ficha Técnica / Fases de Atención */}
+               {/* Ficha Técnica / Fases de Atención - Siempre Visible */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                      <Wrench className="h-5 w-5 text-accent" />
@@ -436,10 +436,10 @@ export default function SupportPage() {
                        { id: 'diagnostico', label: 'Diagnóstico inicial', icon: <Search className="h-4 w-4" /> },
                        { id: 'cableado', label: 'Revisión de cableado', icon: <Wifi className="h-4 w-4" /> },
                        { id: 'conectores', label: 'Ponchado RJ45', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'pastaTermica', label: 'Pasta térmica', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'limpieza', label: 'Limpieza interna', icon: <Wrench className="h-4 w-4" /> },
-                       { id: 'configuracion', label: 'Configuración lógica', icon: <Monitor className="h-4 w-4" /> },
-                       { id: 'pruebas', label: 'Pruebas de señal', icon: <ClipboardCheck className="h-4 w-4" /> },
+                       { id: 'pastaTermica', label: 'Cambio de pasta térmica', icon: <Settings className="h-4 w-4" /> },
+                       { id: 'limpieza', label: 'Limpieza interna de equipo', icon: <Wrench className="h-4 w-4" /> },
+                       { id: 'configuracion', label: 'Configuración lógica / IPs', icon: <Monitor className="h-4 w-4" /> },
+                       { id: 'pruebas', label: 'Pruebas de señal y enlace', icon: <ClipboardCheck className="h-4 w-4" /> },
                      ].map(fase => (
                        <div 
                          key={fase.id} 
@@ -460,15 +460,78 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Responsables de la Comisión */}
+               {/* Detalles de Red (Formato F5) */}
+               {(formData.tipoIncidencias?.includes('red edusat') || formData.tipoIncidencias?.includes('red local')) && (
+                 <div className="p-8 bg-primary/[0.03] rounded-[2.5rem] border border-primary/10 space-y-6 animate-in zoom-in-95">
+                    <h4 className="text-xs font-black text-primary uppercase flex items-center gap-3"><Wifi className="h-5 w-5" /> Detalle de servicios a redes (F5)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatInst} onCheckedChange={(v) => setFormData({...formData, redEdusatInst: !!v})} /><Label className="text-[10px] font-bold">Edusat: Instalación</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatMant} onCheckedChange={(v) => setFormData({...formData, redEdusatMant: !!v})} /><Label className="text-[10px] font-bold">Edusat: Mantenimiento</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalInst} onCheckedChange={(v) => setFormData({...formData, redLocalInst: !!v})} /><Label className="text-[10px] font-bold">Local: Instalación</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalMant} onCheckedChange={(v) => setFormData({...formData, redLocalMant: !!v})} /><Label className="text-[10px] font-bold">Local: Mantenimiento</Label></div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Detalles de Mantenimiento (Formato F4) */}
+               {formData.tipoIncidencias?.includes('mantenimiento') && (
+                 <div className="p-8 bg-accent/[0.03] rounded-[2.5rem] border border-accent/10 space-y-8 animate-in zoom-in-95">
+                    <h4 className="text-xs font-black text-accent uppercase flex items-center gap-3"><Monitor className="h-5 w-5" /> Detalle de mantenimiento a equipo (F4)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold uppercase" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value.toUpperCase()})} /></div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.C.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.P.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                          <div className="col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-500">Fecha de salida</Label><Input type="date" className="h-10 font-bold bg-white border-slate-200" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} /></div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Personal Responsable (Comisionados) - Dinámico */}
                <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                     <UserCheck className="h-5 w-5 text-accent" />
-                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Personal responsable (Comisionados)</h4>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                     <div className="flex items-center gap-3">
+                        <UserCheck className="h-5 w-5 text-accent" />
+                        <h4 className="text-xs font-black text-accent tracking-widest uppercase">Personal responsable (Comisionados)</h4>
+                     </div>
+                     <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={addResponsable}
+                        disabled={(formData.responsablesList || []).length >= 6}
+                        className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2 hover:bg-primary/5"
+                     >
+                        <Plus className="h-3 w-3" /> Añadir responsable
+                     </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary">Responsable 1 (Líder)</Label><Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs uppercase" value={formData.responsable1} onChange={e => setFormData({...formData, responsable1: e.target.value.toUpperCase()})} /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary">Responsable 2</Label><Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs uppercase" value={formData.responsable2} onChange={e => setFormData({...formData, responsable2: e.target.value.toUpperCase()})} /></div>
+                    {(formData.responsablesList || ['']).map((resp, idx) => (
+                      <div key={`resp-${idx}`} className="space-y-2 relative group">
+                        <Label className="text-[10px] font-black text-primary">
+                          {idx === 0 ? 'Responsable 1 (Líder)' : `Responsable ${idx + 1}`}
+                        </Label>
+                        <div className="flex gap-2">
+                           <Input 
+                             className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs uppercase flex-1 shadow-inner focus:bg-white transition-all" 
+                             value={resp} 
+                             onChange={e => updateResponsable(idx, e.target.value)} 
+                             placeholder="NOMBRE COMPLETO..."
+                           />
+                           {idx > 0 && (
+                             <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => removeResponsable(idx)} 
+                                className="h-10 w-10 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl"
+                             >
+                                <X className="h-4 w-4" />
+                             </Button>
+                           )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                </div>
 

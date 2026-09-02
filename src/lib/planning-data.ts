@@ -48,8 +48,8 @@ export type SupportTicket = {
   fechaEntrada: string;
   fechaSalida?: string;
   status: 'atendido' | 'en proceso' | 'pendiente';
-  tipoIncidencia: string; // Mantenido por compatibilidad
-  tipoIncidencias?: string[]; // Para selección múltiple
+  tipoIncidencia: string; 
+  tipoIncidencias?: string[]; 
   
   // Campos Hoja de Servicio F4/F5
   semana?: string;
@@ -71,8 +71,9 @@ export type SupportTicket = {
   redLocalInst?: boolean;
   redLocalMant?: boolean;
   observaciones1?: string;
-  observaciones2?: string;
-  observaciones3?: string;
+  
+  // Responsables dinámicos
+  responsablesList?: string[];
   responsable1?: string;
   responsable2?: string;
   responsable3?: string;
