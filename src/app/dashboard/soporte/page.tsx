@@ -41,7 +41,8 @@ import {
   Database,
   ChevronRight,
   Server,
-  Cpu
+  Cpu,
+  MonitorCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -153,6 +154,13 @@ export default function SupportPage() {
         areaAdmin: false,
         otros: false
       }
+    },
+    mantenimientoFicha: {
+      equipoTecnologico: { hdt: false, equipoComputo: false, otro: '' },
+      equiposList: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
+      fallaIdentificada: '',
+      servicioRealizado: '',
+      observaciones: ''
     }
   };
 
@@ -219,7 +227,8 @@ export default function SupportPage() {
       tipoIncidencias: ticket.tipoIncidencias || [ticket.tipoIncidencia],
       responsablesList: ticket.responsablesList || [ticket.responsable1 || '', ticket.responsable2 || ''].filter(r => r),
       edusatFicha: ticket.edusatFicha || initialFormState.edusatFicha,
-      redLocalFicha: ticket.redLocalFicha || initialFormState.redLocalFicha
+      redLocalFicha: ticket.redLocalFicha || initialFormState.redLocalFicha,
+      mantenimientoFicha: ticket.mantenimientoFicha || initialFormState.mantenimientoFicha
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
@@ -277,6 +286,16 @@ export default function SupportPage() {
     setFormData({
       ...formData,
       redLocalFicha: { ...formData.redLocalFicha, materiales: mats }
+    });
+  }
+
+  const updateMantenimientoEquipo = (index: number, field: string, value: string) => {
+    if (!formData.mantenimientoFicha) return;
+    const list = [...formData.mantenimientoFicha.equiposList];
+    list[index] = { ...list[index], [field]: value.toUpperCase() };
+    setFormData({
+      ...formData,
+      mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
     });
   }
 
@@ -503,7 +522,77 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Ficha Técnica de Atención Red Local (NUEVO) */}
+               {/* Ficha Técnica de Atención Mantenimiento (NUEVO F4) */}
+               {formData.tipoIncidencias?.includes('mantenimiento') && (
+                 <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
+                    <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
+                       <MonitorCheck className="h-6 w-6 text-primary" />
+                       <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención Mantenimiento</h4>
+                    </div>
+
+                    <div className="bg-slate-50 p-6 rounded-[2.5rem] border shadow-inner space-y-6">
+                       <div className="flex flex-wrap items-center gap-8 border-b border-primary/10 pb-4">
+                          <Label className="text-[10px] font-black uppercase text-primary">Equipo tecnológico:</Label>
+                          <div className="flex items-center gap-4">
+                             <div className="flex items-center gap-2">
+                                <Checkbox checked={formData.mantenimientoFicha?.equipoTecnologico.hdt} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, hdt: !!val}}})} />
+                                <span className="text-[10px] font-bold">HDT</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <Checkbox checked={formData.mantenimientoFicha?.equipoTecnologico.equipoComputo} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, equipoComputo: !!val}}})} />
+                                <span className="text-[10px] font-bold">EQUIPO DE CÓMPUTO</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold">OTRO:</span>
+                                <Input className="h-8 w-40 bg-white text-[10px] font-bold border-primary/10" value={formData.mantenimientoFicha?.equipoTecnologico.otro} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, otro: e.target.value.toUpperCase()}}})} />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden">
+                          <Table>
+                             <TableHeader className="bg-slate-100">
+                                <TableRow className="h-10">
+                                   <TableHead className="w-12 text-[9px] font-black text-center pl-4">N.P.</TableHead>
+                                   <TableHead className="text-[9px] font-black">EQUIPO</TableHead>
+                                   <TableHead className="text-[9px] font-black">MARCA</TableHead>
+                                   <TableHead className="text-[9px] font-black">NO. SERIE</TableHead>
+                                   <TableHead className="text-[9px] font-black">NO. CENSAL</TableHead>
+                                </TableRow>
+                             </TableHeader>
+                             <TableBody>
+                                {formData.mantenimientoFicha?.equiposList.map((eq, idx) => (
+                                  <TableRow key={idx} className="h-10">
+                                     <TableCell className="text-center font-bold text-slate-400 pl-4">{idx + 1}</TableCell>
+                                     <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold" value={eq.equipo} onChange={e => updateMantenimientoEquipo(idx, 'equipo', e.target.value)} /></TableCell>
+                                     <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold" value={eq.marca} onChange={e => updateMantenimientoEquipo(idx, 'marca', e.target.value)} /></TableCell>
+                                     <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold font-mono" value={eq.serie} onChange={e => updateMantenimientoEquipo(idx, 'serie', e.target.value)} /></TableCell>
+                                     <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold font-mono" value={eq.censal} onChange={e => updateMantenimientoEquipo(idx, 'censal', e.target.value)} /></TableCell>
+                                  </TableRow>
+                                ))}
+                             </TableBody>
+                          </Table>
+                       </div>
+
+                       <div className="space-y-6 pt-4">
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-primary pl-1">Falla identificada:</Label>
+                             <Input className="h-10 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, fallaIdentificada: e.target.value.toUpperCase()}})} />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-primary pl-1">Servicio realizado:</Label>
+                             <Input className="h-10 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                          </div>
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-primary pl-1 uppercase tracking-widest text-center block bg-slate-200 py-1 rounded-t-xl">Observaciones</Label>
+                             <Textarea className="min-h-[120px] rounded-b-[1.5rem] rounded-t-none border-primary/10 p-4 text-[11px] font-medium bg-white uppercase" value={formData.mantenimientoFicha?.observaciones} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, observaciones: e.target.value.toUpperCase()}})} />
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Ficha Técnica de Atención Red Local (NUEVO F5) */}
                {formData.tipoIncidencias?.includes('red local') && (
                  <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
@@ -512,9 +601,8 @@ export default function SupportPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       {/* Lado Izquierdo: Diagnóstico y Preguntas */}
                        <div className="space-y-8">
-                          <div className="bg-slate-50 p-6 rounded-[2rem] border shadow-inner space-y-6">
+                          <div className="bg-slate-50 p-6 rounded-[2.5rem] border shadow-inner space-y-6">
                              <div className="flex justify-between items-center">
                                 <Label className="text-[10px] font-black uppercase text-primary"># de Nodos registrados</Label>
                                 <Input className="h-10 w-24 bg-white text-center font-black border-primary/10" value={formData.redLocalFicha?.nodos} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, nodos: e.target.value}})} />
@@ -555,8 +643,12 @@ export default function SupportPage() {
                                   <div key={q.id} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                                     <span className="text-[9px] font-bold text-slate-600 uppercase">{q.label}</span>
                                     <RadioGroup value={(formData.redLocalFicha as any)[q.id]} onValueChange={(val) => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, [q.id]: val}})} className="flex gap-2">
-                                      <RadioGroupItem value="si" className="h-3 w-3" /><span className="text-[8px] font-black">SÍ</span>
-                                      <RadioGroupItem value="no" className="h-3 w-3" /><span className="text-[8px] font-black">NO</span>
+                                      <div className="flex items-center space-x-1">
+                                         <RadioGroupItem value="si" className="h-3 w-3" /><span className="text-[8px] font-black">SÍ</span>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                         <RadioGroupItem value="no" className="h-3 w-3" /><span className="text-[8px] font-black">NO</span>
+                                      </div>
                                     </RadioGroup>
                                   </div>
                                 ))}
@@ -583,7 +675,6 @@ export default function SupportPage() {
                           </div>
                        </div>
 
-                       {/* Lado Derecho: Materiales y Mantenimiento */}
                        <div className="space-y-6">
                           <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-hidden">
                              <Table>

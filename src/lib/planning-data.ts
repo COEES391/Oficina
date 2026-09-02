@@ -133,6 +133,15 @@ export type SupportTicket = {
     }
   };
 
+  // Ficha Mantenimiento Especializada (NUEVO F4)
+  mantenimientoFicha?: {
+    equipoTecnologico: { hdt: boolean; equipoComputo: boolean; otro: string };
+    equiposList: { equipo: string; marca: string; serie: string; censal: string }[];
+    fallaIdentificada: string;
+    servicioRealizado: string;
+    observaciones: string;
+  };
+
   // Responsables dinámicos
   responsablesList?: string[];
   responsable1?: string;
@@ -151,6 +160,6 @@ export type SupportTicket = {
   };
 };
 
-export const programsData: ProgramStatus[] = [];
+export const programsData: any[] = [];
 export const supportData: SupportTicket[] = [];
-export const trainingRecords: TrainingRecord[] = [];
+export const trainingRecords: any[] = [];
