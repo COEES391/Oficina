@@ -15,6 +15,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import * as XLSX from 'xlsx'
 import { 
   Box, 
   Search, 
@@ -40,7 +41,9 @@ import {
   ShieldCheck,
   Hash,
   ClipboardList,
-  RotateCcw
+  RotateCcw,
+  FileSpreadsheet,
+  AlertCircle
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -213,47 +216,27 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     return list.sort((a, b) => a.name.localeCompare(b.name))
   }, [items, searchTerm, currentView])
 
-  const filteredProviders = useMemo(() => {
-    let list = [...providers];
-    if (searchTerm && currentView === 'proveedores') {
-      const term = searchTerm.toLowerCase();
-      list = list.filter(p => 
-        (p.name || '').toLowerCase().includes(term) ||
-        (p.contact || '').toLowerCase().includes(term) ||
-        (p.category || '').toLowerCase().includes(term)
-      )
-    }
-    return list.sort((a, b) => a.name.localeCompare(b.name))
-  }, [providers, searchTerm, currentView])
+  const lowStockItems = useMemo(() => items.filter(i => i.stock <= i.minStock), [items])
 
-  const filteredUsers = useMemo(() => {
-    let list = [...users];
-    if (searchTerm && currentView === 'usuarios') {
-      const term = searchTerm.toLowerCase();
-      list = list.filter(u => 
-        (u.name || '').toLowerCase().includes(term) ||
-        (u.location || '').toLowerCase().includes(term)
-      )
-    }
-    return list.sort((a, b) => a.name.localeCompare(b.name))
-  }, [users, searchTerm, currentView])
-
-  const filteredMovements = useMemo(() => {
-    let list = [...movements];
-    if (currentView === 'entradas') list = list.filter(m => m.type === 'entrada')
-    if (currentView === 'salidas') list = list.filter(m => m.type === 'salida')
+  const downloadItemsExcel = () => {
+    const data = items.map(i => ({
+      'Código': i.code || 'S/C',
+      'Categoría': i.category,
+      'Descripción del Insumo': i.name,
+      'Existencia': i.stock,
+      'Stock Mínimo': i.minStock,
+      'Estatus': i.stock === 0 ? 'AGOTADO' : i.stock <= i.minStock ? 'CRÍTICO' : 'DISPONIBLE',
+      'Proveedor Sugerido': i.provider || 'N/A',
+      'Última Actualización': format(new Date(i.lastUpdated), 'dd/MM/yyyy HH:mm')
+    }));
     
-    if (searchTerm && (currentView === 'entradas' || currentView === 'salidas')) {
-      const term = searchTerm.toLowerCase();
-      list = list.filter(m => 
-        (m.itemName || '').toLowerCase().includes(term) ||
-        (m.folio || '').toLowerCase().includes(term) ||
-        (m.cct || '').toLowerCase().includes(term) ||
-        (m.technician || '').toLowerCase().includes(term)
-      )
-    }
-    return list
-  }, [movements, currentView, searchTerm])
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario_COEES");
+    XLSX.writeFile(workbook, `Inventario_COEES_Auditoria_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+    
+    toast({ title: "Reporte Generado", description: "El catálogo de insumos se ha descargado correctamente." });
+  }
 
   // PRODUCT LOGIC
   const handleEditItem = (item: WarehouseItem) => {
@@ -577,6 +560,16 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         <Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl border-slate-100 bg-slate-50 text-[10px] font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                       </div>
                     )}
+
+                    {currentView === 'productos' && (
+                      <Button 
+                        onClick={downloadItemsExcel} 
+                        variant="outline" 
+                        className="h-9 px-4 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[9px] gap-2 hover:bg-emerald-50 shadow-md"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+                      </Button>
+                    )}
                     
                     {currentView === 'entradas' && (
                       <Button onClick={() => { setMovementForm({...movementForm, type: 'entrada'}); setCurrentView('registro'); setEditingMovementId(null); }} className="bg-emerald-600 hover:bg-emerald-700 h-9 px-4 rounded-xl text-[9px] gap-2 shadow-lg">
@@ -604,36 +597,64 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
                 <div className="flex-1 overflow-hidden p-6 bg-slate-50/30">
                   {currentView === 'productos' && (
-                    <div className="h-full border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
-                      <ScrollArea className="h-full">
-                        <Table>
-                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm">
-                            <TableRow className="h-10">
-                              <TableHead className="font-black text-[9px] uppercase pl-8">Código</TableHead>
-                              <TableHead className="font-black text-[9px] uppercase">Categoría</TableHead>
-                              <TableHead className="font-black text-[9px] uppercase">Descripción del Insumo</TableHead>
-                              <TableHead className="font-black text-[9px] uppercase text-center">Existencia</TableHead>
-                              <TableHead className="text-right font-black text-[9px] uppercase pr-10">Gestión</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredItems.map((item) => (
-                              <TableRow key={item.id} className="hover:bg-slate-50 h-14 border-b border-slate-50">
-                                <TableCell className="pl-8 font-mono text-[10px] font-black text-primary">{item.code || 'S/C'}</TableCell>
-                                <TableCell><Badge variant="outline" className="font-black text-[7px] uppercase px-2 h-4">{item.category}</Badge></TableCell>
-                                <TableCell><div className="flex flex-col"><span className="text-[12px] font-black text-slate-700 uppercase">{item.name}</span><span className="text-[7px] font-bold text-slate-400 uppercase">Mínimo: {item.minStock}</span></div></TableCell>
-                                <TableCell className="text-center font-black text-[#9f2241] text-lg">{item.stock}</TableCell>
-                                <TableCell className="text-right pr-8">
-                                  <div className="flex justify-end gap-1">
-                                    <button onClick={() => handleEditItem(item)} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5 transition-colors"><Pencil className="h-4 w-4" /></button>
-                                    <button onClick={() => handleDeleteItem(item.id)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" /></button>
-                                  </div>
-                                </TableCell>
+                    <div className="h-full flex flex-col gap-4">
+                      {lowStockItems.length > 0 && (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-[1.5rem] flex items-center gap-4 animate-in fade-in slide-in-from-top-2 shadow-sm">
+                          <div className="h-10 w-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg animate-pulse">
+                            <AlertCircle className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Alerta de Existencias Críticas</p>
+                            <p className="text-[9px] font-bold text-amber-600 uppercase">Se han detectado {lowStockItems.length} insumos con stock bajo o agotados.</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
+                        <ScrollArea className="h-full">
+                          <Table>
+                            <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm">
+                              <TableRow className="h-10">
+                                <TableHead className="font-black text-[9px] uppercase pl-8">Código</TableHead>
+                                <TableHead className="font-black text-[9px] uppercase">Categoría</TableHead>
+                                <TableHead className="font-black text-[9px] uppercase">Descripción del Insumo</TableHead>
+                                <TableHead className="font-black text-[9px] uppercase text-center">Existencia</TableHead>
+                                <TableHead className="text-right font-black text-[9px] uppercase pr-10">Gestión</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredItems.map((item) => (
+                                <TableRow key={item.id} className="hover:bg-slate-50 h-14 border-b border-slate-50">
+                                  <TableCell className="pl-8 font-mono text-[10px] font-black text-primary">{item.code || 'S/C'}</TableCell>
+                                  <TableCell><Badge variant="outline" className="font-black text-[7px] uppercase px-2 h-4">{item.category}</Badge></TableCell>
+                                  <TableCell><div className="flex flex-col"><span className="text-[12px] font-black text-slate-700 uppercase">{item.name}</span><span className="text-[7px] font-bold text-slate-400 uppercase">Stock Mínimo: {item.minStock}</span></div></TableCell>
+                                  <TableCell className="text-center">
+                                    <div className="flex flex-col items-center">
+                                      <span className={cn(
+                                        "font-black text-lg",
+                                        item.stock === 0 ? "text-rose-600" : item.stock <= item.minStock ? "text-amber-500" : "text-[#9f2241]"
+                                      )}>
+                                        {item.stock}
+                                      </span>
+                                      {item.stock === 0 ? (
+                                        <Badge className="bg-rose-600 text-white text-[7px] font-black h-4 px-1.5 mt-1">AGOTADO</Badge>
+                                      ) : item.stock <= item.minStock ? (
+                                        <Badge className="bg-amber-500 text-white text-[7px] font-black h-4 px-1.5 mt-1">STOCK BAJO</Badge>
+                                      ) : null}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right pr-8">
+                                    <div className="flex justify-end gap-1">
+                                      <button onClick={() => handleEditItem(item)} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5 transition-colors"><Pencil className="h-4 w-4" /></button>
+                                      <button onClick={() => handleDeleteItem(item.id)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </ScrollArea>
+                      </div>
                     </div>
                   )}
 
