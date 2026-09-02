@@ -43,11 +43,13 @@ import {
   Server,
   Cpu,
   MonitorCheck,
-  School
+  School,
+  Box
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog';
+import { WarehouseSystemDialog } from '@/components/WarehouseSystemDialog';
 import { cn } from '@/lib/utils';
 
 const OFICINAS = [
@@ -65,6 +67,7 @@ export default function SupportPage() {
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   
   const [listSearchTerm, setListSearchTerm] = useState(''); 
@@ -381,9 +384,16 @@ export default function SupportPage() {
         
         <div className="flex items-center gap-4">
           <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte técnico" />
+          <WarehouseSystemDialog open={isWarehouseOpen} onOpenChange={setIsWarehouseOpen} />
+          
+          <Button onClick={() => setIsWarehouseOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
+            <Box className="h-5 w-5" /> Almacén
+          </Button>
+
           <Button onClick={() => setIsSchedulerOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
             <CalendarDays className="h-5 w-5" /> Agenda de visitas
           </Button>
+
           <Button onClick={() => { setEditingTicketId(null); setFormData(initialFormState); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo reporte de servicio
           </Button>
