@@ -253,17 +253,6 @@ export default function SupportPage() {
     return matchSearch;
   });
 
-  const toggleFase = (faseKey: keyof NonNullable<SupportTicket['fases']>) => {
-    if (!formData.fases) return;
-    setFormData({
-      ...formData,
-      fases: {
-        ...formData.fases,
-        [faseKey]: !formData.fases[faseKey]
-      }
-    });
-  }
-
   const updateResponsable = (index: number, value: string) => {
     const list = [...(formData.responsablesList || [])];
     list[index] = value.toUpperCase();
@@ -483,7 +472,7 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Ficha Técnica de Atención Red Edusat - NUEVA SECCIÓN SOLICITADA */}
+               {/* Ficha Técnica de Atención Red Edusat */}
                {formData.tipoIncidencias?.includes('red edusat') && (
                  <div className="space-y-6 animate-in zoom-in-95 duration-500">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
@@ -492,7 +481,6 @@ export default function SupportPage() {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                       {/* Secciones de la imagen */}
                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                           <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">Micropak (LNB)</p>
                           <div className="space-y-2">
@@ -598,41 +586,6 @@ export default function SupportPage() {
                     </div>
                  </div>
                )}
-
-               {/* Ficha Técnica / Fases de Atención - Estándar */}
-               <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                     <Wrench className="h-5 w-5 text-accent" />
-                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica estándar: fases de atención</h4>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                     {[
-                       { id: 'diagnostico', label: 'Diagnóstico inicial', icon: <Search className="h-4 w-4" /> },
-                       { id: 'cableado', label: 'Revisión de cableado', icon: <Wifi className="h-4 w-4" /> },
-                       { id: 'conectores', label: 'Ponchado RJ45', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'pastaTermica', label: 'Cambio de pasta térmica', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'limpieza', label: 'Limpieza interna de equipo', icon: <Wrench className="h-4 w-4" /> },
-                       { id: 'configuracion', label: 'Configuración lógica / IPs', icon: <Monitor className="h-4 w-4" /> },
-                       { id: 'pruebas', label: 'Pruebas de señal y enlace', icon: <ClipboardCheck className="h-4 w-4" /> },
-                     ].map(fase => (
-                       <div 
-                         key={fase.id} 
-                         className={cn(
-                           "flex items-center space-x-3 p-4 rounded-2xl border transition-all cursor-pointer group shadow-sm", 
-                           formData.fases?.[fase.id as keyof NonNullable<SupportTicket['fases']>] ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-100 hover:border-primary/20"
-                         )} 
-                         onClick={() => toggleFase(fase.id as keyof NonNullable<SupportTicket['fases']>)}
-                       >
-                          <Checkbox 
-                            checked={formData.fases?.[fase.id as keyof NonNullable<SupportTicket['fases']>] || false} 
-                            onCheckedChange={() => toggleFase(fase.id as keyof NonNullable<SupportTicket['fases']>)} 
-                            className="h-5 w-5 border-primary data-[state=checked]:bg-emerald-500 rounded-lg" 
-                          />
-                          <Label className="text-[10px] font-bold cursor-pointer group-hover:text-primary leading-tight">{fase.label}</Label>
-                       </div>
-                     ))}
-                  </div>
-               </div>
 
                {/* Personal Responsable (Comisionados) - Dinámico */}
                <div className="space-y-6">
