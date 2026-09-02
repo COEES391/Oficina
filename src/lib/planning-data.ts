@@ -85,6 +85,54 @@ export type SupportTicket = {
     operaciones: { material: string; cantidad: string; actividad: string }[];
   };
 
+  // Ficha Red Local Especializada
+  redLocalFicha?: {
+    nodos: string;
+    cuentaRedLocal: 'si' | 'no' | '';
+    requiereMantenimiento: 'si' | 'no' | '';
+    electricaAdecuada: 'si' | 'no' | '';
+    cuentaInternet: 'si' | 'no' | '';
+    proveedorInternet: string;
+    anchoBanda: string;
+    ampliacionRed: 'si' | 'no' | '';
+    nuevaRed: 'si' | 'no' | '';
+    materiales: {
+      canaleta: { coees: string, ct: string },
+      cableUTP: { coees: string, ct: string },
+      rosetas: { coees: string, ct: string },
+      conectores: { coees: string, ct: string },
+      pijas: { coees: string, ct: string },
+      cinturones: { coees: string, ct: string },
+      switch: { coees: string, ct: string },
+      conectoresRJ45: { coees: string, ct: string }
+    },
+    mantenimientoAula: {
+      conectores: boolean,
+      parcheo: boolean,
+      cableUTP: boolean,
+      rosetas: boolean,
+      canaletas: boolean,
+      configuracion: boolean
+    },
+    mantenimientoEquipos: {
+      formateo: boolean,
+      windows: boolean,
+      office: boolean,
+      drivers: boolean,
+      antivirus: boolean,
+      software: boolean,
+      hardware: boolean
+    },
+    ubicacionAula: {
+      tallerComputo: boolean,
+      aulaMedios: boolean,
+      hdt: boolean,
+      ofimatica: boolean,
+      areaAdmin: boolean,
+      otros: boolean
+    }
+  };
+
   // Responsables dinámicos
   responsablesList?: string[];
   responsable1?: string;
@@ -100,57 +148,6 @@ export type SupportTicket = {
     limpieza: boolean;
     configuracion: boolean;
     pruebas: boolean;
-  };
-};
-
-export type ProgramStatus = {
-  id?: string;
-  name: string;
-  progress: number;
-  status: 'activo' | 'planeacion' | 'concluido' | 'inactivo' | 'atendido' | 'en proceso' | 'pendiente' | 'suspendida';
-  date: string;
-  requestDate?: string;
-  cct?: string;
-  schoolName?: string;
-  userName?: string; 
-  zonaEscolar?: string;
-  sector?: string;
-  modalidad?: string;
-  municipio?: string;
-  region?: string;
-  valle?: string;
-  numeroEquipos?: number;
-  observaciones?: string;
-  capacitacion?: 'S' | 'N';
-  email?: string;
-  emails?: string[]; 
-  asistentes?: any[];
-  latitud?: string;
-  longitud?: string;
-  tecnicos?: string;
-  tipoIncidencia?: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles' | 'cuenta institucional';
-  oficinaRegionalAtencion?: string;
-  numeroOficio?: string;
-  alumnosBeneficiados?: number;
-  docentesBeneficiados?: number;
-  serviciosMC?: number;
-  serviciosMP?: number;
-  reportPdf?: string;
-  evidencePhotos?: string[];
-  bibliotecaFases?: {
-    fase1: boolean;
-    fase2: boolean;
-    fase3: boolean;
-    fase4: boolean;
-    fase4_1: boolean;
-    fase4_2: boolean;
-    fase5: boolean;
-    fase6: boolean;
-    fase7: boolean;
-    fase7_1: boolean;
-    fase7_formsUrl?: string;
-    personalCapacitado: number;
-    equiposHabilitados: number;
   };
 };
 

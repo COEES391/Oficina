@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supportData, type SupportTicket } from "@/lib/planning-data";
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory";
 import { 
@@ -37,7 +38,10 @@ import {
   Plus,
   Radio,
   Navigation,
-  Database
+  Database,
+  ChevronRight,
+  Server,
+  Cpu
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -104,14 +108,51 @@ export default function SupportPage() {
       calidadSenal: '',
       operaciones: [{ material: '', cantidad: '', actividad: '' }]
     },
-    fases: {
-      diagnostico: false,
-      cableado: false,
-      conectores: false,
-      pastaTermica: false,
-      limpieza: false,
-      configuracion: false,
-      pruebas: false
+    redLocalFicha: {
+      nodos: '',
+      cuentaRedLocal: '',
+      requiereMantenimiento: '',
+      electricaAdecuada: '',
+      cuentaInternet: '',
+      proveedorInternet: '',
+      anchoBanda: '',
+      ampliacionRed: '',
+      nuevaRed: '',
+      materiales: {
+        canaleta: { coees: '', ct: '' },
+        cableUTP: { coees: '', ct: '' },
+        rosetas: { coees: '', ct: '' },
+        conectores: { coees: '', ct: '' },
+        pijas: { coees: '', ct: '' },
+        cinturones: { coees: '', ct: '' },
+        switch: { coees: '', ct: '' },
+        conectoresRJ45: { coees: '', ct: '' }
+      },
+      mantenimientoAula: {
+        conectores: false,
+        parcheo: false,
+        cableUTP: false,
+        rosetas: false,
+        canaletas: false,
+        configuracion: false
+      },
+      mantenimientoEquipos: {
+        formateo: false,
+        windows: false,
+        office: false,
+        drivers: false,
+        antivirus: false,
+        software: false,
+        hardware: false
+      },
+      ubicacionAula: {
+        tallerComputo: false,
+        aulaMedios: false,
+        hdt: false,
+        ofimatica: false,
+        areaAdmin: false,
+        otros: false
+      }
     }
   };
 
@@ -176,9 +217,9 @@ export default function SupportPage() {
       ...initialFormState,
       ...ticket,
       tipoIncidencias: ticket.tipoIncidencias || [ticket.tipoIncidencia],
-      fases: ticket.fases || initialFormState.fases,
       responsablesList: ticket.responsablesList || [ticket.responsable1 || '', ticket.responsable2 || ''].filter(r => r),
-      edusatFicha: ticket.edusatFicha || initialFormState.edusatFicha
+      edusatFicha: ticket.edusatFicha || initialFormState.edusatFicha,
+      redLocalFicha: ticket.redLocalFicha || initialFormState.redLocalFicha
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
@@ -214,35 +255,28 @@ export default function SupportPage() {
     });
   }
 
-  const addEdusatOperacion = () => {
-    if (!formData.edusatFicha) return;
+  const toggleRedLocalField = (section: 'mantenimientoAula' | 'mantenimientoEquipos' | 'ubicacionAula', field: string) => {
+    if (!formData.redLocalFicha) return;
+    const currentSection = formData.redLocalFicha[section] as any;
     setFormData({
       ...formData,
-      edusatFicha: {
-        ...formData.edusatFicha,
-        operaciones: [...formData.edusatFicha.operaciones, { material: '', cantidad: '', actividad: '' }]
+      redLocalFicha: {
+        ...formData.redLocalFicha,
+        [section]: {
+          ...currentSection,
+          [field]: !currentSection[field]
+        }
       }
     });
   }
 
-  const removeEdusatOperacion = (index: number) => {
-    if (!formData.edusatFicha || formData.edusatFicha.operaciones.length <= 1) return;
+  const updateRedLocalMaterial = (item: string, column: 'coees' | 'ct', value: string) => {
+    if (!formData.redLocalFicha) return;
+    const mats = { ...formData.redLocalFicha.materiales } as any;
+    mats[item] = { ...mats[item], [column]: value };
     setFormData({
       ...formData,
-      edusatFicha: {
-        ...formData.edusatFicha,
-        operaciones: formData.edusatFicha.operaciones.filter((_, i) => i !== index)
-      }
-    });
-  }
-
-  const updateEdusatOperacion = (index: number, field: string, value: string) => {
-    if (!formData.edusatFicha) return;
-    const ops = [...formData.edusatFicha.operaciones];
-    ops[index] = { ...ops[index], [field]: value.toUpperCase() };
-    setFormData({
-      ...formData,
-      edusatFicha: { ...formData.edusatFicha, operaciones: ops }
+      redLocalFicha: { ...formData.redLocalFicha, materiales: mats }
     });
   }
 
@@ -386,8 +420,7 @@ export default function SupportPage() {
 
           <ScrollArea className="flex-1">
             <div className="p-8 space-y-10">
-               {/* Encabezado del Informe */}
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[2.5rem] border border-primary/5">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[2.5rem] border border-primary/5 shadow-inner">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-primary pl-1">Folio de solicitud</Label>
                     <Input className="h-11 bg-white font-mono font-black uppercase text-primary border-primary/10" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
@@ -413,7 +446,6 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Identificación del Plantel */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b pb-2">
                      <Building2 className="h-5 w-5 text-accent" />
@@ -431,7 +463,6 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Servicios Realizados (Selección Múltiple) */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
@@ -439,15 +470,15 @@ export default function SupportPage() {
                        <h4 className="text-xs font-black text-accent tracking-widest uppercase">Servicios realizados</h4>
                     </div>
                     <div className="grid grid-cols-1 gap-3">
-                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red edusat') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('red edusat')}>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red edusat') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-sm")} onClick={() => toggleTipoIncidencia('red edusat')}>
                           <Checkbox checked={formData.tipoIncidencias?.includes('red edusat')} onCheckedChange={() => toggleTipoIncidencia('red edusat')} />
                           <Label className="text-[11px] font-bold cursor-pointer">Red Edusat (F5)</Label>
                        </div>
-                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red local') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('red local')}>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red local') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-sm")} onClick={() => toggleTipoIncidencia('red local')}>
                           <Checkbox checked={formData.tipoIncidencias?.includes('red local')} onCheckedChange={() => toggleTipoIncidencia('red local')} />
                           <Label className="text-[11px] font-bold cursor-pointer">Red local (F5)</Label>
                        </div>
-                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('mantenimiento') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('mantenimiento')}>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('mantenimiento') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-sm")} onClick={() => toggleTipoIncidencia('mantenimiento')}>
                           <Checkbox checked={formData.tipoIncidencias?.includes('mantenimiento')} onCheckedChange={() => toggleTipoIncidencia('mantenimiento')} />
                           <Label className="text-[11px] font-bold cursor-pointer">Mantenimiento (F4)</Label>
                        </div>
@@ -460,23 +491,180 @@ export default function SupportPage() {
                        <h4 className="text-xs font-black text-accent tracking-widest uppercase">Estadística de impacto</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner">
                          <Label className="text-[9px] font-black text-primary uppercase">Alumnos beneficiados</Label>
-                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-inner" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-sm" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
                       </div>
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner">
                          <Label className="text-[9px] font-black text-primary uppercase">Equipos atendidos</Label>
-                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-inner" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
+                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-sm" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
                       </div>
                     </div>
                   </div>
                </div>
 
+               {/* Ficha Técnica de Atención Red Local (NUEVO) */}
+               {formData.tipoIncidencias?.includes('red local') && (
+                 <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
+                    <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
+                       <Server className="h-6 w-6 text-primary" />
+                       <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención Red Local</h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       {/* Lado Izquierdo: Diagnóstico y Preguntas */}
+                       <div className="space-y-8">
+                          <div className="bg-slate-50 p-6 rounded-[2rem] border shadow-inner space-y-6">
+                             <div className="flex justify-between items-center">
+                                <Label className="text-[10px] font-black uppercase text-primary"># de Nodos registrados</Label>
+                                <Input className="h-10 w-24 bg-white text-center font-black border-primary/10" value={formData.redLocalFicha?.nodos} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, nodos: e.target.value}})} />
+                             </div>
+                             
+                             <div className="grid grid-cols-1 gap-4">
+                                {[
+                                  { id: 'cuentaRedLocal', label: '¿Cuenta con red local?' },
+                                  { id: 'requiereMantenimiento', label: '¿Requiere mantenimiento?' },
+                                  { id: 'electricaAdecuada', label: 'Instalación eléctrica adecuada' },
+                                  { id: 'cuentaInternet', label: '¿Cuenta con internet?' },
+                                ].map(q => (
+                                  <div key={q.id} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase">{q.label}</span>
+                                    <RadioGroup 
+                                      value={(formData.redLocalFicha as any)[q.id]} 
+                                      onValueChange={(val) => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, [q.id]: val}})}
+                                      className="flex gap-4"
+                                    >
+                                      <div className="flex items-center space-x-1">
+                                        <RadioGroupItem value="si" id={`${q.id}-si`} className="h-4 w-4" /><Label htmlFor={`${q.id}-si`} className="text-[10px] font-black">SÍ</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <RadioGroupItem value="no" id={`${q.id}-no`} className="h-4 w-4" /><Label htmlFor={`${q.id}-no`} className="text-[10px] font-black">NO</Label>
+                                      </div>
+                                    </RadioGroup>
+                                  </div>
+                                ))}
+                             </div>
+
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400">Proveedor de internet</Label><Input className="h-9 bg-white border-primary/5" value={formData.redLocalFicha?.proveedorInternet} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, proveedorInternet: e.target.value.toUpperCase()}})} /></div>
+                                <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400">Ancho de banda</Label><Input className="h-9 bg-white border-primary/5 text-center font-black" value={formData.redLocalFicha?.anchoBanda} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, anchoBanda: e.target.value}})} /></div>
+                             </div>
+
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {[{id: 'ampliacionRed', label: 'Ampliación de red'}, {id: 'nuevaRed', label: 'Nueva red'}].map(q => (
+                                  <div key={q.id} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                                    <span className="text-[9px] font-bold text-slate-600 uppercase">{q.label}</span>
+                                    <RadioGroup value={(formData.redLocalFicha as any)[q.id]} onValueChange={(val) => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, [q.id]: val}})} className="flex gap-2">
+                                      <RadioGroupItem value="si" className="h-3 w-3" /><span className="text-[8px] font-black">SÍ</span>
+                                      <RadioGroupItem value="no" className="h-3 w-3" /><span className="text-[8px] font-black">NO</span>
+                                    </RadioGroup>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+
+                          <div className="space-y-4">
+                             <div className="flex items-center gap-2 border-b pb-1"><Archive className="h-4 w-4 text-accent" /><h5 className="text-[10px] font-black uppercase text-accent">Aula donde se brinda el servicio</h5></div>
+                             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-[1.5rem] border">
+                                {[
+                                  { id: 'tallerComputo', label: 'Taller de cómputo' },
+                                  { id: 'aulaMedios', label: 'Aula de medios' },
+                                  { id: 'hdt', label: 'HDT' },
+                                  { id: 'ofimatica', label: 'Ofimática' },
+                                  { id: 'areaAdmin', label: 'Área administrativa' },
+                                  { id: 'otros', label: 'Otros' },
+                                ].map(item => (
+                                  <div key={item.id} className="flex items-center gap-2" onClick={() => toggleRedLocalField('ubicacionAula', item.id)}>
+                                    <Checkbox checked={(formData.redLocalFicha?.ubicacionAula as any)?.[item.id]} onCheckedChange={() => toggleRedLocalField('ubicacionAula', item.id)} />
+                                    <Label className="text-[10px] font-bold cursor-pointer uppercase">{item.label}</Label>
+                                  </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+
+                       {/* Lado Derecho: Materiales y Mantenimiento */}
+                       <div className="space-y-6">
+                          <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-hidden">
+                             <Table>
+                                <TableHeader className="bg-slate-50">
+                                   <TableRow className="h-8">
+                                      <TableHead className="text-[9px] font-black uppercase">Materiales requeridos</TableHead>
+                                      <TableHead className="text-[9px] font-black uppercase text-center w-16">COEES</TableHead>
+                                      <TableHead className="text-[9px] font-black uppercase text-center w-16">C.T.</TableHead>
+                                   </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {[
+                                     { id: 'canaleta', label: 'Canaleta' },
+                                     { id: 'cableUTP', label: 'Cable UTP' },
+                                     { id: 'rosetas', label: 'Rosetas' },
+                                     { id: 'conectores', label: 'Conectores' },
+                                     { id: 'pijas', label: 'Pijas y taquetes' },
+                                     { id: 'cinturones', label: 'Cinturones' },
+                                     { id: 'switch', label: 'Switch o Router' },
+                                     { id: 'conectoresRJ45', label: 'Conectores RJ45' },
+                                   ].map(item => (
+                                     <TableRow key={item.id} className="h-10">
+                                        <TableCell className="py-1 pl-4 text-[10px] font-bold uppercase text-slate-500">{item.label}</TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50 text-center font-black text-[10px]" value={(formData.redLocalFicha?.materiales as any)?.[item.id]?.coees} onChange={e => updateRedLocalMaterial(item.id, 'coees', e.target.value)} /></TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50 text-center font-black text-[10px]" value={(formData.redLocalFicha?.materiales as any)?.[item.id]?.ct} onChange={e => updateRedLocalMaterial(item.id, 'ct', e.target.value)} /></TableCell>
+                                     </TableRow>
+                                   ))}
+                                </TableBody>
+                             </Table>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                             <div className="space-y-4">
+                                <div className="flex items-center gap-2 border-b pb-1"><Wrench className="h-4 w-4 text-primary" /><h5 className="text-[9px] font-black uppercase text-primary">Mant. Aula</h5></div>
+                                <div className="bg-slate-50 p-3 rounded-2xl border space-y-2">
+                                  {[
+                                    { id: 'conectores', label: 'Sustitución de conectores' },
+                                    { id: 'parcheo', label: 'Cordones de parcheo' },
+                                    { id: 'cableUTP', label: 'Sustitución cable UTP' },
+                                    { id: 'rosetas', label: 'Sustitución rosetas' },
+                                    { id: 'canaletas', label: 'Sustitución canaletas' },
+                                    { id: 'configuracion', label: 'Configuración de red' },
+                                  ].map(f => (
+                                    <div key={f.id} className="flex items-center gap-2" onClick={() => toggleRedLocalField('mantenimientoAula', f.id)}>
+                                      <Checkbox checked={(formData.redLocalFicha?.mantenimientoAula as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoAula', f.id)} />
+                                      <span className="text-[9px] font-bold uppercase text-slate-600">{f.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                             </div>
+
+                             <div className="space-y-4">
+                                <div className="flex items-center gap-2 border-b pb-1"><Cpu className="h-4 w-4 text-primary" /><h5 className="text-[9px] font-black uppercase text-primary">Mant. Equipos</h5></div>
+                                <div className="bg-slate-50 p-3 rounded-2xl border space-y-2">
+                                  {[
+                                    { id: 'formateo', label: 'Formateo a equipos' },
+                                    { id: 'windows', label: 'Instalación de Windows' },
+                                    { id: 'office', label: 'Instalación de Office' },
+                                    { id: 'drivers', label: 'Instalación de Drivers' },
+                                    { id: 'antivirus', label: 'Instalación Antivirus' },
+                                    { id: 'software', label: 'Software a petición' },
+                                    { id: 'hardware', label: 'Sustitución hardware' },
+                                  ].map(f => (
+                                    <div key={f.id} className="flex items-center gap-2" onClick={() => toggleRedLocalField('mantenimientoEquipos', f.id)}>
+                                      <Checkbox checked={(formData.redLocalFicha?.mantenimientoEquipos as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoEquipos', f.id)} />
+                                      <span className="text-[9px] font-bold uppercase text-slate-600">{f.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
                {/* Ficha Técnica de Atención Red Edusat */}
                {formData.tipoIncidencias?.includes('red edusat') && (
                  <div className="space-y-6 animate-in zoom-in-95 duration-500">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
-                       <Archive className="h-6 w-6 text-primary" />
+                       <Radio className="h-6 w-6 text-primary" />
                        <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención red Edusat</h4>
                     </div>
                     
@@ -542,7 +730,7 @@ export default function SupportPage() {
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-100/50 p-6 rounded-3xl border">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-100/50 p-6 rounded-3xl border shadow-inner">
                        <div className="space-y-2">
                           <Label className="text-[9px] font-black uppercase text-primary">No. Censal de Decodificador</Label>
                           <Input className="h-10 bg-white font-mono font-bold" value={formData.edusatFicha?.numCensalDeco} onChange={e => setFormData({...formData, edusatFicha: {...formData.edusatFicha!, numCensalDeco: e.target.value.toUpperCase()}})} />
@@ -554,34 +742,6 @@ export default function SupportPage() {
                        <div className="space-y-2">
                           <Label className="text-[9px] font-black uppercase text-primary">Calidad de Señal</Label>
                           <Input placeholder="Ej. 85%" className="h-10 bg-white font-black text-center" value={formData.edusatFicha?.calidadSenal} onChange={e => setFormData({...formData, edusatFicha: {...formData.edusatFicha!, calidadSenal: e.target.value}})} />
-                       </div>
-                    </div>
-
-                    <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-hidden">
-                       <Table>
-                          <TableHeader className="bg-slate-50">
-                             <TableRow className="h-10">
-                                <TableHead className="text-[9px] font-black uppercase w-[250px]">Mat. Utilizado</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase w-[100px] text-center">Cantidad</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
-                                <TableHead className="w-12"></TableHead>
-                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                             {formData.edusatFicha?.operaciones.map((op, idx) => (
-                               <TableRow key={`ed-op-${idx}`} className="h-12">
-                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-bold" value={op.material} onChange={e => updateEdusatOperacion(idx, 'material', e.target.value)} /></TableCell>
-                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-black text-center" value={op.cantidad} onChange={e => updateEdusatOperacion(idx, 'cantidad', e.target.value)} /></TableCell>
-                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-semibold" value={op.actividad} onChange={e => updateEdusatOperacion(idx, 'actividad', e.target.value)} /></TableCell>
-                                  <TableCell className="p-2">
-                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => removeEdusatOperacion(idx)} disabled={formData.edusatFicha!.operaciones.length <= 1}><X className="h-3.5 w-3.5" /></Button>
-                                  </TableCell>
-                               </TableRow>
-                             ))}
-                          </TableBody>
-                       </Table>
-                       <div className="p-3 bg-slate-50 border-t flex justify-center">
-                          <Button variant="outline" size="sm" onClick={addEdusatOperacion} className="h-8 px-6 rounded-xl border-primary/20 text-primary font-black text-[9px] gap-2"><Plus className="h-3.5 w-3.5" /> Añadir Fila de Operación</Button>
                        </div>
                     </div>
                  </div>
@@ -600,14 +760,14 @@ export default function SupportPage() {
                         size="sm" 
                         onClick={addResponsable}
                         disabled={(formData.responsablesList || []).length >= 6}
-                        className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2 hover:bg-primary/5"
+                        className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2 hover:bg-primary/5 shadow-sm"
                      >
                         <Plus className="h-3 w-3" /> Añadir responsable
                      </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {(formData.responsablesList || ['']).map((resp, idx) => (
-                      <div key={`resp-${idx}`} className="space-y-2 relative group">
+                      <div key={`resp-${idx}`} className="space-y-2 relative group animate-in slide-in-from-left-2 duration-300">
                         <Label className="text-[10px] font-black text-primary">
                           {idx === 0 ? 'Responsable 1 (Líder)' : `Responsable ${idx + 1}`}
                         </Label>
