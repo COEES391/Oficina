@@ -3,11 +3,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import Image from 'next/image'
-import { placeholderImages } from '@/lib/placeholder-images'
 import { User, KeyRound, Loader2, GraduationCap, ShieldCheck } from 'lucide-react'
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
@@ -24,8 +21,6 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
 
   const handleLogin = async () => {
     const cleanRfc = rfc.trim().toUpperCase()
@@ -103,23 +98,12 @@ export default function LoginPage() {
 
         {/* Lado Derecho: Formulario */}
         <div className="flex-1 bg-white p-8 md:p-14 flex flex-col justify-center">
-          <div className="mb-10 flex justify-center">
-             <div className="relative h-14 w-48 grayscale opacity-80 contrast-125">
-                <Image 
-                  src={logoData.imageUrl} 
-                  alt="Educación Logo" 
-                  fill 
-                  className="object-contain"
-                />
-             </div>
-          </div>
-
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="relative group">
               <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
               <Input 
                 placeholder="Usuario (RFC)" 
-                className="h-12 pl-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold shadow-inner focus:bg-white transition-all" 
+                className="h-12 pl-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold shadow-inner focus:bg-white transition-all uppercase" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
                 disabled={isLoading} 
