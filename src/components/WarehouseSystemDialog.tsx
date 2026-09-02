@@ -423,7 +423,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     const itemIndex = updatedItems.findIndex(i => i.id === move.itemId)
     if (itemIndex !== -1) {
       const item = updatedItems[itemIndex]
-      // Revertir el stock: si era entrada, restar. si era salida, sumar.
       const newStock = move.type === 'entrada' ? item.stock - move.quantity : item.stock + move.quantity
       updatedItems[itemIndex] = { ...item, stock: newStock, lastUpdated: new Date().toISOString() }
     }
@@ -446,7 +445,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     if (itemIndex === -1) return
     const item = items[itemIndex]
     
-    // Si estamos editando, primero revertimos el stock anterior
     let updatedItems = [...items]
     if (editingMovementId) {
       const oldMove = movements.find(m => m.id === editingMovementId)
@@ -460,7 +458,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       }
     }
 
-    // Volvemos a obtener el item del array actualizado para el calculo final
     const currentItem = updatedItems.find(i => i.id === movementForm.itemId)
     if (!currentItem) return
     
@@ -503,9 +500,14 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     setCurrentView(movementForm.type === 'entrada' ? 'entradas' : 'salidas')
   }
 
-  const NavigationButton = ({ icon: Icon, label, target, color }: { icon: any, label: string, target: any, color: string }) => (
+  const NavigationButton = ({ icon: Icon, label, target, color, type }: { icon: any, label: string, target: any, color: string, type?: 'entrada' | 'salida' }) => (
     <button 
-      onClick={() => { setCurrentView(target); setSearchTerm(''); setEditingMovementId(null); }}
+      onClick={() => { 
+        setCurrentView(target); 
+        setSearchTerm(''); 
+        setEditingMovementId(null);
+        if (type) setMovementForm(prev => ({ ...prev, type }));
+      }}
       className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border-2 border-slate-50 shadow-sm hover:shadow-2xl hover:scale-105 transition-all group"
     >
       <div className={cn("h-16 w-16 rounded-3xl flex items-center justify-center text-white mb-4 shadow-xl transition-transform group-hover:rotate-6", color)}>
@@ -545,8 +547,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   <NavigationButton icon={Users} label="Base Usuarios" target="usuarios" color="bg-rose-500" />
                   <NavigationButton icon={ArrowUpRight} label="Base Entradas" target="entradas" color="bg-emerald-600" />
                   <NavigationButton icon={ArrowDownRight} label="Base Salidas" target="salidas" color="bg-rose-600" />
-                  <NavigationButton icon={ShoppingBag} label="Requisiciones" target="registro" color="bg-indigo-600" />
-                  <NavigationButton icon={HandCoins} label="Entregas / Salidas" target="registro" color="bg-teal-600" />
+                  <NavigationButton icon={ShoppingBag} label="Requisiciones" target="registro" color="bg-indigo-600" type="entrada" />
+                  <NavigationButton icon={HandCoins} label="Entregas / Salidas" target="registro" color="bg-teal-600" type="salida" />
                   <button onClick={() => onOpenChange(false)} className="flex flex-col items-center justify-center p-6 bg-slate-100 rounded-[2rem] border-2 border-transparent hover:bg-slate-200 transition-all group">
                     <div className="h-16 w-16 rounded-3xl bg-slate-400 flex items-center justify-center text-white mb-4 shadow-md"><X className="h-8 w-8" /></div>
                     <span className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Cerrar Almacén</span>
@@ -820,13 +822,11 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                             
                             <div className="space-y-2">
                               <Label className="text-[10px] font-black text-primary uppercase pl-1">2. Tipo de Movimiento</Label>
-                              <div className="flex gap-3">
-                                <button onClick={() => setMovementForm({...movementForm, type: 'entrada'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md" : "bg-white border-slate-100 text-slate-300")}>
-                                  <ArrowUpRight className="h-5 w-5" /> Entrada
-                                </button>
-                                <button onClick={() => setMovementForm({...movementForm, type: 'salida'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'salida' ? "bg-rose-50 border-rose-500 text-rose-700 shadow-md" : "bg-white border-slate-100 text-slate-300")}>
-                                  <ArrowDownRight className="h-5 w-5" /> Salida
-                                </button>
+                              <div className="flex">
+                                <div className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all shadow-md", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-rose-50 border-rose-500 text-rose-700")}>
+                                  {movementForm.type === 'entrada' ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                                  {movementForm.type === 'entrada' ? 'Entrada (Suministro)' : 'Salida (Entrega)'}
+                                </div>
                               </div>
                             </div>
 
