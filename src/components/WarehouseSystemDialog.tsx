@@ -45,7 +45,9 @@ import {
   ChevronLeft,
   School,
   Building2,
-  Briefcase
+  Briefcase,
+  Phone,
+  User
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -103,7 +105,9 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   const [providers, setProviders] = useState<Provider[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isAddProviderDialogOpen, setIsAddProviderDialogOpen] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
   const [newItemForm, setNewItemForm] = useState({
@@ -112,6 +116,13 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     stock: 0,
     minStock: 5,
     provider: ''
+  })
+
+  const [newProviderForm, setNewProviderForm] = useState({
+    name: '',
+    contact: '',
+    phone: '',
+    category: ''
   })
 
   const [movementForm, setMovementForm] = useState({
@@ -164,7 +175,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
   const filteredItems = useMemo(() => {
     let list = [...items];
-    if (searchTerm) {
+    if (searchTerm && currentView === 'productos') {
       const term = searchTerm.toLowerCase();
       list = list.filter(item => 
         (item.name || '').toLowerCase().includes(term) ||
@@ -172,7 +183,20 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       )
     }
     return list.sort((a, b) => a.name.localeCompare(b.name))
-  }, [items, searchTerm])
+  }, [items, searchTerm, currentView])
+
+  const filteredProviders = useMemo(() => {
+    let list = [...providers];
+    if (searchTerm && currentView === 'proveedores') {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(p => 
+        (p.name || '').toLowerCase().includes(term) ||
+        (p.contact || '').toLowerCase().includes(term) ||
+        (p.category || '').toLowerCase().includes(term)
+      )
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name))
+  }, [providers, searchTerm, currentView])
 
   const filteredMovements = useMemo(() => {
     if (currentView === 'entradas') return movements.filter(m => m.type === 'entrada')
@@ -180,6 +204,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     return movements
   }, [movements, currentView])
 
+  // PRODUCT LOGIC
   const handleEditItem = (item: WarehouseItem) => {
     setEditingItemId(item.id)
     setNewItemForm({
@@ -226,6 +251,68 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Insumo guardado" })
   }
 
+  const handleDeleteItem = (id: string) => {
+    if (!confirm("¿Desea eliminar este insumo del catálogo?")) return
+    const updated = items.filter(i => i.id !== id)
+    setItems(updated)
+    localStorage.setItem('coees_warehouse_items_v3', JSON.stringify(updated))
+    toast({ title: "Insumo eliminado" })
+  }
+
+  // PROVIDER LOGIC
+  const handleEditProvider = (provider: Provider) => {
+    setEditingProviderId(provider.id)
+    setNewProviderForm({
+      name: provider.name,
+      contact: provider.contact,
+      phone: provider.phone,
+      category: provider.category
+    })
+    setIsAddProviderDialogOpen(true)
+  }
+
+  const handleSaveProvider = () => {
+    if (!newProviderForm.name) {
+      toast({ variant: "destructive", title: "Nombre del proveedor faltante" })
+      return
+    }
+
+    let updated;
+    if (editingProviderId) {
+      updated = providers.map(p => p.id === editingProviderId ? {
+        ...p,
+        name: newProviderForm.name.toUpperCase(),
+        contact: newProviderForm.contact.toUpperCase(),
+        phone: newProviderForm.phone,
+        category: newProviderForm.category.toUpperCase()
+      } : p)
+    } else {
+      const newProvider: Provider = {
+        ...newProviderForm,
+        id: `PROV-${Date.now()}`,
+        name: newProviderForm.name.toUpperCase(),
+        contact: newProviderForm.contact.toUpperCase(),
+        category: newProviderForm.category.toUpperCase()
+      }
+      updated = [newProvider, ...providers]
+    }
+
+    setProviders(updated)
+    localStorage.setItem('coees_warehouse_providers_v3', JSON.stringify(updated))
+    setEditingProviderId(null)
+    setIsAddProviderDialogOpen(false)
+    toast({ title: editingProviderId ? "Proveedor actualizado" : "Nuevo proveedor registrado" })
+  }
+
+  const handleDeleteProvider = (id: string) => {
+    if (!confirm("¿Desea eliminar este proveedor? Esto no afectará a los insumos ya registrados.")) return
+    const updated = providers.filter(p => p.id !== id)
+    setProviders(updated)
+    localStorage.setItem('coees_warehouse_providers_v3', JSON.stringify(updated))
+    toast({ title: "Proveedor eliminado" })
+  }
+
+  // MOVEMENT LOGIC
   const handleRegisterMovement = () => {
     if (!movementForm.itemId || !movementForm.reason || movementForm.quantity <= 0) {
       toast({ variant: "destructive", title: "Datos incompletos" })
@@ -270,17 +357,9 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Movimiento registrado con éxito" })
   }
 
-  const handleDeleteItem = (id: string) => {
-    if (!confirm("¿Desea eliminar este insumo del catálogo?")) return
-    const updated = items.filter(i => i.id !== id)
-    setItems(updated)
-    localStorage.setItem('coees_warehouse_items_v3', JSON.stringify(updated))
-    toast({ title: "Insumo eliminado" })
-  }
-
   const NavigationButton = ({ icon: Icon, label, target, color }: { icon: any, label: string, target: any, color: string }) => (
     <button 
-      onClick={() => setCurrentView(target)}
+      onClick={() => { setCurrentView(target); setSearchTerm(''); }}
       className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border-2 border-slate-50 shadow-sm hover:shadow-2xl hover:scale-105 transition-all group"
     >
       <div className={cn("h-16 w-16 rounded-3xl flex items-center justify-center text-white mb-4 shadow-xl transition-transform group-hover:rotate-6", color)}>
@@ -378,6 +457,18 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                       </Button>
                     </div>
                   )}
+
+                  {currentView === 'proveedores' && (
+                    <div className="flex gap-3">
+                      <div className="relative w-64 group">
+                        <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-300 group-focus-within:text-primary" />
+                        <Input placeholder="BUSCAR PROVEEDOR..." className="h-9 pl-9 rounded-xl border-slate-100 bg-slate-50 text-[10px] font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                      </div>
+                      <Button onClick={() => { setEditingProviderId(null); setNewProviderForm({ name: '', contact: '', phone: '', category: '' }); setIsAddProviderDialogOpen(true); }} className="btn-institutional h-9 px-4 rounded-xl text-[9px] gap-2">
+                        <PlusCircle className="h-3.5 w-3.5" /> Nuevo Proveedor
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-hidden p-6 bg-slate-50/30">
@@ -405,7 +496,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                   <TableCell>
                                     <div className="flex flex-col">
                                         <span className="text-[12px] font-black text-slate-700 uppercase">{item.name}</span>
-                                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Mínimo Crítico: {item.minStock}</span>
+                                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Mínimo Crítico: {item.minStock} • Prov: {item.provider || 'S/D'}</span>
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-center"><span className={cn("text-lg font-black", isLowStock ? "text-rose-500" : "text-[#9f2241]")}>{item.stock}</span></TableCell>
@@ -435,8 +526,33 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     <div className="h-full border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
                       <ScrollArea className="h-full">
                         <Table>
-                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm"><TableRow className="h-10"><TableHead className="font-black text-[9px] uppercase pl-8">Proveedor</TableHead><TableHead className="font-black text-[9px] uppercase">Contacto</TableHead><TableHead className="font-black text-[9px] uppercase">Teléfono</TableHead><TableHead className="font-black text-[9px] uppercase">Categoría</TableHead></TableRow></TableHeader>
-                          <TableBody>{providers.map((p) => (<TableRow key={p.id} className="h-14 border-b border-slate-50"><TableCell className="pl-8 font-black text-slate-700 text-xs uppercase">{p.name}</TableCell><TableCell className="font-bold text-slate-500 text-[11px] uppercase">{p.contact}</TableCell><TableCell className="font-mono text-slate-400 text-xs">{p.phone}</TableCell><TableCell><Badge variant="secondary" className="text-[7px] font-black uppercase">{p.category}</Badge></TableCell></TableRow>))}</TableBody>
+                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm">
+                            <TableRow className="h-10">
+                              <TableHead className="font-black text-[9px] uppercase pl-8">Proveedor</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Contacto Oficial</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Teléfono</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Categoría</TableHead>
+                              <TableHead className="text-right font-black text-[9px] uppercase pr-10">Acción</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredProviders.length > 0 ? filteredProviders.map((p) => (
+                              <TableRow key={p.id} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors group">
+                                <TableCell className="pl-8 font-black text-slate-700 text-xs uppercase">{p.name}</TableCell>
+                                <TableCell className="font-bold text-slate-500 text-[11px] uppercase">{p.contact || 'S/D'}</TableCell>
+                                <TableCell className="font-mono text-slate-400 text-xs">{p.phone || 'S/D'}</TableCell>
+                                <TableCell><Badge variant="secondary" className="text-[7px] font-black uppercase">{p.category}</Badge></TableCell>
+                                <TableCell className="text-right pr-8">
+                                    <div className="flex justify-end gap-0.5">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:bg-primary/5" onClick={() => handleEditProvider(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-rose-600" onClick={() => handleDeleteProvider(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                    </div>
+                                </TableCell>
+                              </TableRow>
+                            )) : (
+                              <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-20"><Users className="h-10 w-10 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sin proveedores registrados</p></TableCell></TableRow>
+                            )}
+                          </TableBody>
                         </Table>
                       </ScrollArea>
                     </div>
@@ -544,6 +660,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
+      {/* DIÁLOGO: AGREGAR/EDITAR INSUMO */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white">
@@ -561,7 +678,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl shadow-2xl z-[200]">
+                    <SelectContent className="rounded-xl shadow-2xl z-[300]">
                       <SelectItem value="Cómputo" className="text-[10px] font-bold">CÓMPUTO</SelectItem>
                       <SelectItem value="Redes" className="text-[10px] font-bold">REDES</SelectItem>
                       <SelectItem value="Herramientas" className="text-[10px] font-bold">HERRAMIENTAS</SelectItem>
@@ -580,7 +697,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]">
                       <SelectValue placeholder="SELECCIONAR..." />
                    </SelectTrigger>
-                   <SelectContent className="rounded-xl shadow-2xl z-[200]">
+                   <SelectContent className="rounded-xl shadow-2xl z-[300]">
                       {providers.length > 0 ? (
                         providers.map(p => (<SelectItem key={p.id} value={p.name} className="text-[10px] font-bold">{p.name}</SelectItem>))
                       ) : (
@@ -593,6 +710,53 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
           <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
             <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
             <Button onClick={handleSaveItem} className="btn-institutional h-12 px-12 text-[11px] shadow-2xl gap-3"><Save className="h-4 w-4" /> {editingItemId ? 'Guardar Cambios' : 'Confirmar Registro'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIÁLOGO: AGREGAR/EDITAR PROVEEDOR */}
+      <Dialog open={isAddProviderDialogOpen} onOpenChange={setIsAddProviderDialogOpen}>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
+          <DialogHeader className="p-8 bg-indigo-600 text-white">
+             <DialogTitle className="font-black text-xl uppercase flex items-center gap-3">
+               <Truck className="h-6 w-6" /> {editingProviderId ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+             </DialogTitle>
+             <DialogDescription className="text-white/70 text-[10px] font-bold uppercase mt-2">Directorio oficial de abastecimiento técnico</DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-5">
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black text-primary uppercase pl-1">Nombre de la Empresa</Label>
+                <div className="relative">
+                   <Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-black uppercase text-xs pl-10" value={newProviderForm.name} onChange={e => setNewProviderForm({...newProviderForm, name: e.target.value})} placeholder="NOMBRE COMERCIAL..." />
+                   <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                </div>
+             </div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black text-primary uppercase pl-1">Nombre del Contacto</Label>
+                <div className="relative">
+                   <Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs pl-10" value={newProviderForm.contact} onChange={e => setNewProviderForm({...newProviderForm, contact: e.target.value})} placeholder="ANALISTA / VENDEDOR..." />
+                   <User className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                </div>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Teléfono</Label>
+                   <div className="relative">
+                      <Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-mono text-xs pl-10" value={newProviderForm.phone} onChange={e => setNewProviderForm({...newProviderForm, phone: e.target.value})} placeholder="10 DÍGITOS..." />
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                   </div>
+                </div>
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Categoría</Label>
+                   <Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]" value={newProviderForm.category} onChange={e => setNewProviderForm({...newProviderForm, category: e.target.value})} placeholder="EJ. HARDWARE..." />
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-8 bg-slate-50 border-t gap-3">
+             <Button variant="ghost" onClick={() => setIsAddProviderDialogOpen(false)} className="h-12 px-6 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
+             <Button onClick={handleSaveProvider} className="bg-indigo-600 hover:bg-indigo-700 text-white h-12 px-10 rounded-2xl text-[11px] font-black uppercase shadow-xl gap-2">
+               <Save className="h-4 w-4" /> {editingProviderId ? 'Guardar Cambios' : 'Registrar Proveedor'}
+             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
