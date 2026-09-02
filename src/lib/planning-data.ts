@@ -40,6 +40,54 @@ export type VisitSchedule = {
   observaciones: string;
 };
 
+export type SupportTicket = {
+  id?: string;
+  cct: string;
+  schoolName: string;
+  tecnicos: string;
+  fechaEntrada: string;
+  fechaSalida?: string;
+  status: 'atendido' | 'en proceso' | 'pendiente';
+  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles' | 'cuenta institucional';
+  
+  // Campos Hoja de Servicio F4/F5
+  semana?: string;
+  periodoReportado?: string;
+  oficina?: string;
+  ze?: string;
+  sector?: string;
+  modalidad?: string;
+  municipio?: string;
+  region?: string;
+  valle?: string;
+  alumnosBeneficiados?: number;
+  numEquipos?: number;
+  descripcionEquipo?: string;
+  serviciosMC?: number;
+  serviciosMP?: number;
+  redEdusatInst?: boolean;
+  redEdusatMant?: boolean;
+  redLocalInst?: boolean;
+  redLocalMant?: boolean;
+  observaciones1?: string;
+  observaciones2?: string;
+  observaciones3?: string;
+  responsable1?: string;
+  responsable2?: string;
+  responsable3?: string;
+  responsable4?: string;
+
+  fases?: {
+    diagnostico: boolean;
+    cableado: boolean;
+    conectores: boolean;
+    pastaTermica: boolean;
+    limpieza: boolean;
+    configuracion: boolean;
+    pruebas: boolean;
+  };
+};
+
 export type ProgramStatus = {
   id?: string;
   name: string;
@@ -60,7 +108,7 @@ export type ProgramStatus = {
   observaciones?: string;
   capacitacion?: 'S' | 'N';
   email?: string;
-  emails?: string[]; // Soporte para múltiples correos
+  emails?: string[]; 
   asistentes?: any[];
   latitud?: string;
   longitud?: string;
@@ -125,7 +173,6 @@ export type TrainingRecord = {
   docentesBeneficiados?: number;
 };
 
-// Datos maestros iniciales ahora vacíos para favorecer Firestore
 export const programsData: ProgramStatus[] = [];
-export const supportData: any[] = [];
+export const supportData: SupportTicket[] = [];
 export const trainingRecords: TrainingRecord[] = [];

@@ -12,12 +12,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supportData, type SupportTicket } from "@/lib/planning-data";
+import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory";
 import { 
   PlusCircle, 
   LifeBuoy, 
   Pencil, 
   Trash2,
-  Archive, 
   History,
   Save,
   Search,
@@ -26,31 +26,69 @@ import {
   Wifi,
   Settings,
   ClipboardCheck,
-  Monitor
+  Monitor,
+  Activity,
+  UserCheck,
+  Building2,
+  CalendarDays,
+  Target,
+  Layers,
+  Archive
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog';
 import { cn } from '@/lib/utils';
 
+const OFICINAS = [
+  "Oficina de Tecnóloga Educativa Ecatepec",
+  "Oficina de Tecnóloga Educativa Naucalpan",
+  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
+  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de COEES Tultitlan"
+];
+
 export default function SupportPage() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [allSchools, setAllSchools] = useState<SchoolInfo[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
-  const [isWarehouseOpen, setIsWarehouseOpen] = useState(false);
   
   const [listSearchTerm, setListSearchTerm] = useState(''); 
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
 
-  const initialFormState: any = {
+  const initialFormState: SupportTicket = {
     id: '',
     cct: '',
     schoolName: '',
     tecnicos: '',
     fechaEntrada: format(new Date(), 'yyyy-MM-dd'),
     tipoIncidencia: 'mantenimiento',
+    status: 'pendiente',
+    semana: '',
+    periodoReportado: '',
+    oficina: '',
+    ze: '',
+    sector: '',
+    modalidad: '',
+    municipio: '',
+    region: '',
+    valle: '',
+    alumnosBeneficiados: 0,
+    numEquipos: 0,
+    descripcionEquipo: '',
+    fechaSalida: format(new Date(), 'yyyy-MM-dd'),
+    serviciosMC: 0,
+    serviciosMP: 0,
+    redEdusatInst: false,
+    redEdusatMant: false,
+    redLocalInst: false,
+    redLocalMant: false,
+    observaciones1: '',
+    responsable1: '',
+    responsable2: '',
     fases: {
       diagnostico: false,
       cableado: false,
@@ -62,13 +100,36 @@ export default function SupportPage() {
     }
   };
 
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState<SupportTicket>(initialFormState);
 
   useEffect(() => {
     setMounted(true);
     const stored = JSON.parse(localStorage.getItem('support_tickets_full') || '[]');
     setTickets(stored.length === 0 ? supportData : stored);
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]');
+    setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory);
   }, []);
+
+  const handleCctChange = (value: string) => {
+    const cleanValue = value.toUpperCase();
+    setFormData(prev => ({ ...prev, cct: cleanValue }));
+    if (cleanValue.length === 10) {
+      const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue);
+      if (match) {
+        setFormData(prev => ({ 
+          ...prev, 
+          schoolName: match.nombre,
+          ze: match.zonaEscolar,
+          sector: match.sector,
+          modalidad: match.modalidad,
+          municipio: match.municipio,
+          region: match.region,
+          valle: match.valle
+        }));
+        toast({ title: "Plantel Identificado", description: match.nombre });
+      }
+    }
+  };
 
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
@@ -76,21 +137,19 @@ export default function SupportPage() {
       return;
     }
     const updated = editingTicketId 
-      ? tickets.map(t => t.id === editingTicketId ? { ...formData, status: t.status } : t)
-      : [{ ...formData, status: 'pendiente' }, ...tickets];
+      ? tickets.map(t => t.id === editingTicketId ? { ...formData } : t)
+      : [formData, ...tickets];
     
     localStorage.setItem('support_tickets_full', JSON.stringify(updated));
     setTickets(updated);
     setIsDialogOpen(false);
-    resetForm();
     setEditingTicketId(null);
-    toast({ title: "Registro guardado" });
+    setFormData(initialFormState);
+    toast({ title: "Registro guardado exitosamente" });
   }
 
-  const resetForm = () => setFormData(initialFormState);
-
   const handleDeleteTicket = (id: string) => {
-    if (!confirm("¿Desea eliminar este reporte?")) return;
+    if (!confirm("¿Desea eliminar este reporte de servicio?")) return;
     const updated = tickets.filter(t => t.id !== id);
     setTickets(updated);
     localStorage.setItem('support_tickets_full', JSON.stringify(updated));
@@ -100,7 +159,7 @@ export default function SupportPage() {
   const handleEdit = (ticket: SupportTicket) => {
     setFormData({
       ...ticket,
-      fases: (ticket as any).fases || initialFormState.fases
+      fases: ticket.fases || initialFormState.fases
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
@@ -113,7 +172,8 @@ export default function SupportPage() {
     return matchSearch;
   });
 
-  const toggleFase = (faseKey: string) => {
+  const toggleFase = (faseKey: keyof NonNullable<SupportTicket['fases']>) => {
+    if (!formData.fases) return;
     setFormData({
       ...formData,
       fases: {
@@ -139,7 +199,7 @@ export default function SupportPage() {
           <Button onClick={() => setIsSchedulerOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
             <ClipboardCheck className="h-5 w-5" /> Agenda de visitas
           </Button>
-          <Button onClick={() => { resetForm(); setEditingTicketId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
+          <Button onClick={() => { setEditingTicketId(null); setFormData(initialFormState); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo reporte de servicio
           </Button>
         </div>
@@ -174,7 +234,7 @@ export default function SupportPage() {
               <TableRow>
                 <TableHead className="w-24 text-xs font-bold pl-6">Folio</TableHead>
                 <TableHead className="min-w-[200px] text-xs font-bold">Centro de trabajo</TableHead>
-                <TableHead className="text-xs font-bold">Servicio</TableHead>
+                <TableHead className="text-xs font-bold">Incidencia</TableHead>
                 <TableHead className="text-xs font-bold">Fecha</TableHead>
                 <TableHead className="text-xs font-bold text-center">Estatus</TableHead>
                 <TableHead className="text-right text-xs font-bold pr-10">Acciones</TableHead>
@@ -197,7 +257,7 @@ export default function SupportPage() {
                       ticket.status === 'atendido' ? "bg-emerald-500 text-white" : 
                       ticket.status === 'en proceso' ? "bg-amber-500 text-white" : 
                       "bg-rose-500 text-white")}>
-                      {ticket.status === 'atendido' ? 'Atendido' : ticket.status === 'en proceso' ? 'En proceso' : 'Pendiente'}
+                      {ticket.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right pr-8">
@@ -216,116 +276,197 @@ export default function SupportPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingTicketId(null); }}>
-        <DialogContent className="sm:max-w-[850px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[90vh]">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-            <DialogTitle className="font-black text-2xl flex items-center gap-4">
-              <PlusCircle className="h-8 w-8 text-accent" /> {editingTicketId ? 'Editar reporte de servicio' : 'Nuevo reporte de servicio'}
-            </DialogTitle>
+        <DialogContent className="sm:max-w-[1000px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="font-black text-2xl flex items-center gap-4">
+                <PlusCircle className="h-8 w-8 text-accent" /> {editingTicketId ? 'Editar reporte de servicio' : 'Alta de reporte de servicio'}
+              </DialogTitle>
+              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Hoja de servicio técnica oficial Coees</DialogDescription>
+            </div>
           </DialogHeader>
 
           <ScrollArea className="flex-1">
-            <div className="p-8 space-y-8">
-               {/* Sección de Identificación */}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
+            <div className="p-8 space-y-10">
+               {/* Encabezado del Informe */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[2.5rem] border border-primary/5">
                   <div className="space-y-2">
-                    <Label className="text-xs font-black text-primary pl-1">Folio oficial</Label>
-                    <Input 
-                      placeholder="COEES-000" 
-                      className="h-12 bg-white rounded-xl border-primary/10 font-mono font-black text-lg px-6 shadow-sm text-primary uppercase" 
-                      value={formData.id} 
-                      onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} 
-                    />
+                    <Label className="text-[10px] font-black text-primary pl-1">Folio oficial</Label>
+                    <Input className="h-11 bg-white font-mono font-black uppercase text-primary border-primary/10" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-black text-primary pl-1">CCT del plantel</Label>
-                    <Input 
-                      placeholder="15DES0000X" 
-                      className="h-12 bg-white rounded-xl border-primary/10 font-mono font-black text-lg px-6 shadow-sm uppercase" 
-                      value={formData.cct} 
-                      onChange={e => setFormData({...formData, cct: e.target.value.toUpperCase()})} 
-                      maxLength={10}
-                    />
+                    <Label className="text-[10px] font-black text-primary pl-1">Oficina regional</Label>
+                    <Select value={formData.oficina} onValueChange={v => setFormData({...formData, oficina: v})}>
+                      <SelectTrigger className="h-11 bg-white border-primary/10 font-bold text-xs"><SelectValue placeholder="Elegir oficina..." /></SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {OFICINAS.map(o => <SelectItem key={o} value={o} className="text-xs font-bold">{o.replace("Oficina de ", "")}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label className="text-xs font-black text-primary pl-1">Nombre del plantel</Label>
-                    <Input 
-                      placeholder="Nombre del centro de trabajo..." 
-                      className="h-12 bg-white rounded-xl border-primary/10 font-bold px-6 shadow-sm uppercase" 
-                      value={formData.schoolName} 
-                      onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})} 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-xs font-black text-primary pl-1">Tipo de servicio</Label>
-                     <Select value={formData.tipoIncidencia} onValueChange={(val: any) => setFormData({...formData, tipoIncidencia: val})}>
-                        <SelectTrigger className="h-12 bg-white border-primary/10 rounded-xl font-bold px-6 shadow-sm uppercase">
-                           <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                           <SelectItem value="red local" className="text-xs font-bold">Red local</SelectItem>
-                           <SelectItem value="red edusat" className="text-xs font-bold">Red Edusat</SelectItem>
-                           <SelectItem value="mantenimiento" className="text-xs font-bold">Mantenimiento preventivo</SelectItem>
-                           <SelectItem value="teleplanteles" className="text-xs font-bold">Teleplanteles</SelectItem>
-                           <SelectItem value="cuenta institucional" className="text-xs font-bold">Cuentas institucionales</SelectItem>
-                        </SelectContent>
-                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-xs font-black text-primary pl-1">Fecha de atención</Label>
-                     <Input type="date" className="h-12 bg-white border-primary/10 rounded-xl font-bold px-6 shadow-sm" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary pl-1">Semana</Label>
+                      <Input placeholder="Ej. 24" className="h-11 bg-white text-center font-bold border-primary/10" value={formData.semana} onChange={e => setFormData({...formData, semana: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-primary pl-1">Fecha</Label>
+                      <Input type="date" className="h-11 bg-white font-bold border-primary/10" value={formData.fechaEntrada} onChange={e => setFormData({...formData, fechaEntrada: e.target.value})} />
+                    </div>
                   </div>
                </div>
 
-               {/* SECCIÓN DE FASES TÉCNICAS - SIEMPRE VISIBLE */}
-               <div className="space-y-6 pt-2 animate-in zoom-in-95 duration-500">
+               {/* Identificación del Plantel (Auto-completado) */}
+               <div className="space-y-6">
+                  <div className="flex items-center gap-3 border-b pb-2">
+                     <Building2 className="h-5 w-5 text-accent" />
+                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Identificación del centro de trabajo</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 pl-1">CCT (10 caracteres)</Label>
+                      <Input className="h-11 bg-slate-50 border-primary/10 font-mono font-black uppercase text-lg" value={formData.cct} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
+                    </div>
+                    <div className="md:col-span-3 space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 pl-1">Nombre del plantel</Label>
+                      <Input readOnly className="h-11 bg-slate-100 border-none font-black text-slate-600 uppercase" value={formData.schoolName} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Z.E.</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.ze} /></div>
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Sector</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.sector} /></div>
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Modalidad</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.modalidad} /></div>
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Municipio</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.municipio} /></div>
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Región</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.region} /></div>
+                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Valle</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.valle} /></div>
+                  </div>
+               </div>
+
+               {/* Datos Estadísticos y de Impacto */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b pb-2">
+                       <Target className="h-5 w-5 text-accent" />
+                       <h4 className="text-xs font-black text-accent tracking-widest uppercase">Estadística de impacto</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                         <Label className="text-[10px] font-black text-primary">Alumnos beneficiados</Label>
+                         <Input type="number" className="h-11 font-black text-xl text-center bg-white border-none shadow-inner" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                      </div>
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                         <Label className="text-[10px] font-black text-primary">Número de equipos</Label>
+                         <Input type="number" className="h-11 font-black text-xl text-center bg-white border-none shadow-inner" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b pb-2">
+                       <Layers className="h-5 w-5 text-accent" />
+                       <h4 className="text-xs font-black text-accent tracking-widest uppercase">Servicios realizados</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <Checkbox checked={formData.tipoIncidencia === 'red edusat'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'red edusat'})} />
+                          <Label className="text-[10px] font-bold">Red Edusat</Label>
+                       </div>
+                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <Checkbox checked={formData.tipoIncidencia === 'red local'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'red local'})} />
+                          <Label className="text-[10px] font-bold">Red local</Label>
+                       </div>
+                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <Checkbox checked={formData.tipoIncidencia === 'mantenimiento'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'mantenimiento'})} />
+                          <Label className="text-[10px] font-bold">Mantenimiento</Label>
+                       </div>
+                    </div>
+                  </div>
+               </div>
+
+               {/* Detalles de Red (Formato F5) */}
+               {(formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') && (
+                 <div className="p-8 bg-primary/[0.03] rounded-[2.5rem] border border-primary/10 space-y-6 animate-in zoom-in-95">
+                    <h4 className="text-xs font-black text-primary uppercase flex items-center gap-3"><Wifi className="h-5 w-5" /> Detalle de servicios a redes (F5)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatInst} onCheckedChange={(v) => setFormData({...formData, redEdusatInst: !!v})} /><Label className="text-[10px] font-bold">Edusat: Instalación</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatMant} onCheckedChange={(v) => setFormData({...formData, redEdusatMant: !!v})} /><Label className="text-[10px] font-bold">Edusat: Mantenimiento</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalInst} onCheckedChange={(v) => setFormData({...formData, redLocalInst: !!v})} /><Label className="text-[10px] font-bold">Local: Instalación</Label></div>
+                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalMant} onCheckedChange={(v) => setFormData({...formData, redLocalMant: !!v})} /><Label className="text-[10px] font-bold">Local: Mantenimiento</Label></div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Detalles de Mantenimiento (Formato F4) */}
+               {formData.tipoIncidencia === 'mantenimiento' && (
+                 <div className="p-8 bg-accent/[0.03] rounded-[2.5rem] border border-accent/10 space-y-8 animate-in zoom-in-95">
+                    <h4 className="text-xs font-black text-accent uppercase flex items-center gap-3"><Monitor className="h-5 w-5" /> Detalle de mantenimiento a equipo (F4)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} /></div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.C.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
+                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.P.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
+                          <div className="col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-500">Fecha de salida</Label><Input type="date" className="h-10 font-bold bg-white border-slate-200" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} /></div>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Fases Técnicas */}
+               <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                      <Wrench className="h-5 w-5 text-accent" />
-                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica: Fases de atención</h4>
+                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica: fases de atención</h4>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {[
-                       { id: 'diagnostico', label: 'Diagnóstico integral inicial', icon: <Search className="h-4 w-4" /> },
-                       { id: 'cableado', label: 'Revisión física de cableado', icon: <Wifi className="h-4 w-4" /> },
-                       { id: 'conectores', label: 'Ponchado de conectores RJ45', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'pastaTermica', label: 'Cambio de pasta térmica', icon: <Settings className="h-4 w-4" /> },
-                       { id: 'limpieza', label: 'Limpieza interna de equipo', icon: <Wrench className="h-4 w-4" /> },
-                       { id: 'configuracion', label: 'Configuración lógica / IPs', icon: <Monitor className="h-4 w-4" /> },
-                       { id: 'pruebas', label: 'Pruebas de señal y enlace', icon: <ClipboardCheck className="h-4 w-4" /> },
+                       { id: 'diagnostico', label: 'Diagnóstico inicial', icon: <Search className="h-4 w-4" /> },
+                       { id: 'cableado', label: 'Revisión de cableado', icon: <Wifi className="h-4 w-4" /> },
+                       { id: 'conectores', label: 'Ponchado RJ45', icon: <Settings className="h-4 w-4" /> },
+                       { id: 'pastaTermica', label: 'Pasta térmica', icon: <Settings className="h-4 w-4" /> },
+                       { id: 'limpieza', label: 'Limpieza interna', icon: <Wrench className="h-4 w-4" /> },
+                       { id: 'configuracion', label: 'Configuración lógica', icon: <Monitor className="h-4 w-4" /> },
+                       { id: 'pruebas', label: 'Pruebas de señal', icon: <ClipboardCheck className="h-4 w-4" /> },
                      ].map(fase => (
                        <div 
                          key={fase.id} 
                          className={cn(
-                           "flex items-center space-x-4 p-5 rounded-[1.5rem] border transition-all cursor-pointer group shadow-sm", 
-                           formData.fases?.[fase.id] ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-100 shadow-md" : "bg-white border-slate-100 hover:border-primary/20"
+                           "flex items-center space-x-3 p-4 rounded-2xl border transition-all cursor-pointer group shadow-sm", 
+                           formData.fases?.[fase.id as keyof NonNullable<SupportTicket['fases']>] ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-100 hover:border-primary/20"
                          )} 
-                         onClick={() => toggleFase(fase.id)}
+                         onClick={() => toggleFase(fase.id as keyof NonNullable<SupportTicket['fases']>)}
                        >
                           <Checkbox 
-                            checked={formData.fases?.[fase.id] || false} 
-                            onCheckedChange={() => toggleFase(fase.id)} 
-                            className="h-6 w-6 border-primary data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-600 rounded-lg" 
+                            checked={formData.fases?.[fase.id as keyof NonNullable<SupportTicket['fases']>] || false} 
+                            onCheckedChange={() => toggleFase(fase.id as keyof NonNullable<SupportTicket['fases']>)} 
+                            className="h-5 w-5 border-primary data-[state=checked]:bg-emerald-500 rounded-lg" 
                           />
-                          <div className="flex items-center gap-3">
-                             <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center transition-colors", formData.fases?.[fase.id] ? "bg-emerald-100 text-emerald-600" : "bg-slate-50 text-slate-400")}>
-                               {fase.icon}
-                             </div>
-                             <Label className="text-sm font-bold cursor-pointer group-hover:text-primary transition-colors leading-tight">{fase.label}</Label>
-                          </div>
+                          <Label className="text-[10px] font-bold cursor-pointer group-hover:text-primary leading-tight">{fase.label}</Label>
                        </div>
                      ))}
                   </div>
                </div>
 
-               <div className="space-y-4">
-                  <Label className="text-xs font-black text-primary pl-2">Analistas responsables</Label>
-                  <Input placeholder="Nombres del personal comisionado..." className="h-12 bg-slate-50 border-none rounded-xl font-bold px-6 shadow-inner uppercase" value={formData.tecnicos} onChange={e => setFormData({...formData, tecnicos: e.target.value.toUpperCase()})} />
+               {/* Responsables de la Comisión */}
+               <div className="space-y-6">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                     <UserCheck className="h-5 w-5 text-accent" />
+                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Personal responsable (Comisionados)</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary">Responsable 1 (Líder)</Label><Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs uppercase" value={formData.responsable1} onChange={e => setFormData({...formData, responsable1: e.target.value.toUpperCase()})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary">Responsable 2</Label><Input className="h-10 bg-slate-50 border-none rounded-xl font-bold text-xs uppercase" value={formData.responsable2} onChange={e => setFormData({...formData, responsable2: e.target.value.toUpperCase()})} /></div>
+                  </div>
+               </div>
+
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-primary pl-1">Observaciones generales</Label>
+                  <Textarea className="min-h-[100px] bg-slate-50 border-none rounded-2xl p-4 text-xs font-semibold shadow-inner uppercase" value={formData.observaciones1} onChange={e => setFormData({...formData, observaciones1: e.target.value.toUpperCase()})} />
                </div>
             </div>
           </ScrollArea>
 
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0 shadow-inner">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-xs text-slate-400 hover:text-primary transition-all">Cancelar</Button>
-             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl"><Save className="h-6 w-6" /> Guardar reporte</Button>
+             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl"><Save className="h-6 w-6" /> Guardar reporte de servicio</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
