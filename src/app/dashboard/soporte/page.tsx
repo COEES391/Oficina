@@ -35,7 +35,9 @@ import {
   Layers,
   Archive,
   Plus,
-  UserPlus
+  Radio,
+  Navigation,
+  Database
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -43,10 +45,10 @@ import { VisitSchedulerDialog } from '@/components/VisitSchedulerDialog';
 import { cn } from '@/lib/utils';
 
 const OFICINAS = [
-  "Oficina de Tecnóloga Educativa Ecatepec",
-  "Oficina de Tecnóloga Educativa Naucalpan",
-  "Oficina de Tecnóloga Educativa Nezahualcóyotl",
-  "Oficina de Tecnóloga Educativa Toluca",
+  "Oficina de Tecnología Educativa Ecatepec",
+  "Oficina de Tecnología Educativa Naucalpan",
+  "Oficina de Tecnología Educativa Nezahualcóyotl",
+  "Oficina de Tecnología Educativa Toluca",
   "Oficina de COEES Tultitlan"
 ];
 
@@ -91,6 +93,17 @@ export default function SupportPage() {
     redLocalMant: false,
     observaciones1: '',
     responsablesList: [''],
+    edusatFicha: {
+      mikropak: { revision: false, polarizacion: false, prueba: false, cambio: false },
+      antena: { orientacion: false, reparacion: false, reubicacion: false, cambio: false },
+      decodificador: { configuracion: false, reubicacion: false, cambio: false },
+      cableado: { cambioCampanas: false, cambioDivisor: false, cambioCable: false },
+      preventivo: { revisionGeneral: false, limpiezaGeneral: false, cuidadosPreventivos: false },
+      numCensalDeco: '',
+      numSerieDeco: '',
+      calidadSenal: '',
+      operaciones: [{ material: '', cantidad: '', actividad: '' }]
+    },
     fases: {
       diagnostico: false,
       cableado: false,
@@ -160,10 +173,12 @@ export default function SupportPage() {
 
   const handleEdit = (ticket: SupportTicket) => {
     setFormData({
+      ...initialFormState,
       ...ticket,
       tipoIncidencias: ticket.tipoIncidencias || [ticket.tipoIncidencia],
       fases: ticket.fases || initialFormState.fases,
-      responsablesList: ticket.responsablesList || [ticket.responsable1 || '', ticket.responsable2 || ''].filter(r => r)
+      responsablesList: ticket.responsablesList || [ticket.responsable1 || '', ticket.responsable2 || ''].filter(r => r),
+      edusatFicha: ticket.edusatFicha || initialFormState.edusatFicha
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
@@ -181,6 +196,53 @@ export default function SupportPage() {
       ...formData, 
       tipoIncidencias: updated,
       tipoIncidencia: updated.length > 0 ? updated[0] : ''
+    });
+  }
+
+  const toggleEdusatField = (section: keyof NonNullable<SupportTicket['edusatFicha']>, field: string) => {
+    if (!formData.edusatFicha) return;
+    const currentSection = formData.edusatFicha[section] as any;
+    setFormData({
+      ...formData,
+      edusatFicha: {
+        ...formData.edusatFicha,
+        [section]: {
+          ...currentSection,
+          [field]: !currentSection[field]
+        }
+      }
+    });
+  }
+
+  const addEdusatOperacion = () => {
+    if (!formData.edusatFicha) return;
+    setFormData({
+      ...formData,
+      edusatFicha: {
+        ...formData.edusatFicha,
+        operaciones: [...formData.edusatFicha.operaciones, { material: '', cantidad: '', actividad: '' }]
+      }
+    });
+  }
+
+  const removeEdusatOperacion = (index: number) => {
+    if (!formData.edusatFicha || formData.edusatFicha.operaciones.length <= 1) return;
+    setFormData({
+      ...formData,
+      edusatFicha: {
+        ...formData.edusatFicha,
+        operaciones: formData.edusatFicha.operaciones.filter((_, i) => i !== index)
+      }
+    });
+  }
+
+  const updateEdusatOperacion = (index: number, field: string, value: string) => {
+    if (!formData.edusatFicha) return;
+    const ops = [...formData.edusatFicha.operaciones];
+    ops[index] = { ...ops[index], [field]: value.toUpperCase() };
+    setFormData({
+      ...formData,
+      edusatFicha: { ...formData.edusatFicha, operaciones: ops }
     });
   }
 
@@ -238,7 +300,7 @@ export default function SupportPage() {
         
         <div className="flex items-center gap-4">
           <Button onClick={() => setIsSchedulerOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
-            <ClipboardCheck className="h-5 w-5" /> Agenda de visitas
+            <CalendarDays className="h-5 w-5" /> Agenda de visitas
           </Button>
           <Button onClick={() => { setEditingTicketId(null); setFormData(initialFormState); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo reporte de servicio
@@ -323,7 +385,7 @@ export default function SupportPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingTicketId(null); }}>
-        <DialogContent className="sm:max-w-[900px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
+        <DialogContent className="sm:max-w-[1100px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
           <DialogHeader className="p-8 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="font-black text-2xl flex items-center gap-4">
@@ -400,10 +462,6 @@ export default function SupportPage() {
                           <Checkbox checked={formData.tipoIncidencias?.includes('mantenimiento')} onCheckedChange={() => toggleTipoIncidencia('mantenimiento')} />
                           <Label className="text-[11px] font-bold cursor-pointer">Mantenimiento (F4)</Label>
                        </div>
-                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('teleplanteles') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('teleplanteles')}>
-                          <Checkbox checked={formData.tipoIncidencias?.includes('teleplanteles')} onCheckedChange={() => toggleTipoIncidencia('teleplanteles')} />
-                          <Label className="text-[11px] font-bold cursor-pointer">Teleplanteles</Label>
-                       </div>
                     </div>
                   </div>
 
@@ -425,11 +483,127 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Ficha Técnica / Fases de Atención - Siempre Visible */}
+               {/* Ficha Técnica de Atención Red Edusat - NUEVA SECCIÓN SOLICITADA */}
+               {formData.tipoIncidencias?.includes('red edusat') && (
+                 <div className="space-y-6 animate-in zoom-in-95 duration-500">
+                    <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
+                       <Archive className="h-6 w-6 text-primary" />
+                       <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención red Edusat</h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                       {/* Secciones de la imagen */}
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">Micropak (LNB)</p>
+                          <div className="space-y-2">
+                            {['revision', 'polarizacion', 'prueba', 'cambio'].map(f => (
+                              <div key={f} className="flex items-center justify-between gap-2" onClick={() => toggleEdusatField('mikropak', f)}>
+                                <span className="text-[8px] font-bold text-slate-600 uppercase">{f}</span>
+                                <Checkbox checked={(formData.edusatFicha?.mikropak as any)?.[f]} onCheckedChange={() => toggleEdusatField('mikropak', f)} className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">Ant. Parabólica</p>
+                          <div className="space-y-2">
+                            {['orientacion', 'reparacion', 'reubicacion', 'cambio'].map(f => (
+                              <div key={f} className="flex items-center justify-between gap-2" onClick={() => toggleEdusatField('antena', f)}>
+                                <span className="text-[8px] font-bold text-slate-600 uppercase">{f}</span>
+                                <Checkbox checked={(formData.edusatFicha?.antena as any)?.[f]} onCheckedChange={() => toggleEdusatField('antena', f)} className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">Decodificador</p>
+                          <div className="space-y-2">
+                            {['configuracion', 'reubicacion', 'cambio'].map(f => (
+                              <div key={f} className="flex items-center justify-between gap-2" onClick={() => toggleEdusatField('decodificador', f)}>
+                                <span className="text-[8px] font-bold text-slate-600 uppercase">{f}</span>
+                                <Checkbox checked={(formData.edusatFicha?.decodificador as any)?.[f]} onCheckedChange={() => toggleEdusatField('decodificador', f)} className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">Cableado</p>
+                          <div className="space-y-2">
+                            {['cambioCampanas', 'cambioDivisor', 'cambioCable'].map(f => (
+                              <div key={f} className="flex items-center justify-between gap-2" onClick={() => toggleEdusatField('cableado', f)}>
+                                <span className="text-[8px] font-bold text-slate-600 uppercase">{f.replace('cambio', 'cambio ')}</span>
+                                <Checkbox checked={(formData.edusatFicha?.cableado as any)?.[f]} onCheckedChange={() => toggleEdusatField('cableado', f)} className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                          <p className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded-md text-center uppercase">M. Preventivo</p>
+                          <div className="space-y-2">
+                            {['revisionGeneral', 'limpiezaGeneral', 'cuidadosPreventivos'].map(f => (
+                              <div key={f} className="flex items-center justify-between gap-2" onClick={() => toggleEdusatField('preventivo', f)}>
+                                <span className="text-[8px] font-bold text-slate-600 uppercase">{f.replace('General', '').replace('Preventivos', '')}</span>
+                                <Checkbox checked={(formData.edusatFicha?.preventivo as any)?.[f]} onCheckedChange={() => toggleEdusatField('preventivo', f)} className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-100/50 p-6 rounded-3xl border">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary">No. Censal de Decodificador</Label>
+                          <Input className="h-10 bg-white font-mono font-bold" value={formData.edusatFicha?.numCensalDeco} onChange={e => setFormData({...formData, edusatFicha: {...formData.edusatFicha!, numCensalDeco: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary">No. de Serie de Decodificador</Label>
+                          <Input className="h-10 bg-white font-mono font-bold" value={formData.edusatFicha?.numSerieDeco} onChange={e => setFormData({...formData, edusatFicha: {...formData.edusatFicha!, numSerieDeco: e.target.value.toUpperCase()}})} />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-primary">Calidad de Señal</Label>
+                          <Input placeholder="Ej. 85%" className="h-10 bg-white font-black text-center" value={formData.edusatFicha?.calidadSenal} onChange={e => setFormData({...formData, edusatFicha: {...formData.edusatFicha!, calidadSenal: e.target.value}})} />
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-inner overflow-hidden">
+                       <Table>
+                          <TableHeader className="bg-slate-50">
+                             <TableRow className="h-10">
+                                <TableHead className="text-[9px] font-black uppercase w-[250px]">Mat. Utilizado</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase w-[100px] text-center">Cantidad</TableHead>
+                                <TableHead className="text-[9px] font-black uppercase">Actividades Realizadas por la Brigada</TableHead>
+                                <TableHead className="w-12"></TableHead>
+                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                             {formData.edusatFicha?.operaciones.map((op, idx) => (
+                               <TableRow key={`ed-op-${idx}`} className="h-12">
+                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-bold" value={op.material} onChange={e => updateEdusatOperacion(idx, 'material', e.target.value)} /></TableCell>
+                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-black text-center" value={op.cantidad} onChange={e => updateEdusatOperacion(idx, 'cantidad', e.target.value)} /></TableCell>
+                                  <TableCell className="p-2"><Input className="h-8 text-[10px] font-semibold" value={op.actividad} onChange={e => updateEdusatOperacion(idx, 'actividad', e.target.value)} /></TableCell>
+                                  <TableCell className="p-2">
+                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-400" onClick={() => removeEdusatOperacion(idx)} disabled={formData.edusatFicha!.operaciones.length <= 1}><X className="h-3.5 w-3.5" /></Button>
+                                  </TableCell>
+                               </TableRow>
+                             ))}
+                          </TableBody>
+                       </Table>
+                       <div className="p-3 bg-slate-50 border-t flex justify-center">
+                          <Button variant="outline" size="sm" onClick={addEdusatOperacion} className="h-8 px-6 rounded-xl border-primary/20 text-primary font-black text-[9px] gap-2"><Plus className="h-3.5 w-3.5" /> Añadir Fila de Operación</Button>
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* Ficha Técnica / Fases de Atención - Estándar */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                      <Wrench className="h-5 w-5 text-accent" />
-                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica: fases de atención</h4>
+                     <h4 className="text-xs font-black text-accent tracking-widest uppercase">Ficha técnica estándar: fases de atención</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {[
@@ -459,34 +633,6 @@ export default function SupportPage() {
                      ))}
                   </div>
                </div>
-
-               {/* Detalles de Red (Formato F5) */}
-               {(formData.tipoIncidencias?.includes('red edusat') || formData.tipoIncidencias?.includes('red local')) && (
-                 <div className="p-8 bg-primary/[0.03] rounded-[2.5rem] border border-primary/10 space-y-6 animate-in zoom-in-95">
-                    <h4 className="text-xs font-black text-primary uppercase flex items-center gap-3"><Wifi className="h-5 w-5" /> Detalle de servicios a redes (F5)</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatInst} onCheckedChange={(v) => setFormData({...formData, redEdusatInst: !!v})} /><Label className="text-[10px] font-bold">Edusat: Instalación</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redEdusatMant} onCheckedChange={(v) => setFormData({...formData, redEdusatMant: !!v})} /><Label className="text-[10px] font-bold">Edusat: Mantenimiento</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalInst} onCheckedChange={(v) => setFormData({...formData, redLocalInst: !!v})} /><Label className="text-[10px] font-bold">Local: Instalación</Label></div>
-                      <div className="flex items-center gap-3"><Checkbox checked={formData.redLocalMant} onCheckedChange={(v) => setFormData({...formData, redLocalMant: !!v})} /><Label className="text-[10px] font-bold">Local: Mantenimiento</Label></div>
-                    </div>
-                 </div>
-               )}
-
-               {/* Detalles de Mantenimiento (Formato F4) */}
-               {formData.tipoIncidencias?.includes('mantenimiento') && (
-                 <div className="p-8 bg-accent/[0.03] rounded-[2.5rem] border border-accent/10 space-y-8 animate-in zoom-in-95">
-                    <h4 className="text-xs font-black text-accent uppercase flex items-center gap-3"><Monitor className="h-5 w-5" /> Detalle de mantenimiento a equipo (F4)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold uppercase" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value.toUpperCase()})} /></div>
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.C.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
-                          <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.P.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
-                          <div className="col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-500">Fecha de salida</Label><Input type="date" className="h-10 font-bold bg-white border-slate-200" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} /></div>
-                       </div>
-                    </div>
-                 </div>
-               )}
 
                {/* Personal Responsable (Comisionados) - Dinámico */}
                <div className="space-y-6">

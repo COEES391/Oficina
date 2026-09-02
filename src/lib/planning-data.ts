@@ -72,6 +72,19 @@ export type SupportTicket = {
   redLocalMant?: boolean;
   observaciones1?: string;
   
+  // Ficha Edusat Especializada
+  edusatFicha?: {
+    mikropak: { revision: boolean; polarizacion: boolean; prueba: boolean; cambio: boolean };
+    antena: { orientacion: boolean; reparacion: boolean; reubicacion: boolean; cambio: boolean };
+    decodificador: { configuracion: boolean; reubicacion: boolean; cambio: boolean };
+    cableado: { cambioCampanas: boolean; cambioDivisor: boolean; cambioCable: boolean };
+    preventivo: { revisionGeneral: boolean; limpiezaGeneral: boolean; cuidadosPreventivos: boolean };
+    numCensalDeco: string;
+    numSerieDeco: string;
+    calidadSenal: string;
+    operaciones: { material: string; cantidad: string; actividad: string }[];
+  };
+
   // Responsables dinámicos
   responsablesList?: string[];
   responsable1?: string;
@@ -139,40 +152,6 @@ export type ProgramStatus = {
     personalCapacitado: number;
     equiposHabilitados: number;
   };
-};
-
-export type TrainingRecord = {
-  id: string;
-  cursoGrupo: string;
-  cursoNombre: string;
-  duracionHoras: number;
-  fechaInicio: string;
-  fechaTermino: string;
-  instructores: string[];
-  numeroOficio: string;
-  materialUtilizado: string;
-  cctSede: string;
-  setes: 'S' | 'N';
-  asistentePaterno: string;
-  asistenteMaterno: string;
-  asistenteNombres: string;
-  asistenteRFC: string;
-  asistenteGenero: 'MASCULINO' | 'FEMENINO' | '';
-  asistenteFuncion: string;
-  asistenteEmail: string;
-  asistenteCCT: string;
-  asistenteNombreCT: string;
-  asistenteZE: string;
-  asistenteSector: string;
-  asistenteModalidad: string;
-  asistenteMunicipio: string;
-  asistenteRegion: string;
-  asistenteValle: string;
-  reportPdf?: string;
-  evidencePhotos?: string[];
-  observaciones?: string;
-  alumnosBeneficiados?: number;
-  docentesBeneficiados?: number;
 };
 
 export const programsData: ProgramStatus[] = [];
