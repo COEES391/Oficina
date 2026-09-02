@@ -329,7 +329,7 @@ export default function SupportPage() {
               <DialogTitle className="font-black text-2xl flex items-center gap-4">
                 <PlusCircle className="h-8 w-8 text-accent" /> {editingTicketId ? 'Editar reporte de servicio' : 'Alta de reporte de servicio'}
               </DialogTitle>
-              <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Hoja de servicio técnica oficial Coees</DialogDescription>
+              <DialogDescription className="text-white/60 font-bold text-[10px] tracking-widest mt-1">Hoja de servicio técnica oficial Coees</DialogDescription>
             </div>
           </DialogHeader>
 
@@ -338,7 +338,7 @@ export default function SupportPage() {
                {/* Encabezado del Informe */}
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-[2.5rem] border border-primary/5">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-primary pl-1">Folio oficial</Label>
+                    <Label className="text-[10px] font-black text-primary pl-1">Folio de solicitud</Label>
                     <Input className="h-11 bg-white font-mono font-black uppercase text-primary border-primary/10" value={formData.id} onChange={e => setFormData({...formData, id: e.target.value.toUpperCase()})} />
                   </div>
                   <div className="space-y-2">
