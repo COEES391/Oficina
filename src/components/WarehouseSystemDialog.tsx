@@ -37,7 +37,9 @@ import {
   Building2,
   Phone,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Hash,
+  ClipboardList
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -46,6 +48,7 @@ import { format } from 'date-fns'
 type WarehouseItem = {
   id: string;
   name: string;
+  code?: string;
   category: 'Cómputo' | 'Redes' | 'Herramientas' | 'Consumibles';
   stock: number;
   minStock: number;
@@ -57,10 +60,15 @@ type WarehouseMovement = {
   id: string;
   itemId: string;
   itemName: string;
+  itemCode?: string;
+  category?: string;
+  unit?: string;
   type: 'entrada' | 'salida';
   quantity: number;
   date: string;
-  reason: string;
+  folio?: string; // N_Doc
+  provider?: string;
+  reason: string; // Observacion
   technician: string;
   cct?: string;
 }
@@ -81,11 +89,11 @@ type WarehouseUser = {
 }
 
 const DEFAULT_ITEMS: WarehouseItem[] = [
-  { id: '1', name: 'CABLE UTP CAT 6 (METROS)', category: 'Redes', stock: 150, minStock: 50, lastUpdated: new Date().toISOString() },
-  { id: '2', name: 'CONECTORES RJ45', category: 'Redes', stock: 80, minStock: 20, lastUpdated: new Date().toISOString() },
-  { id: '3', name: 'MONITOR LED 21"', category: 'Cómputo', stock: 12, minStock: 3, lastUpdated: new Date().toISOString() },
-  { id: '4', name: 'TECLADO USB ESTÁNDAR', category: 'Cómputo', stock: 10, minStock: 5, lastUpdated: new Date().toISOString() },
-  { id: '5', name: 'KIT DE HERRAMIENTAS TÉCNICO', category: 'Herramientas', stock: 15, minStock: 2, lastUpdated: new Date().toISOString() }
+  { id: '1', name: 'CABLE UTP CAT 6 (METROS)', code: 'UTP-001', category: 'Redes', stock: 150, minStock: 50, lastUpdated: new Date().toISOString() },
+  { id: '2', name: 'CONECTORES RJ45', code: 'RJ45-002', category: 'Redes', stock: 80, minStock: 20, lastUpdated: new Date().toISOString() },
+  { id: '3', name: 'MONITOR LED 21"', code: 'MON-003', category: 'Cómputo', stock: 12, minStock: 3, lastUpdated: new Date().toISOString() },
+  { id: '4', name: 'TECLADO USB ESTÁNDAR', code: 'TEC-004', category: 'Cómputo', stock: 10, minStock: 5, lastUpdated: new Date().toISOString() },
+  { id: '5', name: 'KIT DE HERRAMIENTAS TÉCNICO', code: 'KIT-005', category: 'Herramientas', stock: 15, minStock: 2, lastUpdated: new Date().toISOString() }
 ]
 
 const DEFAULT_PROVIDERS: Provider[] = [
@@ -126,6 +134,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
   const [newItemForm, setNewItemForm] = useState({
     name: '',
+    code: '',
     category: 'Cómputo' as WarehouseItem['category'],
     stock: 0,
     minStock: 5,
@@ -147,6 +156,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
   const [movementForm, setMovementForm] = useState({
     itemId: '',
+    folio: '',
+    unit: 'PZA',
     type: 'entrada' as 'entrada' | 'salida',
     quantity: 1,
     reason: '',
@@ -193,7 +204,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       const term = searchTerm.toLowerCase();
       list = list.filter(item => 
         (item.name || '').toLowerCase().includes(term) ||
-        (item.category || '').toLowerCase().includes(term)
+        (item.category || '').toLowerCase().includes(term) ||
+        (item.code || '').toLowerCase().includes(term)
       )
     }
     return list.sort((a, b) => a.name.localeCompare(b.name))
@@ -235,6 +247,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     setEditingItemId(item.id)
     setNewItemForm({
       name: item.name,
+      code: item.code || '',
       category: item.category,
       stock: item.stock,
       minStock: item.minStock,
@@ -250,6 +263,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       updated = items.map(item => item.id === editingItemId ? {
         ...item,
         name: newItemForm.name.toUpperCase(),
+        code: newItemForm.code.toUpperCase(),
         category: newItemForm.category,
         stock: newItemForm.stock,
         minStock: newItemForm.minStock,
@@ -261,6 +275,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         ...newItemForm,
         id: `ITEM-${Date.now()}`,
         name: newItemForm.name.toUpperCase(),
+        code: newItemForm.code.toUpperCase(),
         lastUpdated: new Date().toISOString()
       }
       updated = [newItem, ...items]
@@ -378,31 +393,42 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     const itemIndex = items.findIndex(i => i.id === movementForm.itemId)
     if (itemIndex === -1) return
     const item = items[itemIndex]
+    
     if (movementForm.type === 'salida' && item.stock < movementForm.quantity) {
       toast({ variant: "destructive", title: "Stock insuficiente" })
       return
     }
+
     const newMovement: WarehouseMovement = {
       id: `MOVE-${Date.now()}`,
       itemId: item.id,
       itemName: item.name,
+      itemCode: item.code,
+      category: item.category,
+      unit: movementForm.unit.toUpperCase(),
       type: movementForm.type,
       quantity: movementForm.quantity,
-      date: format(new Date(), 'dd/MM/yyyy HH:mm'),
+      date: format(new Date(), 'dd/MM/yyyy'),
+      folio: movementForm.folio.toUpperCase(),
+      provider: item.provider || 'S/D',
       reason: movementForm.reason.toUpperCase(),
       technician: movementForm.technician.toUpperCase(),
       cct: movementForm.cct.toUpperCase()
     }
+
     const updatedItems = [...items]
     const newStock = movementForm.type === 'entrada' ? item.stock + movementForm.quantity : item.stock - movementForm.quantity
     updatedItems[itemIndex] = { ...item, stock: newStock, lastUpdated: new Date().toISOString() }
+    
     const updatedMoves = [newMovement, ...movements]
     setItems(updatedItems)
     setMovements(updatedMoves)
+    
     localStorage.setItem('coees_warehouse_items_v4', JSON.stringify(updatedItems))
     localStorage.setItem('coees_warehouse_moves_v4', JSON.stringify(updatedMoves))
-    setMovementForm({ itemId: '', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '' })
-    toast({ title: "Movimiento registrado" })
+    
+    setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '' })
+    toast({ title: "Movimiento registrado con éxito" })
   }
 
   const NavigationButton = ({ icon: Icon, label, target, color }: { icon: any, label: string, target: any, color: string }) => (
@@ -422,7 +448,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[3rem] border-none shadow-2xl bg-[#f8f9fa]">
+        <DialogContent className="sm:max-w-[1300px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[3rem] border-none shadow-2xl bg-[#f8f9fa]">
           <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 flex flex-row justify-between items-center pr-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Archive className="h-32 w-32" /></div>
             <div className="space-y-1 relative z-10">
@@ -465,9 +491,9 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                        {currentView === 'productos' && 'Gestión de Productos e Insumos'}
                        {currentView === 'proveedores' && 'Directorio de Proveedores'}
                        {currentView === 'usuarios' && 'Base de Usuarios Institucionales'}
-                       {currentView === 'entradas' && 'Bitácora de Entradas'}
-                       {currentView === 'salidas' && 'Bitácora de Salidas'}
-                       {currentView === 'registro' && 'Registrar Operación'}
+                       {currentView === 'entradas' && 'Base de Datos de Entradas'}
+                       {currentView === 'salidas' && 'Base de Datos de Salidas'}
+                       {currentView === 'registro' && 'Registrar Operación Técnica'}
                     </h3>
                   </div>
                   
@@ -478,7 +504,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         <Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl border-slate-100 bg-slate-50 text-[10px] font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                       </div>
                       <Button onClick={() => {
-                        if (currentView === 'productos') { setEditingItemId(null); setIsAddDialogOpen(true); }
+                        if (currentView === 'productos') { setEditingItemId(null); setNewItemForm({name: '', code: '', category: 'Cómputo', stock: 0, minStock: 5, provider: ''}); setIsAddDialogOpen(true); }
                         if (currentView === 'proveedores') { setEditingProviderId(null); setIsAddProviderDialogOpen(true); }
                         if (currentView === 'usuarios') { setEditingUserId(null); setNewUserForm({name: '', location: 'Regional', status: 'Activo'}); setIsAddUserDialogOpen(true); }
                       }} className="btn-institutional h-9 px-4 rounded-xl text-[9px] gap-2">
@@ -496,7 +522,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         <Table>
                           <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm">
                             <TableRow className="h-10">
-                              <TableHead className="font-black text-[9px] uppercase pl-8">Categoría</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase pl-8">Código</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Categoría</TableHead>
                               <TableHead className="font-black text-[9px] uppercase">Descripción del Insumo</TableHead>
                               <TableHead className="font-black text-[9px] uppercase text-center">Existencia</TableHead>
                               <TableHead className="text-right font-black text-[9px] uppercase pr-10">Gestión</TableHead>
@@ -505,13 +532,14 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                           <TableBody>
                             {filteredItems.map((item) => (
                               <TableRow key={item.id} className="hover:bg-slate-50 h-14 border-b border-slate-50">
-                                <TableCell className="pl-8"><Badge variant="outline" className="font-black text-[7px] uppercase px-2 h-4">{item.category}</Badge></TableCell>
+                                <TableCell className="pl-8 font-mono text-[10px] font-black text-primary">{item.code || 'S/C'}</TableCell>
+                                <TableCell><Badge variant="outline" className="font-black text-[7px] uppercase px-2 h-4">{item.category}</Badge></TableCell>
                                 <TableCell><div className="flex flex-col"><span className="text-[12px] font-black text-slate-700 uppercase">{item.name}</span><span className="text-[7px] font-bold text-slate-400 uppercase">Mínimo: {item.minStock}</span></div></TableCell>
                                 <TableCell className="text-center font-black text-[#9f2241] text-lg">{item.stock}</TableCell>
                                 <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleEditItem(item)}><Pencil className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300" onClick={() => handleDeleteItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                    <button onClick={() => handleEditItem(item)} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5 transition-colors"><Pencil className="h-4 w-4" /></button>
+                                    <button onClick={() => handleDeleteItem(item.id)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -540,8 +568,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                 <TableCell className="font-bold text-slate-500 text-[10px] uppercase">{p.contact} • {p.phone}</TableCell>
                                 <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleEditProvider(p)}><Pencil className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300" onClick={() => handleDeleteProvider(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                                    <button onClick={() => handleEditProvider(p)} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5"><Pencil className="h-4 w-4" /></button>
+                                    <button onClick={() => handleDeleteProvider(p.id)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -576,8 +604,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                 </TableCell>
                                 <TableCell className="text-right pr-8">
                                   <div className="flex justify-end gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEditUser(u)}><Pencil className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600" onClick={() => handleDeleteUser(u.id)}><Trash2 className="h-4 w-4" /></Button>
+                                    <button onClick={() => handleEditUser(u)} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5"><Pencil className="h-4 w-4" /></button>
+                                    <button onClick={() => handleDeleteUser(u.id)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -588,20 +616,72 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     </div>
                   )}
 
-                  {(currentView === 'entradas' || currentView === 'salidas') && (
+                  {currentView === 'entradas' && (
                     <div className="h-full border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
                       <ScrollArea className="h-full">
                         <Table>
-                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10"><TableRow className="h-10"><TableHead className="font-black text-[9px] uppercase pl-8">Fecha</TableHead><TableHead className="font-black text-[9px] uppercase">Insumo</TableHead><TableHead className="font-black text-[9px] uppercase">Técnico / Origen</TableHead><TableHead className="text-center font-black text-[9px] uppercase pr-8">Cant.</TableHead></TableRow></TableHeader>
+                          <TableHeader className="bg-slate-900 border-b sticky top-0 z-10">
+                            <TableRow className="h-10">
+                              <TableHead className="font-black text-[8px] uppercase text-white pl-6">Fecha</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">N_Doc</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Proveedor</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Código</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Categoría</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Nombre Producto</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">U. Medida</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Observación</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white text-center pr-6">Cantidad</TableHead>
+                            </TableRow>
+                          </TableHeader>
                           <TableBody>
-                            {filteredMovements.map((move) => (
-                              <TableRow key={move.id} className="h-14 border-b border-slate-50">
-                                <TableCell className="pl-8 text-[8px] font-black text-slate-400 uppercase">{move.date}</TableCell>
-                                <TableCell className="text-[11px] font-black text-slate-700 uppercase">{move.itemName}</TableCell>
-                                <TableCell className="text-[10px] font-bold text-slate-600 uppercase">{move.technician} {move.cct && `(${move.cct})`}</TableCell>
-                                <TableCell className="text-center pr-8 font-black text-xs text-primary">{move.quantity}</TableCell>
+                            {filteredMovements.length > 0 ? filteredMovements.map((move) => (
+                              <TableRow key={move.id} className="h-12 border-b border-slate-50 hover:bg-slate-50">
+                                <TableCell className="pl-6 text-[8px] font-black text-slate-500 uppercase">{move.date}</TableCell>
+                                <TableCell className="font-mono text-[9px] font-black text-primary uppercase">{move.folio || '-'}</TableCell>
+                                <TableCell className="text-[9px] font-bold text-slate-600 uppercase">{move.provider}</TableCell>
+                                <TableCell className="font-mono text-[8px] font-bold text-slate-400">{move.itemCode || '-'}</TableCell>
+                                <TableCell className="text-[8px] font-black uppercase text-accent">{move.category}</TableCell>
+                                <TableCell className="text-[10px] font-black text-slate-700 uppercase">{move.itemName}</TableCell>
+                                <TableCell className="text-[8px] font-bold text-slate-500 uppercase">{move.unit}</TableCell>
+                                <TableCell className="text-[8px] font-medium text-slate-400 uppercase italic truncate max-w-[150px]">{move.reason}</TableCell>
+                                <TableCell className="text-center pr-6 font-black text-xs text-primary">{move.quantity}</TableCell>
                               </TableRow>
-                            ))}
+                            )) : (
+                              <TableRow><TableCell colSpan={9} className="text-center py-20 opacity-20 text-[10px] font-black uppercase">Sin registros de entrada</TableCell></TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {currentView === 'salidas' && (
+                    <div className="h-full border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
+                      <ScrollArea className="h-full">
+                        <Table>
+                          <TableHeader className="bg-slate-900 border-b sticky top-0 z-10">
+                            <TableRow className="h-10">
+                              <TableHead className="font-black text-[8px] uppercase text-white pl-6">Fecha</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Insumo</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Técnico / Responsable</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Destino / Área</TableHead>
+                              <TableHead className="font-black text-[8px] uppercase text-white">Motivo</TableHead>
+                              <TableHead className="text-center font-black text-[8px] uppercase text-white pr-6">Cant.</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredMovements.length > 0 ? filteredMovements.map((move) => (
+                              <TableRow key={move.id} className="h-12 border-b border-slate-50 hover:bg-slate-50">
+                                <TableCell className="pl-6 text-[8px] font-black text-slate-500 uppercase">{move.date}</TableCell>
+                                <TableCell className="text-[10px] font-black text-slate-700 uppercase">{move.itemName}</TableCell>
+                                <TableCell className="text-[9px] font-bold text-slate-600 uppercase">{move.technician}</TableCell>
+                                <TableCell className="text-[9px] font-black text-primary uppercase">{move.cct || '-'}</TableCell>
+                                <TableCell className="text-[8px] font-medium text-slate-400 uppercase italic truncate max-w-[200px]">{move.reason}</TableCell>
+                                <TableCell className="text-center pr-6 font-black text-xs text-rose-600">{move.quantity}</TableCell>
+                              </TableRow>
+                            )) : (
+                              <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-20 text-[10px] font-black uppercase">Sin registros de salida</TableCell></TableRow>
+                            )}
                           </TableBody>
                         </Table>
                       </ScrollArea>
@@ -609,57 +689,82 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   )}
 
                   {currentView === 'registro' && (
-                    <div className="max-w-4xl mx-auto py-10 h-full overflow-hidden flex flex-col">
-                      <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-10 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
-                        <div className="flex items-center gap-5 border-b pb-8 shrink-0">
-                          <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600"><ArrowLeftRight className="h-8 w-8" /></div>
+                    <div className="max-w-4xl mx-auto py-6 h-full overflow-hidden flex flex-col">
+                      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
+                        <div className="flex items-center gap-4 border-b pb-6 shrink-0">
+                          <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600"><ArrowLeftRight className="h-6 w-6" /></div>
                           <div>
-                            <h3 className="text-2xl font-black text-slate-800 uppercase leading-none">Registrar Operación</h3>
-                            <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Actualización de flujo técnico institucional</p>
+                            <h3 className="text-xl font-black text-slate-800 uppercase leading-none">Registrar Operación Técnica</h3>
+                            <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Auditoría y Flujo de Suministros</p>
                           </div>
                         </div>
 
-                        <ScrollArea className="flex-1 pr-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">1. Seleccionar Insumo</Label>
+                        <ScrollArea className="flex-1 pr-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">1. Seleccionar Insumo del Catálogo</Label>
                               <Select value={movementForm.itemId} onValueChange={v => setMovementForm({...movementForm, itemId: v})}>
-                                <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[12px] shadow-inner"><SelectValue placeholder="BUSCAR INSUMO..." /></SelectTrigger>
-                                <SelectContent className="rounded-2xl shadow-2xl z-[300]">{items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[11px] font-bold uppercase">{i.name} ({i.stock} DISP.)</SelectItem>))}</SelectContent>
+                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner"><SelectValue placeholder="BUSCAR INSUMO..." /></SelectTrigger>
+                                <SelectContent className="rounded-xl shadow-2xl z-[300]">{items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[10px] font-bold uppercase">{i.name} ({i.stock} EN STOCK)</SelectItem>))}</SelectContent>
                               </Select>
                             </div>
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">2. Tipo de Movimiento</Label>
-                              <div className="flex gap-4">
-                                <button onClick={() => setMovementForm({...movementForm, type: 'entrada'})} className={cn("flex-1 h-14 rounded-2xl border-2 flex items-center justify-center gap-3 font-black text-[12px] uppercase transition-all", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-lg" : "bg-white border-slate-100 text-slate-400")}>
-                                  <ArrowUpRight className="h-6 w-6" /> Requisición
+                            
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">2. Tipo de Movimiento</Label>
+                              <div className="flex gap-3">
+                                <button onClick={() => setMovementForm({...movementForm, type: 'entrada'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md" : "bg-white border-slate-100 text-slate-300")}>
+                                  <ArrowUpRight className="h-5 w-5" /> Entrada
                                 </button>
-                                <button onClick={() => setMovementForm({...movementForm, type: 'salida'})} className={cn("flex-1 h-14 rounded-2xl border-2 flex items-center justify-center gap-3 font-black text-[12px] uppercase transition-all", movementForm.type === 'salida' ? "bg-rose-50 border-rose-500 text-rose-700 shadow-lg" : "bg-white border-slate-100 text-slate-400")}>
-                                  <ArrowDownRight className="h-6 w-6" /> Entrega
+                                <button onClick={() => setMovementForm({...movementForm, type: 'salida'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'salida' ? "bg-rose-50 border-rose-500 text-rose-700 shadow-md" : "bg-white border-slate-100 text-slate-300")}>
+                                  <ArrowDownRight className="h-5 w-5" /> Salida
                                 </button>
                               </div>
                             </div>
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">3. Cantidad</Label>
-                              <Input type="number" min={1} className="h-14 rounded-2xl bg-slate-50 border-none text-center font-black text-3xl shadow-inner" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} />
+
+                            <div className="grid grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Folio Factura / N_Doc' : 'Folio de Salida'}</Label>
+                                  <Input placeholder="EJ. 001/2026" className="h-11 rounded-xl bg-slate-50 border-none font-mono font-black text-center shadow-inner uppercase" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
+                               </div>
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Unidad de Medida</Label>
+                                  <Select value={movementForm.unit} onValueChange={v => setMovementForm({...movementForm, unit: v})}>
+                                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner"><SelectValue /></SelectTrigger>
+                                     <SelectContent className="z-[300]">
+                                        <SelectItem value="PZA" className="text-[10px] font-bold">PIEZA (PZA)</SelectItem>
+                                        <SelectItem value="MTS" className="text-[10px] font-bold">METROS (MTS)</SelectItem>
+                                        <SelectItem value="KITS" className="text-[10px] font-bold">KITS (KITS)</SelectItem>
+                                        <SelectItem value="PAQ" className="text-[10px] font-bold">PAQUETE (PAQ)</SelectItem>
+                                        <SelectItem value="CAJA" className="text-[10px] font-bold">CAJA (CAJA)</SelectItem>
+                                     </SelectContent>
+                                  </Select>
+                               </div>
                             </div>
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">4. Analista / Técnico</Label>
-                              <Input placeholder="NOMBRE COMPLETO..." className="h-14 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[12px] shadow-inner" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value})} />
+
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad Operada</Label>
+                              <Input type="number" min={1} className="h-11 rounded-xl bg-slate-50 border-none text-center font-black text-2xl shadow-inner text-primary" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} />
                             </div>
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">5. Destino (Área / CCT)</Label>
-                              <Input placeholder="EJ. OFICINA REGIONAL / 15DES..." className="h-14 rounded-2xl bg-slate-50 border-none font-black text-center shadow-inner uppercase" value={movementForm.cct} onChange={e => setMovementForm({...movementForm, cct: e.target.value.toUpperCase()})} />
+
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">Analista / Técnico Responsable</Label>
+                              <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value})} />
                             </div>
-                            <div className="space-y-3">
-                              <Label className="text-[11px] font-black text-primary uppercase pl-2">6. Motivo del Movimiento</Label>
-                              <Input placeholder="EJ. ACTUALIZACIÓN BRIGADA..." className="h-14 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[12px] shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
+
+                            <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Origen / Área' : 'Destino (Área / CCT)'}</Label>
+                              <Input placeholder="EJ. OFICINA REGIONAL / ÁREA CENTRAL..." className="h-11 rounded-xl bg-slate-50 border-none font-black text-center shadow-inner uppercase text-[10px]" value={movementForm.cct} onChange={e => setMovementForm({...movementForm, cct: e.target.value.toUpperCase()})} />
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                              <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Observaciones de Compra/Ingreso' : 'Motivo de Salida / Entrega'}</Label>
+                              <Input placeholder="DESCRIPCIÓN DETALLADA DEL MOVIMIENTO..." className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
                             </div>
                           </div>
                         </ScrollArea>
 
-                        <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-20 rounded-3xl shadow-2xl text-base gap-4 shrink-0 mt-8">
-                          <Save className="h-7 w-7" /> PROCESAR OPERACIÓN
+                        <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-16 rounded-2xl shadow-xl text-[12px] gap-3 shrink-0 mt-4">
+                          <CheckCircle2 className="h-5 w-5" /> PROCESAR MOVIMIENTO INSTITUCIONAL
                         </Button>
                       </div>
                     </div>
@@ -678,8 +783,11 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
             <DialogTitle className="font-black text-xl uppercase flex items-center gap-3"><PlusCircle className="h-6 w-6" /> {editingItemId ? 'Actualizar Insumo' : 'Nuevo Registro de Insumo'}</DialogTitle>
           </DialogHeader>
           <div className="p-8 space-y-6">
-             <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Descripción</Label><Input className="h-12 font-black uppercase text-xs" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} /></div>
-             <div className="grid grid-cols-2 gap-6">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase">Código Interno</Label>
+                   <Input className="h-11 font-mono font-black uppercase text-xs" value={newItemForm.code} onChange={e => setNewItemForm({...newItemForm, code: e.target.value})} placeholder="EJ. UTP-001" />
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase">Categoría</Label>
                   <Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}>
@@ -687,10 +795,14 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     <SelectContent className="z-[300]"><SelectItem value="Cómputo">CÓMPUTO</SelectItem><SelectItem value="Redes">REDES</SelectItem><SelectItem value="Herramientas">HERRAMIENTAS</SelectItem><SelectItem value="Consumibles">CONSUMIBLES</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Mínimo</Label><Input type="number" className="h-11 text-center font-black" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
+             </div>
+             <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Descripción del Producto</Label><Input className="h-12 font-black uppercase text-xs" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} /></div>
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Existencia Inicial</Label><Input type="number" className="h-11 text-center font-black" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase">Stock Mínimo</Label><Input type="number" className="h-11 text-center font-black" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
              </div>
              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase">Proveedor</Label>
+                <Label className="text-[10px] font-black uppercase">Proveedor Recomendado</Label>
                 <Select value={newItemForm.provider} onValueChange={v => setNewItemForm({...newItemForm, provider: v})}>
                    <SelectTrigger className="h-11 font-bold uppercase text-[10px]"><SelectValue /></SelectTrigger>
                    <SelectContent className="z-[300]">{providers.map(p => (<SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>))}</SelectContent>
