@@ -52,7 +52,6 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { schoolsDirectory, type SchoolInfo } from '@/lib/schools-directory'
 
 type WarehouseItem = {
   id: string;
@@ -97,9 +96,21 @@ const DEFAULT_PROVIDERS: Provider[] = [
   { id: 'p2', name: 'REDES Y SUMINISTROS EDOMEX', contact: 'Lic. Maria Perez', phone: '5587654321', category: 'Redes' }
 ]
 
+const INTERNAL_OFFICES = [
+  "Oficina regional Ecatepec",
+  "Oficina regional Naucalpan",
+  "Oficina regional Nezahualcóyotl",
+  "Toluca Capacitación",
+  "Toluca Soporte",
+  "Toluca Programas",
+  "Toluca Jefatura",
+  "Toluca Subjefatura",
+  "Toluca Planeación"
+]
+
 export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast()
-  const [currentView, setCurrentView] = useState<'dashboard' | 'productos' | 'proveedores' | 'clientes' | 'entradas' | 'salidas' | 'registro'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'productos' | 'proveedores' | 'usuarios' | 'entradas' | 'salidas' | 'registro'>('dashboard')
   const [items, setItems] = useState<WarehouseItem[]>([])
   const [movements, setMovements] = useState<WarehouseMovement[]>([])
   const [providers, setProviders] = useState<Provider[]>([])
@@ -400,7 +411,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl w-full">
                   <NavigationButton icon={Truck} label="Proveedores" target="proveedores" color="bg-amber-500" />
                   <NavigationButton icon={Box} label="Productos" target="productos" color="bg-blue-600" />
-                  <NavigationButton icon={School} label="Base Clientes (CCT)" target="clientes" color="bg-rose-500" />
+                  <NavigationButton icon={Users} label="Base Usuarios" target="usuarios" color="bg-rose-500" />
                   <NavigationButton icon={ArrowUpRight} label="Base Entradas" target="entradas" color="bg-emerald-600" />
                   <NavigationButton icon={ArrowDownRight} label="Base Salidas" target="salidas" color="bg-rose-600" />
                   <NavigationButton icon={ShoppingBag} label="Requisiciones" target="registro" color="bg-indigo-600" />
@@ -439,7 +450,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">
                        {currentView === 'productos' && 'Gestión de Productos e Insumos'}
                        {currentView === 'proveedores' && 'Directorio de Proveedores Institucionales'}
-                       {currentView === 'clientes' && 'Base Maestra de Centros de Trabajo (CCT)'}
+                       {currentView === 'usuarios' && 'Base de Usuarios (Oficinas Regionales y Centrales)'}
                        {currentView === 'entradas' && 'Bitácora de Entradas (Ingresos)'}
                        {currentView === 'salidas' && 'Bitácora de Salidas (Egresos)'}
                        {currentView === 'registro' && 'Registrar Operación (Entrada/Salida)'}
@@ -558,12 +569,28 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                     </div>
                   )}
 
-                  {currentView === 'clientes' && (
+                  {currentView === 'usuarios' && (
                     <div className="h-full border border-slate-100 rounded-[2rem] bg-white shadow-xl overflow-hidden">
                       <ScrollArea className="h-full">
                         <Table>
-                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm"><TableRow className="h-10"><TableHead className="font-black text-[9px] uppercase pl-8">CCT</TableHead><TableHead className="font-black text-[9px] uppercase">Nombre del Plantel</TableHead><TableHead className="font-black text-[9px] uppercase">Municipio</TableHead><TableHead className="font-black text-[9px] uppercase">Modalidad</TableHead></TableRow></TableHeader>
-                          <TableBody>{schoolsDirectory.slice(0, 100).map((s) => (<TableRow key={`${s.cct}-${s.turno}`} className="h-14 border-b border-slate-50"><TableCell className="pl-8 font-mono font-black text-primary text-xs">{s.cct}</TableCell><TableCell className="font-black text-slate-700 text-[10px] uppercase truncate max-w-[200px]">{s.nombre}</TableCell><TableCell className="font-bold text-slate-500 text-[10px] uppercase">{s.municipio}</TableCell><TableCell><Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20">{s.modalidad}</Badge></TableCell></TableRow>))}</TableBody>
+                          <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm">
+                            <TableRow className="h-10">
+                              <TableHead className="font-black text-[9px] uppercase pl-8">#</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Nombre de la Oficina / Área</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Ubicación</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Estatus</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {INTERNAL_OFFICES.map((user, idx) => (
+                              <TableRow key={idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                <TableCell className="pl-8 font-black text-slate-300 text-xs">{idx + 1}</TableCell>
+                                <TableCell className="font-black text-slate-700 text-[11px] uppercase">{user}</TableCell>
+                                <TableCell className="font-bold text-slate-400 text-[10px] uppercase">{user.startsWith('Oficina') ? 'Regional' : 'Central (Toluca)'}</TableCell>
+                                <TableCell><Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-black text-[7px] uppercase h-4 px-2">Activo</Badge></TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
                         </Table>
                       </ScrollArea>
                     </div>
