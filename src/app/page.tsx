@@ -25,7 +25,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     const cleanRfc = rfc.trim().toUpperCase()
     if (!cleanRfc || !password) {
-      toast({ variant: "destructive", title: "Campos incompletos", description: "Ingrese su RFC y contraseña oficial." })
+      toast({ variant: "destructive", title: "Campos incompletos", description: "Ingrese su usuario y contraseña oficial." })
       return
     }
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <div className="relative group">
               <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
               <Input 
-                placeholder="Usuario (RFC)" 
+                placeholder="Usuario" 
                 className="h-12 pl-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold shadow-inner focus:bg-white transition-all uppercase" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
