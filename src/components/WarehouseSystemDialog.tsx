@@ -555,13 +555,40 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
           <div className="p-8 space-y-6">
              <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-2">Descripción del Producto</Label><Input className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner font-black uppercase text-xs" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} placeholder="EJ. CABLE UTP CAT6..." /></div>
              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-2">Categoría Técnica</Label><Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl shadow-2xl z-[200]"><SelectItem value="Cómputo" className="text-[10px] font-bold">CÓMPUTO</SelectItem><SelectItem value="Redes" className="text-[10px] font-bold">REDES</SelectItem><SelectItem value="Herramientas" className="text-[10px] font-bold">HERRAMIENTAS</SelectItem><SelectItem value="Consumibles" className="text-[10px] font-bold">CONSUMIBLES</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-primary uppercase pl-2">Categoría Técnica</Label>
+                  <Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}>
+                    <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl shadow-2xl z-[200]">
+                      <SelectItem value="Cómputo" className="text-[10px] font-bold">CÓMPUTO</SelectItem>
+                      <SelectItem value="Redes" className="text-[10px] font-bold">REDES</SelectItem>
+                      <SelectItem value="Herramientas" className="text-[10px] font-bold">HERRAMIENTAS</SelectItem>
+                      <SelectItem value="Consumibles" className="text-[10px] font-bold">CONSUMIBLES</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-2">Mínimo en Stock</Label><Input type="number" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
              </div>
              {!editingItemId && (
                <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-2">Existencia Inicial</Label><Input type="number" className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner text-center font-black text-xl" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} /></div>
              )}
-             <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-2">Proveedor Recomendado</Label><Select value={newItemForm.provider} onValueChange={v => setNewItemForm({...newItemForm, provider: v})}><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger><SelectContent className="rounded-xl shadow-2xl">{providers.map(p => (<SelectItem key={p.id} value={p.name} className="text-[10px] font-bold">{p.name}</SelectItem>))}</SelectContent></Select></div>
+             <div className="space-y-2">
+                <Label className="text-[10px] font-black text-primary uppercase pl-2">Proveedor Recomendado</Label>
+                <Select value={newItemForm.provider} onValueChange={v => setNewItemForm({...newItemForm, provider: v})}>
+                   <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[10px]">
+                      <SelectValue placeholder="SELECCIONAR..." />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-xl shadow-2xl z-[200]">
+                      {providers.length > 0 ? (
+                        providers.map(p => (<SelectItem key={p.id} value={p.name} className="text-[10px] font-bold">{p.name}</SelectItem>))
+                      ) : (
+                        <SelectItem value="SIN PROVEEDOR" disabled className="text-[10px] font-bold">SIN PROVEEDORES</SelectItem>
+                      )}
+                   </SelectContent>
+                </Select>
+             </div>
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
             <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-12 px-8 text-[11px] font-black uppercase text-slate-400">Cancelar</Button>
