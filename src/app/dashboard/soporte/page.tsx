@@ -66,6 +66,7 @@ export default function SupportPage() {
     tecnicos: '',
     fechaEntrada: format(new Date(), 'yyyy-MM-dd'),
     tipoIncidencia: 'mantenimiento',
+    tipoIncidencias: ['mantenimiento'],
     status: 'pendiente',
     semana: '',
     periodoReportado: '',
@@ -159,10 +160,26 @@ export default function SupportPage() {
   const handleEdit = (ticket: SupportTicket) => {
     setFormData({
       ...ticket,
+      tipoIncidencias: ticket.tipoIncidencias || [ticket.tipoIncidencia],
       fases: ticket.fases || initialFormState.fases
     });
     setEditingTicketId(ticket.id!);
     setIsDialogOpen(true);
+  }
+
+  const toggleTipoIncidencia = (tipo: string) => {
+    const current = formData.tipoIncidencias || [];
+    let updated;
+    if (current.includes(tipo)) {
+      updated = current.filter(t => t !== tipo);
+    } else {
+      updated = [...current, tipo];
+    }
+    setFormData({ 
+      ...formData, 
+      tipoIncidencias: updated,
+      tipoIncidencia: updated.length > 0 ? updated[0] : ''
+    });
   }
 
   const filteredTickets = tickets.filter(t => {
@@ -234,7 +251,7 @@ export default function SupportPage() {
               <TableRow>
                 <TableHead className="w-24 text-xs font-bold pl-6">Folio</TableHead>
                 <TableHead className="min-w-[200px] text-xs font-bold">Centro de trabajo</TableHead>
-                <TableHead className="text-xs font-bold">Incidencia</TableHead>
+                <TableHead className="text-xs font-bold">Incidencias</TableHead>
                 <TableHead className="text-xs font-bold">Fecha</TableHead>
                 <TableHead className="text-xs font-bold text-center">Estatus</TableHead>
                 <TableHead className="text-right text-xs font-bold pr-10">Acciones</TableHead>
@@ -250,7 +267,13 @@ export default function SupportPage() {
                       <span className="text-[10px] font-bold text-muted-foreground mt-1">{ticket.cct}</span>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px] font-bold border-primary/20 text-primary capitalize">{ticket.tipoIncidencia}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(ticket.tipoIncidencias || [ticket.tipoIncidencia]).map(t => (
+                        <Badge key={t} variant="outline" className="text-[9px] font-bold border-primary/20 text-primary capitalize px-1.5 h-4">{t}</Badge>
+                      ))}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-xs font-bold text-slate-500">{ticket.fechaEntrada}</TableCell>
                   <TableCell className="text-center">
                     <Badge className={cn("text-[10px] font-bold px-3 h-5 rounded-full border-none", 
@@ -276,7 +299,7 @@ export default function SupportPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setEditingTicketId(null); }}>
-        <DialogContent className="sm:max-w-[1000px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
+        <DialogContent className="sm:max-w-[850px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[95vh]">
           <DialogHeader className="p-8 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="font-black text-2xl flex items-center gap-4">
@@ -315,7 +338,7 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Identificación del Plantel (Auto-completado) */}
+               {/* Identificación del Plantel */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b pb-2">
                      <Building2 className="h-5 w-5 text-accent" />
@@ -331,59 +354,51 @@ export default function SupportPage() {
                       <Input readOnly className="h-11 bg-slate-100 border-none font-black text-slate-600 uppercase" value={formData.schoolName} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Z.E.</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.ze} /></div>
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Sector</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.sector} /></div>
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Modalidad</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.modalidad} /></div>
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Municipio</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.municipio} /></div>
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Región</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.region} /></div>
-                    <div className="space-y-1"><Label className="text-[8px] font-black text-slate-300">Valle</Label><Input readOnly className="h-9 bg-slate-50 text-[10px] font-bold border-none" value={formData.valle} /></div>
-                  </div>
                </div>
 
-               {/* Datos Estadísticos y de Impacto */}
+               {/* Servicios Realizados (Selección Múltiple) */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 border-b pb-2">
-                       <Target className="h-5 w-5 text-accent" />
-                       <h4 className="text-xs font-black text-accent tracking-widest uppercase">Estadística de impacto</h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
-                         <Label className="text-[10px] font-black text-primary">Alumnos beneficiados</Label>
-                         <Input type="number" className="h-11 font-black text-xl text-center bg-white border-none shadow-inner" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
-                      </div>
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
-                         <Label className="text-[10px] font-black text-primary">Número de equipos</Label>
-                         <Input type="number" className="h-11 font-black text-xl text-center bg-white border-none shadow-inner" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
                        <Layers className="h-5 w-5 text-accent" />
                        <h4 className="text-xs font-black text-accent tracking-widest uppercase">Servicios realizados</h4>
                     </div>
+                    <div className="grid grid-cols-1 gap-3">
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red edusat') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('red edusat')}>
+                          <Checkbox checked={formData.tipoIncidencias?.includes('red edusat')} onCheckedChange={() => toggleTipoIncidencia('red edusat')} />
+                          <Label className="text-[11px] font-bold cursor-pointer">Red Edusat (F5)</Label>
+                       </div>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('red local') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('red local')}>
+                          <Checkbox checked={formData.tipoIncidencias?.includes('red local')} onCheckedChange={() => toggleTipoIncidencia('red local')} />
+                          <Label className="text-[11px] font-bold cursor-pointer">Red local (F5)</Label>
+                       </div>
+                       <div className={cn("flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer", formData.tipoIncidencias?.includes('mantenimiento') ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")} onClick={() => toggleTipoIncidencia('mantenimiento')}>
+                          <Checkbox checked={formData.tipoIncidencias?.includes('mantenimiento')} onCheckedChange={() => toggleTipoIncidencia('mantenimiento')} />
+                          <Label className="text-[11px] font-bold cursor-pointer">Mantenimiento (F4)</Label>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 border-b pb-2">
+                       <Target className="h-5 w-5 text-accent" />
+                       <h4 className="text-xs font-black text-accent tracking-widest uppercase">Estadística de impacto</h4>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
-                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                          <Checkbox checked={formData.tipoIncidencia === 'red edusat'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'red edusat'})} />
-                          <Label className="text-[10px] font-bold">Red Edusat</Label>
-                       </div>
-                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                          <Checkbox checked={formData.tipoIncidencia === 'red local'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'red local'})} />
-                          <Label className="text-[10px] font-bold">Red local</Label>
-                       </div>
-                       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                          <Checkbox checked={formData.tipoIncidencia === 'mantenimiento'} onCheckedChange={() => setFormData({...formData, tipoIncidencia: 'mantenimiento'})} />
-                          <Label className="text-[10px] font-bold">Mantenimiento</Label>
-                       </div>
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                         <Label className="text-[9px] font-black text-primary uppercase">Alumnos beneficiados</Label>
+                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-inner" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
+                      </div>
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl">
+                         <Label className="text-[9px] font-black text-primary uppercase">Equipos atendidos</Label>
+                         <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-inner" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
+                      </div>
                     </div>
                   </div>
                </div>
 
-               {/* Detalles de Red (Formato F5) */}
-               {(formData.tipoIncidencia === 'red edusat' || formData.tipoIncidencia === 'red local') && (
+               {/* Detalles de Red (Formato F5) - Visible si se selecciona Red Local o Edusat */}
+               {(formData.tipoIncidencias?.includes('red edusat') || formData.tipoIncidencias?.includes('red local')) && (
                  <div className="p-8 bg-primary/[0.03] rounded-[2.5rem] border border-primary/10 space-y-6 animate-in zoom-in-95">
                     <h4 className="text-xs font-black text-primary uppercase flex items-center gap-3"><Wifi className="h-5 w-5" /> Detalle de servicios a redes (F5)</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -395,12 +410,12 @@ export default function SupportPage() {
                  </div>
                )}
 
-               {/* Detalles de Mantenimiento (Formato F4) */}
-               {formData.tipoIncidencia === 'mantenimiento' && (
+               {/* Detalles de Mantenimiento (Formato F4) - Visible si se selecciona Mantenimiento */}
+               {formData.tipoIncidencias?.includes('mantenimiento') && (
                  <div className="p-8 bg-accent/[0.03] rounded-[2.5rem] border border-accent/10 space-y-8 animate-in zoom-in-95">
                     <h4 className="text-xs font-black text-accent uppercase flex items-center gap-3"><Monitor className="h-5 w-5" /> Detalle de mantenimiento a equipo (F4)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Descripción técnica del equipo</Label><Textarea placeholder="Marca, modelo, serie y estado..." className="h-20 bg-white border-slate-200 rounded-xl text-xs font-semibold uppercase" value={formData.descripcionEquipo} onChange={e => setFormData({...formData, descripcionEquipo: e.target.value.toUpperCase()})} /></div>
                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.C.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMC} onChange={e => setFormData({...formData, serviciosMC: parseInt(e.target.value) || 0})} /></div>
                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500">Servicios M.P.</Label><Input type="number" className="h-10 text-center font-black text-lg bg-white border-slate-200" value={formData.serviciosMP} onChange={e => setFormData({...formData, serviciosMP: parseInt(e.target.value) || 0})} /></div>
@@ -410,7 +425,7 @@ export default function SupportPage() {
                  </div>
                )}
 
-               {/* Fases Técnicas */}
+               {/* Ficha Técnica / Fases de Atención */}
                <div className="space-y-6">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                      <Wrench className="h-5 w-5 text-accent" />

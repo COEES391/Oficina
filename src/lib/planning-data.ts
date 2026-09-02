@@ -48,7 +48,8 @@ export type SupportTicket = {
   fechaEntrada: string;
   fechaSalida?: string;
   status: 'atendido' | 'en proceso' | 'pendiente';
-  tipoIncidencia: 'red edusat' | 'red local' | 'mantenimiento' | 'teleplanteles' | 'cuenta institucional';
+  tipoIncidencia: string; // Mantenido por compatibilidad
+  tipoIncidencias?: string[]; // Para selección múltiple
   
   // Campos Hoja de Servicio F4/F5
   semana?: string;
