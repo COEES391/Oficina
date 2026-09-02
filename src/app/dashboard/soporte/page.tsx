@@ -54,7 +54,7 @@ const OFICINAS = [
   "Oficina de Tecnología Educativa Naucalpan",
   "Oficina de Tecnología Educativa Nezahualcóyotl",
   "Oficina de Tecnología Educativa Toluca",
-  "Oficina de COEES Tultitlan"
+  "Oficina de COEES Tultitlán"
 ];
 
 export default function SupportPage() {
@@ -64,8 +64,10 @@ export default function SupportPage() {
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   
   const [listSearchTerm, setListSearchTerm] = useState(''); 
+  const [dialogSearchTerm, setDialogSearchTerm] = useState(''); 
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
 
   const initialFormState: SupportTicket = {
@@ -165,6 +167,13 @@ export default function SupportPage() {
   };
 
   const [formData, setFormData] = useState<SupportTicket>(initialFormState);
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -177,23 +186,46 @@ export default function SupportPage() {
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase();
     setFormData(prev => ({ ...prev, cct: cleanValue }));
-    if (cleanValue.length === 10) {
-      const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue);
-      if (match) {
-        setFormData(prev => ({ 
-          ...prev, 
-          schoolName: match.nombre,
-          ze: match.zonaEscolar,
-          sector: match.sector,
-          modalidad: match.modalidad,
-          municipio: match.municipio,
-          region: match.region,
-          valle: match.valle
-        }));
-        toast({ title: "Plantel identificado", description: match.nombre });
-      }
+    const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue);
+    if (match) {
+      setFormData(prev => ({ 
+        ...prev, 
+        schoolName: match.nombre,
+        ze: match.zonaEscolar,
+        sector: match.sector,
+        modalidad: match.modalidad,
+        municipio: match.municipio,
+        region: match.region,
+        valle: match.valle
+      }));
+      toast({ title: "Plantel identificado", description: match.nombre });
     }
   };
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); 
+      return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      valle: quickAddForm.valle.toUpperCase(),
+      region: quickAddForm.region.toUpperCase(),
+      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
+      sector: quickAddForm.sector.toUpperCase(),
+      modalidad: quickAddForm.modalidad.toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm('');
+    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido a la Base Maestra." });
+  }
 
   const handleSave = () => {
     if (!formData.id || !formData.cct) {
@@ -306,6 +338,12 @@ export default function SupportPage() {
     return matchSearch;
   });
 
+  const schoolSearchResults = useMemo(() => {
+    if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
+    const term = dialogSearchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
+  }, [allSchools, dialogSearchTerm]);
+
   const updateResponsable = (index: number, value: string) => {
     const list = [...(formData.responsablesList || [])];
     list[index] = value.toUpperCase();
@@ -341,10 +379,11 @@ export default function SupportPage() {
         </div>
         
         <div className="flex items-center gap-4">
+          <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte técnico" />
           <Button onClick={() => setIsSchedulerOpen(true)} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 text-primary font-bold text-[11px] gap-2 shadow-md hover:bg-primary/5">
             <CalendarDays className="h-5 w-5" /> Agenda de visitas
           </Button>
-          <Button onClick={() => { setEditingTicketId(null); setFormData(initialFormState); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
+          <Button onClick={() => { setEditingTicketId(null); setFormData(initialFormState); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px]">
             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo reporte de servicio
           </Button>
         </div>
@@ -470,15 +509,79 @@ export default function SupportPage() {
                      <Building2 className="h-5 w-5 text-accent" />
                      <h4 className="text-xs font-black text-accent tracking-widest uppercase">Identificación del centro de trabajo</h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 pl-1">CCT (10 caracteres)</Label>
-                      <Input className="h-11 bg-slate-50 border-primary/10 font-mono font-black uppercase text-lg" value={formData.cct} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
+                  <div className="space-y-6 bg-slate-50 p-6 rounded-[2.5rem] border border-primary/5 shadow-inner">
+                    <div className="space-y-2 relative">
+                      <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 flex items-center gap-2">
+                        <Search className="h-4 w-4 text-accent" /> Buscar Plantel (CCT o Nombre)
+                      </Label>
+                      <div className="relative group">
+                        <Input 
+                          placeholder="Ingresar CCT o nombre..." 
+                          className="h-14 rounded-2xl bg-white border-primary/20 font-bold text-lg uppercase shadow-lg pl-12" 
+                          value={dialogSearchTerm} 
+                          onChange={(e) => setDialogSearchTerm(e.target.value)} 
+                        />
+                        <Search className="absolute left-4 top-4.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                        
+                        {dialogSearchTerm.length > 2 && (
+                          <div className="absolute top-16 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y animate-in fade-in zoom-in-95 duration-200">
+                            {schoolSearchResults.map((s, sidx) => (
+                              <div 
+                                key={`sede-res-${s.cct}-${s.turno}-${sidx}`} 
+                                className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" 
+                                onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}
+                              >
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span>
+                                  <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
+                              </div>
+                            ))}
+                            {schoolSearchResults.length === 0 && (
+                              <div className="p-6 text-center">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no encontrado en la Base Maestra</p>
+                                <Button 
+                                  onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} 
+                                  variant="outline" 
+                                  className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" /> Registrar Nuevo Plantel
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="md:col-span-3 space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 pl-1">Nombre del plantel</Label>
-                      <Input readOnly className="h-11 bg-slate-100 border-none font-black text-slate-600 uppercase" value={formData.schoolName} />
-                    </div>
+
+                    {formData.cct && (
+                      <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
+                        <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+                          <School className="h-10 w-10" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
+                          <div className="min-w-0">
+                            <h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4>
+                            <p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT oficial: {formData.cct}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black text-slate-400 uppercase">Z.E.</span>
+                              <span className="text-xs font-black text-slate-700 uppercase">{formData.ze || 'S/D'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black text-slate-400 uppercase">Sector</span>
+                              <span className="text-xs font-black text-slate-700 uppercase">{formData.sector || 'S/D'}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-black text-slate-400 uppercase">Ubicación</span>
+                            <span className="text-[10px] font-bold text-slate-700 uppercase truncate">{formData.municipio} • {formData.valle}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                </div>
 
@@ -510,11 +613,11 @@ export default function SupportPage() {
                        <h4 className="text-xs font-black text-accent tracking-widest uppercase">Estadística de impacto</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner">
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner border border-primary/5">
                          <Label className="text-[9px] font-black text-primary uppercase">Alumnos beneficiados</Label>
                          <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-sm" value={formData.alumnosBeneficiados} onChange={e => setFormData({...formData, alumnosBeneficiados: parseInt(e.target.value) || 0})} />
                       </div>
-                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner">
+                      <div className="space-y-2 bg-slate-50 p-4 rounded-2xl shadow-inner border border-primary/5">
                          <Label className="text-[9px] font-black text-primary uppercase">Equipos atendidos</Label>
                          <Input type="number" className="h-10 font-black text-center bg-white border-none shadow-sm" value={formData.numEquipos} onChange={e => setFormData({...formData, numEquipos: parseInt(e.target.value) || 0})} />
                       </div>
@@ -535,15 +638,15 @@ export default function SupportPage() {
                           <Label className="text-[10px] font-black uppercase text-primary">Equipo tecnológico:</Label>
                           <div className="flex items-center gap-4">
                              <div className="flex items-center gap-2">
-                                <Checkbox checked={formData.mantenimientoFicha?.equipoTecnologico.hdt} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, hdt: !!val}}})} />
-                                <span className="text-[10px] font-bold">HDT</span>
+                                <Checkbox id="hdt-check" checked={formData.mantenimientoFicha?.equipoTecnologico.hdt} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, hdt: !!val}}})} />
+                                <Label htmlFor="hdt-check" className="text-[10px] font-bold cursor-pointer">HDT</Label>
                              </div>
                              <div className="flex items-center gap-2">
-                                <Checkbox checked={formData.mantenimientoFicha?.equipoTecnologico.equipoComputo} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, equipoComputo: !!val}}})} />
-                                <span className="text-[10px] font-bold">EQUIPO DE CÓMPUTO</span>
+                                <Checkbox id="comp-check" checked={formData.mantenimientoFicha?.equipoTecnologico.equipoComputo} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, equipoComputo: !!val}}})} />
+                                <Label htmlFor="comp-check" className="text-[10px] font-bold cursor-pointer">EQUIPO DE CÓMPUTO</Label>
                              </div>
-                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold">OTRO:</span>
+                             <div className="flex items-center gap-2 ml-4">
+                                <span className="text-[10px] font-bold uppercase text-slate-400">OTRO:</span>
                                 <Input className="h-8 w-40 bg-white text-[10px] font-bold border-primary/10" value={formData.mantenimientoFicha?.equipoTecnologico.otro} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, otro: e.target.value.toUpperCase()}}})} />
                              </div>
                           </div>
@@ -575,17 +678,19 @@ export default function SupportPage() {
                        </div>
 
                        <div className="space-y-6 pt-4">
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-black text-primary pl-1">Falla identificada:</Label>
-                             <Input className="h-10 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, fallaIdentificada: e.target.value.toUpperCase()}})} />
-                          </div>
-                          <div className="space-y-2">
-                             <Label className="text-[10px] font-black text-primary pl-1">Servicio realizado:</Label>
-                             <Input className="h-10 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black text-primary pl-1">Falla identificada:</Label>
+                               <Input className="h-11 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, fallaIdentificada: e.target.value.toUpperCase()}})} />
+                            </div>
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black text-primary pl-1">Servicio realizado:</Label>
+                               <Input className="h-11 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                            </div>
                           </div>
                           <div className="space-y-2">
                              <Label className="text-[10px] font-black text-primary pl-1 uppercase tracking-widest text-center block bg-slate-200 py-1 rounded-t-xl">Observaciones</Label>
-                             <Textarea className="min-h-[120px] rounded-b-[1.5rem] rounded-t-none border-primary/10 p-4 text-[11px] font-medium bg-white uppercase" value={formData.mantenimientoFicha?.observaciones} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, observaciones: e.target.value.toUpperCase()}})} />
+                             <Textarea className="min-h-[120px] rounded-b-[1.5rem] rounded-t-none border-primary/10 p-4 text-[11px] font-medium bg-white uppercase shadow-inner" value={formData.mantenimientoFicha?.observaciones} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, observaciones: e.target.value.toUpperCase()}})} />
                           </div>
                        </div>
                     </div>
@@ -623,10 +728,10 @@ export default function SupportPage() {
                                       className="flex gap-4"
                                     >
                                       <div className="flex items-center space-x-1">
-                                        <RadioGroupItem value="si" id={`${q.id}-si`} className="h-4 w-4" /><Label htmlFor={`${q.id}-si`} className="text-[10px] font-black">SÍ</Label>
+                                        <RadioGroupItem value="si" id={`${q.id}-si`} className="h-4 w-4" /><Label htmlFor={`${q.id}-si`} className="text-[10px] font-black cursor-pointer">SÍ</Label>
                                       </div>
                                       <div className="flex items-center space-x-1">
-                                        <RadioGroupItem value="no" id={`${q.id}-no`} className="h-4 w-4" /><Label htmlFor={`${q.id}-no`} className="text-[10px] font-black">NO</Label>
+                                        <RadioGroupItem value="no" id={`${q.id}-no`} className="h-4 w-4" /><Label htmlFor={`${q.id}-no`} className="text-[10px] font-black cursor-pointer">NO</Label>
                                       </div>
                                     </RadioGroup>
                                   </div>
@@ -634,7 +739,7 @@ export default function SupportPage() {
                              </div>
 
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                                <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400">Proveedor de internet</Label><Input className="h-9 bg-white border-primary/5" value={formData.redLocalFicha?.proveedorInternet} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, proveedorInternet: e.target.value.toUpperCase()}})} /></div>
+                                <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400">Proveedor de internet</Label><Input className="h-9 bg-white border-primary/5 font-bold uppercase" value={formData.redLocalFicha?.proveedorInternet} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, proveedorInternet: e.target.value.toUpperCase()}})} /></div>
                                 <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400">Ancho de banda</Label><Input className="h-9 bg-white border-primary/5 text-center font-black" value={formData.redLocalFicha?.anchoBanda} onChange={e => setFormData({...formData, redLocalFicha: {...formData.redLocalFicha!, anchoBanda: e.target.value}})} /></div>
                              </div>
 
@@ -719,8 +824,8 @@ export default function SupportPage() {
                                     { id: 'configuracion', label: 'Configuración de red' },
                                   ].map(f => (
                                     <div key={f.id} className="flex items-center gap-2" onClick={() => toggleRedLocalField('mantenimientoAula', f.id)}>
-                                      <Checkbox checked={(formData.redLocalFicha?.mantenimientoAula as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoAula', f.id)} />
-                                      <span className="text-[9px] font-bold uppercase text-slate-600">{f.label}</span>
+                                      <Checkbox id={`aula-${f.id}`} checked={(formData.redLocalFicha?.mantenimientoAula as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoAula', f.id)} />
+                                      <Label htmlFor={`aula-${f.id}`} className="text-[9px] font-bold uppercase text-slate-600 cursor-pointer">{f.label}</Label>
                                     </div>
                                   ))}
                                 </div>
@@ -739,8 +844,8 @@ export default function SupportPage() {
                                     { id: 'hardware', label: 'Sustitución hardware' },
                                   ].map(f => (
                                     <div key={f.id} className="flex items-center gap-2" onClick={() => toggleRedLocalField('mantenimientoEquipos', f.id)}>
-                                      <Checkbox checked={(formData.redLocalFicha?.mantenimientoEquipos as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoEquipos', f.id)} />
-                                      <span className="text-[9px] font-bold uppercase text-slate-600">{f.label}</span>
+                                      <Checkbox id={`eq-${f.id}`} checked={(formData.redLocalFicha?.mantenimientoEquipos as any)?.[f.id]} onCheckedChange={() => toggleRedLocalField('mantenimientoEquipos', f.id)} />
+                                      <Label htmlFor={`eq-${f.id}`} className="text-[9px] font-bold uppercase text-slate-600 cursor-pointer">{f.label}</Label>
                                     </div>
                                   ))}
                                 </div>
@@ -753,7 +858,7 @@ export default function SupportPage() {
 
                {/* Ficha Técnica de Atención Red Edusat */}
                {formData.tipoIncidencias?.includes('red edusat') && (
-                 <div className="space-y-6 animate-in zoom-in-95 duration-500">
+                 <div className="space-y-6 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
                        <Radio className="h-6 w-6 text-primary" />
                        <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención red Edusat</h4>
@@ -899,7 +1004,57 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
-      <VisitSchedulerDialog open={isSchedulerOpen} onOpenChange={setIsSchedulerOpen} areaId="soporte" areaName="Soporte técnico" />
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra para futuros reportes.</DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
+                  <Input value={quickAddForm.region} onChange={e => setQuickAddForm({...quickAddForm, region: e.target.value.toUpperCase()})} className="font-bold border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar Plantel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
