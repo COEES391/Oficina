@@ -34,7 +34,8 @@ import {
   Calendar,
   CheckCircle2,
   RefreshCcw,
-  PackageSearch
+  PackageSearch,
+  Pencil
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -75,6 +76,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('inventario')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
   // Form states
@@ -120,40 +122,67 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   useEffect(() => {
     if (open) {
       loadData()
-      setSearchTerm('') // Clear search on open to show all items
+      setSearchTerm('')
     }
   }, [open, loadData])
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return items.sort((a, b) => a.name.localeCompare(b.name));
-    const term = searchTerm.toLowerCase();
-    return items.filter(item => 
-      (item.name || '').toLowerCase().includes(term) ||
-      (item.category || '').toLowerCase().includes(term)
-    ).sort((a, b) => a.name.localeCompare(b.name))
+    let list = [...items];
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(item => 
+        (item.name || '').toLowerCase().includes(term) ||
+        (item.category || '').toLowerCase().includes(term)
+      )
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name))
   }, [items, searchTerm])
 
-  const handleAddItem = () => {
+  const handleEditItem = (item: WarehouseItem) => {
+    setEditingItemId(item.id)
+    setNewItemForm({
+      name: item.name,
+      category: item.category,
+      stock: item.stock,
+      minStock: item.minStock
+    })
+    setIsAddDialogOpen(true)
+  }
+
+  const handleSaveItem = () => {
     if (!newItemForm.name) {
       toast({ variant: "destructive", title: "Nombre faltante", description: "Ingrese el nombre del insumo." })
       return
     }
 
-    const newItem: WarehouseItem = {
-      ...newItemForm,
-      id: `ITEM-${Date.now()}`,
-      name: newItemForm.name.toUpperCase(),
-      lastUpdated: new Date().toISOString()
+    let updated;
+    if (editingItemId) {
+      updated = items.map(item => item.id === editingItemId ? {
+        ...item,
+        name: newItemForm.name.toUpperCase(),
+        category: newItemForm.category,
+        stock: newItemForm.stock,
+        minStock: newItemForm.minStock,
+        lastUpdated: new Date().toISOString()
+      } : item)
+      toast({ title: "Insumo actualizado", description: `Se guardaron los cambios en ${newItemForm.name.toUpperCase()}.` })
+    } else {
+      const newItem: WarehouseItem = {
+        ...newItemForm,
+        id: `ITEM-${Date.now()}`,
+        name: newItemForm.name.toUpperCase(),
+        lastUpdated: new Date().toISOString()
+      }
+      updated = [...items, newItem]
+      toast({ title: "Insumo registrado", description: `${newItem.name} se sumó al catálogo.` })
     }
 
-    const updated = [...items, newItem]
-    
     try {
       setItems(updated)
       localStorage.setItem('coees_warehouse_items_v2', JSON.stringify(updated))
       setNewItemForm({ name: '', category: 'Cómputo', stock: 0, minStock: 5 })
+      setEditingItemId(null)
       setIsAddDialogOpen(false)
-      toast({ title: "Insumo registrado", description: `${newItem.name} se sumó al catálogo.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Error de guardado", description: "No se pudo actualizar el almacén local." })
     }
@@ -266,7 +295,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         </button>
                     )}
                 </div>
-                <Button onClick={() => setIsAddDialogOpen(true)} className="btn-institutional h-12 px-8 shadow-xl text-[11px] gap-2 shrink-0">
+                <Button onClick={() => { setEditingItemId(null); setNewItemForm({ name: '', category: 'Cómputo', stock: 0, minStock: 5 }); setIsAddDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px] gap-2 shrink-0">
                     <PlusCircle className="h-5 w-5" /> Nuevo Insumo
                 </Button>
                 </div>
@@ -320,9 +349,14 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                 )}
                                 </TableCell>
                                 <TableCell className="text-right pr-8">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDeleteItem(item.id)}>
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                    <div className="flex justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5 rounded-xl" onClick={() => handleEditItem(item)}>
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDeleteItem(item.id)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                             )
@@ -523,12 +557,16 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogFooter>
       </DialogContent>
 
-      {/* Diálogo para añadir nuevo insumo */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      {/* Diálogo para añadir/editar insumo */}
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if(!open) { setEditingItemId(null); setNewItemForm({ name: '', category: 'Cómputo', stock: 0, minStock: 5 }); } }}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white">
-            <DialogTitle className="font-black text-xl uppercase">Nuevo Insumo al Catálogo</DialogTitle>
-            <DialogDescription className="text-white/70 text-[10px] font-bold uppercase mt-1">Defina un nuevo artículo para su control de stock.</DialogDescription>
+            <DialogTitle className="font-black text-xl uppercase">
+                {editingItemId ? 'Actualización de Insumo' : 'Nuevo Insumo al Catálogo'}
+            </DialogTitle>
+            <DialogDescription className="text-white/70 text-[10px] font-bold uppercase mt-1">
+                {editingItemId ? 'Modifique los datos técnicos del artículo seleccionado.' : 'Defina un nuevo artículo para su control de stock.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
              <div className="space-y-2">
@@ -556,7 +594,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
              </div>
              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">Stock Inicial</Label>
+                  <Label className="text-[10px] font-black text-primary pl-1 uppercase">Stock Actual</Label>
                   <Input 
                      type="number" 
                      className="h-12 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" 
@@ -577,7 +615,9 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t gap-4">
              <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-12 px-6 text-xs font-black uppercase text-slate-400">Cancelar</Button>
-             <Button onClick={handleAddItem} className="btn-institutional h-12 px-12 text-[10px] shadow-xl">Guardar en Catálogo</Button>
+             <Button onClick={handleSaveItem} className="btn-institutional h-12 px-12 text-[10px] shadow-xl gap-2">
+                <Save className="h-4 w-4" /> {editingItemId ? 'Guardar Cambios' : 'Registrar en Catálogo'}
+             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
