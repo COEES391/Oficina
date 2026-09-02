@@ -155,8 +155,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     }
 
     let updated;
-    if (editingId) {
-      updated = items.map(item => item.id === editingId ? {
+    if (editingItemId) {
+      updated = items.map(item => item.id === editingItemId ? {
         ...item,
         name: newItemForm.name.toUpperCase(),
         category: newItemForm.category,
@@ -232,15 +232,13 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Insumo eliminado" })
   }
 
-  const editingId = editingItemId; // Alias for internal consistency
-
   if (!mounted) return null
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[1200px] h-[95vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl bg-white">
-          <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0 flex flex-row justify-between items-center pr-12">
+          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0 flex flex-row justify-between items-center pr-12">
             <div className="space-y-1">
               <DialogTitle className="uppercase font-black text-2xl flex items-center gap-4">
                  <Archive className="h-8 w-8 text-[#B38E5D]" /> Almacén Técnico COEES
@@ -253,85 +251,85 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="px-8 bg-white border-b shrink-0 z-10">
-               <TabsList className="bg-transparent h-14 p-0 gap-10">
-                  <TabsTrigger value="inventario" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">
+               <TabsList className="bg-transparent h-12 p-0 gap-8">
+                  <TabsTrigger value="inventario" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-3 text-[10px] font-black uppercase tracking-wider transition-all">
                      1. Inventario (Catálogo)
                   </TabsTrigger>
-                  <TabsTrigger value="movimientos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">
+                  <TabsTrigger value="movimientos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-3 text-[10px] font-black uppercase tracking-wider transition-all">
                      2. Entradas y Salidas
                   </TabsTrigger>
-                  <TabsTrigger value="historial" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">
+                  <TabsTrigger value="historial" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-3 text-[10px] font-black uppercase tracking-wider transition-all">
                      3. Bitácora de Movimientos
                   </TabsTrigger>
                </TabsList>
             </div>
 
-            <TabsContent value="inventario" className="flex-1 overflow-hidden m-0 p-8 flex flex-col gap-6 outline-none bg-slate-50/30">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 shrink-0">
+            <TabsContent value="inventario" className="flex-1 overflow-hidden m-0 p-6 flex flex-col gap-4 outline-none bg-slate-50/30">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
                   <div className="relative flex-1 w-full group">
-                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-[#9f2241] transition-colors" />
+                    <Search className="absolute left-4 top-3 h-4 w-4 text-slate-300 group-focus-within:text-[#9f2241] transition-colors" />
                     <Input 
                         placeholder="FILTRAR INSUMOS..." 
-                        className="h-12 pl-12 pr-10 rounded-2xl bg-white border-slate-100 shadow-sm text-sm font-bold uppercase"
+                        className="h-10 pl-11 pr-10 rounded-xl bg-white border-slate-100 shadow-sm text-[11px] font-bold uppercase"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                     {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-4 text-slate-400 hover:text-rose-500">
+                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-3 text-slate-400 hover:text-rose-500">
                             <X className="h-4 w-4" />
                         </button>
                     )}
                   </div>
-                  <Button onClick={() => { setEditingItemId(null); setNewItemForm({ name: '', category: 'Cómputo', stock: 0, minStock: 5 }); setIsAddDialogOpen(true); }} className="btn-institutional h-12 px-8 shadow-xl text-[11px] gap-2 shrink-0">
-                      <PlusCircle className="h-5 w-5" /> Registrar Insumo
+                  <Button onClick={() => { setEditingItemId(null); setNewItemForm({ name: '', category: 'Cómputo', stock: 0, minStock: 5 }); setIsAddDialogOpen(true); }} className="btn-institutional h-10 px-6 shadow-lg text-[10px] gap-2 shrink-0">
+                      <PlusCircle className="h-4 w-4" /> Registrar Insumo
                   </Button>
                 </div>
 
-                <div className="flex-1 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-hidden">
+                <div className="flex-1 border border-slate-100 rounded-[1.5rem] bg-white shadow-sm overflow-hidden">
                   <ScrollArea className="h-full">
                       <Table>
                           <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
-                          <TableRow className="h-12">
-                              <TableHead className="font-black text-[10px] text-[#9f2241] uppercase pl-8">Categoría</TableHead>
-                              <TableHead className="font-black text-[10px] text-[#9f2241] uppercase">Nombre del Insumo</TableHead>
-                              <TableHead className="font-black text-[10px] text-[#9f2241] uppercase text-center">Stock</TableHead>
-                              <TableHead className="font-black text-[10px] text-[#9f2241] uppercase text-center">Estatus</TableHead>
-                              <TableHead className="text-right font-black text-[10px] text-[#9f2241] uppercase pr-10">Gestión</TableHead>
+                          <TableRow className="h-10">
+                              <TableHead className="font-black text-[9px] text-[#9f2241] uppercase pl-8">Categoría</TableHead>
+                              <TableHead className="font-black text-[9px] text-[#9f2241] uppercase">Nombre del Insumo</TableHead>
+                              <TableHead className="font-black text-[9px] text-[#9f2241] uppercase text-center">Stock</TableHead>
+                              <TableHead className="font-black text-[9px] text-[#9f2241] uppercase text-center">Estatus</TableHead>
+                              <TableHead className="text-right font-black text-[9px] text-[#9f2241] uppercase pr-10">Gestión</TableHead>
                           </TableRow>
                           </TableHeader>
                           <TableBody>
                           {filteredItems.length > 0 ? filteredItems.map((item) => {
                               const isLowStock = item.stock <= item.minStock;
                               return (
-                              <TableRow key={item.id} className="hover:bg-slate-50 transition-colors h-16 border-b border-slate-50">
+                              <TableRow key={item.id} className="hover:bg-slate-50 transition-colors h-14 border-b border-slate-50">
                                   <TableCell className="pl-8">
-                                    <Badge variant="outline" className={cn("font-black text-[8px] uppercase px-2 h-5 border-2", item.category === 'Cómputo' ? "text-blue-600 border-blue-100 bg-blue-50" : "text-emerald-600 border-emerald-100 bg-emerald-50")}>{item.category}</Badge>
+                                    <Badge variant="outline" className={cn("font-black text-[7px] uppercase px-2 h-4 border-2", item.category === 'Cómputo' ? "text-blue-600 border-blue-100 bg-blue-50" : "text-emerald-600 border-emerald-100 bg-emerald-50")}>{item.category}</Badge>
                                   </TableCell>
                                   <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-black text-slate-700 uppercase">{item.name}</span>
-                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Min: {item.minStock}</span>
+                                        <span className="text-[12px] font-black text-slate-700 uppercase">{item.name}</span>
+                                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Mínimo: {item.minStock}</span>
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <span className={cn("text-xl font-black", isLowStock ? "text-rose-500" : "text-[#9f2241]")}>{item.stock}</span>
+                                    <span className={cn("text-lg font-black", isLowStock ? "text-rose-500" : "text-[#9f2241]")}>{item.stock}</span>
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Badge className={cn("font-black text-[7px] border-none px-2 h-5", isLowStock ? "bg-rose-500 text-white animate-pulse" : "bg-emerald-500 text-white")}>
+                                    <Badge className={cn("font-black text-[6px] border-none px-2 h-4", isLowStock ? "bg-rose-500 text-white animate-pulse" : "bg-emerald-500 text-white")}>
                                       {isLowStock ? <AlertTriangle className="h-2 w-2 mr-1" /> : <CheckCircle2 className="h-2 w-2 mr-1" />}
                                       {isLowStock ? 'CRÍTICO' : 'ÓPTIMO'}
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right pr-8">
-                                      <div className="flex justify-end gap-1">
-                                          <Button variant="ghost" size="icon" title="Editar" className="h-8 w-8 text-primary hover:bg-primary/5" onClick={() => handleEditItem(item)}><Pencil className="h-4 w-4" /></Button>
-                                          <Button variant="ghost" size="icon" title="Borrar" className="h-8 w-8 text-slate-300 hover:text-rose-600" onClick={() => handleDeleteItem(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                                      <div className="flex justify-end gap-0.5">
+                                          <Button variant="ghost" size="icon" title="Editar" className="h-7 w-7 text-primary hover:bg-primary/5" onClick={() => handleEditItem(item)}><Pencil className="h-3.5 w-3.5" /></Button>
+                                          <Button variant="ghost" size="icon" title="Borrar" className="h-7 w-7 text-slate-300 hover:text-rose-600" onClick={() => handleDeleteItem(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                       </div>
                                   </TableCell>
                               </TableRow>
                               )
                           }) : (
-                              <TableRow><TableCell colSpan={5} className="text-center py-32 opacity-20"><PackageSearch className="h-12 w-12 mx-auto mb-2" /><p className="text-xs font-black uppercase">Sin resultados</p></TableCell></TableRow>
+                              <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-20"><PackageSearch className="h-10 w-10 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sin resultados</p></TableCell></TableRow>
                           )}
                           </TableBody>
                       </Table>
@@ -339,73 +337,124 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                 </div>
             </TabsContent>
 
-            <TabsContent value="movimientos" className="flex-1 overflow-hidden m-0 p-8 outline-none bg-slate-50/30">
+            <TabsContent value="movimientos" className="flex-1 overflow-hidden m-0 p-4 lg:p-8 outline-none bg-slate-50/30">
                 <ScrollArea className="h-full">
-                  <div className="max-w-3xl mx-auto space-y-8 py-4">
-                    <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-8">
+                  <div className="max-w-4xl mx-auto py-2">
+                    <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6">
                       <div className="flex items-center gap-4 border-b pb-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241]"><ArrowLeftRight className="h-6 w-6" /></div>
-                        <div><h3 className="text-lg font-black text-slate-800 uppercase leading-none">Registrar Entrada / Salida</h3><p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Actualización de flujo operativo de insumos</p></div>
+                        <div className="h-10 w-10 rounded-xl bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241]"><ArrowLeftRight className="h-5 w-5" /></div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 uppercase leading-none">Registrar Movimiento</h3>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">Actualización de flujo operativo de insumos</p>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-primary uppercase">1. Seleccionar Insumo</Label>
+                          <Label className="text-[10px] font-black text-primary uppercase pl-1">1. Seleccionar Insumo</Label>
                           <Select value={movementForm.itemId} onValueChange={v => setMovementForm({...movementForm, itemId: v})}>
-                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase shadow-inner"><SelectValue placeholder="BUSCAR..." /></SelectTrigger>
+                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase shadow-inner text-[11px]"><SelectValue placeholder="BUSCAR ARTÍCULO..." /></SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl z-[100]">
-                              {items.map(i => (<SelectItem key={i.id} value={i.id} className="text-xs font-bold uppercase">{i.name} ({i.stock})</SelectItem>))}
+                              {items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[10px] font-bold uppercase">{i.name} ({i.stock} DISP.)</SelectItem>))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black text-primary uppercase">2. Acción</Label>
+                          <Label className="text-[10px] font-black text-primary uppercase pl-1">2. Tipo de Acción</Label>
                           <div className="flex gap-2">
-                            <button onClick={() => setMovementForm({...movementForm, type: 'entrada'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-white border-slate-100 text-slate-400")}><ArrowUpRight className="h-4 w-4" /> Entrada</button>
-                            <button onClick={() => setMovementForm({...movementForm, type: 'salida'})} className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", movementForm.type === 'salida' ? "bg-rose-50 border-rose-500 text-rose-700" : "bg-white border-slate-100 text-slate-400")}><ArrowDownRight className="h-4 w-4" /> Salida</button>
+                            <button 
+                              onClick={() => setMovementForm({...movementForm, type: 'entrada'})} 
+                              className={cn(
+                                "flex-1 h-11 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", 
+                                movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm" : "bg-white border-slate-100 text-slate-400"
+                              )}
+                            >
+                              <ArrowUpRight className="h-4 w-4" /> Entrada
+                            </button>
+                            <button 
+                              onClick={() => setMovementForm({...movementForm, type: 'salida'})} 
+                              className={cn(
+                                "flex-1 h-11 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all", 
+                                movementForm.type === 'salida' ? "bg-rose-50 border-rose-500 text-rose-700 shadow-sm" : "bg-white border-slate-100 text-slate-400"
+                              )}
+                            >
+                              <ArrowDownRight className="h-4 w-4" /> Salida
+                            </button>
                           </div>
                         </div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">3. Cantidad</Label><Input type="number" className="h-12 rounded-xl bg-slate-50 border-none text-center font-black text-2xl shadow-inner" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">4. Analista Responsable</Label><Input placeholder="NOMBRE COMPLETO..." className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs shadow-inner" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value})} /></div>
-                        <div className="md:col-span-2 space-y-2"><Label className="text-[10px] font-black text-primary uppercase">5. Motivo / CCT de Destino</Label><Input placeholder="EJ. MANTENIMIENTO F4 CCT 15DES0001R..." className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} /></div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary uppercase pl-1">3. Cantidad de Artículos</Label>
+                          <Input 
+                            type="number" 
+                            min={1}
+                            className="h-11 rounded-xl bg-slate-50 border-none text-center font-black text-xl shadow-inner" 
+                            value={movementForm.quantity} 
+                            onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black text-primary uppercase pl-1">4. Analista Responsable</Label>
+                          <Input 
+                            placeholder="NOMBRE COMPLETO..." 
+                            className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner" 
+                            value={movementForm.technician} 
+                            onChange={e => setMovementForm({...movementForm, technician: e.target.value})} 
+                          />
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                          <Label className="text-[10px] font-black text-primary uppercase pl-1">5. Motivo / CCT de Destino</Label>
+                          <Input 
+                            placeholder="EJ. MANTENIMIENTO F4 CCT 15DES0001R..." 
+                            className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner" 
+                            value={movementForm.reason} 
+                            onChange={e => setMovementForm({...movementForm, reason: e.target.value})} 
+                          />
+                        </div>
                       </div>
 
-                      <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14 rounded-2xl shadow-2xl text-xs gap-3"><Save className="h-6 w-6" /> Procesar Movimiento</Button>
+                      <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-14 rounded-2xl shadow-2xl text-xs gap-3">
+                        <Save className="h-5 w-5" /> Procesar y Actualizar Almacén
+                      </Button>
                     </div>
                   </div>
                 </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="historial" className="flex-1 overflow-hidden m-0 p-8 flex flex-col gap-6 outline-none bg-slate-50/30">
-                <div className="flex justify-between items-end mb-2 shrink-0">
-                  <div className="space-y-1"><h3 className="text-xl font-black text-primary uppercase leading-none">Bitácora de Auditoría de Almacén</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro inalterable de flujo técnico</p></div>
-                  <Badge variant="outline" className="h-9 px-6 rounded-xl border-primary/20 text-primary font-black text-[10px] uppercase">{movements.length} Movimientos</Badge>
+            <TabsContent value="historial" className="flex-1 overflow-hidden m-0 p-6 flex flex-col gap-4 outline-none bg-slate-50/30">
+                <div className="flex justify-between items-end shrink-0">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-black text-[#9f2241] uppercase leading-none">Bitácora de Auditoría</h3>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Registro inalterable de flujo técnico</p>
+                  </div>
+                  <Badge variant="outline" className="h-8 px-4 rounded-xl border-primary/20 text-primary font-black text-[9px] uppercase">
+                    {movements.length} Movimientos
+                  </Badge>
                 </div>
-                <div className="flex-1 border border-slate-100 rounded-[2rem] bg-white shadow-sm overflow-hidden">
+                <div className="flex-1 border border-slate-100 rounded-[1.5rem] bg-white shadow-sm overflow-hidden">
                   <ScrollArea className="h-full">
                     <Table>
                       <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
-                        <TableRow className="h-12">
-                          <TableHead className="font-black text-[10px] uppercase pl-8">Fecha</TableHead>
-                          <TableHead className="font-black text-[10px] uppercase">Tipo</TableHead>
-                          <TableHead className="font-black text-[10px] uppercase">Insumo</TableHead>
-                          <TableHead className="font-black text-[10px] uppercase">Técnico</TableHead>
-                          <TableHead className="font-black text-[10px] uppercase">Observaciones</TableHead>
-                          <TableHead className="text-center font-black text-[10px] uppercase pr-8">Cant.</TableHead>
+                        <TableRow className="h-10">
+                          <TableHead className="font-black text-[9px] uppercase pl-8">Fecha</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Tipo</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Insumo</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Técnico</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Observaciones</TableHead>
+                          <TableHead className="text-center font-black text-[9px] uppercase pr-8">Cant.</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {movements.length > 0 ? movements.map((move) => (
-                          <TableRow key={move.id} className="hover:bg-slate-50 transition-colors h-16 border-b border-slate-50">
-                            <TableCell className="pl-8 text-[9px] font-black text-slate-400 uppercase">{move.date}</TableCell>
-                            <TableCell><Badge className={cn("font-black text-[8px] h-5 uppercase border-none", move.type === 'entrada' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{move.type}</Badge></TableCell>
+                          <TableRow key={move.id} className="hover:bg-slate-50 transition-colors h-14 border-b border-slate-50">
+                            <TableCell className="pl-8 text-[8px] font-black text-slate-400 uppercase">{move.date}</TableCell>
+                            <TableCell><Badge className={cn("font-black text-[7px] h-4 uppercase border-none", move.type === 'entrada' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{move.type}</Badge></TableCell>
                             <TableCell className="text-[10px] font-black text-slate-700 uppercase">{move.itemName}</TableCell>
                             <TableCell className="text-[10px] font-bold text-slate-600 uppercase">{move.technician}</TableCell>
-                            <TableCell className="text-[10px] font-medium text-slate-500 italic truncate max-w-[200px]">"{move.reason}"</TableCell>
-                            <TableCell className="text-center pr-8 font-black text-sm">{move.type === 'entrada' ? '+' : '-'}{move.quantity}</TableCell>
+                            <TableCell className="text-[9px] font-medium text-slate-500 italic truncate max-w-[150px]">"{move.reason}"</TableCell>
+                            <TableCell className="text-center pr-8 font-black text-xs">{move.type === 'entrada' ? '+' : '-'}{move.quantity}</TableCell>
                           </TableRow>
                         )) : (
-                          <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-black uppercase">Sin registros en bitácora</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-[10px] font-black uppercase">Sin registros en bitácora</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
@@ -414,24 +463,30 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
             </TabsContent>
           </Tabs>
 
-          <DialogFooter className="p-6 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 px-10 rounded-2xl font-bold text-xs text-slate-400 uppercase">Cerrar Almacén</Button>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
+             <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-10 px-8 rounded-xl font-bold text-[10px] text-slate-400 uppercase">Cerrar Almacén</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
-          <DialogHeader className="p-8 bg-[#B38E5D] text-white">
-            <DialogTitle className="font-black text-xl uppercase">{editingId ? 'Editar Insumo' : 'Nuevo Insumo'}</DialogTitle>
-            <DialogDescription className="text-white/70 text-[10px] font-bold uppercase mt-1">Configuración técnica del artículo</DialogDescription>
+        <DialogContent className="sm:max-w-[450px] rounded-[2rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="font-black text-lg uppercase">{editingItemId ? 'Editar Insumo' : 'Nuevo Insumo'}</DialogTitle>
+            <DialogDescription className="text-white/70 text-[9px] font-bold uppercase mt-1">Configuración técnica del artículo</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Nombre del artículo</Label><Input className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} /></div>
-             <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Categoría</Label><Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}><SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl z-[200]"><SelectItem value="Cómputo" className="font-bold text-xs uppercase">Cómputo</SelectItem><SelectItem value="Redes" className="font-bold text-xs uppercase">Redes</SelectItem><SelectItem value="Herramientas" className="font-bold text-xs uppercase">Herramientas</SelectItem><SelectItem value="Consumibles" className="font-bold text-xs uppercase">Consumibles</SelectItem></SelectContent></Select></div>
-             <div className="grid grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Existencia Actual</Label><Input type="number" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} /></div><div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Stock Mínimo</Label><Input type="number" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div></div>
+          <div className="p-6 space-y-5">
+             <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary uppercase pl-1">Nombre del artículo</Label><Input className="h-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[11px]" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} /></div>
+             <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary uppercase pl-1">Categoría</Label><Select value={newItemForm.category} onValueChange={(val: any) => setNewItemForm({...newItemForm, category: val})}><SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl z-[200]"><SelectItem value="Cómputo" className="font-bold text-[10px] uppercase">Cómputo</SelectItem><SelectItem value="Redes" className="font-bold text-[10px] uppercase">Redes</SelectItem><SelectItem value="Herramientas" className="font-bold text-[10px] uppercase">Herramientas</SelectItem><SelectItem value="Consumibles" className="font-bold text-[10px] uppercase">Consumibles</SelectItem></SelectContent></Select></div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary uppercase pl-1">Stock Actual</Label><Input type="number" className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} /></div>
+                <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary uppercase pl-1">Mínimo Crítico</Label><Input type="number" className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-black" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
+             </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t gap-4"><Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-12 px-6 text-xs font-black uppercase text-slate-400">Cancelar</Button><Button onClick={handleSaveItem} className="btn-institutional h-12 px-12 text-[10px] shadow-xl gap-2"><Save className="h-4 w-4" /> {editingId ? 'Actualizar' : 'Registrar'}</Button></DialogFooter>
+          <DialogFooter className="p-6 bg-slate-50 border-t gap-3">
+            <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-10 px-6 text-[10px] font-black uppercase text-slate-400">Cancelar</Button>
+            <Button onClick={handleSaveItem} className="btn-institutional h-10 px-10 text-[10px] shadow-xl gap-2"><Save className="h-4 w-4" /> {editingItemId ? 'Actualizar' : 'Registrar'}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
