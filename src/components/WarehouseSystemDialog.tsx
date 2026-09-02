@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
@@ -448,7 +447,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                       <ScrollArea className="h-full">
                         <Table>
                           <TableHeader className="bg-slate-50 border-b sticky top-0 z-10 shadow-sm"><TableRow className="h-10"><TableHead className="font-black text-[9px] uppercase pl-8">CCT</TableHead><TableHead className="font-black text-[9px] uppercase">Nombre del Plantel</TableHead><TableHead className="font-black text-[9px] uppercase">Municipio</TableHead><TableHead className="font-black text-[9px] uppercase">Modalidad</TableHead></TableRow></TableHeader>
-                          <TableBody>{schoolsDirectory.slice(0, 100).map((s) => (<TableRow key={s.cct} className="h-14 border-b border-slate-50"><TableCell className="pl-8 font-mono font-black text-primary text-xs">{s.cct}</TableCell><TableCell className="font-black text-slate-700 text-[10px] uppercase truncate max-w-[200px]">{s.nombre}</TableCell><TableCell className="font-bold text-slate-500 text-[10px] uppercase">{s.municipio}</TableCell><TableCell><Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20">{s.modalidad}</Badge></TableCell></TableRow>))}</TableBody>
+                          <TableBody>{schoolsDirectory.slice(0, 100).map((s) => (<TableRow key={`${s.cct}-${s.turno}`} className="h-14 border-b border-slate-50"><TableCell className="pl-8 font-mono font-black text-primary text-xs">{s.cct}</TableCell><TableCell className="font-black text-slate-700 text-[10px] uppercase truncate max-w-[200px]">{s.nombre}</TableCell><TableCell className="font-bold text-slate-500 text-[10px] uppercase">{s.municipio}</TableCell><TableCell><Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20">{s.modalidad}</Badge></TableCell></TableRow>))}</TableBody>
                         </Table>
                       </ScrollArea>
                     </div>
@@ -493,7 +492,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                             <div className="space-y-2">
                               <Label className="text-[10px] font-black text-primary uppercase pl-2">1. Seleccionar Insumo</Label>
                               <Select value={movementForm.itemId} onValueChange={v => setMovementForm({...movementForm, itemId: v})}>
-                                <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner"><SelectValue placeholder="BUSCAR EN CATÁLOGO..." /></SelectTrigger>
+                                <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner"><SelectValue placeholder="BUSCAR INSUMO..." /></SelectTrigger>
                                 <SelectContent className="rounded-2xl shadow-2xl">{items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[10px] font-bold uppercase">{i.name} ({i.stock} DISP.)</SelectItem>))}</SelectContent>
                               </Select>
                             </div>
@@ -522,13 +521,13 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                             </div>
                             <div className="space-y-2">
                               <Label className="text-[10px] font-black text-primary uppercase pl-2">6. Motivo del Movimiento</Label>
-                              <Input placeholder="EJ. MANTENIMIENTO F4 BRIGADA TULTITLÁN..." className="h-12 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
+                              <Input placeholder="EJ. COMPRA PROVEEDOR / ENTREGA BRIGADA..." className="h-12 rounded-2xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
                             </div>
                           </div>
                         </ScrollArea>
 
                         <Button onClick={handleRegisterMovement} className="w-full btn-institutional h-16 rounded-3xl shadow-2xl text-sm gap-4 shrink-0">
-                          <Save className="h-6 w-6" /> PROCESAR Y ACTUALIZAR INVENTARIO
+                          <Save className="h-6 w-6" /> PROCESAR OPERACIÓN
                         </Button>
                       </div>
                     </div>
