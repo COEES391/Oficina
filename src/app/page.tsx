@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import { placeholderImages } from '@/lib/placeholder-images'
@@ -87,13 +86,6 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-[#f4f4f4] font-sans p-4">
-      {/* Header Institucional (Barra superior delgada opcional) */}
-      <div className="absolute top-0 left-0 w-full h-12 bg-[#9f2241] flex items-center justify-end px-8 gap-6 z-20 hidden md:flex">
-        <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Trámites</span>
-        <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Gobierno</span>
-        <div className="h-4 w-4 text-white/60">🔍</div>
-      </div>
-
       <Card className="w-full max-w-[850px] shadow-[0_30px_90px_rgba(0,0,0,0.15)] border-none rounded-none overflow-hidden flex flex-col md:flex-row relative z-10 animate-in fade-in zoom-in-95 duration-700">
         {/* Lado Izquierdo: Identidad */}
         <div className="w-full md:w-[35%] bg-[#9f2241] p-10 flex flex-col items-center justify-center text-center space-y-6">
@@ -122,7 +114,7 @@ export default function LoginPage() {
              </div>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-5">
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="relative group">
               <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
               <Input 
@@ -144,18 +136,6 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)} 
                 disabled={isLoading} 
               />
-            </div>
-
-            <div className="space-y-1">
-              <Select defaultValue="2026">
-                <SelectTrigger className="h-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold text-slate-400">
-                  <SelectValue placeholder="Ciclo Escolar" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="2026" className="text-sm font-bold">Ciclo 2025-2026</SelectItem>
-                  <SelectItem value="2025" className="text-sm font-bold">Ciclo 2024-2025</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="flex justify-end pt-4">
