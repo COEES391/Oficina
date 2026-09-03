@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
@@ -610,12 +611,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
                       </Button>
                     )}
-                    
-                    {currentView === 'salidas' && (
-                      <Button onClick={() => { setMovementForm({...movementForm, type: 'salida'}); setCurrentView('registro'); setEditingMovementId(null); }} className="bg-rose-600 hover:bg-rose-700 h-9 px-4 rounded-xl text-[9px] gap-2 shadow-lg">
-                        <PlusCircle className="h-3.5 w-3.5" /> Nueva Salida
-                      </Button>
-                    )}
 
                     {(currentView === 'productos' || currentView === 'proveedores' || currentView === 'usuarios') && (
                       <Button onClick={() => {
@@ -987,7 +982,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
-      {/* DIÁLOGOS DE GESTIÓN (IDEM) */}
+      {/* DIÁLOGOS DE GESTIÓN */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white">
