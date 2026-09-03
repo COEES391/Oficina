@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
@@ -612,11 +611,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                       </Button>
                     )}
                     
-                    {currentView === 'entradas' && (
-                      <Button onClick={() => { setMovementForm({...movementForm, type: 'entrada'}); setCurrentView('registro'); setEditingMovementId(null); }} className="bg-emerald-600 hover:bg-emerald-700 h-9 px-4 rounded-xl text-[9px] gap-2 shadow-lg">
-                        <PlusCircle className="h-3.5 w-3.5" /> Nueva Entrada
-                      </Button>
-                    )}
                     {currentView === 'salidas' && (
                       <Button onClick={() => { setMovementForm({...movementForm, type: 'salida'}); setCurrentView('registro'); setEditingMovementId(null); }} className="bg-rose-600 hover:bg-rose-700 h-9 px-4 rounded-xl text-[9px] gap-2 shadow-lg">
                         <PlusCircle className="h-3.5 w-3.5" /> Nueva Salida
