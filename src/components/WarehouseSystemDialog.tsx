@@ -570,7 +570,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   <NavigationButton icon={Users} label="Base Usuarios" target="usuarios" color="bg-rose-500" />
                   <NavigationButton icon={ArrowUpRight} label="Base Entradas" target="entradas" color="bg-emerald-600" />
                   <NavigationButton icon={ArrowDownRight} label="Base Salidas" target="salidas" color="bg-rose-600" />
-                  <NavigationButton icon={ShoppingBag} label="Requisiciones" target="registro" color="bg-indigo-600" type="entrada" />
+                  <NavigationButton icon={ShoppingBag} label="Requisiciones / Entradas" target="registro" color="bg-indigo-600" type="entrada" />
                   <NavigationButton icon={HandCoins} label="Entregas / Salidas" target="registro" color="bg-teal-600" type="salida" />
                   <button onClick={() => onOpenChange(false)} className="flex flex-col items-center justify-center p-6 bg-slate-100 rounded-[2rem] border-2 border-transparent hover:bg-slate-200 transition-all group">
                     <div className="h-16 w-16 rounded-3xl bg-slate-400 flex items-center justify-center text-white mb-4 shadow-md"><X className="h-8 w-8" /></div>
