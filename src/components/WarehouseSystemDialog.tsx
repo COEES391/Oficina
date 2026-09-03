@@ -36,7 +36,10 @@ import {
   ChevronLeft,
   RotateCcw,
   FileSpreadsheet,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  FileText,
+  ClipboardList
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -244,6 +247,16 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   }, [movements, searchTerm, currentView]);
 
   const lowStockItems = useMemo(() => items.filter(i => i.stock <= i.minStock), [items])
+
+  const selectedItemStock = useMemo(() => {
+    if (!movementForm.itemId) return 0;
+    return items.find(i => i.id === movementForm.itemId)?.stock || 0;
+  }, [items, movementForm.itemId]);
+
+  const selectedItemCode = useMemo(() => {
+    if (!movementForm.itemId) return '';
+    return items.find(i => i.id === movementForm.itemId)?.code || '';
+  }, [items, movementForm.itemId]);
 
   const downloadItemsExcel = () => {
     const data = items.map(i => ({
@@ -576,7 +589,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                        {currentView === 'usuarios' && 'Base de Usuarios Institucionales'}
                        {currentView === 'entradas' && 'Base de Datos de Entradas'}
                        {currentView === 'salidas' && 'Base de Datos de Salidas'}
-                       {currentView === 'registro' && (editingMovementId ? 'Editar Operación Técnica' : 'Registrar Operación Técnica')}
+                       {currentView === 'registro' && (editingMovementId ? 'Editar Operación Técnica' : (movementForm.type === 'salida' ? 'Formulario de Salidas' : 'Registrar Operación Técnica'))}
                     </h3>
                   </div>
                   
@@ -838,54 +851,109 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   )}
 
                   {currentView === 'registro' && (
-                    <div className="max-w-4xl mx-auto py-6 h-full overflow-hidden flex flex-col">
-                      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col">
-                        <div className="flex items-center gap-4 border-b pb-6 shrink-0 justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600"><ArrowLeftRight className="h-6 w-6" /></div>
-                            <div>
-                              <h3 className="text-xl font-black text-slate-800 uppercase leading-none">
-                                {editingMovementId ? 'Editar Operación Técnica' : 'Registrar Operación Técnica'}
-                              </h3>
-                              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Auditoría y Flujo de Suministros</p>
-                            </div>
-                          </div>
+                    <div className="max-w-6xl mx-auto py-4 h-full overflow-hidden flex flex-col">
+                      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-6 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col relative">
+                        {/* Botonera de Acción Estilo Formulario VBA */}
+                        <div className="flex flex-wrap gap-2 mb-2 shrink-0 border-b pb-6">
+                          <Button onClick={handleRegisterMovement} className="bg-[#621132] hover:bg-[#4a0b26] text-white h-10 px-6 rounded-xl text-[10px] font-black uppercase shadow-lg gap-2">
+                             <Save className="h-4 w-4" /> Guardar
+                          </Button>
+                          <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={() => setCurrentView(movementForm.type === 'entrada' ? 'entradas' : 'salidas')}>
+                             <Search className="h-4 w-4" /> Buscar Doc
+                          </Button>
+                          <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={() => setMovementForm({ ...movementForm, itemId: '', folio: '', quantity: 1, reason: '', technician: '', cct: '' })}>
+                             <RotateCcw className="h-4 w-4" /> Limpiar
+                          </Button>
                           {editingMovementId && (
-                            <Badge className="bg-amber-500 text-white font-black uppercase px-4 h-8 rounded-xl shadow-lg flex items-center gap-2">
-                              <RotateCcw className="h-3.5 w-3.5" /> Modo Edición
-                            </Badge>
+                            <Button variant="outline" className="h-10 px-6 rounded-xl border-rose-200 text-rose-600 font-black text-[10px] uppercase gap-2 hover:bg-rose-50" onClick={() => handleDeleteMovement(editingMovementId)}>
+                               <Trash2 className="h-4 w-4" /> Borrar
+                            </Button>
                           )}
+                          <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50 ml-auto" onClick={() => { setCurrentView('dashboard'); setEditingMovementId(null); }}>
+                             <X className="h-4 w-4" /> Salir
+                          </Button>
+                        </div>
+
+                        {/* Cabecera del Formulario */}
+                        <div className={cn("p-2 rounded-xl text-center mb-2", movementForm.type === 'entrada' ? "bg-emerald-600" : "bg-[#B38E5D]")}>
+                           <h4 className="text-white font-black uppercase tracking-[0.3em] text-sm">
+                             {movementForm.type === 'entrada' ? 'REQUISICIONES' : 'SALIDAS'}
+                           </h4>
                         </div>
 
                         <ScrollArea className="flex-1 pr-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">1. Seleccionar Insumo del Catálogo</Label>
-                              <Select value={movementForm.itemId} onValueChange={v => setMovementForm({...movementForm, itemId: v})}>
-                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px] shadow-inner"><SelectValue placeholder="BUSCAR INSUMO..." /></SelectTrigger>
-                                <SelectContent className="rounded-xl shadow-2xl z-[300]">{items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[10px] font-bold uppercase">{i.name} ({i.stock} EN STOCK)</SelectItem>))}</SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">2. Tipo de Movimiento</Label>
-                              <div className="flex">
-                                <div className={cn("flex-1 h-12 rounded-xl border-2 flex items-center justify-center gap-2 font-black text-[10px] uppercase transition-all shadow-md", movementForm.type === 'entrada' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-rose-50 border-rose-500 text-rose-700")}>
-                                  {movementForm.type === 'entrada' ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
-                                  {movementForm.type === 'entrada' ? 'Entrada (Suministro)' : 'Salida (Entrega)'}
-                                </div>
-                              </div>
+                          <div className="space-y-10 py-2">
+                            {/* Bloque 1: Datos del Documento */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                               <div className="space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Fecha</Label>
+                                  <div className="h-11 bg-white rounded-xl border border-slate-200 flex items-center px-4 gap-2 text-[11px] font-bold text-slate-500 shadow-sm">
+                                    <Calendar className="h-4 w-4 text-slate-300" />
+                                    {format(new Date(), 'dd/MM/yyyy')}
+                                  </div>
+                               </div>
+                               <div className="space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Nº Documento</Label>
+                                  <Input placeholder="FOLIO..." className="h-11 rounded-xl bg-white border-slate-200 font-mono font-black text-center shadow-sm uppercase text-xs" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
+                               </div>
+                               <div className="space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">
+                                    {movementForm.type === 'entrada' ? 'Origen / Proveedor' : 'Usuarios (Clientes)'}
+                                  </Label>
+                                  <Select value={movementForm.cct} onValueChange={v => setMovementForm({...movementForm, cct: v})}>
+                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
+                                     <SelectContent className="rounded-xl shadow-2xl z-[300]">
+                                        {users.map(u => (<SelectItem key={u.id} value={u.name} className="text-[10px] font-bold uppercase">{u.name}</SelectItem>))}
+                                     </SelectContent>
+                                  </Select>
+                               </div>
+                               <div className="space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Observacion</Label>
+                                  <Input placeholder="NOTAS..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
+                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Numero de requisición' : 'Folio de Salida'}</Label>
-                                  <Input placeholder="EJ. 001/2026" className="h-11 rounded-xl bg-slate-50 border-none font-mono font-black text-center shadow-inner uppercase" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
+                            {/* Bloque 2: Selección de Insumo */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner items-end">
+                               <div className="md:col-span-3 space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Código Producto</Label>
+                                  <div className="h-11 bg-white rounded-xl border border-slate-200 flex items-center px-4 font-mono font-black text-primary text-xs shadow-sm">
+                                    {selectedItemCode || 'S/C'}
+                                  </div>
                                </div>
-                               <div className="space-y-2">
+                               <div className="md:col-span-5 space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Producto</Label>
+                                  <Select value={movementForm.itemId} onValueChange={v => setMovementForm({...movementForm, itemId: v})}>
+                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-black uppercase text-[11px] shadow-sm"><SelectValue placeholder="BUSCAR INSUMO..." /></SelectTrigger>
+                                     <SelectContent className="rounded-xl shadow-2xl z-[300]">
+                                        {items.map(i => (<SelectItem key={i.id} value={i.id} className="text-[10px] font-black uppercase">{i.name}</SelectItem>))}
+                                     </SelectContent>
+                                  </Select>
+                               </div>
+                               <div className="md:col-span-2 space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad Stock</Label>
+                                  <div className="h-11 bg-slate-100 rounded-xl border-none flex items-center justify-center font-black text-xl text-slate-400 shadow-inner">
+                                    {selectedItemStock}
+                                  </div>
+                               </div>
+                               <div className="md:col-span-2 space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad</Label>
+                                  <Input type="number" min={1} className="h-11 rounded-xl bg-white border-2 border-primary/20 text-center font-black text-xl shadow-md text-primary" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} />
+                               </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+                               <div className="space-y-1.5">
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Técnico / Responsable de Operación</Label>
+                                  <div className="relative group">
+                                     <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-black uppercase text-[10px] shadow-sm pl-10" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value.toUpperCase()})} />
+                                     <User className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                  </div>
+                               </div>
+                               <div className="space-y-1.5">
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Unidad de Medida</Label>
                                   <Select value={movementForm.unit} onValueChange={v => setMovementForm({...movementForm, unit: v})}>
-                                     <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner"><SelectValue /></SelectTrigger>
+                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue /></SelectTrigger>
                                      <SelectContent className="z-[300]">
                                         <SelectItem value="PZA" className="text-[10px] font-bold">PIEZA (PZA)</SelectItem>
                                         <SelectItem value="MTS" className="text-[10px] font-bold">METROS (MTS)</SelectItem>
@@ -896,37 +964,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                   </Select>
                                </div>
                             </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad Operada</Label>
-                              <Input type="number" min={1} className="h-11 rounded-xl bg-slate-50 border-none text-center font-black text-2xl shadow-inner text-primary" value={movementForm.quantity} onChange={e => setMovementForm({...movementForm, quantity: parseInt(e.target.value) || 0})} />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">Analista / Técnico Responsable</Label>
-                              <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value})} />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Origen / Área' : 'Destino (Área / CCT)'}</Label>
-                              <Input placeholder="EJ. OFICINA REGIONAL / ÁREA CENTRAL..." className="h-11 rounded-xl bg-slate-50 border-none font-black text-center shadow-inner uppercase text-[10px]" value={movementForm.cct} onChange={e => setMovementForm({...movementForm, cct: e.target.value.toUpperCase()})} />
-                            </div>
-
-                            <div className="md:col-span-2 space-y-2">
-                              <Label className="text-[10px] font-black text-primary uppercase pl-1">{movementForm.type === 'entrada' ? 'Observaciones de Compra/Ingreso' : 'Motivo de Salida / Entrega'}</Label>
-                              <Input placeholder="DESCRIPCIÓN DETALLADA DEL MOVIMIENTO..." className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-[10px] shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
-                            </div>
                           </div>
                         </ScrollArea>
-
-                        <div className="flex gap-4 shrink-0 mt-4">
-                          {editingMovementId && (
-                            <Button variant="ghost" onClick={() => { setEditingMovementId(null); setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '' }); setCurrentView(movementForm.type === 'entrada' ? 'entradas' : 'salidas'); }} className="h-16 px-10 rounded-2xl font-bold uppercase text-xs">Cancelar</Button>
-                          )}
-                          <Button onClick={handleRegisterMovement} className="flex-1 btn-institutional h-16 rounded-2xl shadow-xl text-[12px] gap-3">
-                            <CheckCircle2 className="h-5 w-5" /> {editingMovementId ? 'ACTUALIZAR REGISTRO TÉCNICO' : 'PROCESAR MOVIMIENTO INSTITUCIONAL'}
-                          </Button>
-                        </div>
                       </div>
                     </div>
                   )}
