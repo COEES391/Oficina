@@ -28,19 +28,12 @@ import {
   ArrowLeftRight,
   Save,
   CheckCircle2,
-  PackageSearch,
   Pencil,
   Truck,
   Users,
   ShoppingBag,
   HandCoins,
   ChevronLeft,
-  Building2,
-  Phone,
-  User,
-  ShieldCheck,
-  Hash,
-  ClipboardList,
   RotateCcw,
   FileSpreadsheet,
   AlertCircle
@@ -215,6 +208,40 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     }
     return list.sort((a, b) => a.name.localeCompare(b.name))
   }, [items, searchTerm, currentView])
+
+  const filteredProviders = useMemo(() => {
+    if (!searchTerm || currentView !== 'proveedores') return providers;
+    const term = searchTerm.toLowerCase();
+    return providers.filter(p => 
+      (p.name || '').toLowerCase().includes(term) ||
+      (p.contact || '').toLowerCase().includes(term) ||
+      (p.phone || '').toLowerCase().includes(term)
+    );
+  }, [providers, searchTerm, currentView]);
+
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm || currentView !== 'usuarios') return users;
+    const term = searchTerm.toLowerCase();
+    return users.filter(u => 
+      (u.name || '').toLowerCase().includes(term) ||
+      (u.location || '').toLowerCase().includes(term)
+    );
+  }, [users, searchTerm, currentView]);
+
+  const filteredMovements = useMemo(() => {
+    const type = currentView === 'entradas' ? 'entrada' : 'salida';
+    let list = movements.filter(m => m.type === type);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(m => 
+        (m.itemName || '').toLowerCase().includes(term) ||
+        (m.folio || '').toLowerCase().includes(term) ||
+        (m.technician || '').toLowerCase().includes(term) ||
+        (m.cct || '').toLowerCase().includes(term)
+      );
+    }
+    return list.sort((a, b) => b.id.localeCompare(a.id));
+  }, [movements, searchTerm, currentView]);
 
   const lowStockItems = useMemo(() => items.filter(i => i.stock <= i.minStock), [items])
 
@@ -970,7 +997,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-rose-600 text-white">
              <DialogTitle className="font-black text-xl uppercase flex items-center gap-3">
-               <ShieldCheck className="h-8 w-8 text-accent" /> {editingUserId ? 'Editar Área Institucional' : 'Alta de Nueva Área'}
+               <Users className="h-8 w-8 text-accent" /> {editingUserId ? 'Editar Área Institucional' : 'Alta de Nueva Área'}
              </DialogTitle>
              <DialogDescription className="text-white/70 text-[10px] font-bold uppercase tracking-widest mt-2">Control de destinatarios y responsables técnicos</DialogDescription>
           </DialogHeader>
@@ -979,7 +1006,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                 <Label className="text-[10px] font-black text-primary uppercase pl-1">Nombre de la Oficina o Área</Label>
                 <div className="relative">
                    <Input className="h-12 rounded-2xl bg-slate-50 border-none shadow-inner font-black uppercase text-xs pl-10" value={newUserForm.name} onChange={e => setNewUserForm({...newUserForm, name: e.target.value.toUpperCase()})} placeholder="EJ. OFICINA REGIONAL TOLUCA..." />
-                   <Building2 className="absolute left-3 top-3.5 h-5 w-5 text-slate-300" />
+                   <Users className="absolute left-3 top-3.5 h-5 w-5 text-slate-300" />
                 </div>
              </div>
              <div className="grid grid-cols-1 gap-6">
