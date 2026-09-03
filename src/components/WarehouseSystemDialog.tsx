@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
@@ -40,7 +41,8 @@ import {
   Calendar,
   FileText,
   ClipboardList,
-  User
+  User,
+  Settings2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -164,7 +166,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     quantity: 1,
     reason: '',
     technician: '',
-    cct: ''
+    cct: '',
+    provider: ''
   })
 
   const loadData = useCallback(() => {
@@ -279,7 +282,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Reporte Generado", description: "El catálogo de insumos se ha descargado correctamente." });
   }
 
-  // PRODUCT LOGIC
   const handleEditItem = (item: WarehouseItem) => {
     setEditingItemId(item.id)
     setNewItemForm({
@@ -331,7 +333,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Insumo eliminado" })
   }
 
-  // PROVIDER LOGIC
   const handleEditProvider = (provider: Provider) => {
     setEditingProviderId(provider.id)
     setNewProviderForm({
@@ -378,7 +379,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Proveedor eliminado" })
   }
 
-  // USER LOGIC
   const handleEditUser = (user: WarehouseUser) => {
     setEditingUserId(user.id)
     setNewUserForm({
@@ -421,7 +421,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     toast({ title: "Registro removido" })
   }
 
-  // MOVEMENT LOGIC
   const handleEditMovement = (move: WarehouseMovement) => {
     setEditingMovementId(move.id)
     setMovementForm({
@@ -432,7 +431,8 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       quantity: move.quantity,
       reason: move.reason,
       technician: move.technician,
-      cct: move.cct || ''
+      cct: move.cct || '',
+      provider: move.provider || ''
     })
     setCurrentView('registro')
   }
@@ -500,10 +500,10 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       quantity: movementForm.quantity,
       date: format(new Date(), 'dd/MM/yyyy'),
       folio: movementForm.folio.toUpperCase(),
-      provider: currentItem.provider || 'S/D',
+      provider: movementForm.type === 'entrada' ? movementForm.provider.toUpperCase() : (currentItem.provider || 'S/D'),
       reason: movementForm.reason.toUpperCase(),
       technician: movementForm.technician.toUpperCase(),
-      cct: movementForm.cct.toUpperCase()
+      cct: movementForm.type === 'salida' ? movementForm.cct.toUpperCase() : ''
     }
 
     const finalStock = movementForm.type === 'entrada' ? currentItem.stock + movementForm.quantity : currentItem.stock - movementForm.quantity
@@ -517,7 +517,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
     localStorage.setItem('coees_warehouse_items_v4', JSON.stringify(updatedItems))
     localStorage.setItem('coees_warehouse_moves_v4', JSON.stringify(updatedMoves))
     
-    setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '' })
+    setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '', provider: '' })
     setEditingMovementId(null)
     toast({ title: editingMovementId ? "Registro actualizado" : "Movimiento registrado con éxito" })
     setCurrentView(movementForm.type === 'entrada' ? 'entradas' : 'salidas')
@@ -590,7 +590,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                        {currentView === 'usuarios' && 'Base de Usuarios Institucionales'}
                        {currentView === 'entradas' && 'Base de Datos de Entradas'}
                        {currentView === 'salidas' && 'Base de Datos de Salidas'}
-                       {currentView === 'registro' && (editingMovementId ? 'Editar Operación Técnica' : (movementForm.type === 'salida' ? 'Formulario de Salidas' : 'Registrar Operación Técnica'))}
+                       {currentView === 'registro' && (editingMovementId ? 'Editar Operación Técnica' : (movementForm.type === 'salida' ? 'Formulario de Salidas' : 'Requisiciones / Entradas'))}
                     </h3>
                   </div>
                   
@@ -854,7 +854,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                   {currentView === 'registro' && (
                     <div className="max-w-6xl mx-auto py-4 h-full overflow-hidden flex flex-col">
                       <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-6 animate-in zoom-in-95 duration-500 overflow-hidden flex flex-col relative">
-                        {/* Botonera de Acción Estilo Formulario VBA */}
+                        {/* Botonera de Acción Estilo Formulario Industrial */}
                         <div className="flex flex-wrap gap-2 mb-2 shrink-0 border-b pb-6">
                           <Button onClick={handleRegisterMovement} className="bg-[#621132] hover:bg-[#4a0b26] text-white h-10 px-6 rounded-xl text-[10px] font-black uppercase shadow-lg gap-2">
                              <Save className="h-4 w-4" /> Guardar
@@ -862,13 +862,18 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                           <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={() => setCurrentView(movementForm.type === 'entrada' ? 'entradas' : 'salidas')}>
                              <Search className="h-4 w-4" /> Buscar Doc
                           </Button>
-                          <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={() => setMovementForm({ ...movementForm, itemId: '', folio: '', quantity: 1, reason: '', technician: '', cct: '' })}>
+                          <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50" onClick={() => setMovementForm({ ...movementForm, itemId: '', folio: '', quantity: 1, reason: '', technician: '', cct: '', provider: '' })}>
                              <RotateCcw className="h-4 w-4" /> Limpiar
                           </Button>
                           {editingMovementId && (
-                            <Button variant="outline" className="h-10 px-6 rounded-xl border-rose-200 text-rose-600 font-black text-[10px] uppercase gap-2 hover:bg-rose-50" onClick={() => handleDeleteMovement(editingMovementId)}>
-                               <Trash2 className="h-4 w-4" /> Borrar
-                            </Button>
+                            <>
+                              <Button variant="outline" className="h-10 px-6 rounded-xl border-rose-200 text-rose-600 font-black text-[10px] uppercase gap-2 hover:bg-rose-50" onClick={() => handleDeleteMovement(editingMovementId)}>
+                                 <Trash2 className="h-4 w-4" /> Borrar
+                              </Button>
+                              <Button variant="outline" className="h-10 px-6 rounded-xl border-blue-200 text-blue-600 font-black text-[10px] uppercase gap-2 hover:bg-blue-50" onClick={handleRegisterMovement}>
+                                 <Settings2 className="h-4 w-4" /> Modificar Doc
+                              </Button>
+                            </>
                           )}
                           <Button variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-600 font-black text-[10px] uppercase gap-2 hover:bg-slate-50 ml-auto" onClick={() => { setCurrentView('dashboard'); setEditingMovementId(null); }}>
                              <X className="h-4 w-4" /> Salir
@@ -878,7 +883,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                         {/* Cabecera del Formulario */}
                         <div className={cn("p-2 rounded-xl text-center mb-2", movementForm.type === 'entrada' ? "bg-emerald-600" : "bg-[#B38E5D]")}>
                            <h4 className="text-white font-black uppercase tracking-[0.3em] text-sm">
-                             {movementForm.type === 'entrada' ? 'REQUISICIONES' : 'SALIDAS'}
+                             {movementForm.type === 'entrada' ? 'ENTRADAS' : 'SALIDAS'}
                            </h4>
                         </div>
 
@@ -895,24 +900,33 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                </div>
                                <div className="space-y-1.5">
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">
-                                    {movementForm.type === 'entrada' ? 'Numero de requisición' : 'Nº Documento'}
+                                    {movementForm.type === 'entrada' ? 'Nº Documento' : 'Nº Documento'}
                                   </Label>
                                   <Input placeholder="FOLIO..." className="h-11 rounded-xl bg-white border-slate-200 font-mono font-black text-center shadow-sm uppercase text-xs" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
                                </div>
                                <div className="space-y-1.5">
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">
-                                    {movementForm.type === 'entrada' ? 'Origen / Proveedor' : 'Usuarios (Clientes)'}
+                                    {movementForm.type === 'entrada' ? 'Proveedor' : 'Usuarios (Clientes)'}
                                   </Label>
-                                  <Select value={movementForm.cct} onValueChange={v => setMovementForm({...movementForm, cct: v})}>
-                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue placeholder="SELECCIONAR..." /></SelectTrigger>
-                                     <SelectContent className="rounded-xl shadow-2xl z-[300]">
-                                        {users.map(u => (<SelectItem key={u.id} value={u.name} className="text-[10px] font-bold uppercase">{u.name}</SelectItem>))}
-                                     </SelectContent>
-                                  </Select>
+                                  {movementForm.type === 'entrada' ? (
+                                    <Select value={movementForm.provider} onValueChange={v => setMovementForm({...movementForm, provider: v})}>
+                                       <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue placeholder="ELEGIR PROVEEDOR..." /></SelectTrigger>
+                                       <SelectContent className="rounded-xl shadow-2xl z-[300]">
+                                          {providers.map(p => (<SelectItem key={p.id} value={p.name} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>))}
+                                       </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <Select value={movementForm.cct} onValueChange={v => setMovementForm({...movementForm, cct: v})}>
+                                       <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue placeholder="ELEGIR USUARIO..." /></SelectTrigger>
+                                       <SelectContent className="rounded-xl shadow-2xl z-[300]">
+                                          {users.map(u => (<SelectItem key={u.id} value={u.name} className="text-[10px] font-bold uppercase">{u.name}</SelectItem>))}
+                                       </SelectContent>
+                                    </Select>
+                                  )}
                                </div>
                                <div className="space-y-1.5">
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Observacion</Label>
-                                  <Input placeholder="NOTAS..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
+                                  <Input placeholder="NOTAS TÉCNICAS..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value})} />
                                </div>
                             </div>
 
@@ -934,10 +948,16 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                   </Select>
                                </div>
                                <div className="md:col-span-2 space-y-1.5">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad Stock</Label>
-                                  <div className="h-11 bg-slate-100 rounded-xl border-none flex items-center justify-center font-black text-xl text-slate-400 shadow-inner">
-                                    {selectedItemStock}
-                                  </div>
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Unidad</Label>
+                                  <Select value={movementForm.unit} onValueChange={v => setMovementForm({...movementForm, unit: v})}>
+                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue /></SelectTrigger>
+                                     <SelectContent className="z-[300]">
+                                        <SelectItem value="PZA" className="text-[10px] font-bold">PZA</SelectItem>
+                                        <SelectItem value="MTS" className="text-[10px] font-bold">MTS</SelectItem>
+                                        <SelectItem value="KITS" className="text-[10px] font-bold">KITS</SelectItem>
+                                        <SelectItem value="PAQ" className="text-[10px] font-bold">PAQ</SelectItem>
+                                     </SelectContent>
+                                  </Select>
                                </div>
                                <div className="md:col-span-2 space-y-1.5">
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad</Label>
@@ -945,26 +965,20 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                </div>
                             </div>
                             
+                            {/* Bloque 3: Datos de Responsable (Común) */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
                                <div className="space-y-1.5">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Técnico / Responsable de Operación</Label>
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Responsable de Operación</Label>
                                   <div className="relative group">
                                      <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-black uppercase text-[10px] shadow-sm pl-10" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value.toUpperCase()})} />
                                      <User className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
                                   </div>
                                </div>
                                <div className="space-y-1.5">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Unidad de Medida</Label>
-                                  <Select value={movementForm.unit} onValueChange={v => setMovementForm({...movementForm, unit: v})}>
-                                     <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase text-[10px] shadow-sm"><SelectValue /></SelectTrigger>
-                                     <SelectContent className="z-[300]">
-                                        <SelectItem value="PZA" className="text-[10px] font-bold">PIEZA (PZA)</SelectItem>
-                                        <SelectItem value="MTS" className="text-[10px] font-bold">METROS (MTS)</SelectItem>
-                                        <SelectItem value="KITS" className="text-[10px] font-bold">KITS (KITS)</SelectItem>
-                                        <SelectItem value="PAQ" className="text-[10px] font-bold">PAQUETE (PAQ)</SelectItem>
-                                        <SelectItem value="CAJA" className="text-[10px] font-bold">CAJA (CAJA)</SelectItem>
-                                     </SelectContent>
-                                  </Select>
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Cantidad Stock Actual</Label>
+                                  <div className="h-11 bg-slate-100 rounded-xl border-none flex items-center justify-center font-black text-xl text-slate-400 shadow-inner">
+                                    {selectedItemStock}
+                                  </div>
                                </div>
                             </div>
                           </div>
@@ -979,7 +993,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
-      {/* DIÁLOGO: AGREGAR/EDITAR INSUMO */}
+      {/* DIÁLOGOS DE GESTIÓN (IDEM) */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-[#B38E5D] text-white">
@@ -1016,7 +1030,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
-      {/* DIÁLOGO: AGREGAR/EDITAR PROVEEDOR */}
       <Dialog open={isAddProviderDialogOpen} onOpenChange={setIsAddProviderDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-indigo-600 text-white">
@@ -1034,7 +1047,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
         </DialogContent>
       </Dialog>
 
-      {/* DIÁLOGO: AGREGAR/EDITAR USUARIO (ÁREA/OFICINA) */}
       <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl z-[150]">
           <DialogHeader className="p-8 bg-rose-600 text-white">
