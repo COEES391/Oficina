@@ -39,7 +39,8 @@ import {
   AlertCircle,
   Calendar,
   FileText,
-  ClipboardList
+  ClipboardList,
+  User
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -893,7 +894,9 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                   </div>
                                </div>
                                <div className="space-y-1.5">
-                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">Nº Documento</Label>
+                                  <Label className="text-[10px] font-black text-primary uppercase pl-1">
+                                    {movementForm.type === 'entrada' ? 'Numero de requisición' : 'Nº Documento'}
+                                  </Label>
                                   <Input placeholder="FOLIO..." className="h-11 rounded-xl bg-white border-slate-200 font-mono font-black text-center shadow-sm uppercase text-xs" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value})} />
                                </div>
                                <div className="space-y-1.5">
@@ -947,7 +950,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                   <Label className="text-[10px] font-black text-primary uppercase pl-1">Técnico / Responsable de Operación</Label>
                                   <div className="relative group">
                                      <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-black uppercase text-[10px] shadow-sm pl-10" value={movementForm.technician} onChange={e => setMovementForm({...movementForm, technician: e.target.value.toUpperCase()})} />
-                                     <User className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                     <User className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" />
                                   </div>
                                </div>
                                <div className="space-y-1.5">
