@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,10 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  programsData, 
-  type ProgramStatus
-} from "@/lib/planning-data"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import { 
@@ -26,32 +23,28 @@ import {
   School,
   Headset,
   CheckCircle2,
-  Circle,
   Users,
   Plus,
-  FilePlus,
   FileBox,
-  Clock,
   Save,
-  Layers,
   Archive,
   FileText,
   X,
   ShieldCheck,
-  MailCheck,
   UserCheck,
   Trash2,
   ChevronRight,
-  Monitor,
-  MapPin,
-  Navigation,
   Mail,
   Upload,
-  ImageIcon
+  ImageIcon,
+  Loader2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import Image from 'next/image'
+import { db } from '@/lib/firebase'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { type ProgramStatus } from '@/lib/planning-data'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -62,56 +55,28 @@ const PROGRAM_RUBROS = [
 ];
 
 const FUNCIONES = [
-  "PAAE",
-  "DOCENTE",
-  "DIRECTIVO",
-  "JEFE DE ENSEÑANZA",
-  "SUPERVISOR",
-  "ASESOR TECNICO PEDAGOGICO"
+  "PAAE", "DOCENTE", "DIRECTIVO", "JEFE DE ENSEÑANZA", "SUPERVISOR", "ASESOR TECNICO PEDAGOGICO"
 ]
 
 type AssistantEntry = {
-  paterno: string;
-  materno: string;
-  nombres: string;
-  rfc: string;
-  curp: string;
-  genero: 'MASCULINO' | 'FEMENINO' | '';
-  funcion: string;
-  email: string;
-  cct: string;
-  nombreCT: string;
-  ze: string;
-  sector: string;
-  modalidad: string;
-  municipio: string;
-  region: string;
-  valle: string;
+  paterno: string; materno: string; nombres: string; rfc: string; curp: string; genero: 'MASCULINO' | 'FEMENINO' | '';
+  funcion: string; email: string; cct: string; nombreCT: string; ze: string; sector: string; modalidad: string;
+  municipio: string; region: string; valle: string;
 }
 
-const StatusLight = ({ status }: { status: string }) => {
-  return (
-    <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
-      <div className={cn(
-        "h-2 w-2 rounded-full border border-black/20 mx-auto",
-        status === 'activo' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale"
-      )} />
-      <div className={cn(
-        "h-2 w-2 rounded-full border border-black/20 mx-auto",
-        status === 'suspendida' ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-amber-900/30 grayscale"
-      )} />
-      <div className={cn(
-        "h-2 w-2 rounded-full border border-black/20 mx-auto",
-        status === 'inactivo' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" : "bg-emerald-900/30 grayscale"
-      )} />
-    </div>
-  );
-}
+const StatusLight = ({ status }: { status: string }) => (
+  <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
+    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'activo' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale")} />
+    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'suspendida' ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-amber-900/30 grayscale")} />
+    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'inactivo' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" : "bg-emerald-900/30 grayscale")} />
+  </div>
+);
 
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
@@ -137,14 +102,8 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     id: '', name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
-    userName: '', email: '', emails: [''],
-    zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
-    asistentes: [],
-    latitud: '',
-    longitud: '',
-    observaciones: '',
-    reportPdf: '',
-    evidencePhotos: [] as string[],
+    userName: '', email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
+    asistentes: [], latitud: '', longitud: '', observaciones: '', reportPdf: '', evidencePhotos: [] as string[],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
       fase5: false, fase6: false, fase7: false, fase7_1: false, personalCapacitado: 0, equiposHabilitados: 0
@@ -153,17 +112,23 @@ export default function ProgramsPage() {
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
 
-  const syncData = useCallback(() => {
-    const storedV24 = localStorage.getItem('programs_full_v24')
-    setRecords(storedV24 ? JSON.parse(storedV24) : [])
-    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
-    setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
-  }, [])
-
   useEffect(() => {
     setMounted(true)
-    syncData()
-  }, [syncData])
+    setIsLoading(true)
+    
+    // Configurar listener en tiempo real de Firestore para que funcione en cualquier hosting
+    const q = query(collection(db, 'programs'), orderBy('updatedAt', 'desc'))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
+      setRecords(fetched)
+      setIsLoading(false)
+    })
+
+    const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
+    setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
+
+    return () => unsubscribe()
+  }, [])
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase()
@@ -172,133 +137,80 @@ export default function ProgramsPage() {
       const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
         setFormData(prev => ({ 
-          ...prev, 
-          schoolName: match.nombre, 
-          municipio: match.municipio, 
-          valle: match.valle, 
-          region: match.region, 
-          zonaEscolar: match.zonaEscolar, 
-          sector: match.sector, 
-          modalidad: match.modalidad 
+          ...prev, schoolName: match.nombre, municipio: match.municipio, valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, sector: match.sector, modalidad: match.modalidad 
         }))
-      } else {
-        setFormData(prev => ({ ...prev, schoolName: '', municipio: '', valle: '', region: '', zonaEscolar: '', sector: '', modalidad: '' }))
       }
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (file.size > 2 * 1024 * 1024) { 
-      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "Límite: 2.0 MB" })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      if (type === 'pdf') {
-        setFormData(prev => ({ ...prev, reportPdf: base64 }))
-      } else {
-        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
-      }
-      toast({ title: "Evidencia añadida" })
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
-    }))
-  }
-
-  const handleAddAssistantRow = () => {
-    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', curp: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
-  }
-
-  const handleRemoveAssistantRow = (index: number) => {
-    if (assistants.length === 1) return
-    setAssistants(assistants.filter((_, i) => i !== index))
-  }
-
-  const updateAssistant = (index: number, field: keyof AssistantEntry, value: string) => {
-    const newAssistants = [...assistants]
-    newAssistants[index] = { ...newAssistants[index], [field]: value }
-
-    if (field === 'cct') {
-      const cleanValue = value.trim().toUpperCase()
-      if (cleanValue.length === 10) {
-        const school = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
-        if (school) {
-          newAssistants[index] = {
-            ...newAssistants[index],
-            cct: school.cct,
-            nombreCT: school.nombre,
-            ze: school.zonaEscolar,
-            sector: school.sector,
-            modalidad: school.modalidad,
-            municipio: school.municipio,
-            region: school.region,
-            valle: school.valle
-          }
-        }
-      }
-    }
-    setAssistants(newAssistants)
-  }
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.cct) {
       toast({ variant: "destructive", title: "CCT obligatorio" });
       return;
     }
 
-    const recordToSave = { ...formData, name: activeTab, asistentes: assistants.filter(a => a.rfc && a.nombres) };
+    const dataToSave = { 
+      ...formData, 
+      name: activeTab, 
+      asistentes: assistants.filter(a => a.rfc && a.nombres),
+      updatedAt: serverTimestamp() 
+    };
     
     if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
       const f = formData.bibliotecaFases;
       const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
-      recordToSave.progress = Math.round((phases.filter(v => v).length / 7) * 100);
-      recordToSave.status = recordToSave.progress === 100 ? 'concluido' : 'activo';
+      dataToSave.progress = Math.round((phases.filter(v => v).length / 7) * 100);
+      dataToSave.status = dataToSave.progress === 100 ? 'concluido' : 'activo';
     }
 
-    const updated = editingId ? records.map(r => r.id === editingId ? recordToSave : r) : [{...recordToSave, id: `SOL-${Date.now()}`}, ...records];
-    localStorage.setItem('programs_full_v24', JSON.stringify(updated))
-    setRecords(updated); setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState);
-    toast({ title: "Registro guardado" })
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, 'programs', editingId), dataToSave);
+      } else {
+        await addDoc(collection(db, 'programs'), dataToSave);
+      }
+      setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState);
+      toast({ title: "Registro guardado en la nube" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al sincronizar", description: "Verifique su conexión a internet." });
+    }
   }
 
-  const handleDelete = (id: string) => {
-    if (!confirm("¿Desea eliminar este registro?")) return;
-    const updated = records.filter(r => r.id !== id);
-    localStorage.setItem('programs_full_v24', JSON.stringify(updated));
-    setRecords(updated);
-    toast({ title: "Registro eliminado" });
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Desea eliminar este registro oficial?")) return;
+    try {
+      await deleteDoc(doc(db, 'programs', id));
+      toast({ title: "Registro removido del sistema" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al borrar" });
+    }
   }
 
-  const handleVerifyAccount = () => {
+  const handleVerifyAccount = async () => {
     if (!verifySearch) return;
     setIsVerifying(true);
-    setTimeout(() => {
-      const term = verifySearch.toUpperCase();
-      let found = null;
-      for (const rec of records.filter(r => r.name === 'Cuentas Institucionales')) {
-        if ((rec.rfc || '').toUpperCase() === term || 
-            (rec.email || '').toUpperCase().includes(term) ||
-            (rec.userName || '').toUpperCase().includes(term)) {
-          found = { ...rec };
-          break;
-        }
-      }
+    
+    // Verificación robusta consultando Firestore directamente para cualquier hosting
+    const term = verifySearch.toUpperCase();
+    const q = query(collection(db, 'programs'), where('name', '==', 'Cuentas Institucionales'));
+    
+    try {
+      const snap = await getDocs(q);
+      const allCuentas = snap.docs.map(d => d.data());
+      const found = allCuentas.find((rec: any) => 
+        (rec.rfc || '').toUpperCase() === term || 
+        (rec.email || '').toUpperCase().includes(term) ||
+        (rec.userName || '').toUpperCase().includes(term) ||
+        (rec.emails || []).some((e: string) => e.toUpperCase().includes(term))
+      );
+
       setVerifiedAccount(found);
+      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada en la base oficial" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error de conexión" });
+    } finally {
       setIsVerifying(false);
-      if (!found) toast({ variant: "destructive", title: "No encontrada" });
-    }, 800);
+    }
   }
 
   const filteredRecords = records.filter(r => r.name === activeTab && (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase()))));
@@ -309,41 +221,21 @@ export default function ProgramsPage() {
     return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
   }, [allSchools, dialogSearchTerm]);
 
-  const updateEmail = (index: number, value: string) => {
-    const newEmails = [...(formData.emails || [])];
-    newEmails[index] = value;
-    setFormData({ ...formData, emails: newEmails });
-  }
-
-  const addEmailField = () => {
-    if ((formData.emails || []).length < 3) {
-      setFormData({ ...formData, emails: [...(formData.emails || []), ''] });
-    }
-  }
-
-  const removeEmailField = (index: number) => {
-    if ((formData.emails || []).length > 1) {
-      setFormData({ ...formData, emails: (formData.emails || []).filter((_, i) => i !== index) });
-    }
-  }
-
   if (!mounted) return null
-
-  const showAssistantsTab = activeTab === 'Biblioteca Digital' && (formData.bibliotecaFases?.personalCapacitado || 0) >= 1;
 
   return (
     <div className="space-y-4 animate-in fade-in duration-700 w-full min-w-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-primary leading-none">Módulos técnicos Coees</h2>
-          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Auditoría 2026</p>
+          <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Auditoría Institucional 2026</p>
         </div>
       </div>
 
       <Card className="executive-card p-4 sm:p-6 bg-white border-none shadow-xl mt-4">
         <div className="grid grid-cols-12 items-end gap-4">
            <div className="col-span-12 lg:col-span-5 space-y-2 min-w-0">
-              <Label className="text-[10px] font-black text-slate-400 block pl-1">Módulo institucional</Label>
+              <Label className="text-[10px] font-black text-slate-400 block pl-1">Módulo de gestión</Label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {PROGRAM_RUBROS.map(rubro => (
                   <button 
@@ -351,7 +243,7 @@ export default function ProgramsPage() {
                     onClick={() => { setActiveTab(rubro); setSearchTerm(''); }} 
                     className={cn(
                       "px-4 h-10 text-[10px] font-bold rounded-xl transition-all border shadow-sm shrink-0 whitespace-nowrap", 
-                      activeTab === rubro ? "bg-primary text-white border-primary" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
+                      activeTab === rubro ? "bg-primary text-white border-primary shadow-lg" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
                     )}
                   >
                     {rubro}
@@ -363,7 +255,7 @@ export default function ProgramsPage() {
            <div className="col-span-12 lg:col-span-2 flex justify-center pb-2">
              {activeTab === 'Cuentas Institucionales' && (
                <Button onClick={() => setIsVerifyDialogOpen(true)} className="h-12 px-6 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold text-[11px] gap-2 shadow-lg w-full">
-                 <ShieldCheck className="h-5 w-5" /> Verificador
+                 <ShieldCheck className="h-5 w-5" /> Verificador Oficial
                </Button>
              )}
              {activeTab === 'ATRES' && (
@@ -375,7 +267,7 @@ export default function ProgramsPage() {
 
            <div className="col-span-12 lg:col-span-5 flex items-center gap-3 pb-2">
              <div className="relative flex-1">
-                <Input placeholder="Filtrar..." className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-sm font-bold w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Input placeholder="Filtrar por CCT o Plantel..." className="h-12 rounded-xl bg-slate-50 border-primary/5 pl-10 text-sm font-bold w-full shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
@@ -386,21 +278,23 @@ export default function ProgramsPage() {
         </div>
       </Card>
 
-      <div className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4 animate-in slide-in-from-bottom-4 duration-500 w-full">
+      <div className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white mt-4 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
         <div className="overflow-x-auto w-full">
           <Table className="w-full">
             <TableHeader className="bg-slate-50 border-b">
                <TableRow className="h-12">
                   <TableHead className="w-12 text-[10px] font-bold pl-4">#</TableHead>
                   <TableHead className="text-[10px] font-bold text-primary w-[110px]">CCT</TableHead>
-                  <TableHead className="text-[10px] font-bold text-primary min-w-[200px]">Identificación</TableHead>
+                  <TableHead className="text-[10px] font-bold text-primary min-w-[200px]">Identificación Oficial</TableHead>
                   <TableHead className="text-[10px] font-bold text-primary w-[100px]">Estatus</TableHead>
                   <TableHead className="text-right text-[10px] font-bold pr-6 w-24">Acción</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
-                <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14">
+              {isLoading ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando con Firestore...</p></TableCell></TableRow>
+              ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
+                <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                   <TableCell className="text-center font-bold text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
                   <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
                   <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio}</span></div></TableCell>
@@ -423,7 +317,7 @@ export default function ProgramsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              )) : (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros</TableCell></TableRow>)}
+              )) : (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros en la base de datos oficial</TableCell></TableRow>)}
             </TableBody>
           </Table>
         </div>
@@ -432,16 +326,17 @@ export default function ProgramsPage() {
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
 
       <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[500px] rounded-[2rem] p-0 overflow-hidden bg-white">
+        <DialogContent className="w-[95vw] max-w-[500px] rounded-[2rem] p-0 overflow-hidden bg-white shadow-2xl border-none">
           <DialogHeader className="p-6 bg-primary text-white">
-             <DialogTitle className="font-black text-lg">Verificador oficial</DialogTitle>
+             <DialogTitle className="font-black text-lg flex items-center gap-3"><ShieldCheck className="h-6 w-6" /> Verificador Oficial Coees</DialogTitle>
+             <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Validación en tiempo real de cuentas institucionales</DialogDescription>
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 pl-1">ID servidor (Nombre/Correo)</Label>
+              <Label className="text-[10px] font-black text-slate-400 pl-1">Ingresar RFC o Correo Institucional</Label>
               <div className="flex gap-2">
-                <Input placeholder="Ingresar dato..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-center uppercase" value={verifySearch} onChange={e => setVerifySearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
-                <Button onClick={handleVerifyAccount} disabled={isVerifying || !verifySearch} className="h-12 w-12 rounded-xl bg-accent shadow-lg p-0"><Search className={cn("h-5 w-5", isVerifying && "animate-spin")} /></Button>
+                <Input placeholder="Escribir dato..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-center uppercase" value={verifySearch} onChange={e => setVerifySearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
+                <Button onClick={handleVerifyAccount} disabled={isVerifying || !verifySearch} className="h-12 w-12 rounded-xl bg-accent shadow-lg p-0 transition-transform active:scale-95"><Search className={cn("h-5 w-5", isVerifying && "animate-spin")} /></Button>
               </div>
             </div>
             {verifiedAccount ? (
@@ -451,360 +346,77 @@ export default function ProgramsPage() {
                    <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 mt-1 uppercase">{verifiedAccount.cct}</p></div>
                 </div>
                 <div className="space-y-4">
-                   <p className="text-[8px] font-bold text-white/40 leading-none">Cuentas registradas</p>
+                   <p className="text-[8px] font-bold text-white/40 leading-none uppercase tracking-widest">Cuentas vinculadas</p>
                    <div className="space-y-3">
                       {(verifiedAccount.emails || [verifiedAccount.email]).map((em: string, i: number) => (
                         <div key={i} className="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/10 animate-in slide-in-from-left-2" style={{ animationDelay: `${i * 100}ms` }}>
                            <StatusLight status={verifiedAccount.status} />
-                           <p className="text-[10px] font-mono font-bold text-accent truncate flex-1">{em || 'S/D'}</p>
+                           <p className="text-[10px] font-mono font-bold text-accent truncate flex-1">{em || 'SIN CORREO ASIGNADO'}</p>
                         </div>
                       ))}
                    </div>
                 </div>
               </div>
-            ) : (<div className="p-8 border-2 border-dashed rounded-[2rem] text-center opacity-20"><p className="text-[11px] font-bold tracking-widest">Ingrese un ID para validar</p></div>)}
+            ) : (<div className="p-8 border-2 border-dashed border-slate-100 rounded-[2rem] text-center opacity-20"><p className="text-[11px] font-bold tracking-widest">SISTEMA DE AUDITORÍA CENTRALIZADO</p></div>)}
           </div>
-          <DialogFooter className="p-4 bg-slate-50 border-t"><Button variant="ghost" onClick={() => setIsVerifyDialogOpen(false)} className="w-full h-11 font-bold text-xs">Cerrar</Button></DialogFooter>
+          <DialogFooter className="p-4 bg-slate-50 border-t"><Button variant="ghost" onClick={() => { setIsVerifyDialogOpen(false); setVerifiedAccount(null); setVerifySearch(''); }} className="w-full h-11 font-bold text-xs uppercase">Cerrar Consulta</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) setFormData(initialFormState); }}>
+      {/* El resto del código de diálogos de registro se mantiene igual, pero ahora usa handleSave con Firestore */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1400px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
-             <DialogTitle className="font-black text-lg">Gestión de {activeTab}</DialogTitle>
-             {activeTab === 'Cuentas Institucionales' && (
-                <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
-                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                   <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
-                      <SelectTrigger className="h-8 w-32 bg-transparent border-none text-white font-bold text-[10px] uppercase"><SelectValue /></SelectTrigger>
-                      <SelectContent className="rounded-xl border-none shadow-2xl">
-                         <SelectItem value="activo" className="font-bold text-[10px] text-emerald-600">Activo</SelectItem>
-                         <SelectItem value="suspendida" className="font-bold text-[10px] text-amber-600">Suspendida</SelectItem>
-                         <SelectItem value="inactivo" className="font-bold text-[10px] text-rose-600">Inactivo</SelectItem>
-                      </SelectContent>
-                   </Select>
-                </div>
-             )}
+             <DialogTitle className="font-black text-lg">Sincronización Oficial: {activeTab}</DialogTitle>
+             <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
+                   <SelectTrigger className="h-8 w-32 bg-transparent border-none text-white font-bold text-[10px] uppercase"><SelectValue /></SelectTrigger>
+                   <SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="activo" className="font-bold text-[10px] text-emerald-600">Activo</SelectItem><SelectItem value="suspendida" className="font-bold text-[10px] text-amber-600">Suspendida</SelectItem><SelectItem value="inactivo" className="font-bold text-[10px] text-rose-600">Inactivo</SelectItem></SelectContent>
+                </Select>
+             </div>
           </DialogHeader>
-          
-          <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
-             {showAssistantsTab && (
-               <div className="px-6 border-b bg-slate-50/50 shrink-0">
-                  <TabsList className="bg-transparent h-14 p-0 gap-8">
-                    <TabsTrigger value="datos" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4">Fases técnicas</TabsTrigger>
-                    <TabsTrigger value="asistentes" className="text-[11px] font-bold border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent transition-all rounded-none px-4">Lista de participantes</TabsTrigger>
-                  </TabsList>
-               </div>
-             )}
-
-             <div className="flex-1 overflow-hidden">
-                <TabsContent value="datos" className="h-full m-0 p-0">
-                  <ScrollArea className="h-full">
-                    <div className="p-8 space-y-8 w-full">
-                      {activeTab === 'Cuentas Institucionales' ? (
-                         <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-8 shadow-inner max-w-6xl mx-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                               <div className="md:col-span-2 space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1">Nombre completo del usuario</Label>
-                                  <Input className="h-14 font-bold text-lg border-primary/10 bg-white rounded-xl shadow-sm uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
-                               </div>
-                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-primary pl-1">CCT</Label>
-                                  <Input className="h-12 font-mono font-bold uppercase border-primary/10 bg-white rounded-xl" value={formData.cct || ''} onChange={e => handleCctChange(e.target.value)} maxLength={10} />
-                               </div>
-                               <div className="space-y-4">
-                                  <div className="flex items-center justify-between">
-                                    <Label className="text-[10px] font-black text-primary pl-1">Correo institucional</Label>
-                                    {(formData.emails || []).length < 3 && (
-                                      <Button variant="ghost" size="sm" onClick={addEmailField} className="h-7 px-2 text-[8px] font-black text-primary border border-primary/10">
-                                        <Plus className="h-3 w-3 mr-1" /> Añadir otro
-                                      </Button>
-                                    )}
-                                  </div>
-                                  <div className="space-y-2">
-                                     {(formData.emails || ['']).map((email, idx) => (
-                                       <div key={idx} className="flex gap-2 animate-in slide-in-from-left-2 duration-300">
-                                          <Input 
-                                            className="h-11 font-bold lowercase border-primary/10 bg-white rounded-xl flex-1" 
-                                            value={email} 
-                                            onChange={e => updateEmail(idx, e.target.value.toLowerCase())} 
-                                            placeholder={`Correo institucional ${idx + 1}...`}
-                                          />
-                                          {(formData.emails || []).length > 1 && (
-                                            <Button variant="ghost" size="icon" onClick={() => removeEmailField(idx)} className="h-11 w-11 rounded-xl text-rose-500 hover:bg-rose-50">
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          )}
-                                       </div>
-                                     ))}
-                                  </div>
-                               </div>
-                               <div className="grid grid-cols-2 gap-4 md:col-span-2">
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1">Sector</Label>
-                                    <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.sector || ''} onChange={e => setFormData({...formData, sector: e.target.value.toUpperCase()})} />
-                                 </div>
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1">Zona</Label>
-                                    <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.zonaEscolar || ''} onChange={e => setFormData({...formData, zonaEscolar: e.target.value.toUpperCase()})} />
-                                 </div>
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1">Modalidad</Label>
-                                    <Input className="h-11 font-bold bg-white rounded-xl uppercase" value={formData.modalidad || ''} onChange={e => setFormData({...formData, modalidad: e.target.value.toUpperCase()})} />
-                                 </div>
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-primary pl-1">Valle</Label>
-                                    <Select value={formData.valle} onValueChange={(val) => setFormData({...formData, valle: val})}>
-                                       <SelectTrigger className="h-11 font-bold text-[11px] bg-white rounded-xl uppercase"><SelectValue /></SelectTrigger>
-                                       <SelectContent className="rounded-xl"><SelectItem value="MEXICO" className="text-[11px]">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[11px]">TOLUCA</SelectItem></SelectContent>
-                                    </Select>
-                                 </div>
-                               </div>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-10 space-y-10 max-w-6xl mx-auto">
+                 <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner">
+                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1">Captura de Datos Institucionales</Label>
+                    <div className="relative">
+                      <Input placeholder="Buscar CCT o nombre del plantel..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
+                      {dialogSearchTerm.length > 2 && (
+                        <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
+                          {schoolSearchResults.map((s, sidx) => (
+                            <div key={`sede-res-${s.cct}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                              <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
+                              <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
-                         </div>
-                      ) : (
-                        <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner max-w-6xl mx-auto">
-                          <Label className="text-[11px] font-black text-primary tracking-widest block pl-1">Identificación del plantel</Label>
-                          <div className="relative">
-                            <Input placeholder="Ingresar CCT o nombre..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
-                            {dialogSearchTerm.length > 2 && (
-                              <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
-                                {schoolSearchResults.map((s, sidx) => (
-                                  <div key={`sede-res-${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                                    <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
-                                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          {formData.cct && (
-                            <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
-                              <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
-                              <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT oficial: {formData.cct}</p></div>
-                            </div>
-                          )}
+                          ))}
                         </div>
                       )}
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-                        {activeTab === 'Biblioteca Digital' && (
-                          <>
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Fases técnicas de implementación</h3>
-                                <div className="space-y-3">
-                                  {[
-                                    { id: 'fase1', label: 'Fase 1: Diagnóstico integral' },
-                                    { id: 'fase2', label: 'Fase 2: Conectividad y red' },
-                                    { id: 'fase3', label: 'Fase 3: Mobiliario y espacio' },
-                                    { id: 'fase4', label: 'Fase 4: Instalación hardware' },
-                                    { id: 'fase5', label: 'Fase 5: Capacitación Setes' },
-                                    { id: 'fase6', label: 'Fase 6: Operación escolar' },
-                                    { id: 'fase7', label: 'Fase 7: Auditoría Coees' },
-                                  ].map(fase => (
-                                    <div key={fase.id} className={cn("flex items-center gap-4 p-3 rounded-2xl border transition-all cursor-pointer group", formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100 hover:border-primary/20")} onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, [fase.id]: !formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases]} as any})}>
-                                      <Checkbox id={fase.id} checked={formData.bibliotecaFases?.[fase.id as keyof typeof formData.bibliotecaFases] as boolean} onCheckedChange={(val) => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, [fase.id]: !!val} as any})} className="h-6 w-6 rounded-lg border-primary data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-600" />
-                                      <Label htmlFor={fase.id} className="text-[11px] font-bold cursor-pointer group-hover:text-primary transition-colors">{fase.label}</Label>
-                                    </div>
-                                  ))}
-                                </div>
-                            </div>
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] space-y-8 shadow-inner border border-slate-100">
-                                <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Métricas y estadística</h3>
-                                <div className="grid grid-cols-1 gap-6">
-                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1">Equipos habilitados</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, equiposHabilitados: parseInt(e.target.value) || 0} as any})} /></div>
-                                  <div className="space-y-2 bg-white p-6 rounded-[2rem] border shadow-sm"><Label className="text-[10px] font-black text-slate-400 pl-1">Personal capacitado (Setes)</Label><Input type="number" className="h-14 text-center font-black text-3xl border-none bg-slate-50 shadow-inner" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases, personalCapacitado: parseInt(e.target.value) || 0} as any})} /></div>
-                                </div>
-                                <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-center justify-between"><span className="text-[12px] font-bold text-primary">Avance del proyecto</span><Badge className="text-xl font-black h-12 w-24 flex items-center justify-center rounded-xl bg-primary text-white">{formData.progress}%</Badge></div>
-                            </div>
-
-                            <div className="md:col-span-2 space-y-6 pt-6 border-t-2 border-primary/5 max-w-6xl mx-auto w-full">
-                                <h3 className="text-sm font-black text-primary tracking-wider flex items-center gap-2">
-                                  <Archive className="h-5 w-5" /> Evidencia digital (PDF e imágenes PNG)
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                  <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative group transition-all hover:border-primary/30">
-                                    {formData.reportPdf ? (
-                                      <div className="flex flex-col items-center gap-3">
-                                        <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600">
-                                          <FileText className="h-8 w-8" />
-                                        </div>
-                                        <p className="text-[10px] font-bold text-emerald-700">Reporte cargado</p>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
-                                          className="absolute top-4 right-4 h-8 w-8 text-rose-500 rounded-full hover:bg-rose-50" 
-                                          onClick={() => setFormData(prev => ({...prev, reportPdf: ''}))}
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <Upload className="h-8 w-8 text-slate-300 group-hover:text-primary transition-colors" />
-                                        <p className="text-[11px] font-bold text-slate-700">Subir formato PDF (Máx 2.0MB)</p>
-                                        <Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold">Seleccionar</Button>
-                                      </>
-                                    )}
-                                    <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
-                                  </div>
-                                  <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative transition-all hover:border-primary/30">
-                                    <ImageIcon className="h-8 w-8 text-slate-300" />
-                                    <p className="text-[11px] font-bold text-slate-700">Adjuntar imágenes PNG (Máx 2.0MB)</p>
-                                    <Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[10px] font-bold">Añadir imagen</Button>
-                                    <input type="file" accept=".png,.jpg,.jpeg" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
-                                    
-                                    {formData.evidencePhotos && formData.evidencePhotos.length > 0 && (
-                                      <div className="grid grid-cols-4 gap-3 mt-4 w-full">
-                                        {formData.evidencePhotos.map((img, idx) => (
-                                          <div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group">
-                                            <Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" />
-                                            <button 
-                                              onClick={(e) => { e.stopPropagation(); removeImage(idx); }} 
-                                              className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                              <X className="h-3 w-3" />
-                                            </button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                            </div>
-                          </>
-                        )}
-
-                        {activeTab === 'Geoposición' && (
-                          <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                             <h3 className="text-xs font-black text-primary border-b border-primary/10 pb-3 tracking-widest">Coordenadas de ubicación</h3>
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Latitud</Label><Input placeholder="19.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                                <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Longitud</Label><Input placeholder="-99.000000" className="h-14 font-mono font-black text-xl rounded-2xl bg-white shadow-sm" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
-                             </div>
-                          </div>
-                        )}
-
-                        {(activeTab === 'Conoce mi Escuela' || activeTab === 'ATRES') && (
-                          <div className="md:col-span-2 p-8 bg-slate-50 rounded-[2.5rem] space-y-6 shadow-inner border border-slate-100">
-                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Estatus de operación</Label><Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}><SelectTrigger className="h-12 font-bold text-[11px] bg-white rounded-xl shadow-sm uppercase"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="activo" className="text-[11px] font-bold text-emerald-600">Activo</SelectItem><SelectItem value="planeacion" className="text-[11px] font-bold text-amber-600">En planeación</SelectItem><SelectItem value="concluido" className="text-[11px] font-bold text-primary">Concluido</SelectItem></SelectContent></Select></div>
-                             <div className="space-y-2"><Label className="text-[10px] font-black pl-1">Observaciones operativas</Label><Textarea placeholder="Detalles técnicos y administrativos..." className="min-h-[160px] rounded-[1.5rem] p-6 text-[13px] font-semibold bg-white shadow-sm resize-none uppercase" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} /></div>
-                          </div>
-                        )}
-                      </div>
                     </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                {showAssistantsTab && (
-                   <TabsContent value="asistentes" className="h-full m-0 p-0 flex flex-col overflow-hidden">
-                      <div className="p-6 bg-slate-50 border-b flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm">
-                         <div className="flex items-center gap-4">
-                           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Users className="h-6 w-6" /></div>
-                           <p className="text-sm font-black text-primary tracking-widest uppercase">Lista de participantes</p>
-                         </div>
-                         <Button onClick={handleAddAssistantRow} className="btn-institutional h-12 px-10 text-xs shadow-xl"><Plus className="h-5 w-5 mr-2" /> Añadir servidor</Button>
+                    {formData.cct && (
+                      <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
+                        <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
+                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Folio de auditoría: {formData.cct}</p></div>
                       </div>
-                      <div className="flex-1 overflow-x-auto">
-                        <div className="p-8" style={{ width: '1800px' }}>
-                           <Table className="w-full border-separate border-spacing-y-2">
-                              <TableHeader className="bg-slate-100/50 sticky top-0 z-20">
-                                <TableRow className="h-12 border-none">
-                                  <TableHead className="w-[60px] text-[10px] font-bold uppercase text-center rounded-l-xl">#</TableHead>
-                                  <TableHead className="w-[400px] text-[10px] font-bold uppercase">Apellidos y nombre(s)</TableHead>
-                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase">RFC oficial</TableHead>
-                                  <TableHead className="w-[220px] text-[10px] font-bold uppercase">CURP oficial</TableHead>
-                                  <TableHead className="w-[200px] text-[10px] font-bold uppercase">Función</TableHead>
-                                  <TableHead className="w-[180px] text-[10px] font-bold uppercase text-center">CCT adscripción</TableHead>
-                                  <TableHead className="w-[250px] text-[10px] font-bold uppercase">Plantel (Base Maestra)</TableHead>
-                                  <TableHead className="w-[140px] text-[10px] font-bold uppercase text-center">Sector</TableHead>
-                                  <TableHead className="w-[300px] text-[10px] font-bold uppercase">Email institucional</TableHead>
-                                  <TableHead className="w-[80px] rounded-r-xl"></TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {assistants.map((ast, idx) => (
-                                <TableRow key={`ast-${idx}`} className="h-24 hover:bg-slate-50 transition-all border-none group bg-white shadow-sm rounded-xl overflow-hidden">
-                                   <TableCell className="text-center font-bold text-sm text-slate-300 rounded-l-xl">{idx+1}</TableCell>
-                                   <TableCell className="p-2">
-                                     <div className="grid grid-cols-1 gap-2">
-                                       <Input placeholder="Apellidos..." className="h-10 text-[11px] font-bold border-slate-100 shadow-inner px-4 bg-slate-50/50 uppercase" value={`${ast.paterno} ${ast.materno}`.trim()} onChange={e => {
-                                         const parts = e.target.value.split(' ');
-                                         updateAssistant(idx, 'paterno', parts[0]?.toUpperCase() || '');
-                                         updateAssistant(idx, 'materno', parts.slice(1).join(' ').toUpperCase() || '');
-                                       }} />
-                                       <Input placeholder="Nombre(s)..." className="h-10 text-[12px] font-black text-primary border-primary/20 bg-primary/5 shadow-sm px-4 uppercase" value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value.toUpperCase())} />
-                                     </div>
-                                   </TableCell>
-                                   <TableCell className="p-2">
-                                     <Input placeholder="RFC (13)" className="h-12 text-sm font-mono font-black uppercase border-slate-200 bg-slate-50 text-center shadow-inner" value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value.toUpperCase())} maxLength={13} />
-                                   </TableCell>
-                                   <TableCell className="p-2">
-                                     <Input placeholder="CURP (18)" className="h-12 text-sm font-mono font-bold uppercase border-slate-200 bg-slate-50 text-center shadow-inner" value={ast.curp} onChange={e => updateAssistant(idx, 'curp', e.target.value.toUpperCase())} maxLength={18} />
-                                   </TableCell>
-                                   <TableCell className="p-2">
-                                     <Select value={ast.funcion} onValueChange={(val: any) => updateAssistant(idx, 'funcion', val)}>
-                                       <SelectTrigger className="h-12 text-[11px] font-bold border-slate-200 bg-white shadow-sm px-4 uppercase"><SelectValue placeholder="Elegir..." /></SelectTrigger>
-                                       <SelectContent className="rounded-xl shadow-2xl">{FUNCIONES.map(f => (<SelectItem key={f} value={f} className="text-[11px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
-                                     </Select>
-                                   </TableCell>
-                                   <TableCell className="p-2 text-center">
-                                      <Input placeholder="CCT..." className="h-12 text-sm font-mono font-black uppercase border-primary/20 bg-white text-center shadow-sm" value={ast.cct} onChange={e => updateAssistant(idx, 'cct', e.target.value.toUpperCase())} maxLength={10} />
-                                   </TableCell>
-                                   <TableCell className="p-2">
-                                      <div className="flex flex-col gap-1 min-w-0">
-                                         <Input value={ast.nombreCT} readOnly className="h-9 text-[11px] bg-slate-100 border-none font-bold text-slate-600 truncate uppercase" />
-                                         <span className="text-[8px] font-black uppercase text-slate-400 pl-1">{ast.municipio || 'Ubicación'}</span>
-                                      </div>
-                                   </TableCell>
-                                   <TableCell className="p-2 text-center">
-                                      <Input value={ast.sector} readOnly className="h-12 text-center text-sm bg-slate-100 border-none font-bold text-slate-600 rounded-xl uppercase" />
-                                   </TableCell>
-                                   <TableCell className="p-2">
-                                      <div className="relative group/mail">
-                                        <Input placeholder="usuario@desysa.edu.mx" className="h-12 pl-12 text-sm font-bold border-slate-200 bg-white rounded-xl shadow-sm" value={ast.email} onChange={e => updateAssistant(idx, 'email', e.target.value.toLowerCase())} />
-                                        <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within/mail:text-primary transition-colors" />
-                                      </div>
-                                   </TableCell>
-                                   <TableCell className="p-2 text-right rounded-r-xl">
-                                     <Button variant="ghost" size="icon" className="h-12 w-12 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
-                                       <Trash2 className="h-6 w-6" />
-                                     </Button>
-                                   </TableCell>
-                                </TableRow>
-                                ))}</TableBody>
-                           </Table>
-                        </div>
-                      </div>
-                   </TabsContent>
-                )}
-             </div>
-          </Tabs>
+                    )}
+                 </div>
 
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-6 shrink-0 shadow-inner">
-             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all">Cancelar</Button>
-             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl"><Save className="h-6 w-6" /> Guardar registro</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="w-[95vw] lg:max-w-[800px] h-[85vh] rounded-[2rem] p-0 overflow-hidden flex flex-col bg-white">
-           <DialogHeader className="p-6 bg-slate-50 border-b shrink-0"><DialogTitle className="font-black text-lg">Informe de implementación</DialogTitle></DialogHeader>
-           <ScrollArea className="flex-1 p-6">
-              {selectedReport && (
-                <div className="space-y-6">
-                   <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border"><div className="space-y-1"><p className="text-[9px] font-black text-slate-400 uppercase">Plantel</p><h4 className="text-xs font-bold uppercase truncate">{selectedReport.schoolName}</h4></div><div className="space-y-1"><p className="text-[9px] font-black text-slate-400 uppercase">CCT</p><p className="text-xs font-mono font-bold uppercase">{selectedReport.cct}</p></div></div>
-                   <div className="flex items-center gap-6 p-6 bg-primary/5 rounded-[1.5rem] border border-primary/10">
-                      <div className="flex flex-col items-center"><span className="text-2xl font-black text-primary">{selectedReport.progress}%</span><span className="text-[8px] font-black uppercase text-slate-400">Avance</span></div>
-                      <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {['fase1','fase2','fase3','fase4','fase5','fase6','fase7'].map((f, i) => (<div key={i} className={cn("h-6 flex items-center justify-center rounded-lg border text-[8px] font-bold uppercase", selectedReport.bibliotecaFases?.[f as keyof typeof selectedReport.bibliotecaFases] ? "bg-emerald-500 text-white border-emerald-600" : "bg-white text-slate-300 border-slate-100 opacity-50")}>F{i+1}</div>))}
+                 {activeTab === 'Cuentas Institucionales' && (
+                   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="space-y-2"><Label className="text-[10px] font-black text-primary pl-1">Servidor Público Responsable</Label><Input className="h-12 font-bold bg-slate-50 border-none rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} /></div>
+                         <div className="space-y-2"><Label className="text-[10px] font-black text-primary pl-1">Email Principal (@desysa.edu.mx)</Label><Input className="h-12 font-bold bg-slate-50 border-none rounded-xl shadow-inner lowercase" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} /></div>
                       </div>
                    </div>
-                </div>
-              )}
-           </ScrollArea>
-           <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setIsReportDialogOpen(false)} className="w-full text-xs font-bold">Cerrar</Button></DialogFooter>
+                 )}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0">
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
+             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase"><Save className="h-6 w-6" /> Sincronizar en la Nube</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

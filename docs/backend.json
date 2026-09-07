@@ -1,0 +1,66 @@
+
+{
+  "entities": {
+    "Program": {
+      "title": "Programas Institucionales",
+      "description": "Estado de implementación de rubros técnicos (Cuentas, Biblioteca, etc.)",
+      "type": "object",
+      "properties": {
+        "cct": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string" },
+        "userName": { "type": "string" },
+        "email": { "type": "string" },
+        "emails": { "type": "array", "items": { "type": "string" } },
+        "progress": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "WarehouseItem": {
+      "title": "Insumo de Almacén",
+      "description": "Artículos en inventario técnico",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "stock": { "type": "number" },
+        "minStock": { "type": "number" }
+      }
+    },
+    "WarehouseMovement": {
+      "title": "Movimiento de Almacén",
+      "description": "Registros de entradas (requisiciones) y salidas (entregas)",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "type": { "type": "string", "enum": ["entrada", "salida"] },
+        "quantity": { "type": "number" },
+        "folio": { "type": "string" },
+        "date": { "type": "string" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/programs/{programId}": {
+      "schema": "Program",
+      "description": "Colección de programas y cuentas institucionales"
+    },
+    "/warehouse_items/{itemId}": {
+      "schema": "WarehouseItem",
+      "description": "Inventario maestro de insumos"
+    },
+    "/warehouse_movements/{moveId}": {
+      "schema": "WarehouseMovement",
+      "description": "Historial de entradas y salidas de almacén"
+    },
+    "/users/{userId}": {
+      "schema": "object",
+      "description": "Perfiles de acceso del sistema"
+    }
+  }
+}
