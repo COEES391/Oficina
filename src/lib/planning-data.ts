@@ -40,6 +40,46 @@ export type VisitSchedule = {
   observaciones: string;
 };
 
+export type ProgramStatus = {
+  id?: string;
+  name: string;
+  progress: number;
+  status: 'activo' | 'suspendida' | 'inactivo' | 'concluido';
+  date: string;
+  cct: string;
+  schoolName?: string;
+  userName?: string; // Responsable
+  rfc?: string; // RFC para verificador
+  email?: string; // Email principal
+  emails?: string[]; // Correos adicionales
+  zonaEscolar?: string;
+  sector?: string;
+  modalidad?: string;
+  municipio?: string;
+  region?: string;
+  valle?: string;
+  latitud?: string;
+  longitud?: string;
+  observaciones?: string;
+  reportPdf?: string;
+  evidencePhotos?: string[];
+  asistentes?: any[];
+  bibliotecaFases?: {
+    fase1: boolean; // Diagnóstico
+    fase2: boolean; // Cableado
+    fase3: boolean; // Conectividad
+    fase4: boolean; // Habilitación
+    fase4_1: boolean;
+    fase4_2: boolean;
+    fase5: boolean; // Configuración
+    fase6: boolean; // Pruebas
+    fase7: boolean; // Entrega
+    fase7_1: boolean;
+    personalCapacitado: number;
+    equiposHabilitados: number;
+  };
+};
+
 export type SupportTicket = {
   id?: string;
   cct: string;
