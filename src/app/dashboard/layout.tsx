@@ -16,22 +16,19 @@ import {
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
 import { 
-  LayoutDashboard, 
-  GraduationCap, 
   LogOut, 
   Monitor,
   ShieldCheck,
   Database,
   Users,
-  History,
   FileText,
   Wrench,
   ChevronRight,
   Home,
-  Target,
   BarChart3,
   Briefcase,
-  FileStack
+  FileStack,
+  GraduationCap
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
@@ -91,10 +88,10 @@ export default function DashboardLayout({
 
   const menuConfig = [
     // GRUPO PLANEACIÓN
-    { privilege: 'planeacion', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-4 w-4" />, group: 'planeacion_header' },
-    { privilege: 'planeacion', name: 'Objetivos y Metas', path: '#', icon: <FileText className="h-4 w-4" />, group: 'planeacion_header' },
-    { privilege: 'planeacion', name: 'Proyectos', path: '#', icon: <FileStack className="h-4 w-4" />, group: 'planeacion_header' },
-    { privilege: 'planeacion', name: 'Indicadores', path: '#', icon: <BarChart3 className="h-4 w-4" />, group: 'planeacion_header' },
+    { privilege: 'planeacion', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-4 w-4" />, group: 'planeacion' },
+    { privilege: 'planeacion', name: 'Objetivos y Metas', path: '#', icon: <FileText className="h-4 w-4" />, group: 'planeacion' },
+    { privilege: 'planeacion', name: 'Proyectos', path: '#', icon: <FileStack className="h-4 w-4" />, group: 'planeacion' },
+    { privilege: 'planeacion', name: 'Indicadores', path: '#', icon: <BarChart3 className="h-4 w-4" />, group: 'planeacion' },
 
     // GRUPO OFICINAS
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <FileText className="h-4 w-4" />, group: 'oficinas', color: 'bg-purple-600' },
@@ -112,7 +109,7 @@ export default function DashboardLayout({
     return menuConfig.filter(item => currentUser.privileges.includes(item.privilege))
   }, [currentUser])
 
-  const planeacionItems = allowedItems.filter(i => i.group === 'planeacion_header')
+  const planeacionItems = allowedItems.filter(i => i.group === 'planeacion')
   const oficinaItems = allowedItems.filter(i => i.group === 'oficinas')
   const adminItems = allowedItems.filter(i => i.group === 'admin')
 
@@ -135,7 +132,7 @@ export default function DashboardLayout({
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-4 space-y-6">
-          {/* GRUPO PLANEACIÓN */}
+          {/* CABECERA PLANEACIÓN */}
           {planeacionItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/80 font-black text-[11px] uppercase tracking-[0.1em] px-4 mb-3 group-data-[collapsible=icon]:hidden flex items-center gap-2">
@@ -170,7 +167,7 @@ export default function DashboardLayout({
             </SidebarGroup>
           )}
 
-          {/* GRUPO OFICINAS */}
+          {/* CABECERA OFICINAS */}
           {oficinaItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">
@@ -197,7 +194,6 @@ export default function DashboardLayout({
                           </div>
                           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                             <span className="text-white font-black leading-none">{item.name}</span>
-                            {pathname === item.path && <span className="text-[7px] text-white/40 uppercase mt-1">En curso</span>}
                           </div>
                         </div>
                       </SidebarMenuButton>
@@ -208,7 +204,7 @@ export default function DashboardLayout({
             </SidebarGroup>
           )}
 
-          {/* GRUPO ADMINISTRACIÓN */}
+          {/* CABECERA ADMINISTRACIÓN */}
           {adminItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">
