@@ -37,7 +37,6 @@ import {
   Briefcase,
   Building2,
   User,
-  Globe,
   RotateCcw,
   ClipboardList,
   Eye
@@ -98,7 +97,7 @@ export default function ProgramsPage() {
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   
-  // States for the new Email Dashboard
+  // States for Email Dashboard
   const [userPart, setUserPart] = useState('')
   const [domainPart, setDomainPart] = useState(DOMINIOS[0])
   const [verifyInput, setVerifySearch] = useState('')
@@ -148,7 +147,6 @@ export default function ProgramsPage() {
     return () => unsubscribe()
   }, [])
 
-  // Auto-complete email full string
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
     return `${userPart.toLowerCase()}${domainPart}`;
@@ -169,6 +167,31 @@ export default function ProgramsPage() {
       setDialogSearchTerm(match.cct)
       setShowSearchResults(false)
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); 
+      return;
+    }
+    const newSchool = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: quickAddForm.domicilio?.toUpperCase() || '',
+      localidad: quickAddForm.localidad?.toUpperCase() || '',
+      sector: quickAddForm.sector?.toUpperCase() || '',
+      zonaEscolar: quickAddForm.zonaEscolar?.toUpperCase() || '',
+      modalidad: quickAddForm.modalidad?.toUpperCase() || 'DES'
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm(newSchool.cct);
+    toast({ title: "Plantel Registrado", description: "Se ha sumado a la base maestra." });
   }
 
   const handleSave = async () => {
@@ -203,6 +226,10 @@ export default function ProgramsPage() {
         const phases = [bf.fase1, bf.fase2, bf.fase3, bf.fase4, bf.fase5, bf.fase6, bf.fase7];
         finalData.progress = Math.round((phases.filter(v => v).length / 7) * 100);
       }
+      else if (activeTab === 'Geoposición') {
+        finalData.latitud = String(formData.latitud || '');
+        finalData.longitud = String(formData.longitud || '');
+      }
 
       if (editingId) {
         await updateDoc(doc(db, 'programs', editingId), finalData);
@@ -215,7 +242,7 @@ export default function ProgramsPage() {
       else resetEmailForm();
       setEditingId(null);
     } catch (e: any) {
-      alert("❌ ERROR: " + e.message);
+      alert("❌ ERROR AL GUARDAR: " + e.message);
     } finally {
       setIsSaving(false);
     }
@@ -294,7 +321,6 @@ export default function ProgramsPage() {
 
       {activeTab === 'Cuentas Institucionales' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500">
-          {/* Panel Izquierdo: Registrar Correo */}
           <Card className="lg:col-span-5 executive-card bg-white border-none shadow-2xl flex flex-col h-fit">
             <CardHeader className="p-8 border-b border-slate-50">
                <div className="flex items-center gap-4">
@@ -320,13 +346,26 @@ export default function ProgramsPage() {
                                 <Badge className="text-[8px] font-mono">{s.cct}</Badge>
                              </div>
                            ))}
+                           {schoolSearchResults.length === 0 && (
+                             <div className="p-4 text-center">
+                               <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" size="sm" className="h-8 rounded-lg text-[9px] font-black uppercase">
+                                 <Plus className="h-3 w-3 mr-1" /> Registrar Nuevo CCT
+                               </Button>
+                             </div>
+                           )}
                         </div>
                       )}
                     </div>
+                    {formData.cct && (
+                      <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mt-2 animate-in zoom-in-95">
+                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                         <span className="text-[10px] font-black uppercase text-emerald-800 truncate">{formData.schoolName}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Nombre completo *</Label>
+                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Nombre del Responsable *</Label>
                     <div className="relative">
                       <Input placeholder="EJ. MARÍA LÓPEZ GARCÍA" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
                       <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
@@ -353,15 +392,15 @@ export default function ProgramsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Correo institucional completo</Label>
+                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Puesto</Label>
                     <div className="relative">
-                      <Input readOnly className="h-11 rounded-xl bg-slate-50 border-slate-100 font-mono font-bold text-primary pl-10" value={fullEmailPreview} />
-                      <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-primary/30" />
+                      <Input placeholder="EJ. COORDINADOR TÉCNICO" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.puesto} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} />
+                      <ShieldCheck className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Área / Departamento</Label>
+                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Departamento</Label>
                     <div className="relative">
                       <Input placeholder="EJ. CAPACITACIÓN" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} />
                       <Building2 className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
@@ -385,9 +424,7 @@ export default function ProgramsPage() {
             </CardContent>
           </Card>
 
-          {/* Panel Derecho: Verificador e Historial */}
           <div className="lg:col-span-7 space-y-8 flex flex-col">
-            {/* Buscador/Verificador */}
             <Card className="executive-card bg-white border-none shadow-xl">
               <CardHeader className="p-8 border-b border-slate-50">
                 <div className="flex items-center gap-4">
@@ -427,7 +464,6 @@ export default function ProgramsPage() {
               </CardContent>
             </Card>
 
-            {/* Tabla de Historial */}
             <Card className="executive-card bg-white border-none shadow-xl flex-1 overflow-hidden">
                <CardHeader className="p-8 border-b border-slate-50">
                  <div className="flex items-center gap-3">
@@ -470,7 +506,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       ) : (
-        /* VISTA GENÉRICA PARA OTROS RUBROS */
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
           <div className="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
              <div className="flex items-center gap-3">
@@ -554,7 +589,12 @@ export default function ProgramsPage() {
                         </div>
                       )}
                     </div>
-                    {formData.cct && (
+                    {!formData.cct ? (
+                      <div className="p-4 bg-rose-50 rounded-xl flex items-center gap-3 border border-rose-100">
+                         <AlertCircle className="h-5 w-5 text-rose-500" />
+                         <p className="text-[10px] font-black text-rose-600 uppercase">Identificación requerida para habilitar sincronización</p>
+                      </div>
+                    ) : (
                       <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
                         <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
                         <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT: {formData.cct}</p></div>
