@@ -49,7 +49,9 @@ export type ProgramStatus = {
   cct: string;
   schoolName?: string;
   userName?: string; // Responsable
-  rfc?: string; // RFC para verificador
+  rfc?: string; 
+  puesto?: string;
+  departamento?: string;
   email?: string; // Email principal
   emails?: string[]; // Correos adicionales
   zonaEscolar?: string;
@@ -80,6 +82,10 @@ export type ProgramStatus = {
   };
 };
 
+export const programsData: any[] = [];
+export const supportData: SupportTicket[] = [];
+export const trainingRecords: any[] = [];
+
 export type SupportTicket = {
   id?: string;
   cct: string;
@@ -91,7 +97,6 @@ export type SupportTicket = {
   tipoIncidencia: string; 
   tipoIncidencias?: string[]; 
   
-  // Campos Hoja de Servicio F4/F5
   semana?: string;
   periodoReportado?: string;
   oficina?: string;
@@ -112,7 +117,6 @@ export type SupportTicket = {
   redLocalMant?: boolean;
   observaciones1?: string;
   
-  // Ficha Edusat Especializada
   edusatFicha?: {
     mikropak: { revision: boolean; polarizacion: boolean; prueba: boolean; cambio: boolean };
     antena: { orientacion: boolean; reparacion: boolean; reubicacion: boolean; cambio: boolean };
@@ -125,7 +129,6 @@ export type SupportTicket = {
     operaciones: { material: string; cantidad: string; actividad: string }[];
   };
 
-  // Ficha Red Local Especializada
   redLocalFicha?: {
     nodos: string;
     cuentaRedLocal: 'si' | 'no' | '';
@@ -173,7 +176,6 @@ export type SupportTicket = {
     }
   };
 
-  // Ficha Mantenimiento Especializada (NUEVO F4)
   mantenimientoFicha?: {
     equipoTecnologico: { hdt: boolean; equipoComputo: boolean; otro: string };
     equiposList: { equipo: string; marca: string; serie: string; censal: string }[];
@@ -182,7 +184,6 @@ export type SupportTicket = {
     observaciones: string;
   };
 
-  // Responsables dinámicos
   responsablesList?: string[];
   responsable1?: string;
   responsable2?: string;
@@ -199,7 +200,3 @@ export type SupportTicket = {
     pruebas: boolean;
   };
 };
-
-export const programsData: any[] = [];
-export const supportData: SupportTicket[] = [];
-export const trainingRecords: any[] = [];

@@ -32,7 +32,9 @@ import {
   MapPin,
   ClipboardCheck,
   Info,
-  X
+  X,
+  Briefcase,
+  Building2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -115,7 +117,8 @@ export default function ProgramsPage() {
     cct: '', 
     schoolName: '', 
     userName: '', 
-    rfc: '', 
+    puesto: '',
+    departamento: '',
     email: '', 
     emails: [''], 
     zonaEscolar: '', 
@@ -237,7 +240,8 @@ export default function ProgramsPage() {
 
       if (activeTab === 'Cuentas Institucionales') {
         finalData.userName = String(formData.userName || 'SIN RESPONSABLE');
-        finalData.rfc = String(formData.rfc || 'SIN RFC');
+        finalData.puesto = String(formData.puesto || 'SIN PUESTO');
+        finalData.departamento = String(formData.departamento || 'SIN DEPARTAMENTO');
         const filteredEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
         finalData.emails = filteredEmails;
         finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : 'sin-correo@desysa.edu.mx';
@@ -267,7 +271,7 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      toast({ title: "Registro Guardado" });
+      alert("REGISTRO GUARDADO EXITOSAMENTE EN LA NUBE.");
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
@@ -275,7 +279,7 @@ export default function ProgramsPage() {
       setShowSearchResults(false);
     } catch (e: any) {
       console.error("Firestore Error:", e);
-      alert("FALLO AL GUARDAR: " + (e.message || "Error desconocido."));
+      alert("FALLO CRÍTICO AL GUARDAR: " + (e.message || "Error desconocido."));
     } finally {
       setIsSaving(false);
     }
@@ -482,7 +486,7 @@ export default function ProgramsPage() {
               <div className="p-5 rounded-[1.5rem] bg-slate-900 text-white shadow-2xl animate-in zoom-in-95">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-3">
                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center"><UserCheck className="h-5 w-5 text-accent" /></div>
-                   <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate uppercase">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 mt-1 uppercase">{verifiedAccount.cct} • RFC: {verifiedAccount.rfc || 'S/R'}</p></div>
+                   <div className="min-w-0"><h4 className="text-[11px] font-bold leading-none truncate uppercase">{verifiedAccount.userName}</h4><p className="text-[9px] font-bold text-white/50 mt-1 uppercase">{verifiedAccount.cct} • Puesto: {verifiedAccount.puesto || 'S/R'}</p></div>
                 </div>
                 <div className="space-y-4">
                    <p className="text-[8px] font-bold text-white/40 leading-none uppercase tracking-widest">Cuentas vinculadas</p>
@@ -571,8 +575,12 @@ export default function ProgramsPage() {
                             <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} placeholder="NOMBRE COMPLETO..." />
                          </div>
                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black text-primary pl-1 uppercase">RFC del Responsable</Label>
-                            <Input className="h-12 font-mono font-black bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.rfc || ''} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} maxLength={13} placeholder="13 CARACTERES..." />
+                            <Label className="text-[10px] font-black text-primary pl-1 uppercase">Puesto</Label>
+                            <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.puesto || ''} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} placeholder="EJ: COORDINADOR..." />
+                         </div>
+                         <div className="md:col-span-3 space-y-2">
+                            <Label className="text-[10px] font-black text-primary pl-1 uppercase">Departamento</Label>
+                            <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.departamento || ''} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} placeholder="AREA O DEPARTAMENTO DE ADSCRIPCIÓN..." />
                          </div>
                       </div>
                       <div className="space-y-6">
