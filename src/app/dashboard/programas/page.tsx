@@ -157,6 +157,18 @@ export default function ProgramsPage() {
     return () => unsubscribe()
   }, [])
 
+  const filteredRecords = useMemo(() => {
+    const list = records.filter(r => r.name === activeTab);
+    if (!searchTerm) return list;
+    const term = searchTerm.toUpperCase();
+    return list.filter(r => 
+      (r.cct || '').toUpperCase().includes(term) ||
+      (r.schoolName || '').toUpperCase().includes(term) ||
+      (r.userName || '').toUpperCase().includes(term) ||
+      (r.email || '').toUpperCase().includes(term)
+    );
+  }, [records, searchTerm, activeTab]);
+
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
     return `${userPart.toLowerCase()}${domainPart}`;
@@ -188,11 +200,11 @@ export default function ProgramsPage() {
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
-      domicilio: quickAddForm.domicilio?.toUpperCase() || '',
-      localidad: quickAddForm.localidad?.toUpperCase() || '',
-      sector: quickAddForm.sector?.toUpperCase() || '',
-      zonaEscolar: quickAddForm.zonaEscolar?.toUpperCase() || '',
-      modalidad: quickAddForm.modalidad?.toUpperCase() || 'DES'
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -532,7 +544,7 @@ export default function ProgramsPage() {
                           </TableCell>
                           <TableCell className="text-right pr-8">
                              <div className="flex justify-end gap-1">
-                                <button className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button>
+                                <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-4 w-4" /></button>
                                 <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
                              </div>
                           </TableCell>
@@ -588,7 +600,6 @@ export default function ProgramsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Map Area */}
             <Card className="lg:col-span-7 h-[650px] bg-slate-100 rounded-[3rem] overflow-hidden relative border-none shadow-2xl group ring-1 ring-black/5">
-              {/* Placeholder for map */}
               <div className="absolute inset-0 bg-slate-200">
                 <Image 
                   src="https://picsum.photos/seed/map-toluca/1200/800" 
@@ -597,25 +608,18 @@ export default function ProgramsPage() {
                   className="object-cover opacity-90 transition-transform duration-[10s] group-hover:scale-110"
                   data-ai-hint="city map"
                 />
-                {/* Mock Markers */}
                 <div className="absolute top-[45%] left-[50%] h-12 w-12 bg-emerald-500/20 rounded-full animate-ping" />
-                <div className="absolute top-[45%] left-[50%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-125 transition-transform">
+                <div className="absolute top-[45%] left-[50%] h-8 w-8 bg-emerald-50 rounded-full border-4 border-white shadow-2xl flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-125 transition-transform">
                    <div className="h-3 w-3 bg-white rounded-full shadow-inner" />
                 </div>
-                
-                {/* Another Marker */}
                 <div className="absolute top-[60%] left-[40%] h-8 w-8 bg-blue-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center cursor-pointer hover:scale-125 transition-all">
                    <Navigation className="h-3 w-3 text-white fill-current" />
                 </div>
-
-                {/* Legend on Map */}
                 <div className="absolute bottom-8 left-8 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-6 animate-in slide-in-from-left-4 duration-700">
                    <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En línea</span></div>
                    <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En movimiento</span></div>
                    <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Sin señal</span></div>
                 </div>
-
-                {/* Map Controls */}
                 <div className="absolute top-6 right-6 flex flex-col gap-2">
                    <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
                    <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
@@ -624,9 +628,7 @@ export default function ProgramsPage() {
               </div>
             </Card>
 
-            {/* Side Details and History */}
             <div className="lg:col-span-5 space-y-6 flex flex-col h-[650px]">
-               {/* Device Info Card */}
                <Card className="p-8 bg-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-10 opacity-5 -rotate-12"><Navigation className="h-40 w-40" /></div>
                   <div className="flex justify-between items-start mb-8 relative z-10">
@@ -668,7 +670,6 @@ export default function ProgramsPage() {
                   </Button>
                </Card>
 
-               {/* Latest Records Table */}
                <Card className="p-8 bg-white border-none shadow-2xl rounded-[3rem] flex-1 overflow-hidden flex flex-col">
                   <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4 shrink-0">
                      <div className="flex items-center gap-3">
@@ -722,9 +723,15 @@ export default function ProgramsPage() {
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Briefcase className="h-5 w-5" /></div>
                 <div><h3 className="text-sm font-black uppercase text-slate-800">{activeTab}</h3><p className="text-[9px] font-bold text-slate-400 uppercase">Gestión de Rubro Técnico</p></div>
              </div>
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setDialogSearchTerm(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
-                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
-             </Button>
+             <div className="flex items-center gap-4">
+                <div className="relative w-full sm:w-64">
+                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
+                   <Input placeholder="Buscar..." className="h-9 pl-9 rounded-xl border-slate-200 text-xs font-bold bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+                <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setDialogSearchTerm(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
+                    <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+                </Button>
+             </div>
           </div>
           <div className="overflow-x-auto w-full">
             <Table className="w-full">
@@ -740,7 +747,7 @@ export default function ProgramsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
-                ) : filteredRecords.length > 0 ? filteredRecords.filter(r => r.name === activeTab).map((rec, idx) => (
+                ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
                   <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                     <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
                     <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
