@@ -140,6 +140,7 @@ export default function ProgramsPage() {
     setMounted(true)
     setIsLoading(true)
     
+    // Conexión en tiempo real con Firestore
     const q = query(collection(db, 'programs'), orderBy('updatedAt', 'desc'))
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
@@ -203,72 +204,86 @@ export default function ProgramsPage() {
   }
 
   const handleSave = async () => {
+    // Validación de seguridad antes de intentar guardar
     if (!formData.cct) {
       toast({ 
         variant: "destructive", 
         title: "Identificación Requerida", 
-        description: "Debe buscar y seleccionar un CCT en el campo superior antes de sincronizar."
+        description: "Debe buscar y seleccionar un CCT válido en el buscador superior antes de sincronizar."
       });
       return;
     }
 
     setIsSaving(true);
+    console.log("Iniciando guardado robusto para:", activeTab);
     
     try {
-      // 1. Construir objeto base limpio
-      const finalData: any = {
-        name: activeTab,
-        cct: formData.cct,
-        schoolName: formData.schoolName || '',
-        municipio: formData.municipio || '',
-        valle: formData.valle || '',
-        region: formData.region || '',
-        zonaEscolar: formData.zonaEscolar || '',
-        sector: formData.sector || '',
-        modalidad: formData.modalidad || '',
-        status: formData.status || 'activo',
-        date: formData.date || new Date().toISOString().split('T')[0],
-        observaciones: formData.observaciones || '',
-        updatedAt: serverTimestamp()
+      // 1. Construcción del objeto final asegurando que no haya valores 'undefined' (Firestore los rechaza)
+      const finalData: Record<string, any> = {
+        name: String(activeTab),
+        cct: String(formData.cct),
+        schoolName: String(formData.schoolName || ''),
+        municipio: String(formData.municipio || ''),
+        valle: String(formData.valle || ''),
+        region: String(formData.region || ''),
+        zonaEscolar: String(formData.zonaEscolar || ''),
+        sector: String(formData.sector || ''),
+        modalidad: String(formData.modalidad || ''),
+        status: String(formData.status || 'activo'),
+        date: String(formData.date || new Date().toISOString().split('T')[0]),
+        observaciones: String(formData.observaciones || ''),
+        updatedAt: serverTimestamp() // Sello de tiempo oficial de Firebase
       };
 
-      // 2. Añadir campos específicos por pestaña
+      // 2. Lógica específica por rubro técnico
       if (activeTab === 'Cuentas Institucionales') {
-        finalData.userName = formData.userName || '';
-        finalData.rfc = formData.rfc || '';
-        finalData.emails = (formData.emails || []).filter(e => e && e.trim() !== '');
-        // El Verificador usa el primer email como principal
-        finalData.email = finalData.emails[0] || '';
+        finalData.userName = String(formData.userName || '');
+        finalData.rfc = String(formData.rfc || '');
+        const filteredEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
+        finalData.emails = filteredEmails;
+        finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : '';
       } 
       else if (activeTab === 'Biblioteca Digital') {
-        finalData.bibliotecaFases = formData.bibliotecaFases || initialFormState.bibliotecaFases;
-        const f = finalData.bibliotecaFases;
-        const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
+        const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
+        finalData.bibliotecaFases = {
+          fase1: !!bf.fase1, fase2: !!bf.fase2, fase3: !!bf.fase3, 
+          fase4: !!bf.fase4, fase4_1: !!bf.fase4_1, fase4_2: !!bf.fase4_2,
+          fase5: !!bf.fase5, fase6: !!bf.fase6, fase7: !!bf.fase7, 
+          fase7_1: !!bf.fase7_1,
+          personalCapacitado: Number(bf.personalCapacitado) || 0,
+          equiposHabilitados: Number(bf.equiposHabilitados) || 0
+        };
+        const phases = [bf.fase1, bf.fase2, bf.fase3, bf.fase4, bf.fase5, bf.fase6, bf.fase7];
         finalData.progress = Math.round((phases.filter(v => v).length / 7) * 100);
         if (finalData.progress === 100) finalData.status = 'concluido';
       } 
       else if (activeTab === 'Geoposición') {
-        finalData.latitud = formData.latitud || '';
-        finalData.longitud = formData.longitud || '';
+        finalData.latitud = String(formData.latitud || '');
+        finalData.longitud = String(formData.longitud || '');
       }
 
-      // 3. Ejecutar operación en Firestore
+      console.log("Datos listos para enviar a Firestore:", finalData);
+
+      // 3. Persistencia en la nube
       if (editingId) {
-        await updateDoc(doc(db, 'programs', editingId), finalData);
+        const docRef = doc(db, 'programs', editingId);
+        await updateDoc(docRef, finalData);
       } else {
-        await addDoc(collection(db, 'programs'), finalData);
+        const colRef = collection(db, 'programs');
+        await addDoc(colRef, finalData);
       }
       
-      toast({ title: "Sincronización Exitosa", description: "Los datos oficiales se han guardado en la nube." });
+      toast({ title: "Sincronización Exitosa", description: "El registro oficial se ha guardado en la nube." });
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
+      setDialogSearchTerm('');
     } catch (e: any) {
-      console.error("Critical Save Error:", e);
+      console.error("Critical Save Error en Firestore:", e);
       toast({ 
         variant: "destructive", 
-        title: "Fallo en Sincronización", 
-        description: "Error técnico: " + (e.message || "Conexión rechazada")
+        title: "Fallo de Comunicación", 
+        description: "Error técnico: " + (e.message || "Verifique su conexión a internet")
       });
     } finally {
       setIsSaving(false);
@@ -276,10 +291,10 @@ export default function ProgramsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este registro oficial de la nube?")) return;
+    if (!confirm("¿Desea eliminar permanentemente este registro de la base de datos oficial?")) return;
     try {
       await deleteDoc(doc(db, 'programs', id));
-      toast({ title: "Registro Removido" });
+      toast({ title: "Registro Removido", description: "La información ha sido borrada de la nube." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error al borrar" });
     }
@@ -289,11 +304,12 @@ export default function ProgramsPage() {
     if (!verifySearch) return;
     setIsVerifying(true);
     const term = verifySearch.toUpperCase();
-    const q = query(collection(db, 'programs'), where('name', '==', 'Cuentas Institucionales'));
     
     try {
+      const q = query(collection(db, 'programs'), where('name', '==', 'Cuentas Institucionales'));
       const snap = await getDocs(q);
       const allCuentas = snap.docs.map(d => d.data());
+      
       const found = allCuentas.find((rec: any) => 
         (rec.rfc || '').toUpperCase() === term || 
         (rec.email || '').toUpperCase().includes(term) ||
@@ -303,7 +319,13 @@ export default function ProgramsPage() {
       );
 
       setVerifiedAccount(found);
-      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada", description: "Verifique el RFC o CCT." });
+      if (!found) {
+        toast({ 
+          variant: "destructive", 
+          title: "Sin Resultados", 
+          description: "No se encontró ninguna cuenta vinculada a este identificador." 
+        });
+      }
     } catch (e) {
       toast({ variant: "destructive", title: "Error de consulta" });
     } finally {
@@ -337,7 +359,10 @@ export default function ProgramsPage() {
     });
   }
 
-  const filteredRecords = records.filter(r => r.name === activeTab && (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase()))));
+  const filteredRecords = records.filter(r => 
+    r.name === activeTab && 
+    (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase())))
+  );
 
   const schoolSearchResults = useMemo(() => {
     if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
