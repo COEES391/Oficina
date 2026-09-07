@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -37,7 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import { db } from '@/lib/firebase'
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, where, getDocs } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, where, getDocs, Timestamp } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 
 const PROGRAM_RUBROS = [
@@ -60,7 +61,7 @@ const BIBLIOTECA_FASES_LABELS = [
 
 const StatusLight = ({ status }: { status: string }) => (
   <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
-    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'activo' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale")} />
+    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'activo' || status === 'concluido' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale")} />
     <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'suspendida' ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-amber-900/30 grayscale")} />
     <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'inactivo' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" : "bg-rose-900/30 grayscale")} />
   </div>
@@ -132,6 +133,9 @@ export default function ProgramsPage() {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
       setRecords(fetched)
       setIsLoading(false)
+    }, (error) => {
+      console.error("Firestore error:", error)
+      setIsLoading(false)
     })
 
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
@@ -148,6 +152,7 @@ export default function ProgramsPage() {
       if (match) {
         setFormData(prev => ({ 
           ...prev, 
+          cct: match.cct,
           schoolName: match.nombre, 
           municipio: match.municipio, 
           valle: match.valle, 
@@ -200,15 +205,26 @@ export default function ProgramsPage() {
     try {
       const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
       
-      const dataToSave = { 
+      // Limpieza profunda para evitar campos undefined que rompen Firestore
+      const cleanData = (obj: any) => {
+        const newObj = { ...obj };
+        Object.keys(newObj).forEach(key => {
+          if (newObj[key] === undefined) newObj[key] = null;
+        });
+        return newObj;
+      };
+
+      const dataToSave = cleanData({ 
         ...formData, 
         emails: cleanEmails,
-        name: activeTab, 
+        name: activeTab, // Forzar que coincida con el módulo activo
         updatedAt: serverTimestamp() 
-      } as any;
+      });
       
+      // Eliminar el ID para que no se guarde como campo interno
       if (dataToSave.id) delete dataToSave.id;
 
+      // Lógica específica para Biblioteca Digital
       if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
         const f = formData.bibliotecaFases;
         const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
@@ -225,10 +241,14 @@ export default function ProgramsPage() {
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
-      toast({ title: "Sincronizado", description: "El registro oficial se ha guardado exitosamente en la nube." });
-    } catch (e) {
+      toast({ title: "Sincronizado", description: `El registro de ${activeTab} se ha guardado exitosamente en la nube.` });
+    } catch (e: any) {
       console.error("Save error:", e);
-      toast({ variant: "destructive", title: "Error de sincronización", description: "Hubo un problema al conectar con el servidor." });
+      toast({ 
+        variant: "destructive", 
+        title: "Error de sincronización", 
+        description: e.message || "Hubo un problema al conectar con el servidor." 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -262,9 +282,9 @@ export default function ProgramsPage() {
       );
 
       setVerifiedAccount(found);
-      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada" });
+      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada", description: "Verifique el RFC o correo ingresado." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de red" });
+      toast({ variant: "destructive", title: "Error de red", description: "No se pudo consultar la base de datos." });
     } finally {
       setIsVerifying(false);
     }
@@ -354,7 +374,7 @@ export default function ProgramsPage() {
                 <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 rounded-xl text-[11px] font-bold shadow-xl flex-shrink-0 min-w-fit uppercase">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 rounded-xl text-[11px] font-bold shadow-xl flex-shrink-0 min-w-fit uppercase">
                 <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
              </Button>
            </div>
@@ -384,7 +404,7 @@ export default function ProgramsPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                        <Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", 
-                         rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
+                         rec.status === 'activo' || rec.status === 'concluido' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
                          rec.status === 'inactivo' ? "bg-rose-50 text-rose-700 border-rose-200" : 
                          "bg-amber-50 text-amber-700 border-amber-200"
                        )}>
@@ -394,7 +414,7 @@ export default function ProgramsPage() {
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
                       <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </TableCell>
