@@ -32,7 +32,7 @@ import {
   AlertCircle,
   MapPin,
   ClipboardCheck,
-  Globe,
+  Info,
   X
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -140,7 +140,6 @@ export default function ProgramsPage() {
     setMounted(true)
     setIsLoading(true)
     
-    // Conexión en tiempo real con Firestore
     const q = query(collection(db, 'programs'), orderBy('updatedAt', 'desc'))
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
@@ -158,8 +157,9 @@ export default function ProgramsPage() {
   }, [])
 
   const handleCctChange = (value: string) => {
-    const cleanValue = value.toUpperCase()
+    const cleanValue = value.toUpperCase().trim()
     setFormData(prev => ({ ...prev, cct: cleanValue }))
+    
     if (cleanValue.length === 10) {
       const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
@@ -185,7 +185,7 @@ export default function ProgramsPage() {
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
-      cct: quickAddForm.cct.toUpperCase(), 
+      cct: quickAddForm.cct.toUpperCase().trim(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
       valle: quickAddForm.valle.toUpperCase(),
@@ -204,44 +204,46 @@ export default function ProgramsPage() {
   }
 
   const handleSave = async () => {
-    // Validación de seguridad antes de intentar guardar
-    if (!formData.cct) {
-      toast({ 
-        variant: "destructive", 
-        title: "Identificación Requerida", 
-        description: "Debe buscar y seleccionar un CCT válido en el buscador superior antes de sincronizar."
-      });
+    // Forzar la validación de CCT incluso si no se usó el buscador (detección manual)
+    const currentCct = formData.cct || dialogSearchTerm.toUpperCase().trim();
+    
+    if (!currentCct || currentCct.length < 5) {
+      alert("ERROR: Debe ingresar un CCT válido en el buscador superior para continuar.");
       return;
     }
 
     setIsSaving(true);
-    console.log("Iniciando guardado robusto para:", activeTab);
     
     try {
-      // 1. Construcción del objeto final asegurando que no haya valores 'undefined' (Firestore los rechaza)
+      // Si el CCT fue manual y no se disparó handleCctChange, forzar identificación
+      let finalSchoolName = formData.schoolName;
+      if (!finalSchoolName) {
+        const match = allSchools.find(s => s.cct.toUpperCase() === currentCct);
+        finalSchoolName = match?.nombre || "PLANTEL EXTERNO / MANUAL";
+      }
+
       const finalData: Record<string, any> = {
         name: String(activeTab),
-        cct: String(formData.cct),
-        schoolName: String(formData.schoolName || ''),
-        municipio: String(formData.municipio || ''),
-        valle: String(formData.valle || ''),
-        region: String(formData.region || ''),
-        zonaEscolar: String(formData.zonaEscolar || ''),
-        sector: String(formData.sector || ''),
-        modalidad: String(formData.modalidad || ''),
+        cct: String(currentCct),
+        schoolName: String(finalSchoolName || ''),
+        municipio: String(formData.municipio || 'S/D'),
+        valle: String(formData.valle || 'S/D'),
+        region: String(formData.region || 'S/D'),
+        zonaEscolar: String(formData.zonaEscolar || 'S/D'),
+        sector: String(formData.sector || 'S/D'),
+        modalidad: String(formData.modalidad || 'S/D'),
         status: String(formData.status || 'activo'),
         date: String(formData.date || new Date().toISOString().split('T')[0]),
         observaciones: String(formData.observaciones || ''),
-        updatedAt: serverTimestamp() // Sello de tiempo oficial de Firebase
+        updatedAt: serverTimestamp()
       };
 
-      // 2. Lógica específica por rubro técnico
       if (activeTab === 'Cuentas Institucionales') {
-        finalData.userName = String(formData.userName || '');
-        finalData.rfc = String(formData.rfc || '');
+        finalData.userName = String(formData.userName || 'SIN RESPONSABLE');
+        finalData.rfc = String(formData.rfc || 'SIN RFC');
         const filteredEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
         finalData.emails = filteredEmails;
-        finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : '';
+        finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : 'sin-correo@desysa.edu.mx';
       } 
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
@@ -258,43 +260,34 @@ export default function ProgramsPage() {
         if (finalData.progress === 100) finalData.status = 'concluido';
       } 
       else if (activeTab === 'Geoposición') {
-        finalData.latitud = String(formData.latitud || '');
-        finalData.longitud = String(formData.longitud || '');
+        finalData.latitud = String(formData.latitud || '0');
+        finalData.longitud = String(formData.longitud || '0');
       }
 
-      console.log("Datos listos para enviar a Firestore:", finalData);
-
-      // 3. Persistencia en la nube
       if (editingId) {
-        const docRef = doc(db, 'programs', editingId);
-        await updateDoc(docRef, finalData);
+        await updateDoc(doc(db, 'programs', editingId), finalData);
       } else {
-        const colRef = collection(db, 'programs');
-        await addDoc(colRef, finalData);
+        await addDoc(collection(db, 'programs'), finalData);
       }
       
-      toast({ title: "Sincronización Exitosa", description: "El registro oficial se ha guardado en la nube." });
+      toast({ title: "Sincronización Exitosa", description: "Datos guardados en la nube." });
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
       setDialogSearchTerm('');
     } catch (e: any) {
-      console.error("Critical Save Error en Firestore:", e);
-      toast({ 
-        variant: "destructive", 
-        title: "Fallo de Comunicación", 
-        description: "Error técnico: " + (e.message || "Verifique su conexión a internet")
-      });
+      console.error("Critical Firestore Error:", e);
+      alert("FALLO AL GUARDAR: " + (e.message || "Error desconocido. Verifique conexión."));
     } finally {
       setIsSaving(false);
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Desea eliminar permanentemente este registro de la base de datos oficial?")) return;
+    if (!confirm("¿Eliminar permanentemente este registro oficial?")) return;
     try {
       await deleteDoc(doc(db, 'programs', id));
-      toast({ title: "Registro Removido", description: "La información ha sido borrada de la nube." });
+      toast({ title: "Registro Removido" });
     } catch (e) {
       toast({ variant: "destructive", title: "Error al borrar" });
     }
@@ -323,7 +316,7 @@ export default function ProgramsPage() {
         toast({ 
           variant: "destructive", 
           title: "Sin Resultados", 
-          description: "No se encontró ninguna cuenta vinculada a este identificador." 
+          description: "No se encontró ninguna cuenta vinculada." 
         });
       }
     } catch (e) {
@@ -441,7 +434,7 @@ export default function ProgramsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando con Firestore...</p></TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
               ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
                 <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                   <TableCell className="text-center font-bold text-[10px] text-slate-300 pl-4">{idx + 1}</TableCell>
@@ -460,7 +453,7 @@ export default function ProgramsPage() {
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
                       <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </TableCell>
@@ -527,41 +520,37 @@ export default function ProgramsPage() {
             <ScrollArea className="h-full">
               <div className="p-10 space-y-10 max-w-6xl mx-auto">
                  <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
-                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Captura de Datos Institucionales (Primer Paso)</Label>
+                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Captura de Datos Institucionales (Buscador de Plantel)</Label>
                     <div className="relative">
-                      <Input placeholder="Buscar CCT o nombre del plantel..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
-                      {dialogSearchTerm.length > 2 && (
+                      <Input placeholder="Ingresar CCT o nombre para identificar..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); }} />
+                      {dialogSearchTerm.length > 2 && schoolSearchResults.length > 0 && (
                         <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
                           {schoolSearchResults.map((s, sidx) => (
-                            <div key={`sede-res-${s.cct}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                            <div key={`sede-res-${s.cct}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(s.cct); }}>
                               <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
                           ))}
-                          {schoolSearchResults.length === 0 && (
-                            <div className="p-6 text-center">
-                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no encontrado en la Base Maestra</p>
-                              <Button 
-                                onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} 
-                                variant="outline" 
-                                className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"
-                              >
-                                <Plus className="h-4 w-4 mr-2" /> Registrar Nuevo Plantel
-                              </Button>
-                            </div>
-                          )}
+                        </div>
+                      )}
+                      {dialogSearchTerm.length > 5 && schoolSearchResults.length === 0 && (
+                        <div className="absolute top-18 left-0 right-0 p-6 bg-white border rounded-2xl shadow-2xl z-50 text-center">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no detectado en base maestra</p>
+                           <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
+                             <Plus className="h-4 w-4 mr-2" /> Registrar como Nuevo CCT
+                           </Button>
                         </div>
                       )}
                     </div>
                     {formData.cct ? (
                       <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
                         <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
-                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Folio de auditoría: {formData.cct}</p></div>
+                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Sincronización habilitada para CCT: {formData.cct}</p></div>
                       </div>
                     ) : (
                       <div className="p-4 bg-rose-50 rounded-xl flex items-center gap-3 border border-rose-100">
                          <AlertCircle className="h-5 w-5 text-rose-500" />
-                         <p className="text-[10px] font-black text-rose-600 uppercase">Identificación requerida para habilitar sincronización</p>
+                         <p className="text-[10px] font-black text-rose-600 uppercase">Se requiere identificar el CCT para poder sincronizar en la nube</p>
                       </div>
                     )}
                  </div>
@@ -572,15 +561,15 @@ export default function ProgramsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                          <div className="md:col-span-2 space-y-2">
                             <Label className="text-[10px] font-black text-primary pl-1 uppercase">Nombre del Responsable</Label>
-                            <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
+                            <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} placeholder="NOMBRE COMPLETO..." />
                          </div>
                          <div className="space-y-2">
                             <Label className="text-[10px] font-black text-primary pl-1 uppercase">RFC del Responsable</Label>
-                            <Input className="h-12 font-mono font-black bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.rfc || ''} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} maxLength={13} />
+                            <Input className="h-12 font-mono font-black bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.rfc || ''} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} maxLength={13} placeholder="13 CARACTERES..." />
                          </div>
                       </div>
                       <div className="space-y-6">
-                         <div className="flex items-center justify-between border-b pb-2"><div className="flex items-center gap-3"><Mail className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Emails (@desysa.edu.mx)</h4></div><Button type="button" variant="outline" size="sm" onClick={addEmailField} className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2"><Plus className="h-3 w-3" /> Añadir Otro</Button></div>
+                         <div className="flex items-center justify-between border-b pb-2"><div className="flex items-center gap-3"><Mail className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Emails (@desysa.edu.mx)</h4></div><Button type="button" variant="outline" size="sm" onClick={addEmailField} className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2"><Plus className="h-3 w-3" /> Añadir Otro Correo</Button></div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                            {(formData.emails || ['']).map((email, idx) => (
                              <div key={`email-${idx}`} className="flex gap-2 animate-in fade-in slide-in-from-left-2">
