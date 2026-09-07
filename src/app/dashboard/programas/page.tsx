@@ -205,23 +205,29 @@ export default function ProgramsPage() {
     try {
       const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
       
-      // Limpieza profunda para evitar campos undefined que rompen Firestore
-      const cleanData = (obj: any) => {
-        const newObj = { ...obj };
-        Object.keys(newObj).forEach(key => {
-          if (newObj[key] === undefined) newObj[key] = null;
-        });
-        return newObj;
+      // Función de limpieza profunda para evitar errores de Firestore (undefined no está permitido)
+      const deepClean = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(deepClean);
+        if (obj !== null && typeof obj === 'object' && !(obj instanceof Timestamp)) {
+          const cleaned: any = {};
+          Object.keys(obj).forEach(key => {
+            const val = obj[key];
+            if (val !== undefined) cleaned[key] = deepClean(val);
+            else cleaned[key] = null;
+          });
+          return cleaned;
+        }
+        return obj;
       };
 
-      const dataToSave = cleanData({ 
+      const dataToSave = deepClean({ 
         ...formData, 
         emails: cleanEmails,
-        name: activeTab, // Forzar que coincida con el módulo activo
+        name: activeTab, 
         updatedAt: serverTimestamp() 
       });
       
-      // Eliminar el ID para que no se guarde como campo interno
+      // Eliminar el ID para que no se guarde como campo interno redundante
       if (dataToSave.id) delete dataToSave.id;
 
       // Lógica específica para Biblioteca Digital
@@ -247,7 +253,7 @@ export default function ProgramsPage() {
       toast({ 
         variant: "destructive", 
         title: "Error de sincronización", 
-        description: e.message || "Hubo un problema al conectar con el servidor." 
+        description: e.message || "Hubo un problema al conectar con el servidor. Verifique su conexión." 
       });
     } finally {
       setIsSaving(false);
