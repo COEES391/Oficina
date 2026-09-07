@@ -11,23 +11,28 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarProvider,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from '@/components/ui/sidebar'
 import { 
   LayoutDashboard, 
-  LifeBuoy, 
   GraduationCap, 
-  Briefcase, 
   LogOut, 
   Monitor,
   ShieldCheck,
   Database,
   Users,
-  History
+  History,
+  FileText,
+  Wrench,
+  ChevronRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
+import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({
   children,
@@ -36,7 +41,6 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [userRfc, setUserRfc] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -48,10 +52,7 @@ export default function DashboardLayout({
       return
     }
 
-    setUserRfc(rfc)
-
     const fetchUserData = async () => {
-      // Casos especiales pre-configurados
       if (rfc === 'COEES') {
         setCurrentUser({
           id: 'master',
@@ -64,32 +65,6 @@ export default function DashboardLayout({
         return
       }
       
-      // Usuario Programas (Chimal)
-      if (rfc === 'CISF840114L34') {
-        setCurrentUser({
-          id: 'special-user-programas',
-          rfc: rfc,
-          name: 'Analista de Programas',
-          password: '',
-          role: 'user',
-          privileges: ['programas']
-        })
-        return
-      }
-
-      // Usuario Soporte Técnico
-      if (rfc === 'HEAS740508Q23') {
-        setCurrentUser({
-          id: 'special-user-soporte',
-          rfc: rfc,
-          name: 'Analista de Soporte Técnico',
-          password: '',
-          role: 'user',
-          privileges: ['soporte']
-        })
-        return
-      }
-
       try {
         const q = query(collection(db, 'users'), where('rfc', '==', rfc))
         const querySnapshot = await getDocs(q)
@@ -110,28 +85,26 @@ export default function DashboardLayout({
   }
 
   const menuConfig = [
-    { privilege: 'planeacion', name: 'Planeación', path: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { privilege: 'bitacora-atres', name: 'Bitácora Atres', path: '/dashboard/bitacora-atres', icon: <History className="h-5 w-5" /> },
-    { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <LifeBuoy className="h-5 w-5" /> },
-    { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-5 w-5" /> },
-    { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <Briefcase className="h-5 w-5" /> },
-    { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-5 w-5" /> },
-    { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-5 w-5" /> },
-    { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-5 w-5" /> },
+    { privilege: 'planeacion', name: 'Planeación', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, group: 'general' },
+    { privilege: 'bitacora-atres', name: 'Bitácora Atres', path: '/dashboard/bitacora-atres', icon: <History className="h-4 w-4" />, group: 'general' },
+    
+    { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <FileText className="h-4 w-4" />, group: 'oficinas', color: 'bg-purple-600' },
+    { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" />, group: 'oficinas', color: 'bg-emerald-600' },
+    { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <Wrench className="h-4 w-4" />, group: 'oficinas', color: 'bg-orange-500' },
+    
+    { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-4 w-4" />, group: 'admin' },
+    { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-4 w-4" />, group: 'admin' },
+    { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-4 w-4" />, group: 'admin' },
   ]
 
-  const allowedMenuItems = useMemo(() => {
+  const allowedItems = useMemo(() => {
     if (!currentUser) return []
-    const seenPaths = new Set();
-    return menuConfig.filter(item => {
-      if (currentUser.privileges.includes(item.privilege)) {
-        if (seenPaths.has(item.path)) return false;
-        seenPaths.add(item.path);
-        return true;
-      }
-      return false;
-    })
+    return menuConfig.filter(item => currentUser.privileges.includes(item.privilege))
   }, [currentUser])
+
+  const generalItems = allowedItems.filter(i => i.group === 'general')
+  const oficinaItems = allowedItems.filter(i => i.group === 'oficinas')
+  const adminItems = allowedItems.filter(i => i.group === 'admin')
 
   if (!mounted) return null
 
@@ -150,31 +123,114 @@ export default function DashboardLayout({
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="px-2 py-2">
-          <SidebarMenu className="gap-1">
-            {allowedMenuItems.map((item) => (
-              <SidebarMenuItem key={item.path}>
-                <SidebarMenuButton 
-                  onClick={() => router.push(item.path)}
-                  isActive={pathname === item.path}
-                  tooltip={item.name}
-                  className={`h-11 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300 ${
-                    pathname === item.path 
-                      ? 'bg-white text-[#9f2241] shadow-lg' 
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={pathname === item.path ? 'text-[#9f2241]' : 'text-white/50'}>
-                      {item.icon}
-                    </div>
-                    <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
-                  </div>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+
+        <SidebarContent className="px-2 py-4 space-y-6">
+          {/* GRUPO GENERAL */}
+          {generalItems.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {generalItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton 
+                        onClick={() => router.push(item.path)}
+                        isActive={pathname === item.path}
+                        className={cn(
+                          "h-12 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300",
+                          pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        )}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={cn(
+                            "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                            pathname === item.path ? 'bg-primary/5 text-primary' : 'bg-white/10 text-white/50'
+                          )}>
+                            {item.icon}
+                          </div>
+                          <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {/* GRUPO OFICINAS */}
+          {oficinaItems.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">
+                Oficinas
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-2">
+                  {oficinaItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton 
+                        onClick={() => router.push(item.path)}
+                        isActive={pathname === item.path}
+                        className={cn(
+                          "h-12 rounded-xl font-bold text-[11px] tracking-wide px-3 transition-all duration-300",
+                          pathname === item.path ? 'bg-white/10 ring-1 ring-white/20 shadow-xl' : 'hover:bg-white/5'
+                        )}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={cn(
+                            "h-9 w-9 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg transition-transform group-hover:scale-110",
+                            item.color || 'bg-slate-600'
+                          )}>
+                            {item.icon}
+                          </div>
+                          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <span className="text-white font-black leading-none">{item.name}</span>
+                            {pathname === item.path && <span className="text-[7px] text-white/40 uppercase mt-1">En curso</span>}
+                          </div>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {/* GRUPO ADMINISTRACIÓN */}
+          {adminItems.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">
+                Administración
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {adminItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton 
+                        onClick={() => router.push(item.path)}
+                        isActive={pathname === item.path}
+                        className={cn(
+                          "h-11 rounded-xl font-bold text-[10px] tracking-wide px-4 transition-all duration-300",
+                          pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                        )}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={cn(
+                            "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
+                            pathname === item.path ? 'bg-primary/5 text-primary' : 'bg-white/5 text-white/30'
+                          )}>
+                            {item.icon}
+                          </div>
+                          <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
+
         <div className="mt-auto p-4 opacity-30 group-data-[collapsible=icon]:hidden">
            <div className="h-px bg-white/20 w-full mb-3" />
            <p className="text-[7px] text-white font-bold uppercase tracking-[0.1em] text-center leading-tight">
@@ -182,6 +238,7 @@ export default function DashboardLayout({
            </p>
         </div>
       </Sidebar>
+
       <SidebarInset className="bg-transparent flex flex-col min-w-0">
         <header className="flex h-16 items-center justify-between border-b border-slate-100 px-4 md:px-8 bg-white/80 backdrop-blur-md sticky top-0 z-40 shrink-0">
           <div className="flex items-center gap-3 md:gap-6">
@@ -196,7 +253,7 @@ export default function DashboardLayout({
             <div className="hidden xs:flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-inner group transition-all hover:bg-white">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-primary leading-none">{userRfc}</span>
+                <span className="text-[9px] font-black uppercase text-primary leading-none">{currentUser?.rfc}</span>
               </div>
             </div>
 
