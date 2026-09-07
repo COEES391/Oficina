@@ -90,6 +90,14 @@ export default function ProgramsPage() {
   const [isVerifying, setIsVerifying] = useState(false)
 
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
 
   const initialFormState: ProgramStatus = {
     name: activeTab, progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
@@ -131,6 +139,30 @@ export default function ProgramsPage() {
         }))
       }
     }
+  }
+
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm('');
+    toast({ title: "CCT Sumado a la Base Maestra" });
   }
 
   const handleSave = async () => {
@@ -403,6 +435,18 @@ export default function ProgramsPage() {
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
                           ))}
+                          {schoolSearchResults.length === 0 && (
+                            <div className="p-6 text-center">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no encontrado en la Base Maestra</p>
+                              <Button 
+                                onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} 
+                                variant="outline" 
+                                className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"
+                              >
+                                <Plus className="h-4 w-4 mr-2" /> Registrar Nuevo Plantel
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -418,8 +462,14 @@ export default function ProgramsPage() {
                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8 animate-in slide-in-from-bottom-2">
                       <div className="flex items-center gap-3 border-b pb-2"><ShieldCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Credenciales y Responsable</h4></div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                         <div className="space-y-2"><Label className="text-[10px] font-black text-primary pl-1 uppercase">RFC del Responsable</Label><Input className="h-12 font-mono font-black bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.rfc || ''} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} maxLength={13} /></div>
-                         <div className="md:col-span-2 space-y-2"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Servidor Público Responsable</Label><Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} /></div>
+                         <div className="md:col-span-2 space-y-2">
+                            <Label className="text-[10px] font-black text-primary pl-1 uppercase">Nombre del Responsable</Label>
+                            <Input className="h-12 font-bold bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.userName || ''} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[10px] font-black text-primary pl-1 uppercase">RFC del Responsable</Label>
+                            <Input className="h-12 font-mono font-black bg-slate-50 border-slate-200 rounded-xl shadow-inner uppercase" value={formData.rfc || ''} onChange={e => setFormData({...formData, rfc: e.target.value.toUpperCase()})} maxLength={13} />
+                         </div>
                       </div>
                       <div className="space-y-6">
                          <div className="flex items-center justify-between border-b pb-2"><div className="flex items-center gap-3"><Mail className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Emails (@desysa.edu.mx)</h4></div><Button type="button" variant="outline" size="sm" onClick={addEmailField} className="h-8 rounded-lg border-primary/20 text-primary font-bold text-[10px] gap-2"><Plus className="h-3 w-3" /> Añadir Otro</Button></div>
@@ -473,6 +523,58 @@ export default function ProgramsPage() {
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
              <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase"><Save className="h-6 w-6" /> Sincronizar en la Nube</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra del sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
+                  <Input value={quickAddForm.region} onChange={e => setQuickAddForm({...quickAddForm, region: e.target.value.toUpperCase()})} className="font-bold border-slate-200" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button>
+            <Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar y Sumar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
