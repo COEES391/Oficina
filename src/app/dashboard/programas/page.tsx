@@ -558,7 +558,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Geoposición' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full">
-          {/* Filters Row */}
           <Card className="p-4 bg-white border-none shadow-xl rounded-[1.5rem]">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="space-y-1">
@@ -598,7 +597,6 @@ export default function ProgramsPage() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Map Area */}
             <Card className="lg:col-span-7 h-[650px] bg-slate-100 rounded-[3rem] overflow-hidden relative border-none shadow-2xl group ring-1 ring-black/5">
               <div className="absolute inset-0 bg-slate-200">
                 <Image 
@@ -620,11 +618,6 @@ export default function ProgramsPage() {
                    <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En movimiento</span></div>
                    <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Sin señal</span></div>
                 </div>
-                <div className="absolute top-6 right-6 flex flex-col gap-2">
-                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
-                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
-                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center hover:bg-slate-50 mt-4"><Globe className="h-5 w-5 text-primary" /></button>
-                </div>
               </div>
             </Card>
 
@@ -642,9 +635,6 @@ export default function ProgramsPage() {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2"><Activity className="h-3 w-3 text-emerald-400" /> Monitoreo Activo</p>
                         </div>
                      </div>
-                     <Button variant="outline" size="sm" className="h-10 px-6 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2 hover:bg-primary/5 shadow-sm">
-                       <History className="h-4 w-4" /> Historial
-                     </Button>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-5 pt-6 border-t border-slate-50 relative z-10">
@@ -665,8 +655,8 @@ export default function ProgramsPage() {
                      ))}
                   </div>
 
-                  <Button className="w-full mt-10 h-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white font-black uppercase text-xs gap-4 shadow-[0_15px_40px_rgba(159,34,65,0.3)] group relative z-10">
-                     <Send className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> VER EN GOOGLE MAPS
+                  <Button className="w-full mt-10 h-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white font-black uppercase text-xs gap-4 shadow-2xl">
+                     <Send className="h-5 w-5" /> VER EN GOOGLE MAPS
                   </Button>
                </Card>
 
@@ -676,7 +666,6 @@ export default function ProgramsPage() {
                         <Clock className="h-6 w-6 text-primary" />
                         <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider">Registros de Ubicación</h4>
                      </div>
-                     <Badge variant="outline" className="text-[8px] font-black text-slate-400 border-slate-200">HOY</Badge>
                   </div>
                   <div className="flex-1 overflow-hidden">
                      <ScrollArea className="h-full">
@@ -703,14 +692,6 @@ export default function ProgramsPage() {
                            </TableBody>
                         </Table>
                      </ScrollArea>
-                  </div>
-                  <div className="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center shrink-0">
-                     <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Mostrando registros 1-8 de 124</p>
-                     <div className="flex gap-1.5">
-                        <button className="h-7 w-7 rounded-lg bg-primary text-white text-[9px] font-black">1</button>
-                        <button className="h-7 w-7 rounded-lg border border-slate-100 hover:bg-slate-50 text-[9px] font-bold text-slate-400">2</button>
-                        <button className="h-7 w-7 rounded-lg border border-slate-100 hover:bg-slate-50 flex items-center justify-center"><ChevronRight className="h-3 w-3 text-slate-300" /></button>
-                     </div>
                   </div>
                </Card>
             </div>
