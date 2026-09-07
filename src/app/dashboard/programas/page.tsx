@@ -91,6 +91,7 @@ export default function ProgramsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
+  const [showSearchResults, setShowSearchResults] = useState(false)
   
   const [verifySearch, setVerifySearch] = useState('')
   const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
@@ -159,21 +160,19 @@ export default function ProgramsPage() {
     const cleanValue = value.toUpperCase().trim()
     setFormData(prev => ({ ...prev, cct: cleanValue }))
     
-    if (cleanValue.length === 10) {
-      const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
-      if (match) {
-        setFormData(prev => ({ 
-          ...prev, 
-          cct: match.cct,
-          schoolName: match.nombre, 
-          municipio: match.municipio, 
-          valle: match.valle, 
-          region: match.region, 
-          zonaEscolar: match.zonaEscolar, 
-          sector: match.sector, 
-          modalidad: match.modalidad 
-        }))
-      }
+    const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
+    if (match) {
+      setFormData(prev => ({ 
+        ...prev, 
+        cct: match.cct,
+        schoolName: match.nombre, 
+        municipio: match.municipio, 
+        valle: match.valle, 
+        region: match.region, 
+        zonaEscolar: match.zonaEscolar, 
+        sector: match.sector, 
+        modalidad: match.modalidad 
+      }))
     }
   }
 
@@ -199,26 +198,25 @@ export default function ProgramsPage() {
     handleCctChange(newSchool.cct);
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
+    setShowSearchResults(false);
     toast({ title: "CCT Sumado a la Base Maestra" });
   }
 
   const handleSave = async () => {
-    // Forzar la validación de CCT incluso si no se usó el buscador (detección manual)
     const currentCct = formData.cct || dialogSearchTerm.toUpperCase().trim();
     
     if (!currentCct || currentCct.length < 5) {
-      alert("ERROR: Debe ingresar un CCT válido en el buscador superior para continuar.");
+      alert("ERROR: Debe identificar un CCT válido en el buscador superior.");
       return;
     }
 
     setIsSaving(true);
     
     try {
-      // Si el CCT fue manual y no se disparó handleCctChange, forzar identificación
       let finalSchoolName = formData.schoolName;
       if (!finalSchoolName) {
         const match = allSchools.find(s => s.cct.toUpperCase() === currentCct);
-        finalSchoolName = match?.nombre || "PLANTEL EXTERNO / MANUAL";
+        finalSchoolName = match?.nombre || "PLANTEL EXTERNO";
       }
 
       const finalData: Record<string, any> = {
@@ -269,14 +267,15 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      toast({ title: "Registro Guardado", description: "Datos sincronizados correctamente." });
+      toast({ title: "Registro Guardado" });
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
       setDialogSearchTerm('');
+      setShowSearchResults(false);
     } catch (e: any) {
-      console.error("Critical Firestore Error:", e);
-      alert("FALLO AL GUARDAR: " + (e.message || "Error desconocido. Verifique conexión."));
+      console.error("Firestore Error:", e);
+      alert("FALLO AL GUARDAR: " + (e.message || "Error desconocido."));
     } finally {
       setIsSaving(false);
     }
@@ -353,7 +352,7 @@ export default function ProgramsPage() {
 
   const filteredRecords = records.filter(r => 
     r.name === activeTab && 
-    (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.includes(searchTerm.toUpperCase())))
+    (!searchTerm || (r.cct && r.cct.includes(searchTerm.toUpperCase())) || (r.schoolName && r.schoolName.toUpperCase().includes(searchTerm.toUpperCase())))
   );
 
   const schoolSearchResults = useMemo(() => {
@@ -412,7 +411,7 @@ export default function ProgramsPage() {
                 <Search className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
              </div>
              
-             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setDialogSearchTerm(''); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 rounded-xl text-[11px] font-bold shadow-xl flex-shrink-0 min-w-fit uppercase">
+             <Button onClick={() => { setFormData({...initialFormState, name: activeTab}); setEditingId(null); setDialogSearchTerm(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-12 px-8 rounded-xl text-[11px] font-bold shadow-xl flex-shrink-0 min-w-fit uppercase">
                 <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
              </Button>
            </div>
@@ -452,12 +451,12 @@ export default function ProgramsPage() {
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => { setFormData({...rec, emails: rec.emails || [rec.email || '']}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
                       <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
-              )) : (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros en la base de datos oficial</TableCell></TableRow>)}
+              )) : (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros oficiales</TableCell></TableRow>)}
             </TableBody>
           </Table>
         </div>
@@ -503,7 +502,7 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); } } }}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); setShowSearchResults(false); } } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1400px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="font-black text-lg uppercase">Sincronización Oficial: {activeTab}</DialogTitle>
@@ -511,7 +510,7 @@ export default function ProgramsPage() {
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <Select value={formData.status} onValueChange={(v: any) => setFormData({...formData, status: v})}>
                    <SelectTrigger className="h-8 w-32 bg-transparent border-none text-white font-bold text-[10px] uppercase"><SelectValue /></SelectTrigger>
-                   <SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="activo" className="font-bold text-[10px] text-emerald-600">Activo</SelectItem><SelectItem value="suspendida" className="font-bold text-[10px] text-amber-600">Suspendida</SelectItem><SelectItem value="inactivo" className="font-bold text-[10px] text-rose-600">Inactivo</SelectItem></SelectContent>
+                   <SelectContent className="rounded-xl border-none shadow-2xl z-[500]"><SelectItem value="activo" className="font-bold text-[10px] text-emerald-600">Activo</SelectItem><SelectItem value="suspendida" className="font-bold text-[10px] text-amber-600">Suspendida</SelectItem><SelectItem value="inactivo" className="font-bold text-[10px] text-rose-600">Inactivo</SelectItem></SelectContent>
                 </Select>
              </div>
           </DialogHeader>
@@ -521,35 +520,44 @@ export default function ProgramsPage() {
                  <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
                     <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Captura de Datos Institucionales (Buscador de Plantel)</Label>
                     <div className="relative">
-                      <Input placeholder="Ingresar CCT o nombre para identificar..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); }} />
-                      {dialogSearchTerm.length > 2 && schoolSearchResults.length > 0 && (
-                        <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
+                      <Input 
+                        placeholder="Ingresar CCT o nombre para identificar..." 
+                        className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" 
+                        value={dialogSearchTerm} 
+                        onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} 
+                      />
+                      {showSearchResults && dialogSearchTerm.length > 2 && (
+                        <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
                           {schoolSearchResults.map((s, sidx) => (
-                            <div key={`sede-res-${s.cct}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(s.cct); }}>
+                            <div 
+                              key={`sede-res-${s.cct}-${sidx}`} 
+                              className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" 
+                              onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(s.cct); setShowSearchResults(false); }}
+                            >
                               <div className="flex flex-col min-w-0"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
                           ))}
-                        </div>
-                      )}
-                      {dialogSearchTerm.length > 5 && schoolSearchResults.length === 0 && (
-                        <div className="absolute top-18 left-0 right-0 p-6 bg-white border rounded-2xl shadow-2xl z-50 text-center">
-                           <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no detectado en base maestra</p>
-                           <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
-                             <Plus className="h-4 w-4 mr-2" /> Registrar como Nuevo CCT
-                           </Button>
+                          {schoolSearchResults.length === 0 && (
+                            <div className="p-6 text-center">
+                               <p className="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">CCT no detectado en base maestra</p>
+                               <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
+                                 <Plus className="h-4 w-4 mr-2" /> Registrar como Nuevo CCT
+                               </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                     {formData.cct ? (
                       <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
                         <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
-                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Sincronización habilitada para CCT: {formData.cct}</p></div>
+                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Identificación detectada para CCT: {formData.cct}</p></div>
                       </div>
                     ) : (
                       <div className="p-4 bg-rose-50 rounded-xl flex items-center gap-3 border border-rose-100">
                          <AlertCircle className="h-5 w-5 text-rose-500" />
-                         <p className="text-[10px] font-black text-rose-600 uppercase">Se requiere identificar el CCT para poder sincronizar en la nube</p>
+                         <p className="text-[10px] font-black text-rose-600 uppercase">Identificación requerida para habilitar sincronización</p>
                       </div>
                     )}
                  </div>
@@ -620,7 +628,7 @@ export default function ProgramsPage() {
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
              <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase min-w-[280px]">
                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-6 w-6" />}
-               {isSaving ? 'Guardando...' : 'Guardar'}
+               {isSaving ? 'Guardando...' : 'GUARDAR'}
              </Button>
           </DialogFooter>
         </DialogContent>
@@ -658,7 +666,7 @@ export default function ProgramsPage() {
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl z-[600]"><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
