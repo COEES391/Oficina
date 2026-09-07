@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -61,7 +60,9 @@ import {
   Home,
   BarChart3,
   Settings,
-  LayoutDashboard
+  LayoutDashboard,
+  Bell,
+  Printer
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -77,7 +78,8 @@ import {
   onSnapshot, 
   serverTimestamp 
 } from 'firebase/firestore'
-import { type ProgramStatus } from '@/lib/planning-data'
+import { type ProgramStatus, type BitacoraEntry } from '@/lib/planning-data'
+import * as XLSX from 'xlsx'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -103,6 +105,30 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase7', label: '7. Entrega y Capacitación' }
 ];
 
+const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
+  return (
+    <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto",
+        status === 'pendiente' 
+          ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse" 
+          : "bg-rose-900/30 grayscale"
+      )} />
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto",
+        status === 'proceso' 
+          ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" 
+          : "bg-amber-900/30 grayscale"
+      )} />
+      <div className={cn(
+        "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto", status === 'atendido' 
+          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
+          : "bg-emerald-900/30 grayscale"
+      )} />
+    </div>
+  );
+}
+
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -117,6 +143,12 @@ export default function ProgramsPage() {
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   
+  // ATRES Bitacora States
+  const [bitacoraRecords, setBitacoraRecords] = useState<BitacoraEntry[]>([])
+  const [isBitacoraEditDialogOpen, setIsBitacoraEditDialogOpen] = useState(false)
+  const [bitacoraEditingRecord, setBitacoraEditingRecord] = useState<BitacoraEntry | null>(null)
+  const [bitacoraPdfToPreview, setBitacoraPdfToPreview] = useState<string | null>(null)
+
   const [userPart, setUserPart] = useState('')
   const [domainPart, setDomainPart] = useState(DOMINIOS[0])
   const [verifyInput, setVerifySearch] = useState('')
@@ -150,6 +182,7 @@ export default function ProgramsPage() {
     setMounted(true)
     setIsLoading(true)
     
+    // Program Status Sync
     const q = query(collection(db, 'programs'), orderBy('updatedAt', 'desc'))
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
@@ -160,10 +193,17 @@ export default function ProgramsPage() {
       setIsLoading(false)
     })
 
+    // ATRES Bitacora Sync
+    const bQ = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'))
+    const bUnsubscribe = onSnapshot(bQ, (snapshot) => {
+      const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[]
+      setBitacoraRecords(fetched)
+    })
+
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
 
-    return () => unsubscribe()
+    return () => { unsubscribe(); bUnsubscribe(); }
   }, [])
 
   const filteredRecords = useMemo(() => {
@@ -177,6 +217,19 @@ export default function ProgramsPage() {
       (r.email || '').toUpperCase().includes(term)
     );
   }, [records, searchTerm, activeTab]);
+
+  const filteredBitacora = useMemo(() => {
+    if (!searchTerm) return bitacoraRecords;
+    const term = searchTerm.toUpperCase();
+    return bitacoraRecords.filter(r => 
+      (r.cct || '').toUpperCase().includes(term) ||
+      (r.schoolName || '').toUpperCase().includes(term) ||
+      (r.folio || '').toUpperCase().includes(term) ||
+      (r.tecnico || '').toUpperCase().includes(term)
+    );
+  }, [bitacoraRecords, searchTerm]);
+
+  const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
 
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
@@ -310,6 +363,53 @@ export default function ProgramsPage() {
     toast({ title: "Registro Removido" });
   }
 
+  const handleBitacoraEdit = (record: BitacoraEntry) => { setBitacoraEditingRecord({ ...record }); setIsBitacoraEditDialogOpen(true); }
+  
+  const handleBitacoraDelete = async (id: string) => {
+    if (!confirm("¿Eliminar permanentemente este folio?")) return;
+    await deleteDoc(doc(db, 'atres_bitacora', id));
+    toast({ title: "Folio Eliminado" });
+  }
+
+  const saveBitacoraEdits = async () => {
+    if (!bitacoraEditingRecord?.id) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, 'atres_bitacora', bitacoraEditingRecord.id), {
+        status: bitacoraEditingRecord.status,
+        tecnico: bitacoraEditingRecord.tecnico,
+        servicio: bitacoraEditingRecord.servicio,
+        updatedAt: serverTimestamp()
+      });
+      setIsBitacoraEditDialogOpen(false);
+      setBitacoraEditingRecord(null);
+      toast({ title: "Bitácora Actualizada" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al actualizar" });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const downloadExcelBitacora = () => {
+    const data = filteredBitacora.map(r => ({
+      Folio: r.folio,
+      Fecha: r.fecha,
+      CCT: r.cct,
+      Plantel: r.schoolName,
+      Servicio: r.servicio,
+      Analista: r.tecnico,
+      Estatus: r.status
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bitacora ATRES");
+    XLSX.writeFile(wb, `Bitacora_ATRES_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
+  }
+
+  const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
+  const printFile = (data: string) => { const win = window.open(); if (!win) return; win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`); }
+
   const schoolSearchResults = useMemo(() => {
     if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
     const term = dialogSearchTerm.toUpperCase();
@@ -349,7 +449,94 @@ export default function ProgramsPage() {
         ))}
       </div>
 
-      {activeTab === 'Cuentas Institucionales' ? (
+      {activeTab === 'ATRES' ? (
+        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+           {bitacoraPendingCount > 0 && (
+            <div className="bg-rose-600 text-white p-1 rounded-xl shadow-lg flex flex-row items-center justify-between gap-3 max-w-[240px] ml-auto mb-2 animate-bounce">
+               <div className="flex items-center gap-2 pl-3">
+                  <Bell className="h-3 w-3 text-white" />
+                  <p className="text-[8px] font-black uppercase tracking-widest leading-none">{bitacoraPendingCount} PENDIENTES</p>
+               </div>
+               <Button onClick={() => setSearchTerm('pendiente')} className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded-lg border-none">ATENDER</Button>
+            </div>
+           )}
+
+           <Card className="executive-card p-6 bg-white border-none shadow-xl">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                 <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><History className="h-6 w-6" /></div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800 uppercase">Bitácora de Solicitudes ATRES</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Histórico de Atención Técnica en la Nube</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="relative w-64 group">
+                       <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-all" />
+                       <Input placeholder="Buscar CCT o Folio..." className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    </div>
+                    <Button onClick={downloadExcelBitacora} variant="outline" className="h-11 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md">
+                      <FileSpreadsheet className="h-4 w-4" /> Exportar
+                    </Button>
+                 </div>
+              </div>
+           </Card>
+
+           <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white">
+              <div className="overflow-x-auto w-full">
+                <Table>
+                  <TableHeader className="bg-slate-50 border-b">
+                     <TableRow className="h-12">
+                        <TableHead className="w-10 text-center pl-8"></TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary">Folio</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary">Fecha</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary">Plantel / CCT</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary min-w-[200px]">Acciones Técnicas</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary text-center">Analista</TableHead>
+                        <TableHead className="text-right pr-10 text-[10px] font-black uppercase">Docs</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBitacora.length > 0 ? filteredBitacora.map((r, idx) => (
+                      <TableRow key={r.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <TableCell className="pl-8 text-center"><TrafficLight status={r.status} /></TableCell>
+                        <TableCell className="font-mono font-black text-[11px] text-primary">#{r.folio}</TableCell>
+                        <TableCell className="text-[10px] font-bold text-slate-400">{r.fecha}</TableCell>
+                        <TableCell>
+                           <div className="flex flex-col">
+                              <span className="text-[11px] font-black text-slate-700 uppercase leading-none truncate max-w-[180px]">{r.schoolName}</span>
+                              <span className="text-[8px] font-mono text-primary mt-1">{r.cct}</span>
+                           </div>
+                        </TableCell>
+                        <TableCell className="text-[10px] font-semibold text-slate-500 uppercase leading-tight line-clamp-2 max-w-[250px]">{r.servicio}</TableCell>
+                        <TableCell className="text-center font-black text-[9px] text-slate-700 uppercase">{r.tecnico}</TableCell>
+                        <TableCell className="text-right pr-4">
+                           <div className="flex justify-end gap-1">
+                              {r.pdfData && (
+                                <button onClick={() => setBitacoraPdfToPreview(r.pdfData!)} className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-all"><FileText className="h-4 w-4" /></button>
+                              )}
+                              {r.excelData && (
+                                <button onClick={() => downloadFile(r.excelData!, r.excelName || 'bitacora.xlsx')} className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-all"><FileSpreadsheet className="h-4 w-4" /></button>
+                              )}
+                           </div>
+                        </TableCell>
+                        <TableCell className="pr-10">
+                           <div className="flex gap-1">
+                              <button onClick={() => handleBitacoraEdit(r)} className="text-slate-400 hover:text-primary transition-all"><Pencil className="h-4 w-4" /></button>
+                              <button onClick={() => handleBitacoraDelete(r.id!)} className="text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
+                           </div>
+                        </TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow><TableCell colSpan={8} className="text-center py-24 opacity-30 text-xs font-black uppercase">Sin registros en bitácora</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+           </Card>
+        </div>
+      ) : activeTab === 'Cuentas Institucionales' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500">
           <Card className="lg:col-span-5 executive-card bg-white border-none shadow-2xl flex flex-col h-fit">
             <CardHeader className="p-8 border-b border-slate-50">
@@ -400,12 +587,6 @@ export default function ProgramsPage() {
                         </div>
                       )}
                     </div>
-                    {formData.cct && (
-                      <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100 mt-2 animate-in zoom-in-95">
-                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                         <span className="text-[10px] font-black uppercase text-emerald-800 truncate">{formData.schoolName}</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -419,10 +600,7 @@ export default function ProgramsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Usuario (sin dominio) *</Label>
-                      <div className="relative">
-                        <Input placeholder="EJ. MARIA.LOPEZ" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-10" value={userPart} onChange={e => setUserPart(e.target.value)} />
-                        <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                      </div>
+                      <Input placeholder="EJ. MARIA.LOPEZ" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio *</Label>
@@ -437,23 +615,12 @@ export default function ProgramsPage() {
 
                   <div className="space-y-1">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Puesto</Label>
-                    <div className="relative">
-                      <Input placeholder="EJ. COORDINADOR TÉCNICO" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.puesto} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} />
-                      <ShieldCheck className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                    </div>
+                    <Input placeholder="EJ. COORDINADOR TÉCNICO" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase" value={formData.puesto} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} />
                   </div>
 
                   <div className="space-y-1">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Departamento</Label>
-                    <div className="relative">
-                      <Input placeholder="EJ. CAPACITACIÓN" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} />
-                      <Building2 className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Observaciones (opcional)</Label>
-                    <Textarea placeholder="AGREGAR ALGUNA OBSERVACIÓN..." className="min-h-[80px] rounded-xl bg-white border-slate-200 font-medium uppercase text-[10px]" value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
+                    <Input placeholder="EJ. CAPACITACIÓN" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} />
                   </div>
                </div>
 
@@ -588,10 +755,6 @@ export default function ProgramsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <Card className="lg:col-span-7 rounded-[3rem] border-none shadow-2xl overflow-hidden min-h-[600px] flex flex-col relative group">
-              <div className="absolute top-6 left-6 z-10 flex gap-2">
-                <Button variant="secondary" className="h-10 px-6 rounded-xl bg-white shadow-xl text-[10px] font-black uppercase border">Mapa</Button>
-                <Button variant="ghost" className="h-10 px-6 rounded-xl bg-white/60 backdrop-blur-md shadow-xl text-[10px] font-black uppercase">Satélite</Button>
-              </div>
               <div className="flex-1 relative bg-slate-100">
                  <Image src="https://picsum.photos/seed/map-toluca-v2/1200/800" alt="Mapa" fill className="object-cover opacity-80" />
                  <div className="absolute top-[45%] left-[50%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce">
@@ -601,7 +764,6 @@ export default function ProgramsPage() {
                     <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-emerald-500" /><span className="text-[9px] font-black uppercase text-slate-600">En línea</span></div>
                     <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-blue-500" /><span className="text-[9px] font-black uppercase text-slate-600">En movimiento</span></div>
                     <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-rose-500" /><span className="text-[9px] font-black uppercase text-slate-600">Sin señal</span></div>
-                    <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-slate-400" /><span className="text-[9px] font-black uppercase text-slate-600">Desconectado</span></div>
                  </div>
               </div>
             </Card>
@@ -636,48 +798,11 @@ export default function ProgramsPage() {
                      </div>
                   </div>
                </Card>
-
-               <Card className="executive-card bg-white border-none shadow-2xl flex-1 overflow-hidden flex flex-col">
-                  <div className="p-6 border-b flex items-center gap-3 bg-slate-50/50">
-                     <ClipboardList className="h-5 w-5 text-primary" />
-                     <h4 className="text-sm font-black uppercase text-slate-700 tracking-wider">Últimas ubicaciones</h4>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                     <ScrollArea className="h-full">
-                        <Table>
-                           <TableHeader className="bg-slate-50 border-b">
-                              <TableRow className="h-10">
-                                 <TableHead className="text-[8px] font-black uppercase pl-6">Fecha</TableHead>
-                                 <TableHead className="text-[8px] font-black uppercase text-center">CCT</TableHead>
-                                 <TableHead className="text-[8px] font-black uppercase text-center">Estado</TableHead>
-                                 <TableHead className="text-right pr-8 text-[8px] font-black uppercase">Acción</TableHead>
-                              </TableRow>
-                           </TableHeader>
-                           <TableBody>
-                              {records.filter(r => r.name === 'Geoposición').slice(0, 8).map((rec, idx) => (
-                                <TableRow key={rec.id || idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                   <TableCell className="text-[9px] font-bold text-slate-400 pl-6">{rec.date}</TableCell>
-                                   <TableCell className="text-center font-mono font-black text-[9px] text-primary">{rec.cct}</TableCell>
-                                   <TableCell className="text-center"><Badge className="bg-emerald-100 text-emerald-700 text-[7px] font-black px-2 h-4 border-none uppercase">En línea</Badge></TableCell>
-                                   <TableCell className="text-right pr-8">
-                                      <div className="flex justify-end gap-1">
-                                         <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button>
-                                         <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
-                                      </div>
-                                   </TableCell>
-                                </TableRow>
-                              ))}
-                           </TableBody>
-                        </Table>
-                     </ScrollArea>
-                  </div>
-               </Card>
             </div>
           </div>
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="min-h-[850px] flex flex-col md:flex-row bg-[#f0f4f9] rounded-[3rem] overflow-hidden shadow-2xl border border-white/50 animate-in fade-in duration-700">
-           {/* Sidebar Interno de Navegación */}
            <div className="w-full md:w-[240px] bg-[#1e293b] text-white p-6 flex flex-col shrink-0">
               <div className="flex items-center gap-3 mb-10 px-2">
                  <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
@@ -688,14 +813,12 @@ export default function ProgramsPage() {
                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">DESYSA - COEES</p>
                  </div>
               </div>
-
               <div className="space-y-1">
                  {[
                    { label: 'Inicio', icon: Home, active: true },
                    { label: 'Buscar escuela', icon: Search },
                    { label: 'Mapa de escuelas', icon: MapPin },
                    { label: 'Estadísticas', icon: BarChart3 },
-                   { label: 'Reportes', icon: FileText },
                    { label: 'Configuración', icon: Settings },
                  ].map((item, idx) => (
                    <button key={idx} className={cn("w-full flex items-center gap-4 px-4 h-11 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all", item.active ? "bg-primary text-white shadow-xl" : "text-slate-400 hover:bg-white/5 hover:text-white")}>
@@ -704,186 +827,32 @@ export default function ProgramsPage() {
                    </button>
                  ))}
               </div>
-
-              <div className="mt-auto p-4 bg-white/5 rounded-[1.5rem] border border-white/5">
-                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg"><UserCheck className="h-4 w-4" /></div>
-                    <div className="min-w-0">
-                       <p className="text-[9px] font-black uppercase truncate">Soporte Técnico</p>
-                       <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Analista en línea</p>
-                    </div>
-                 </div>
-              </div>
            </div>
-
-           {/* Área Principal de Contenido */}
            <div className="flex-1 overflow-hidden flex flex-col">
-              {/* Header con Buscador */}
-              <div className="p-8 bg-white border-b shadow-sm z-10 shrink-0">
-                 <div className="flex flex-col lg:flex-row gap-6 items-end">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
-                          <Select defaultValue="CCT">
-                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><School className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
-                             <SelectContent className="rounded-xl"><SelectItem value="CCT" className="text-[10px] font-black">CCT</SelectItem><SelectItem value="Nombre" className="text-[10px] font-black">NOMBRE</SelectItem></SelectContent>
-                          </Select>
-                       </div>
-                       <div className="md:col-span-1 space-y-2 relative group">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 opacity-0">Input</Label>
-                          <Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner pl-10 font-bold uppercase text-xs" />
-                          <Search className="absolute left-3.5 top-[2.4rem] h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Zona / Municipio</Label>
-                          <Select defaultValue="todos">
-                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
-                             <SelectContent className="rounded-xl"><SelectItem value="todos" className="text-[10px] font-black">TODOS</SelectItem></SelectContent>
-                          </Select>
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Estado</Label>
-                          <Select defaultValue="todos">
-                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
-                             <SelectContent className="rounded-xl"><SelectItem value="todos" className="text-[10px] font-black">TODOS</SelectItem></SelectContent>
-                          </Select>
-                       </div>
-                    </div>
-                    <Button className="h-11 px-10 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black uppercase gap-3 shadow-xl shadow-primary/20"><Search className="h-4 w-4" /> Buscar</Button>
-                 </div>
-              </div>
-
-              {/* Grid de Dashboard Interno con ScrollArea */}
               <ScrollArea className="flex-1">
                  <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
-                    {/* Columna Izquierda: Mapa y Stats */}
                     <div className="lg:col-span-2 space-y-8">
                        <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white">
-                          <div className="p-4 bg-slate-50 border-b flex gap-4">
-                             <Button variant="secondary" className="h-10 px-8 rounded-xl bg-primary text-white font-black text-[10px] gap-3 uppercase shadow-lg"><Map className="h-4 w-4" /> Mapa</Button>
-                             <Button variant="ghost" className="h-10 px-8 rounded-xl font-black text-[10px] gap-3 uppercase text-slate-500 hover:bg-slate-100"><LayoutGrid className="h-4 w-4" /> Lista</Button>
-                          </div>
                           <div className="aspect-video relative bg-slate-100 min-h-[450px]">
                              <Image src="https://picsum.photos/seed/school-map-final/1200/800" alt="Mapa" fill className="object-cover opacity-90" />
-                             
-                             <div className="absolute top-[40%] left-[30%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
-                             <div className="absolute top-[60%] left-[55%] h-6 w-6 bg-rose-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
-                             <div className="absolute top-[35%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
-                                <div className="h-2 w-2 bg-white rounded-full" />
-                             </div>
-
-                             <div className="absolute top-[35%] left-[48%] bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[260px] animate-in zoom-in-95 duration-500 z-30">
-                                <div className="flex justify-between items-start mb-2">
-                                   <div className="leading-tight">
-                                      <p className="text-[10px] font-black text-primary uppercase">CCT: 15DES0001R</p>
-                                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Escuela Secundaria Técnica No. 15</p>
-                                   </div>
-                                   <ChevronRight className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="h-1 bg-primary/10 rounded-full mt-2"><div className="h-full bg-primary rounded-full w-full" /></div>
-                             </div>
-
-                             <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
-                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
-                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50 mt-4"><Navigation className="h-5 w-5 text-slate-600" /></button>
-                             </div>
-
-                             <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-5">
-                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[8px] font-black uppercase text-slate-600">En línea</span></div>
-                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-500" /><span className="text-[8px] font-black uppercase text-slate-600">En movimiento</span></div>
-                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-[8px] font-black uppercase text-slate-600">Sin señal</span></div>
-                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-slate-400" /><span className="text-[8px] font-black uppercase text-slate-600">Desconectado</span></div>
-                             </div>
+                             <div className="absolute top-[35%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
                           </div>
                        </Card>
-
-                       <div className="space-y-4">
-                          <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                             {[
-                               { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-primary/5 text-primary border-primary/10' },
-                               { label: 'Directores / Responsables', value: '856', icon: Users, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-                               { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-                               { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-amber-50 text-amber-600 border-amber-100' },
-                             ].map((stat, idx) => (
-                               <Card key={idx} className={cn("p-5 rounded-[2rem] border shadow-sm transition-all hover:shadow-xl hover:translate-y-[-4px]", stat.color)}>
-                                  <div className="flex flex-col items-center text-center gap-3">
-                                     <div className="h-10 w-10 rounded-xl bg-white/80 flex items-center justify-center shadow-inner"><stat.icon className="h-5 w-5" /></div>
-                                     <div className="space-y-0.5">
-                                        <h4 className="text-2xl font-black leading-none">{stat.value}</h4>
-                                        <p className="text-[8px] font-bold uppercase tracking-widest opacity-60 leading-tight">{stat.label}</p>
-                                     </div>
-                                  </div>
-                               </Card>
-                             ))}
-                          </div>
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                          {[
+                            { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-primary/5 text-primary' },
+                            { label: 'Directores / Responsables', value: '856', icon: Users, color: 'bg-emerald-50 text-emerald-600' },
+                            { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-blue-50 text-blue-600' },
+                            { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-amber-50 text-amber-600' },
+                          ].map((stat, idx) => (
+                            <Card key={idx} className={cn("p-5 rounded-[2rem] border shadow-sm", stat.color)}>
+                               <div className="flex flex-col items-center text-center gap-3">
+                                  <div className="h-10 w-10 rounded-xl bg-white/80 flex items-center justify-center shadow-inner"><stat.icon className="h-5 w-5" /></div>
+                                  <div className="space-y-0.5"><h4 className="text-2xl font-black leading-none">{stat.value}</h4><p className="text-[8px] font-bold uppercase tracking-widest opacity-60 leading-tight">{stat.label}</p></div>
+                               </div>
+                            </Card>
+                          ))}
                        </div>
-                    </div>
-
-                    {/* Columna Derecha: Formulario y Ficha */}
-                    <div className="space-y-8">
-                       <Card className="p-8 rounded-[3rem] bg-white border-none shadow-2xl relative overflow-hidden">
-                          <div className="flex items-center gap-4 mb-8 border-b border-slate-50 pb-4 relative z-10">
-                             <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><PlusCircle className="h-6 w-6" /></div>
-                             <div>
-                                <CardTitle className="text-lg font-black text-slate-800 uppercase">Registrar / Editar Escuela</CardTitle>
-                                <CardDescription className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Ingresa la información oficial del plantel.</CardDescription>
-                             </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT *</Label><div className="relative"><Input placeholder="Ej. 15DES0001R" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-black pl-10 uppercase" /><School className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre de la escuela *</Label><div className="relative"><Input placeholder="Ej. Técnica No. 15" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-black pl-10 uppercase" /><Building2 className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Zona *</Label><Select><SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue placeholder="Seleccionar..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="001" className="text-xs font-bold">001</SelectItem></SelectContent></Select></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Municipio *</Label><Select><SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue placeholder="Seleccionar..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="Toluca" className="text-xs font-bold">TOLUCA</SelectItem></SelectContent></Select></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Teléfono</Label><div className="relative"><Input placeholder="722 123 4567" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Phone className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo electrónico</Label><div className="relative"><Input placeholder="escuela@edugem.gob.mx" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Latitud *</Label><div className="relative"><Input placeholder="19.6289" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><MapPin className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Longitud *</Label><div className="relative"><Input placeholder="-99.1332" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Navigation className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4 mt-10 relative z-10">
-                             <Button onClick={handleSave} className="h-12 rounded-2xl bg-primary text-white font-black text-[10px] uppercase shadow-xl hover:scale-[1.02] active:scale-95 transition-all">Guardar escuela</Button>
-                             <Button variant="outline" className="h-12 rounded-2xl border-slate-200 text-slate-500 font-black text-[10px] uppercase gap-2 hover:bg-slate-50 transition-all"><RotateCcw className="h-4 w-4" /> Limpiar</Button>
-                          </div>
-                       </Card>
-
-                       <Card className="rounded-[3rem] bg-white border-none shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500">
-                          <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
-                             <div className="flex items-center gap-3"><School className="h-5 w-5 text-primary" /><h4 className="text-[11px] font-black uppercase text-slate-700">Datos de la escuela</h4></div>
-                             <Badge className="bg-emerald-500 text-white font-black text-[8px] px-3 h-5 rounded-full uppercase border-none">En línea</Badge>
-                          </div>
-                          <div className="p-6 space-y-6">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="relative aspect-video rounded-2xl overflow-hidden border shadow-sm">
-                                   <Image src="https://picsum.photos/seed/school-card-v1/600/400" alt="Foto Escuela" fill className="object-cover" />
-                                </div>
-                                <div className="space-y-3">
-                                   {[
-                                     { label: 'CCT:', value: '15DES0001R' },
-                                     { label: 'Nombre:', value: 'Escuela Secundaria Técnica No. 15' },
-                                     { label: 'Zona:', value: '001' },
-                                     { label: 'Municipio:', value: 'Toluca' },
-                                     { label: 'Dirección:', value: 'Av. Independencia No. 123, Col. Centro, Toluca, Estado de México.' },
-                                   ].map((item, idx) => (
-                                     <div key={idx} className="flex gap-2">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase w-16 shrink-0 pt-0.5">{item.label}</span>
-                                        <span className="text-[10px] font-bold text-slate-700 leading-tight">{item.value}</span>
-                                     </div>
-                                   ))}
-                                </div>
-                             </div>
-                             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-50">
-                                <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-slate-300" /><span className="text-[10px] font-bold text-slate-600">722 123 4567</span></div>
-                                <div className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-slate-600 truncate lowercase">esc15@edugem.gob.mx</span></div>
-                             </div>
-                             <div className="grid grid-cols-2 gap-4 pt-6">
-                                <Button variant="outline" className="h-10 rounded-xl border-primary/20 text-primary font-black text-[9px] uppercase gap-2 hover:bg-primary/5 shadow-md"><Map className="h-4 w-4" /> Ver en mapa</Button>
-                                <Button className="h-10 rounded-xl bg-primary text-white font-black text-[9px] uppercase gap-2 shadow-xl shadow-primary/20"><FileText className="h-4 w-4" /> Ver más información</Button>
-                             </div>
-                          </div>
-                       </Card>
                     </div>
                  </div>
               </ScrollArea>
@@ -948,6 +917,66 @@ export default function ProgramsPage() {
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
 
+      {/* Bitacora Edit Dialog */}
+      <Dialog open={isBitacoraEditDialogOpen} onOpenChange={(open) => { if(!open) setBitacoraEditingRecord(null); setIsBitacoraEditDialogOpen(open); }}>
+        <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-primary text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+              <Pencil className="h-6 w-6 text-accent" /> Corregir Registro ATRES
+            </DialogTitle>
+          </DialogHeader>
+          {bitacoraEditingRecord && (
+            <div className="p-8 space-y-6">
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
+                     <div className="h-11 bg-slate-50 rounded-xl flex items-center px-4 font-mono font-black text-primary border border-slate-100 text-lg">{bitacoraEditingRecord.folio}</div>
+                  </div>
+                  <div className="space-y-2">
+                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Analista Designado</Label>
+                     <Input className="h-11 bg-white rounded-xl border-slate-200 font-black uppercase text-xs" value={bitacoraEditingRecord.tecnico} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, tecnico: e.target.value.toUpperCase()})} />
+                  </div>
+               </div>
+               <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Estatus de Atención</Label>
+                  <div className="flex items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-2xl">
+                    <TrafficLight status={bitacoraEditingRecord.status} />
+                    <Select value={bitacoraEditingRecord.status} onValueChange={(val: any) => setBitacoraEditingRecord({...bitacoraEditingRecord, status: val})}>
+                      <SelectTrigger className="h-10 rounded-xl bg-white/10 border-white/20 font-black uppercase text-[10px] text-white"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-700 shadow-2xl">
+                          <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">ATENDIDO</SelectItem>
+                          <SelectItem value="proceso" className="text-[10px] font-black text-amber-600">EN PROCESO</SelectItem>
+                          <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">PENDIENTE</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black text-primary pl-1">Resumen del Servicio</Label>
+                  <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-[1.5rem] p-5 text-xs font-semibold shadow-inner focus:bg-white transition-all" value={bitacoraEditingRecord.servicio} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, servicio: e.target.value.toUpperCase()})} />
+               </div>
+            </div>
+          )}
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
+             <Button variant="ghost" onClick={() => setIsBitacoraEditDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
+             <Button onClick={saveBitacoraEdits} className="btn-institutional h-12 px-10 text-[10px] gap-2 rounded-xl"><Save className="h-4 w-4" /> GUARDAR</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
+            <div className="space-y-1">
+              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><FileText className="h-6 w-6 text-accent" /> VISOR COEES</DialogTitle>
+            </div>
+            <Button onClick={() => bitacoraPdfToPreview && printFile(bitacoraPdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl gap-2 shadow-xl"><Printer className="h-4 w-4" /> Imprimir</Button>
+          </DialogHeader>
+          <div className="flex-1 bg-slate-800 p-1"><iframe src={bitacoraPdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" /></div>
+          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setBitacoraPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); setShowSearchResults(false); } } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1000px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
@@ -969,27 +998,9 @@ export default function ProgramsPage() {
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
                           ))}
-                          {schoolSearchResults.length === 0 && (
-                            <div className="p-6 text-center">
-                               <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
-                                 <Plus className="h-4 w-4 mr-2" /> Registrar Nuevo CCT
-                               </Button>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
-                    {!formData.cct ? (
-                      <div className="p-4 bg-rose-50 rounded-xl flex items-center gap-3 border border-rose-100">
-                         <AlertCircle className="h-5 w-5 text-rose-500" />
-                         <p className="text-[10px] font-black text-rose-600 uppercase">Identificación requerida para habilitar sincronización</p>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
-                        <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
-                        <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">CCT: {formData.cct}</p></div>
-                      </div>
-                    )}
                  </div>
 
                  {activeTab === 'Biblioteca Digital' && (
@@ -1002,16 +1013,6 @@ export default function ProgramsPage() {
                             <Label className="text-xs font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer">{fase.label}</Label>
                           </div>
                         ))}
-                      </div>
-                   </div>
-                 )}
-
-                 {activeTab === 'Geoposición' && (
-                   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8 animate-in slide-in-from-bottom-2">
-                      <div className="flex items-center gap-3 border-b pb-2"><MapPin className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Coordenadas del Centro de Trabajo</h4></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Latitud</Label><Input className="h-12 font-mono font-bold bg-slate-50 border-slate-200 rounded-xl" value={formData.latitud || ''} onChange={e => setFormData({...formData, latitud: e.target.value})} placeholder="Ej. 19.4326" /></div>
-                         <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase">Longitud</Label><Input className="h-12 font-mono font-bold bg-slate-50 border-slate-200 rounded-xl" value={formData.longitud || ''} onChange={e => setFormData({...formData, longitud: e.target.value})} placeholder="Ej. -99.1332" /></div>
                       </div>
                    </div>
                  )}
@@ -1048,7 +1049,6 @@ export default function ProgramsPage() {
                   <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
@@ -1069,4 +1069,3 @@ export default function ProgramsPage() {
     </div>
   )
 }
-

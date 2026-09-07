@@ -96,9 +96,6 @@ export default function DashboardLayout({
     { privilege: 'planeacion', name: 'Proyectos', path: '#', icon: <FileStack className="h-4 w-4" />, group: 'planeacion_header' },
     { privilege: 'planeacion', name: 'Indicadores', path: '#', icon: <BarChart3 className="h-4 w-4" />, group: 'planeacion_header' },
 
-    // GRUPO GENERAL
-    { privilege: 'bitacora-atres', name: 'Bitácora Atres', path: '/dashboard/bitacora-atres', icon: <History className="h-4 w-4" />, group: 'general' },
-    
     // GRUPO OFICINAS
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <FileText className="h-4 w-4" />, group: 'oficinas', color: 'bg-purple-600' },
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" />, group: 'oficinas', color: 'bg-emerald-600' },
@@ -116,7 +113,6 @@ export default function DashboardLayout({
   }, [currentUser])
 
   const planeacionItems = allowedItems.filter(i => i.group === 'planeacion_header')
-  const generalItems = allowedItems.filter(i => i.group === 'general')
   const oficinaItems = allowedItems.filter(i => i.group === 'oficinas')
   const adminItems = allowedItems.filter(i => i.group === 'admin')
 
@@ -161,38 +157,6 @@ export default function DashboardLayout({
                           <div className={cn(
                             "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                             pathname === item.path ? 'text-primary' : 'text-white/50'
-                          )}>
-                            {item.icon}
-                          </div>
-                          <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-
-          {/* GRUPO GENERAL */}
-          {generalItems.length > 0 && (
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-1">
-                  {generalItems.map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton 
-                        onClick={() => router.push(item.path)}
-                        isActive={pathname === item.path}
-                        className={cn(
-                          "h-11 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300",
-                          pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'
-                        )}
-                      >
-                        <div className="flex items-center gap-3 w-full">
-                          <div className={cn(
-                            "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                            pathname === item.path ? 'bg-primary/5 text-primary' : 'bg-white/10 text-white/50'
                           )}>
                             {item.icon}
                           </div>
