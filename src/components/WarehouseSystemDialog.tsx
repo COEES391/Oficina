@@ -48,7 +48,11 @@ import {
   Eraser,
   FileSearch,
   LogOut,
-  MinusCircle
+  MinusCircle,
+  Building2,
+  Mail,
+  Phone,
+  UserPlus
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -81,11 +85,21 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
   
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isAddProviderOpen, setIsAddProviderOpen] = useState(false)
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
   const [newItemForm, setNewItemForm] = useState({
     name: '', code: '', category: 'Cómputo' as WarehouseItem['category'], stock: 0, minStock: 5, provider: ''
+  })
+
+  const [providerForm, setProviderForm] = useState({
+    name: '', contact: '', phone: '', email: '', address: ''
+  })
+
+  const [clientForm, setClientForm] = useState({
+    name: '', area: '', office: ''
   })
 
   const [movementForm, setMovementForm] = useState({
@@ -98,23 +112,19 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
 
     setIsLoading(true)
     
-    // Items
     const itemsUnsubscribe = onSnapshot(collection(db, 'warehouse_items'), (snapshot) => {
       setItems(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as WarehouseItem[])
     })
 
-    // Movements
     const movesUnsubscribe = onSnapshot(query(collection(db, 'warehouse_movements'), orderBy('updatedAt', 'desc')), (snapshot) => {
       setMovements(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as WarehouseMovement[])
       setIsLoading(false)
     })
 
-    // Providers
     const provUnsubscribe = onSnapshot(collection(db, 'warehouse_providers'), (snapshot) => {
       setProviders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Provider[])
     })
 
-    // Users
     const usersUnsubscribe = onSnapshot(collection(db, 'warehouse_clients'), (snapshot) => {
       setWarehouseUsers(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as WarehouseUser[])
     })
@@ -194,11 +204,11 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       const newStock = type === 'entrada' ? currentItem.stock + currentMovement.quantity : currentItem.stock - currentMovement.quantity;
       await updateDoc(doc(db, 'warehouse_items', currentItem.id), { stock: newStock, lastUpdated: serverTimestamp() });
 
-      toast({ title: "Sincronización Exitosa", description: "El inventario ha sido actualizado en la nube." });
+      toast({ title: "Movimiento Registrado", description: `Inventario actualizado: ${currentItem.name}` });
       setCurrentView(type === 'entrada' ? 'entradas' : 'salidas');
       setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '', provider: '' });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de conexión con Firestore" });
+      toast({ variant: "destructive", title: "Error de sincronización" });
     }
   }
 
@@ -214,7 +224,31 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
       setIsAddDialogOpen(false); setEditingItemId(null);
       toast({ title: "Producto Guardado" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al guardar insumo" });
+      toast({ variant: "destructive", title: "Error al guardar" });
+    }
+  }
+
+  const handleSaveProvider = async () => {
+    if (!providerForm.name) return;
+    try {
+      await addDoc(collection(db, 'warehouse_providers'), { ...providerForm, name: providerForm.name.toUpperCase(), updatedAt: serverTimestamp() });
+      setIsAddProviderOpen(false);
+      setProviderForm({ name: '', contact: '', phone: '', email: '', address: '' });
+      toast({ title: "Proveedor Registrado" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al guardar proveedor" });
+    }
+  }
+
+  const handleSaveClient = async () => {
+    if (!clientForm.name) return;
+    try {
+      await addDoc(collection(db, 'warehouse_clients'), { ...clientForm, name: clientForm.name.toUpperCase(), updatedAt: serverTimestamp() });
+      setIsAddUserOpen(false);
+      setClientForm({ name: '', area: '', office: '' });
+      toast({ title: "Usuario Registrado" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al guardar usuario" });
     }
   }
 
@@ -252,12 +286,12 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
               )}
               <DialogTitle className="uppercase font-black text-2xl">CONTROL DE INVENTARIOS EN LA NUBE</DialogTitle>
             </div>
-            <DialogDescription className="text-white/60 font-bold text-[10px] tracking-widest mt-1 uppercase">Sistema Multi-Usuario Portátil • COEES 2026</DialogDescription>
+            <DialogDescription className="text-white/60 font-bold text-[10px] tracking-widest mt-1 uppercase">Sistema Integral de Abastecimiento Técnico • Auditoría 2026</DialogDescription>
           </div>
           <div className="flex items-center gap-4">
              {criticalItems.length > 0 && (
                <Badge className="bg-rose-500 text-white border-none animate-pulse px-4 py-1.5 rounded-full text-[9px] font-black shadow-lg">
-                 <AlertCircle className="h-3 w-3 mr-2" /> {criticalItems.length} ALERTAS DE STOCK
+                 <AlertCircle className="h-3 w-3 mr-2" /> {criticalItems.length} ALERTAS DE STOCK CRÍTICO
                </Badge>
              )}
           </div>
@@ -267,7 +301,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
           {isLoading && currentView !== 'dashboard' ? (
             <div className="flex-1 flex flex-col items-center justify-center opacity-30">
                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-               <p className="text-[10px] font-black uppercase mt-4 tracking-widest">Sincronizando inventarios con el servidor central...</p>
+               <p className="text-[10px] font-black uppercase mt-4 tracking-widest">Sincronizando inventarios...</p>
             </div>
           ) : currentView === 'dashboard' ? (
             <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white/50 animate-in fade-in zoom-in-95 duration-500">
@@ -317,35 +351,38 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden bg-white">
-               {/* Barra de Herramientas Estilo Industrial para Registro */}
-               {(currentView === 'reg_entrada' || currentView === 'reg_salida') && (
-                 <div className="px-8 py-3 bg-slate-50 border-b flex items-center justify-between shadow-sm">
-                    <div className="flex gap-4">
+               {/* Barra de Herramientas Dinámica */}
+               <div className="px-8 py-3 bg-slate-50 border-b flex items-center justify-between shadow-sm shrink-0">
+                  <div className="flex gap-4">
+                     {(currentView === 'reg_entrada' || currentView === 'reg_salida') && (
                        <Button onClick={() => handleRegisterMovement(currentView === 'reg_entrada' ? 'entrada' : 'salida')} className="btn-institutional h-10 px-8 text-[11px] gap-2 shadow-xl"><Save className="h-4 w-4" /> GUARDAR</Button>
-                       <Button variant="outline" onClick={() => setCurrentView(currentView === 'reg_entrada' ? 'entradas' : 'salidas')} className="h-10 px-6 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2"><FileSearch className="h-4 w-4" /> BUSCAR DOC</Button>
+                     )}
+                     {currentView === 'proveedores' && (
+                        <Button onClick={() => setIsAddProviderOpen(true)} className="btn-institutional h-10 px-6 rounded-xl text-[10px]"><UserPlus className="h-4 w-4 mr-2" /> NUEVO PROVEEDOR</Button>
+                     )}
+                     {currentView === 'usuarios' && (
+                        <Button onClick={() => setIsAddUserOpen(true)} className="btn-institutional h-10 px-6 rounded-xl text-[10px]"><UserPlus className="h-4 w-4 mr-2" /> NUEVO USUARIO</Button>
+                     )}
+                     {currentView === 'productos' && (
+                        <Button onClick={() => { setEditingItemId(null); setNewItemForm({name: '', code: '', category: 'Cómputo', stock: 0, minStock: 5, provider: ''}); setIsAddDialogOpen(true); }} className="btn-institutional h-10 px-8 rounded-xl text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> NUEVO INSUMO</Button>
+                     )}
+                     {['reg_entrada', 'reg_salida'].includes(currentView) && (
                        <Button variant="ghost" onClick={() => setMovementForm({ itemId: '', folio: '', unit: 'PZA', type: 'entrada', quantity: 1, reason: '', technician: '', cct: '', provider: '' })} className="h-10 px-6 rounded-xl text-slate-400 font-black uppercase text-[10px] gap-2"><Eraser className="h-4 w-4" /> LIMPIAR</Button>
-                    </div>
-                    <div className="flex gap-4">
-                       <Button variant="outline" onClick={() => setCurrentView('dashboard')} className="h-10 px-8 rounded-xl border-rose-200 text-rose-600 font-black uppercase text-[10px] gap-2 hover:bg-rose-50"><LogOut className="h-4 w-4" /> SALIR</Button>
-                    </div>
-                 </div>
-               )}
+                     )}
+                  </div>
+                  <Button variant="outline" onClick={() => setCurrentView('dashboard')} className="h-10 px-8 rounded-xl border-slate-200 text-slate-500 font-black uppercase text-[10px] gap-2 hover:bg-slate-100"><RotateCcw className="h-4 w-4" /> VOLVER AL MENÚ</Button>
+               </div>
 
                {/* Barra de Búsqueda para Listados */}
                {['productos', 'entradas', 'salidas', 'proveedores', 'usuarios'].includes(currentView) && (
-                 <div className="px-8 py-4 bg-white border-b flex flex-col md:flex-row justify-between items-center gap-6">
+                 <div className="px-8 py-4 bg-white border-b flex flex-col md:flex-row justify-between items-center gap-6 shrink-0">
                     <div className="relative flex-1 w-full max-w-xl group">
                        <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
-                       <Input placeholder={`BUSCAR EN ${currentView.toUpperCase()}...`} className="h-11 pl-12 rounded-2xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                       <Input placeholder={`FILTRAR EN ${currentView.toUpperCase()}...`} className="h-11 pl-12 rounded-2xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
-                    <div className="flex gap-3">
-                       {currentView === 'productos' && (
-                          <>
-                             <Button onClick={downloadExcelInventory} variant="outline" className="h-11 px-6 rounded-2xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 shadow-md"><FileSpreadsheet className="h-4 w-4" /> EXPORTAR EXCEL</Button>
-                             <Button onClick={() => { setEditingItemId(null); setNewItemForm({name: '', code: '', category: 'Cómputo', stock: 0, minStock: 5, provider: ''}); setIsAddDialogOpen(true); }} className="btn-institutional h-11 px-8 rounded-2xl text-[10px]"><PlusCircle className="h-4 w-4 mr-2" /> NUEVO INSUMO</Button>
-                          </>
-                       )}
-                    </div>
+                    {currentView === 'productos' && (
+                       <Button onClick={downloadExcelInventory} variant="outline" className="h-11 px-6 rounded-2xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 shadow-md hover:bg-emerald-50"><FileSpreadsheet className="h-4 w-4" /> EXPORTAR EXCEL</Button>
+                    )}
                  </div>
                )}
 
@@ -356,7 +393,7 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                            {criticalItems.length > 0 && (
                              <div className="p-4 bg-rose-50 border-2 border-rose-100 rounded-[2rem] flex items-center gap-6 shadow-sm animate-in slide-in-from-top duration-500">
                                 <div className="h-12 w-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-lg"><AlertCircle className="h-6 w-6" /></div>
-                                <div className="flex-1"><h4 className="text-[11px] font-black text-rose-700 uppercase tracking-widest">Atención: Insumos Críticos Detectados</h4><p className="text-[9px] font-bold text-rose-600/70 uppercase mt-1">Existen {criticalItems.length} productos agotados o por debajo del stock mínimo de seguridad.</p></div>
+                                <div className="flex-1"><h4 className="text-[11px] font-black text-rose-700 uppercase tracking-widest">Insumos Críticos Detectados</h4><p className="text-[9px] font-bold text-rose-600/70 uppercase mt-1">Existen {criticalItems.length} productos agotados o por debajo del stock mínimo.</p></div>
                              </div>
                            )}
                            <Table className="bg-white rounded-[2rem] shadow-2xl border-none overflow-hidden">
@@ -372,21 +409,16 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                               </TableHeader>
                               <TableBody>
                                  {filteredItems.map(item => (
-                                    <TableRow key={item.id} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                    <TableRow key={item.id} className="h-16 border-b border-slate-50 hover:bg-slate-50">
                                        <TableCell className="pl-8 font-mono font-black text-[11px] text-primary">{item.code || 'S/C'}</TableCell>
                                        <TableCell><Badge variant="outline" className="text-[9px] font-bold px-2 py-0.5 border-slate-200">{item.category}</Badge></TableCell>
                                        <TableCell className="font-black text-xs text-slate-700 uppercase">{item.name}</TableCell>
-                                       <TableCell className="text-center">
-                                          <span className={cn("text-xl font-black", item.stock <= 0 ? "text-rose-600" : item.stock <= item.minStock ? "text-amber-500" : "text-emerald-600")}>{item.stock}</span>
-                                       </TableCell>
-                                       <TableCell className="text-center">
-                                          <Badge className={cn("text-[8px] font-black border-none uppercase px-3 h-5", item.stock <= 0 ? "bg-rose-100 text-rose-700" : item.stock <= item.minStock ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")}>
-                                             {item.stock <= 0 ? 'AGOTADO' : item.stock <= item.minStock ? 'STOCK BAJO' : 'OPTIMO'}
-                                          </Badge>
-                                       </TableCell>
-                                       <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" onClick={() => handleEditItem(item)} className="h-9 w-9 rounded-xl hover:bg-primary/5 text-primary"><Pencil className="h-4 w-4" /></Button></TableCell>
+                                       <TableCell className="text-center"><span className={cn("text-xl font-black", item.stock <= 0 ? "text-rose-600" : item.stock <= item.minStock ? "text-amber-500" : "text-emerald-600")}>{item.stock}</span></TableCell>
+                                       <TableCell className="text-center"><Badge className={cn("text-[8px] font-black border-none uppercase px-3 h-5", item.stock <= 0 ? "bg-rose-100 text-rose-700" : item.stock <= item.minStock ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700")}>{item.stock <= 0 ? 'AGOTADO' : item.stock <= item.minStock ? 'STOCK BAJO' : 'OPTIMO'}</Badge></TableCell>
+                                       <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" onClick={() => handleEditItem(item)} className="h-9 w-9 rounded-xl text-primary"><Pencil className="h-4 w-4" /></Button></TableCell>
                                     </TableRow>
                                  ))}
+                                 {filteredItems.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-black uppercase">Sin productos registrados</TableCell></TableRow>}
                               </TableBody>
                            </Table>
                         </div>
@@ -395,14 +427,13 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                      {currentView === 'reg_entrada' && (
                         <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in-95 duration-500 pb-20">
                            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-12">
-                              {/* Sección 1: Datos del Documento */}
                               <div className="space-y-8">
                                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Archive className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Información de la Requisición</h4></div>
                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-1">Número de requisición</Label><Input className="h-12 font-mono font-black uppercase bg-slate-50 border-none shadow-inner text-primary" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div>
+                                    <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-1">Numero de requisición</Label><Input className="h-12 font-mono font-black uppercase bg-slate-50 border-none shadow-inner text-primary" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div>
                                     <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-1">Proveedor / Origen</Label>
                                        <Select value={movementForm.provider} onValueChange={v => setMovementForm({...movementForm, provider: v})}>
-                                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue placeholder="ELEGIR PROVEEDOR..." /></SelectTrigger>
+                                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue placeholder={providers.length > 0 ? "ELEGIR PROVEEDOR..." : "REGISTRAR PROVEEDORES PRIMERO..."} /></SelectTrigger>
                                           <SelectContent className="rounded-2xl z-[300]">{providers.map(p => (<SelectItem key={p.id} value={p.name} className="font-black text-[10px] uppercase">{p.name}</SelectItem>))}</SelectContent>
                                        </Select>
                                     </div>
@@ -410,8 +441,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                  </div>
                                  <div className="space-y-2"><Label className="text-[10px] font-black text-primary uppercase pl-1">Observación de Auditoría</Label><Textarea className="min-h-[100px] bg-slate-50 border-none rounded-2xl p-6 font-bold uppercase shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value.toUpperCase()})} placeholder="NOTAS SOBRE EL ESTADO FÍSICO DE LA ENTREGA..." /></div>
                               </div>
-
-                              {/* Sección 2: Detalle del Insumo */}
                               <div className="bg-[#9f2241]/5 p-8 rounded-[2.5rem] border border-[#9f2241]/10 space-y-8">
                                  <div className="flex items-center gap-3 border-b-2 border-primary/10 pb-2"><Settings2 className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Detalle Técnico del Producto</h4></div>
                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -443,14 +472,13 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                      {currentView === 'reg_salida' && (
                         <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in-95 duration-500 pb-20">
                            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-12">
-                              {/* Sección 1: Datos del Documento */}
                               <div className="space-y-8">
                                  <div className="flex items-center gap-3 border-b-2 border-rose-100 pb-2"><Archive className="h-5 w-5 text-rose-600" /><h4 className="text-xs font-black uppercase text-rose-600 tracking-widest">Información de la Entrega</h4></div>
                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     <div className="space-y-2"><Label className="text-[10px] font-black text-rose-600 uppercase pl-1">Nº Documento / Folio</Label><Input className="h-12 font-mono font-black uppercase bg-slate-50 border-none shadow-inner text-rose-600" value={movementForm.folio} onChange={e => setMovementForm({...movementForm, folio: e.target.value.toUpperCase()})} /></div>
                                     <div className="space-y-2"><Label className="text-[10px] font-black text-rose-600 uppercase pl-1">Usuarios (Clientes)</Label>
                                        <Select value={movementForm.cct} onValueChange={v => setMovementForm({...movementForm, cct: v})}>
-                                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue placeholder="ELEGIR RECEPTOR..." /></SelectTrigger>
+                                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue placeholder={warehouseUsers.length > 0 ? "ELEGIR RECEPTOR..." : "REGISTRAR USUARIOS PRIMERO..."} /></SelectTrigger>
                                           <SelectContent className="rounded-2xl z-[300]">{warehouseUsers.map(u => (<SelectItem key={u.id} value={u.name} className="font-black text-[10px] uppercase">{u.office} • {u.name}</SelectItem>))}</SelectContent>
                                        </Select>
                                     </div>
@@ -458,8 +486,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                  </div>
                                  <div className="space-y-2"><Label className="text-[10px] font-black text-rose-600 uppercase pl-1">Observación</Label><Textarea className="min-h-[100px] bg-slate-50 border-none rounded-2xl p-6 font-bold uppercase shadow-inner" value={movementForm.reason} onChange={e => setMovementForm({...movementForm, reason: e.target.value.toUpperCase()})} placeholder="MOTIVO DEL EGRESO O FOLIO DE SERVICIO..." /></div>
                               </div>
-
-                              {/* Sección 2: Detalle Técnico */}
                               <div className="bg-rose-500/5 p-8 rounded-[2.5rem] border border-rose-500/10 space-y-8">
                                  <div className="flex items-center gap-3 border-b-2 border-rose-200 pb-2"><Settings2 className="h-5 w-5 text-rose-600" /><h4 className="text-xs font-black uppercase text-rose-600 tracking-widest">Detalle del Insumo a Entregar</h4></div>
                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -471,7 +497,6 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                        </Select>
                                     </div>
                                     <div className="space-y-2"><Label className="text-[10px] font-black text-rose-600 uppercase pl-1">Cantidad Stock</Label><div className="h-12 bg-white rounded-xl flex items-center justify-center font-black text-xl text-primary border-4 border-primary/10 shadow-inner">{items.find(i => i.id === movementForm.itemId)?.stock || 0}</div></div>
-                                    
                                     <div className="md:col-span-4 flex justify-center">
                                        <div className="w-full max-w-[200px] space-y-2">
                                           <Label className="text-[10px] font-black text-rose-600 uppercase text-center block">Cantidad a Entregar</Label>
@@ -505,67 +530,66 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
                                     <TableCell className="text-center font-black text-primary text-sm">{m.quantity}</TableCell>
                                     <TableCell className="text-[10px] font-bold text-slate-500 uppercase">{m.provider || m.cct}</TableCell>
                                     <TableCell className="text-right pr-8">
-                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></Button>
+                                       <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600" onClick={async () => { if(confirm("¿Remover registro?")) await deleteDoc(doc(db, 'warehouse_movements', m.id)); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                  </TableRow>
                               ))}
+                              {filteredMovements.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-black uppercase">No hay registros históricos</TableCell></TableRow>}
                            </TableBody>
                         </Table>
                      )}
 
                      {currentView === 'proveedores' && (
-                        <div className="space-y-6 animate-in fade-in duration-500">
-                           <Table className="bg-white rounded-[2rem] shadow-2xl border-none overflow-hidden">
-                              <TableHeader className="bg-slate-50 border-b">
-                                 <TableRow className="h-12">
-                                    <TableHead className="pl-8 font-black text-[9px] uppercase">Nombre del Proveedor</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">Contacto / Teléfono</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">Email Institucional</TableHead>
-                                    <TableHead className="text-right pr-10"></TableHead>
+                        <Table className="bg-white rounded-[2rem] shadow-2xl border-none overflow-hidden animate-in fade-in">
+                           <TableHeader className="bg-slate-50 border-b">
+                              <TableRow className="h-12">
+                                 <TableHead className="pl-8 font-black text-[9px] uppercase">Nombre del Proveedor</TableHead>
+                                 <TableHead className="font-black text-[9px] uppercase">Contacto / Teléfono</TableHead>
+                                 <TableHead className="font-black text-[9px] uppercase">Email Institucional</TableHead>
+                                 <TableHead className="text-right pr-10"></TableHead>
+                              </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                              {filteredProviders.map(p => (
+                                 <TableRow key={p.id} className="h-14 border-b border-slate-50 hover:bg-slate-50">
+                                    <TableCell className="pl-8 font-black text-slate-700 text-xs uppercase">{p.name}</TableCell>
+                                    <TableCell className="font-bold text-slate-500 text-[10px] uppercase">{p.contact} • {p.phone}</TableCell>
+                                    <TableCell className="font-mono text-[10px] text-primary">{p.email}</TableCell>
+                                    <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" onClick={async () => { if(confirm("¿Eliminar proveedor?")) await deleteDoc(doc(db, 'warehouse_providers', p.id)); }} className="h-8 w-8 text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></Button></TableCell>
                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                 {filteredProviders.map(p => (
-                                    <TableRow key={p.id} className="h-14 border-b border-slate-50 hover:bg-slate-50">
-                                       <TableCell className="pl-8 font-black text-slate-700 text-xs uppercase">{p.name}</TableCell>
-                                       <TableCell className="font-bold text-slate-500 text-[10px] uppercase">{p.contact} • {p.phone}</TableCell>
-                                       <TableCell className="font-mono text-[10px] text-primary">{p.email}</TableCell>
-                                       <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5"><Pencil className="h-4 w-4" /></Button></TableCell>
-                                    </TableRow>
-                                 ))}
-                              </TableBody>
-                           </Table>
-                        </div>
+                              ))}
+                              {filteredProviders.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-20 opacity-30 text-xs font-black uppercase">Directorio vacío</TableCell></TableRow>}
+                           </TableBody>
+                        </Table>
                      )}
 
                      {currentView === 'usuarios' && (
-                        <div className="space-y-6 animate-in fade-in duration-500">
-                           <Table className="bg-white rounded-[2rem] shadow-2xl border-none overflow-hidden">
-                              <TableHeader className="bg-slate-50 border-b">
-                                 <TableRow className="h-12">
-                                    <TableHead className="pl-8 font-black text-[9px] uppercase">Nombre del Usuario / Responsable</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">Oficina Regional</TableHead>
-                                    <TableHead className="font-black text-[9px] uppercase">Área de Adscripción</TableHead>
-                                    <TableHead className="text-right pr-10"></TableHead>
+                        <Table className="bg-white rounded-[2rem] shadow-2xl border-none overflow-hidden animate-in fade-in">
+                           <TableHeader className="bg-slate-50 border-b">
+                              <TableRow className="h-12">
+                                 <TableHead className="pl-8 font-black text-[9px] uppercase">Nombre del Usuario / Responsable</TableHead>
+                                 <TableHead className="font-black text-[9px] uppercase">Oficina Regional</TableHead>
+                                 <TableHead className="font-black text-[9px] uppercase">Área de Adscripción</TableHead>
+                                 <TableHead className="text-right pr-10"></TableHead>
+                              </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                              {filteredUsers.map(u => (
+                                 <TableRow key={u.id} className="h-14 border-b border-slate-50 hover:bg-slate-50">
+                                    <TableCell className="pl-8">
+                                       <div className="flex items-center gap-3">
+                                          <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary"><User className="h-4 w-4" /></div>
+                                          <span className="font-black text-slate-700 text-xs uppercase">{u.name}</span>
+                                       </div>
+                                    </TableCell>
+                                    <TableCell className="font-bold text-primary text-[10px] uppercase">{u.office}</TableCell>
+                                    <TableCell className="font-bold text-slate-400 text-[10px] uppercase">{u.area}</TableCell>
+                                    <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" onClick={async () => { if(confirm("¿Eliminar usuario?")) await deleteDoc(doc(db, 'warehouse_clients', u.id)); }} className="h-8 w-8 text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></Button></TableCell>
                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                 {filteredUsers.map(u => (
-                                    <TableRow key={u.id} className="h-14 border-b border-slate-50 hover:bg-slate-50">
-                                       <TableCell className="pl-8">
-                                          <div className="flex items-center gap-3">
-                                             <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center text-primary"><User className="h-4 w-4" /></div>
-                                             <span className="font-black text-slate-700 text-xs uppercase">{u.name}</span>
-                                          </div>
-                                       </TableCell>
-                                       <TableCell className="font-bold text-primary text-[10px] uppercase">{u.office}</TableCell>
-                                       <TableCell className="font-bold text-slate-400 text-[10px] uppercase">{u.area}</TableCell>
-                                       <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/5"><Pencil className="h-4 w-4" /></Button></TableCell>
-                                    </TableRow>
-                                 ))}
-                              </TableBody>
-                           </Table>
-                        </div>
+                              ))}
+                              {filteredUsers.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-20 opacity-30 text-xs font-black uppercase">Sin usuarios registrados</TableCell></TableRow>}
+                           </TableBody>
+                        </Table>
                      )}
                   </div>
                </ScrollArea>
@@ -573,34 +597,58 @@ export function WarehouseSystemDialog({ open, onOpenChange }: { open: boolean, o
           )}
         </div>
 
-        {/* Diálogo de Alta / Edición de Producto */}
+        {/* DIÁLOGOS DE ALTA RÁPIDA */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
            <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-              <DialogHeader className="p-8 bg-primary text-white">
-                 <DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Box className="h-7 w-7 text-accent" /> {editingItemId ? 'Editar Insumo' : 'Alta de Nuevo Insumo'}</DialogTitle>
-                 <DialogDescription className="text-white/60 font-bold text-[10px] uppercase tracking-widest mt-1">Configuración del catálogo maestro COEES</DialogDescription>
-              </DialogHeader>
+              <DialogHeader className="p-8 bg-primary text-white"><DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Box className="h-7 w-7 text-accent" /> {editingItemId ? 'Editar Insumo' : 'Alta de Nuevo Insumo'}</DialogTitle></DialogHeader>
               <div className="p-8 space-y-6">
                  <div className="grid grid-cols-1 gap-6">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Categoría del Producto</Label>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Categoría del Producto</Label>
                        <Select value={newItemForm.category} onValueChange={(v: any) => setNewItemForm({...newItemForm, category: v})}>
                           <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase"><SelectValue /></SelectTrigger>
                           <SelectContent className="rounded-xl"><SelectItem value="Cómputo" className="text-[10px] font-bold">EQUIPO DE CÓMPUTO</SelectItem><SelectItem value="Redes" className="text-[10px] font-bold">REDES Y CONECTIVIDAD</SelectItem><SelectItem value="Herramientas" className="text-[10px] font-bold">HERRAMIENTAS</SelectItem><SelectItem value="Consumibles" className="text-[10px] font-bold">CONSUMIBLES</SelectItem></SelectContent>
                        </Select>
                     </div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Código Técnico</Label><Input className="h-11 font-mono font-black bg-slate-50 border-none rounded-xl shadow-inner text-primary" value={newItemForm.code} onChange={e => setNewItemForm({...newItemForm, code: e.target.value.toUpperCase()})} /></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Insumo</Label><Input className="h-11 font-black bg-slate-50 border-none rounded-xl shadow-inner uppercase" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value.toUpperCase()})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Código Técnico</Label><Input className="h-11 font-mono font-black bg-slate-50 border-none rounded-xl" value={newItemForm.code} onChange={e => setNewItemForm({...newItemForm, code: e.target.value.toUpperCase()})} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Nombre del Insumo</Label><Input className="h-11 font-black bg-slate-50 border-none rounded-xl uppercase" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value.toUpperCase()})} /></div>
                     <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Stock Mínimo</Label><Input type="number" className="h-11 font-black text-center bg-slate-50 border-none rounded-xl" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
-                       <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Stock Inicial</Label><Input type="number" className="h-11 font-black text-center bg-slate-50 border-none rounded-xl" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} disabled={!!editingItemId} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Stock Mínimo</Label><Input type="number" className="h-11 font-black text-center bg-slate-50 border-none rounded-xl" value={newItemForm.minStock} onChange={e => setNewItemForm({...newItemForm, minStock: parseInt(e.target.value) || 0})} /></div>
+                       <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Stock Inicial</Label><Input type="number" className="h-11 font-black text-center bg-slate-50 border-none rounded-xl" value={newItemForm.stock} onChange={e => setNewItemForm({...newItemForm, stock: parseInt(e.target.value) || 0})} disabled={!!editingItemId} /></div>
                     </div>
                  </div>
               </div>
-              <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="font-black text-[10px] uppercase text-slate-400">CANCELAR</Button><Button onClick={handleSaveItem} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl"><Save className="h-4 w-4" /> GUARDAR INSUMO</Button></DialogFooter>
+              <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="text-[10px] font-black uppercase">CANCELAR</Button><Button onClick={handleSaveItem} className="btn-institutional h-12 px-10 text-[10px] shadow-2xl"><Save className="h-4 w-4 mr-2" /> GUARDAR</Button></DialogFooter>
            </DialogContent>
         </Dialog>
 
-        <DialogFooter className="p-4 bg-slate-100/50 border-t flex justify-end shrink-0"><Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl h-10 px-8 text-[10px] font-black uppercase text-slate-400">CERRAR ALMACÉN</Button></DialogFooter>
+        <Dialog open={isAddProviderOpen} onOpenChange={setIsAddProviderOpen}>
+           <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+              <DialogHeader className="p-8 bg-slate-800 text-white"><DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Truck className="h-7 w-7 text-accent" /> Registro de Proveedor</DialogTitle></DialogHeader>
+              <div className="p-8 space-y-4">
+                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Nombre / Razón Social</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={providerForm.name} onChange={e => setProviderForm({...providerForm, name: e.target.value.toUpperCase()})} /></div>
+                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Persona de Contacto</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={providerForm.contact} onChange={e => setProviderForm({...providerForm, contact: e.target.value.toUpperCase()})} /></div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Teléfono</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={providerForm.phone} onChange={e => setProviderForm({...providerForm, phone: e.target.value})} /></div>
+                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Email</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={providerForm.email} onChange={e => setProviderForm({...providerForm, email: e.target.value.toLowerCase()})} /></div>
+                 </div>
+              </div>
+              <DialogFooter className="p-8 bg-slate-50 border-t"><Button onClick={handleSaveProvider} className="w-full btn-institutional">REGISTRAR PROVEEDOR</Button></DialogFooter>
+           </DialogContent>
+        </Dialog>
+
+        <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+           <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+              <DialogHeader className="p-8 bg-indigo-900 text-white"><DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Users className="h-7 w-7 text-accent" /> Registro de Usuario Almacén</DialogTitle></DialogHeader>
+              <div className="p-8 space-y-4">
+                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Nombre del Responsable</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value.toUpperCase()})} /></div>
+                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Oficina Regional</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={clientForm.office} onChange={e => setClientForm({...clientForm, office: e.target.value.toUpperCase()})} /></div>
+                 <div className="space-y-1"><Label className="text-[10px] font-black uppercase">Área / Cargo</Label><Input className="h-11 bg-slate-50 border-none rounded-xl" value={clientForm.area} onChange={e => setClientForm({...clientForm, area: e.target.value.toUpperCase()})} /></div>
+              </div>
+              <DialogFooter className="p-8 bg-slate-50 border-t"><Button onClick={handleSaveClient} className="w-full btn-institutional">REGISTRAR USUARIO</Button></DialogFooter>
+           </DialogContent>
+        </Dialog>
+
+        <DialogFooter className="p-4 bg-slate-100/50 border-t shrink-0"><Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl h-10 px-8 text-[10px] font-black uppercase text-slate-400">CERRAR ALMACÉN</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   )
