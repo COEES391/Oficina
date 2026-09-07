@@ -54,7 +54,8 @@ import {
   LayoutGrid,
   FileText,
   BookOpen,
-  Download
+  Download,
+  Users
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -260,7 +261,7 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      alert("✅ REGISTRO GUARDADO CON ÉXITO.");
+      alert("✅ REGISTRO GUARDADO CON ÉXITO EN LA NUBE.");
       if (activeTab !== 'Cuentas Institucionales') setIsDialogOpen(false);
       else resetEmailForm();
       setEditingId(null);
@@ -286,7 +287,7 @@ export default function ProgramsPage() {
       rec.name === 'Cuentas Institucionales' && (
       (rec.userName || '').toLowerCase().includes(term) ||
       (rec.cct || '').toLowerCase() === term ||
-      (rec.email || '').toLowerCase().includes(term)
+      (rec.email || '').toLowerCase() === term
     ));
 
     setVerifiedAccount(found);
@@ -489,7 +490,10 @@ export default function ProgramsPage() {
                        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none">Resultado de la verificación</p>
                        <h4 className="text-2xl font-black text-slate-800 lowercase leading-none">{verifiedAccount.email}</h4>
                        <Badge className={cn("text-[9px] font-black px-3 h-5 rounded-full uppercase border-none", 
-                         verifiedAccount.status === 'Activa' ? "bg-emerald-500 text-white" : "bg-slate-400 text-white"
+                         verifiedAccount.status === 'Activa' ? "bg-emerald-500 text-white" : 
+                         verifiedAccount.status === 'Inactiva' ? "bg-slate-400 text-white" :
+                         verifiedAccount.status === 'Bloqueada' ? "bg-amber-500 text-white" :
+                         "bg-rose-500 text-white"
                        )}>
                          Cuenta {verifiedAccount.status}
                        </Badge>
@@ -696,7 +700,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-8 animate-in fade-in duration-700">
-           {/* Hero Section */}
            <Card className="relative overflow-hidden rounded-[3rem] border-none shadow-2xl min-h-[320px] group">
               <Image 
                 src="https://picsum.photos/seed/school-facade/1200/400" 
@@ -723,7 +726,6 @@ export default function ProgramsPage() {
               </div>
            </Card>
 
-           {/* Search Bar Section */}
            <Card className="p-6 rounded-[2.5rem] bg-white border-none shadow-xl flex flex-wrap items-end gap-6">
               <div className="flex-1 min-w-[200px] space-y-2">
                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
@@ -748,7 +750,6 @@ export default function ProgramsPage() {
               </Button>
            </Card>
 
-           {/* Stats Grid */}
            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
                 { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-blue-600', shadow: 'shadow-blue-200' },
@@ -768,7 +769,6 @@ export default function ProgramsPage() {
               ))}
            </div>
 
-           {/* Map and Details Section */}
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <Card className="lg:col-span-5 rounded-[3rem] border-none shadow-2xl overflow-hidden flex flex-col">
                  <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
