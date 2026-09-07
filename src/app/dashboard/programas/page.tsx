@@ -206,26 +206,26 @@ export default function ProgramsPage() {
   }
 
   const handleSave = async () => {
-    const currentCct = formData.cct || dialogSearchTerm.toUpperCase().trim();
+    const currentCct = (formData.cct || dialogSearchTerm || '').toUpperCase().trim();
     
     if (!currentCct || currentCct.length < 5) {
-      alert("ERROR: Debe identificar un CCT válido en el buscador superior.");
+      alert("ERROR: Debe seleccionar o ingresar un CCT válido antes de guardar.");
       return;
     }
 
     setIsSaving(true);
     
     try {
-      let finalSchoolName = formData.schoolName;
-      if (!finalSchoolName) {
+      let finalSchoolName = formData.schoolName || "PLANTEL EXTERNO";
+      if (!formData.schoolName) {
         const match = allSchools.find(s => s.cct.toUpperCase() === currentCct);
-        finalSchoolName = match?.nombre || "PLANTEL EXTERNO";
+        if (match) finalSchoolName = match.nombre;
       }
 
       const finalData: Record<string, any> = {
         name: String(activeTab),
         cct: String(currentCct),
-        schoolName: String(finalSchoolName || ''),
+        schoolName: String(finalSchoolName),
         municipio: String(formData.municipio || 'S/D'),
         valle: String(formData.valle || 'S/D'),
         region: String(formData.region || 'S/D'),
@@ -239,12 +239,12 @@ export default function ProgramsPage() {
       };
 
       if (activeTab === 'Cuentas Institucionales') {
-        finalData.userName = String(formData.userName || 'SIN RESPONSABLE');
-        finalData.puesto = String(formData.puesto || 'SIN PUESTO');
-        finalData.departamento = String(formData.departamento || 'SIN DEPARTAMENTO');
+        finalData.userName = String(formData.userName || 'S/R');
+        finalData.puesto = String(formData.puesto || 'S/R');
+        finalData.departamento = String(formData.departamento || 'S/R');
         const filteredEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
         finalData.emails = filteredEmails;
-        finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : 'sin-correo@desysa.edu.mx';
+        finalData.email = filteredEmails.length > 0 ? filteredEmails[0] : '';
       } 
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
@@ -271,15 +271,15 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      alert("REGISTRO GUARDADO EXITOSAMENTE EN LA NUBE.");
+      alert("✅ REGISTRO GUARDADO EXITOSAMENTE.");
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
       setDialogSearchTerm('');
       setShowSearchResults(false);
     } catch (e: any) {
-      console.error("Firestore Error:", e);
-      alert("FALLO CRÍTICO AL GUARDAR: " + (e.message || "Error desconocido."));
+      console.error("Error al guardar:", e);
+      alert("❌ ERROR AL GUARDAR: " + (e.message || "Fallo de conexión."));
     } finally {
       setIsSaving(false);
     }
@@ -306,8 +306,6 @@ export default function ProgramsPage() {
       const allCuentas = snap.docs.map(d => d.data());
       
       const found = allCuentas.find((rec: any) => 
-        (rec.rfc || '').toUpperCase() === term || 
-        (rec.email || '').toUpperCase().includes(term) ||
         (rec.userName || '').toUpperCase().includes(term) ||
         (rec.cct || '').toUpperCase() === term ||
         (rec.emails || []).some((e: string) => e.toUpperCase().includes(term))
@@ -476,7 +474,7 @@ export default function ProgramsPage() {
           </DialogHeader>
           <div className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Ingresar RFC, CCT o Correo Institucional</Label>
+              <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Ingresar CCT o Nombre del Responsable</Label>
               <div className="flex gap-2">
                 <Input placeholder="ESCRIBIR DATO..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-center uppercase" value={verifySearch} onChange={e => setVerifySearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
                 <Button onClick={handleVerifyAccount} disabled={isVerifying || !verifySearch} className="h-12 w-12 rounded-xl bg-accent shadow-lg p-0 transition-transform active:scale-95"><Search className={cn("h-5 w-5", isVerifying && "animate-spin")} /></Button>
