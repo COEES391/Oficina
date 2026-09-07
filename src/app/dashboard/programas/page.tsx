@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -270,7 +269,7 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      toast({ title: "Sincronización Exitosa", description: "Datos guardados en la nube." });
+      toast({ title: "Registro Guardado", description: "Datos sincronizados correctamente." });
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
@@ -621,7 +620,7 @@ export default function ProgramsPage() {
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
              <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase min-w-[280px]">
                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-6 w-6" />}
-               {isSaving ? 'Sincronizando...' : 'Sincronizar en la Nube'}
+               {isSaving ? 'Guardando...' : 'Guardar'}
              </Button>
           </DialogFooter>
         </DialogContent>
