@@ -228,7 +228,8 @@ export default function ProgramsPage() {
       (r.cct || '').toUpperCase().includes(term) ||
       (r.schoolName || '').toUpperCase().includes(term) ||
       (r.folio || '').toUpperCase().includes(term) ||
-      (r.tecnico || '').toUpperCase().includes(term)
+      (r.tecnico || '').toUpperCase().includes(term) ||
+      (r.status || '').toUpperCase().includes(term)
     );
   }, [bitacoraRecords, searchTerm]);
 
@@ -740,14 +741,14 @@ export default function ProgramsPage() {
             <div className="flex-1 min-w-[150px] space-y-1">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Dispositivo</Label>
               <Select defaultValue="todos">
-                <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="laptop">Laptop</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="flex-1 min-w-[150px] space-y-1">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado</Label>
               <Select defaultValue="todos">
-                <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="online">En línea</SelectItem></SelectContent>
               </Select>
             </div>
@@ -841,7 +842,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full min-h-[850px] flex flex-col pb-10">
-          {/* Header Búsqueda Estilo Industrial */}
           <Card className="p-4 rounded-3xl bg-white border-none shadow-xl flex flex-col md:flex-row items-center gap-8 shrink-0">
              <div className="flex items-center gap-3 w-full md:w-auto">
                 <div className="space-y-1">
@@ -920,10 +920,10 @@ export default function ProgramsPage() {
                    <h3 className="text-sm font-black uppercase text-primary tracking-widest pl-4">Resumen general</h3>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       {[
-                        { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-blue-600', dot: 'bg-emerald-500' },
-                        { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-indigo-600', dot: 'bg-blue-500' },
-                        { label: 'Municipios', value: '125', icon: MapPin, color: 'text-blue-800', dot: 'bg-rose-500' },
-                        { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-slate-800', dot: 'bg-slate-400' },
+                        { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-blue-600' },
+                        { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-indigo-600' },
+                        { label: 'Municipios', value: '125', icon: MapPin, color: 'text-blue-800' },
+                        { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-slate-800' },
                       ].map((stat, idx) => (
                         <Card key={idx} className="p-6 rounded-[2.5rem] border border-slate-100 shadow-xl bg-white hover:scale-105 transition-all">
                            <div className="flex flex-col items-center text-center gap-3">
