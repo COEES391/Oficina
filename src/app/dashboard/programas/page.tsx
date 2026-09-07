@@ -61,7 +61,7 @@ import {
   Home,
   BarChart3,
   Settings,
-  Layout
+  LayoutDashboard
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -226,7 +226,7 @@ export default function ProgramsPage() {
 
   const handleSave = async () => {
     const currentCct = (formData.cct || dialogSearchTerm || '').toUpperCase().trim();
-    if (!currentCct && activeTab !== 'Conoce mi Escuela') {
+    if (!currentCct && activeTab !== 'Conoce mi Escuela' && activeTab !== 'Cuentas Institucionales') {
       alert("ERROR: Identificación de CCT requerida."); return;
     }
 
@@ -558,7 +558,7 @@ export default function ProgramsPage() {
           </div>
         </div>
       ) : activeTab === 'Geoposición' ? (
-        <div className="space-y-6 animate-in fade-in duration-700 w-full">
+        <div className="space-y-6 animate-in fade-in duration-700 w-full min-h-[850px]">
           <Card className="p-5 rounded-[2.5rem] bg-white border-none shadow-xl flex flex-wrap items-end gap-6">
             <div className="flex-1 min-w-[200px] space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Rango de fechas</Label>
@@ -650,7 +650,7 @@ export default function ProgramsPage() {
                                  <TableHead className="text-[8px] font-black uppercase pl-6">Fecha</TableHead>
                                  <TableHead className="text-[8px] font-black uppercase text-center">CCT</TableHead>
                                  <TableHead className="text-[8px] font-black uppercase text-center">Estado</TableHead>
-                                 <TableHead className="text-right text-[8px] font-black uppercase pr-8">Acción</TableHead>
+                                 <TableHead className="text-right pr-8 text-[8px] font-black uppercase">Acción</TableHead>
                               </TableRow>
                            </TableHeader>
                            <TableBody>
@@ -676,7 +676,7 @@ export default function ProgramsPage() {
           </div>
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
-        <div className="h-full flex flex-col md:flex-row bg-[#f0f4f9] rounded-[3rem] overflow-hidden shadow-2xl border border-white/50 animate-in fade-in duration-700">
+        <div className="min-h-[850px] flex flex-col md:flex-row bg-[#f0f4f9] rounded-[3rem] overflow-hidden shadow-2xl border border-white/50 animate-in fade-in duration-700">
            {/* Sidebar Interno de Navegación */}
            <div className="w-full md:w-[240px] bg-[#1e293b] text-white p-6 flex flex-col shrink-0">
               <div className="flex items-center gap-3 mb-10 px-2">
@@ -719,7 +719,7 @@ export default function ProgramsPage() {
            {/* Área Principal de Contenido */}
            <div className="flex-1 overflow-hidden flex flex-col">
               {/* Header con Buscador */}
-              <div className="p-8 bg-white border-b shadow-sm z-10">
+              <div className="p-8 bg-white border-b shadow-sm z-10 shrink-0">
                  <div className="flex flex-col lg:flex-row gap-6 items-end">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
                        <div className="space-y-2">
@@ -753,27 +753,25 @@ export default function ProgramsPage() {
                  </div>
               </div>
 
-              {/* Grid de Dashboard Interno */}
+              {/* Grid de Dashboard Interno con ScrollArea */}
               <ScrollArea className="flex-1">
-                 <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                 <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
                     {/* Columna Izquierda: Mapa y Stats */}
                     <div className="lg:col-span-2 space-y-8">
                        <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white">
                           <div className="p-4 bg-slate-50 border-b flex gap-4">
                              <Button variant="secondary" className="h-10 px-8 rounded-xl bg-primary text-white font-black text-[10px] gap-3 uppercase shadow-lg"><Map className="h-4 w-4" /> Mapa</Button>
-                             <Button variant="ghost" className="h-10 px-8 rounded-xl font-black text-[10px] gap-3 uppercase text-slate-500 hover:bg-slate-100"><Layout className="h-4 w-4" /> Lista</Button>
+                             <Button variant="ghost" className="h-10 px-8 rounded-xl font-black text-[10px] gap-3 uppercase text-slate-500 hover:bg-slate-100"><LayoutGrid className="h-4 w-4" /> Lista</Button>
                           </div>
-                          <div className="aspect-video relative bg-slate-100">
+                          <div className="aspect-video relative bg-slate-100 min-h-[450px]">
                              <Image src="https://picsum.photos/seed/school-map-final/1200/800" alt="Mapa" fill className="object-cover opacity-90" />
                              
-                             {/* Marcadores Simulados */}
                              <div className="absolute top-[40%] left-[30%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
                              <div className="absolute top-[60%] left-[55%] h-6 w-6 bg-rose-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
                              <div className="absolute top-[35%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
                                 <div className="h-2 w-2 bg-white rounded-full" />
                              </div>
 
-                             {/* Tooltip de Marcador Activo */}
                              <div className="absolute top-[35%] left-[48%] bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[260px] animate-in zoom-in-95 duration-500 z-30">
                                 <div className="flex justify-between items-start mb-2">
                                    <div className="leading-tight">
@@ -785,14 +783,12 @@ export default function ProgramsPage() {
                                 <div className="h-1 bg-primary/10 rounded-full mt-2"><div className="h-full bg-primary rounded-full w-full" /></div>
                              </div>
 
-                             {/* Zoom Controls */}
                              <div className="absolute bottom-6 right-6 flex flex-col gap-2">
                                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
                                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
                                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50 mt-4"><Navigation className="h-5 w-5 text-slate-600" /></button>
                              </div>
 
-                             {/* Leyenda Profesional */}
                              <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-5">
                                 <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[8px] font-black uppercase text-slate-600">En línea</span></div>
                                 <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-500" /><span className="text-[8px] font-black uppercase text-slate-600">En movimiento</span></div>
@@ -802,7 +798,6 @@ export default function ProgramsPage() {
                           </div>
                        </Card>
 
-                       {/* Resumen General (Stats) */}
                        <div className="space-y-4">
                           <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -845,7 +840,7 @@ export default function ProgramsPage() {
                              <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Teléfono</Label><div className="relative"><Input placeholder="722 123 4567" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Phone className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
                              <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo electrónico</Label><div className="relative"><Input placeholder="escuela@edugem.gob.mx" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
                              <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Latitud *</Label><div className="relative"><Input placeholder="19.6289" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><MapPin className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
-                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Longitud *</Label><div className="relative"><Input placeholder="-99.3128" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Navigation className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Longitud *</Label><div className="relative"><Input placeholder="-99.1332" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Navigation className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4 mt-10 relative z-10">
@@ -870,7 +865,7 @@ export default function ProgramsPage() {
                                      { label: 'Nombre:', value: 'Escuela Secundaria Técnica No. 15' },
                                      { label: 'Zona:', value: '001' },
                                      { label: 'Municipio:', value: 'Toluca' },
-                                     { label: 'Dirección:', value: 'Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000' },
+                                     { label: 'Dirección:', value: 'Av. Independencia No. 123, Col. Centro, Toluca, Estado de México.' },
                                    ].map((item, idx) => (
                                      <div key={idx} className="flex gap-2">
                                         <span className="text-[8px] font-black text-slate-400 uppercase w-16 shrink-0 pt-0.5">{item.label}</span>
@@ -925,7 +920,7 @@ export default function ProgramsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
-                ) : filteredRecords.length > 0 ? filteredRecords.filter(r => r.name === activeTab).map((rec, idx) => (
+                ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
                   <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                     <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
                     <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
