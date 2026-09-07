@@ -48,7 +48,8 @@ import {
   Globe,
   Calendar,
   Send,
-  History
+  History,
+  Monitor
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -182,7 +183,7 @@ export default function ProgramsPage() {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
       toast({ variant: "destructive", title: "Faltan datos" }); return;
     }
-    const newSchool = { 
+    const newSchool: SchoolInfo = { 
       ...quickAddForm, 
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
