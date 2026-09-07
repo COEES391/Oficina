@@ -21,7 +21,6 @@ import {
   Pencil, 
   Search,
   School,
-  Headset,
   CheckCircle2,
   Plus,
   Save,
@@ -68,21 +67,8 @@ import {
   FileSpreadsheet,
   Camera,
   Layers,
-  CheckCircle,
-  Circle
+  CheckCircle
 } from "lucide-react"
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import { db } from '@/lib/firebase'
@@ -95,7 +81,8 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  serverTimestamp 
+  serverTimestamp,
+  where
 } from 'firebase/firestore'
 import { type ProgramStatus, type BitacoraEntry } from '@/lib/planning-data'
 import { format } from 'date-fns'
@@ -127,16 +114,6 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' }
 ];
 
-const VISITAS_DATA = [
-  { name: '15 May', visitas: 12 },
-  { name: '16 May', visitas: 18 },
-  { name: '17 May', visitas: 20 },
-  { name: '18 May', visitas: 15 },
-  { name: '19 May', visitas: 17 },
-  { name: '20 May', visitas: 22 },
-  { name: '21 May', visitas: 24 },
-];
-
 const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
   return (
     <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
@@ -154,7 +131,7 @@ const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
       )} />
       <div className={cn(
         "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto", status === 'atendido' 
-          ? "bg-emerald-500 shadow-[0_0_8_8px_rgba(16,185,129,0.8)]" 
+          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
           : "bg-emerald-900/30 grayscale"
       )} />
     </div>
@@ -222,7 +199,6 @@ export default function ProgramsPage() {
       setRecords(fetched)
       setIsLoading(false)
       
-      // Auto-select first library record if exists
       const libRecs = fetched.filter(r => r.name === 'Biblioteca Digital');
       if (libRecs.length > 0 && !selectedBibliotecaRecord) {
         setSelectedBibliotecaRecord(libRecs[0]);
@@ -268,6 +244,8 @@ export default function ProgramsPage() {
     );
   }, [bitacoraRecords, searchTerm]);
 
+  const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
+
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     return {
@@ -299,6 +277,25 @@ export default function ProgramsPage() {
       setDialogSearchTerm(match.cct)
       setShowSearchResults(false)
     }
+  }
+
+  const handleVerifyAccount = async () => {
+    if (!verifyInput.includes('@')) {
+      toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
+      return;
+    }
+    setIsVerifying(true);
+    setTimeout(() => {
+      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === verifyInput.toLowerCase());
+      if (match) {
+        setVerifiedAccount(match);
+        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
+      } else {
+        setVerifiedAccount(null);
+        toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
+      }
+      setIsVerifying(false);
+    }, 800);
   }
 
   const handleSave = async () => {
@@ -398,7 +395,7 @@ export default function ProgramsPage() {
     const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Bitacora ATRES"); XLSX.writeFile(wb, `Bitacora_ATRES_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
   }
 
-  const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
+  const printFile = (data: string) => { const win = window.open(); if (!win) return; win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`); }
 
   const schoolSearchResults = useMemo(() => { if (!dialogSearchTerm || dialogSearchTerm.length < 3) return []; const term = dialogSearchTerm.toUpperCase(); return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5); }, [allSchools, dialogSearchTerm]);
 
@@ -415,7 +412,7 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (
              <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
           )}
-          <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setDialogSearchTerm(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
+          <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setDialogSearchTerm(''); setUserPart(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
           </Button>
         </div>
@@ -438,7 +435,6 @@ export default function ProgramsPage() {
 
       {activeTab === 'Biblioteca Digital' ? (
         <div className="space-y-8 animate-in fade-in duration-700">
-           {/* Top Stats Row */}
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
                 { label: 'CCT Registrados', value: statsBiblioteca.totalCct.toString(), sub: 'Planteles', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -462,7 +458,6 @@ export default function ProgramsPage() {
            </div>
 
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Main Monitor Table */}
               <Card className="lg:col-span-8 rounded-[2rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col">
                  <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50/50">
                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Fases del Proyecto por CCT</h3>
@@ -515,7 +510,7 @@ export default function ProgramsPage() {
                                  </TableCell>
                                  <TableCell className="text-right pr-8">
                                     <div className="flex justify-end gap-1">
-                                       <button onClick={(e) => { e.stopPropagation(); setFormData(row); setEditingId(row.id!); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-3.5 w-3.5" /></button>
+                                       <button onClick={(e) => { e.stopPropagation(); setFormData({...row}); setEditingId(row.id!); setDialogSearchTerm(row.cct); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-3.5 w-3.5" /></button>
                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id!); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                                     </div>
                                  </TableCell>
@@ -527,7 +522,6 @@ export default function ProgramsPage() {
                  </div>
               </Card>
 
-              {/* Phase Detail Panel - The Stepper */}
               <Card className="lg:col-span-4 rounded-[2rem] border-none shadow-2xl bg-white flex flex-col overflow-hidden">
                  <CardHeader className="p-8 border-b bg-slate-50/50">
                     <CardTitle className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Detalle de Fases del Proyecto</CardTitle>
