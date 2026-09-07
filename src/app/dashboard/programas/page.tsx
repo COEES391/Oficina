@@ -511,7 +511,7 @@ export default function ProgramsPage() {
               </CardContent>
             </Card>
 
-            <Card className="executive-card bg-white border-none shadow-xl flex-1 overflow-hidden">
+            <Card className="executive-card bg-white border-none shadow-xl flex-1 overflow-hidden flex flex-col">
                <CardHeader className="p-8 border-b border-slate-50">
                  <div className="flex items-center gap-3">
                     <ClipboardList className="h-5 w-5 text-primary" />
@@ -1069,3 +1069,4 @@ export default function ProgramsPage() {
     </div>
   )
 }
+
