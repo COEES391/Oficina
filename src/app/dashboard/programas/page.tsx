@@ -739,21 +739,21 @@ export default function ProgramsPage() {
               </div>
             </div>
             <div className="flex-1 min-w-[150px] space-y-1">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Dispositivo</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Tipo de dispositivo</Label>
               <Select defaultValue="todos">
                 <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="laptop">Laptop</SelectItem></SelectContent>
+                <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="laptop">Laptop / PC</SelectItem><SelectItem value="tablet">Tablet</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="flex-1 min-w-[150px] space-y-1">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado de señal</Label>
               <Select defaultValue="todos">
                 <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="online">En línea</SelectItem></SelectContent>
+                <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="online">En línea</SelectItem><SelectItem value="moving">En movimiento</SelectItem></SelectContent>
               </Select>
             </div>
             <Button className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] gap-2 shadow-lg">
-               <RefreshCcw className="h-4 w-4" /> Actualizar
+               <RotateCcw className="h-4 w-4" /> Actualizar
             </Button>
           </Card>
 
@@ -955,8 +955,8 @@ export default function ProgramsPage() {
                          </div>
                       </div>
                       <div className="flex gap-4 pt-4">
-                         <Button onClick={handleSave} className="flex-1 btn-institutional h-14 rounded-2xl shadow-2xl text-[11px] gap-2"><Save className="h-5 w-5" /> Guardar escuela</Button>
-                         <Button variant="outline" onClick={() => setFormData(initialFormState)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-500 font-black uppercase text-[11px] gap-2 hover:bg-slate-50 shadow-sm"><RotateCcw className="h-5 w-5" /> Limpiar</Button>
+                         <Button onClick={handleSave} className="flex-1 btn-institutional h-14 rounded-2xl shadow-2xl text-[11px] gap-2"><Save className="h-5 w-5" /> GUARDAR</Button>
+                         <Button variant="outline" onClick={() => setFormData(initialFormState)} className="flex-1 h-14 rounded-2xl border-slate-200 text-slate-500 font-black uppercase text-[11px] gap-2 hover:bg-slate-50 shadow-sm"><RotateCcw className="h-5 w-5" /> LIMPIAR</Button>
                       </div>
                    </div>
                 </Card>

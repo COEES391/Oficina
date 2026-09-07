@@ -65,7 +65,7 @@ export default function DashboardLayout({
           name: 'Administrador Maestro',
           password: '',
           role: 'admin',
-          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'bitacora-atres', 'base-cct', 'base-participantes', 'usuarios']
+          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
         })
         return
       }
