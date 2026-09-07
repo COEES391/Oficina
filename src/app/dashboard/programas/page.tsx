@@ -81,8 +81,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -117,15 +116,15 @@ const DOMINIOS = [
 ];
 
 const BIBLIOTECA_FASES_LABELS = [
-  { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-  { id: 'fase2', label: 'Fase 2. Atención al CCT', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-  { id: 'fase3', label: 'Fase 3. Diagnóstico del equipo de cómputo existente', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-  { id: 'fase4', label: 'Fase 4. Instalación total de los contenidos del proyecto', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-  { id: 'fase5', label: 'Fase 5. Funcionalidad (pruebas de uso y manejo)', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-  { id: 'fase6', label: 'Fase 6. Guía orientación de uso y manejo de la herramienta', color: 'bg-purple-50 text-purple-600 border-purple-100' },
-  { id: 'fase7', label: 'Fase 7. Envío vía correo al CCT el formulario de seguimiento', color: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
-  { id: 'fase8', label: 'Fase 8. Total de personal capacitado', color: 'bg-orange-50 text-orange-600 border-orange-100' },
-  { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' }
+  { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', color: 'text-blue-600 bg-blue-50 border-blue-100' },
+  { id: 'fase2', label: 'Fase 2. Atención al CCT', color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+  { id: 'fase3', label: 'Fase 3. Diagnóstico del equipo de cómputo existente', color: 'text-blue-600 bg-blue-50 border-blue-100' },
+  { id: 'fase4', label: 'Fase 4. Instalación total de los contenidos del proyecto', color: 'text-amber-600 bg-amber-50 border-amber-100' },
+  { id: 'fase5', label: 'Fase 5. Funcionalidad (pruebas de uso y manejo)', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+  { id: 'fase6', label: 'Fase 6. Guía orientación de uso y manejo de la herramienta', color: 'text-purple-600 bg-purple-50 border-purple-100' },
+  { id: 'fase7', label: 'Fase 7. Envío vía correo al CCT el formulario de seguimiento', color: 'text-cyan-600 bg-cyan-50 border-cyan-100' },
+  { id: 'fase8', label: 'Fase 8. Total de personal capacitado', color: 'text-orange-600 bg-orange-50 border-orange-100' },
+  { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' }
 ];
 
 const VISITAS_DATA = [
@@ -136,12 +135,6 @@ const VISITAS_DATA = [
   { name: '19 May', visitas: 17 },
   { name: '20 May', visitas: 22 },
   { name: '21 May', visitas: 24 },
-];
-
-const ESTATUS_PIE_DATA = [
-  { name: 'En proceso', value: 18, color: '#3b82f6' },
-  { name: 'Concluidos', value: 7, color: '#10b981' },
-  { name: 'Pendientes', value: 0, color: '#94a3b8' },
 ];
 
 const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
@@ -161,7 +154,7 @@ const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
       )} />
       <div className={cn(
         "h-2 w-2 rounded-full transition-all duration-500 border border-black/20 mx-auto", status === 'atendido' 
-          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
+          ? "bg-emerald-500 shadow-[0_0_8_8px_rgba(16,185,129,0.8)]" 
           : "bg-emerald-900/30 grayscale"
       )} />
     </div>
@@ -182,6 +175,8 @@ export default function ProgramsPage() {
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   
+  const [selectedBibliotecaRecord, setSelectedBibliotecaRecord] = useState<ProgramStatus | null>(null)
+
   const [bitacoraRecords, setBitacoraRecords] = useState<BitacoraEntry[]>([])
   const [isBitacoraEditDialogOpen, setIsBitacoraEditDialogOpen] = useState(false)
   const [bitacoraEditingRecord, setBitacoraEditingRecord] = useState<BitacoraEntry | null>(null)
@@ -210,7 +205,8 @@ export default function ProgramsPage() {
     latitud: '', longitud: '', observaciones: '', evidencePhotos: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
-      fase5: false, fase6: false, fase7: false, fase7_1: false, personalCapacitado: 0, equiposHabilitados: 0
+      fase5: false, fase6: false, fase7: false, fase7_1: false, fase8: false, fase9: false,
+      personalCapacitado: 0, equiposHabilitados: 0
     }
   }
 
@@ -225,6 +221,12 @@ export default function ProgramsPage() {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[]
       setRecords(fetched)
       setIsLoading(false)
+      
+      // Auto-select first library record if exists
+      const libRecs = fetched.filter(r => r.name === 'Biblioteca Digital');
+      if (libRecs.length > 0 && !selectedBibliotecaRecord) {
+        setSelectedBibliotecaRecord(libRecs[0]);
+      }
     }, (error) => {
       console.error("Firestore error:", error)
       setIsLoading(false)
@@ -266,7 +268,16 @@ export default function ProgramsPage() {
     );
   }, [bitacoraRecords, searchTerm]);
 
-  const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
+  const statsBiblioteca = useMemo(() => {
+    const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
+    return {
+      totalCct: libRecs.length,
+      concluidos: libRecs.filter(r => r.progress === 100).length,
+      enProceso: libRecs.filter(r => r.progress > 0 && r.progress < 100).length,
+      personalTotal: libRecs.reduce((acc, r) => acc + (r.bibliotecaFases?.personalCapacitado || 0), 0),
+      equiposTotal: libRecs.reduce((acc, r) => acc + (r.bibliotecaFases?.equiposHabilitados || 0), 0)
+    };
+  }, [records]);
 
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
@@ -288,30 +299,6 @@ export default function ProgramsPage() {
       setDialogSearchTerm(match.cct)
       setShowSearchResults(false)
     }
-  }
-
-  const handleQuickAddCct = () => {
-    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos" }); return;
-    }
-    const newSchool: SchoolInfo = { 
-      ...quickAddForm, 
-      cct: quickAddForm.cct.toUpperCase(), 
-      nombre: quickAddForm.nombre.toUpperCase(), 
-      municipio: quickAddForm.municipio.toUpperCase(),
-      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
-      localidad: (quickAddForm.localidad || '').toUpperCase(),
-      sector: (quickAddForm.sector || '').toUpperCase(),
-      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
-      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
-    };
-    const updated = [newSchool, ...allSchools];
-    setAllSchools(updated);
-    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctChange(newSchool.cct);
-    setIsQuickAddOpen(false);
-    setDialogSearchTerm(newSchool.cct);
-    toast({ title: "Plantel Registrado" });
   }
 
   const handleSave = async () => {
@@ -343,8 +330,8 @@ export default function ProgramsPage() {
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
         finalData.bibliotecaFases = { ...bf };
-        const phases = [bf.fase1, bf.fase2, bf.fase3, bf.fase4, bf.fase5, bf.fase6, bf.fase7];
-        finalData.progress = Math.round((phases.filter(v => v).length / 7) * 100);
+        const phases = [bf.fase1, bf.fase2, bf.fase3, bf.fase4, bf.fase5, bf.fase6, bf.fase7, bf.fase8, bf.fase9];
+        finalData.progress = Math.round((phases.filter(v => v).length / 9) * 100);
       }
       else if (activeTab === 'Geoposición') {
         finalData.latitud = String(formData.latitud || '');
@@ -357,24 +344,43 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), finalData);
       }
       
-      alert("✅ REGISTRO GUARDADO CON ÉXITO EN LA NUBE.");
       setIsDialogOpen(false);
       setEditingId(null);
+      toast({ title: "Sincronización Exitosa", description: "Datos registrados en la nube." });
     } catch (e: any) {
-      alert("❌ ERROR AL GUARDAR: " + e.message);
+      toast({ variant: "destructive", title: "Error al Guardar", description: e.message });
     } finally {
       setIsSaving(false);
     }
   }
 
-  const handleVerifyAccount = async () => {
-    if (!verifyInput) return;
-    setIsVerifying(true);
-    const term = verifyInput.toLowerCase();
-    const found = records.find((rec: any) => rec.name === 'Cuentas Institucionales' && ((rec.userName || '').toLowerCase().includes(term) || (rec.cct || '').toLowerCase() === term || (rec.email || '').toLowerCase() === term));
-    setVerifiedAccount(found);
-    if (!found) toast({ variant: "destructive", title: "Sin Resultados" });
-    setIsVerifying(false);
+  const handleUpdatePhase = async (phaseId: string, value: boolean) => {
+    if (!selectedBibliotecaRecord?.id) return;
+    
+    try {
+      const newFases = { 
+        ...selectedBibliotecaRecord.bibliotecaFases!, 
+        [phaseId]: value 
+      };
+      
+      const phases = [newFases.fase1, newFases.fase2, newFases.fase3, newFases.fase4, newFases.fase5, newFases.fase6, newFases.fase7, newFases.fase8, newFases.fase9];
+      const newProgress = Math.round((phases.filter(v => v).length / 9) * 100);
+      
+      await updateDoc(doc(db, 'programs', selectedBibliotecaRecord.id), {
+        bibliotecaFases: newFases,
+        progress: newProgress,
+        updatedAt: serverTimestamp()
+      });
+
+      setSelectedBibliotecaRecord({
+        ...selectedBibliotecaRecord,
+        bibliotecaFases: newFases,
+        progress: newProgress
+      });
+      
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al actualizar fase" });
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -393,7 +399,6 @@ export default function ProgramsPage() {
   }
 
   const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
-  const printFile = (data: string) => { const win = window.open(); if (!win) return; win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`); }
 
   const schoolSearchResults = useMemo(() => { if (!dialogSearchTerm || dialogSearchTerm.length < 3) return []; const term = dialogSearchTerm.toUpperCase(); return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5); }, [allSchools, dialogSearchTerm]);
 
@@ -408,9 +413,7 @@ export default function ProgramsPage() {
         </div>
         <div className="flex gap-3">
           {activeTab === 'ATRES' && (
-             <Button onClick={() => setIsHelpDeskOpen(true)} className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] gap-2 shadow-lg uppercase">
-               <Headset className="h-5 w-5" /> Mesa de ayuda
-             </Button>
+             <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
           )}
           <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setDialogSearchTerm(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
@@ -438,12 +441,12 @@ export default function ProgramsPage() {
            {/* Top Stats Row */}
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
-                { label: 'CCT Registrados', value: '25', sub: 'Escuelas', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: 'CCT Registrados', value: statsBiblioteca.totalCct.toString(), sub: 'Planteles', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
                 { label: 'Visitas Totales', value: '128', sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                 { label: 'Atenciones', value: '96', sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
-                { label: 'Evidencias', value: '243', sub: 'Fotografías / Reportes', icon: Camera, color: 'text-orange-500', bg: 'bg-orange-50' },
-                { label: 'Técnicos Activos', value: '8', sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-                { label: 'Proyectos Concluidos', value: '7', sub: 'Escuelas', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50' },
+                { label: 'Evidencias', value: '243', sub: 'Fotos / Docs', icon: Camera, color: 'text-orange-500', bg: 'bg-orange-50' },
+                { label: 'Personal Capacitado', value: statsBiblioteca.personalTotal.toString(), sub: 'Sincronizado', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+                { label: 'Proyectos Concluidos', value: statsBiblioteca.concluidos.toString(), sub: 'Meta 2026', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50' },
               ].map((stat, idx) => (
                 <Card key={idx} className="p-4 rounded-[1.5rem] bg-white border-none shadow-sm hover:shadow-xl transition-all border-b-4 border-transparent hover:border-primary">
                    <div className="flex items-center gap-3">
@@ -463,9 +466,11 @@ export default function ProgramsPage() {
               <Card className="lg:col-span-8 rounded-[2rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col">
                  <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50/50">
                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Fases del Proyecto por CCT</h3>
-                    <div className="relative group">
-                       <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-300" />
-                       <Input placeholder="FILTRAR..." className="h-8 pl-9 rounded-xl border-slate-200 text-[10px] font-bold bg-white w-48 shadow-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <div className="flex gap-4">
+                       <div className="relative">
+                          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-300" />
+                          <Input placeholder="FILTRAR CCT..." className="h-8 pl-9 rounded-xl border-slate-200 text-[10px] font-bold bg-white w-48 shadow-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                       </div>
                     </div>
                  </div>
                  <div className="flex-1 overflow-x-auto">
@@ -474,162 +479,102 @@ export default function ProgramsPage() {
                           <TableRow className="h-12">
                              <TableHead className="pl-8 text-[9px] font-black uppercase text-slate-400">CCT</TableHead>
                              <TableHead className="text-[9px] font-black uppercase text-slate-400">Escuela</TableHead>
-                             <TableHead className="text-[9px] font-black uppercase text-slate-400">Municipio</TableHead>
                              <TableHead className="text-[9px] font-black uppercase text-slate-400">Fase Actual</TableHead>
-                             <TableHead className="text-[9px] font-black uppercase text-slate-400">Avance</TableHead>
-                             <TableHead className="text-[9px] font-black uppercase text-slate-400 text-center">Estatus</TableHead>
-                             <TableHead className="text-right pr-10 text-[9px] font-black uppercase text-slate-400">Última Atención</TableHead>
+                             <TableHead className="text-[9px] font-black uppercase text-slate-400 text-center">Avance</TableHead>
+                             <TableHead className="text-right pr-10 text-[9px] font-black uppercase text-slate-400">Acción</TableHead>
                           </TableRow>
                        </TableHeader>
                        <TableBody>
-                          {[
-                            { cct: '21DPR1234A', school: 'Primaria Benito Juárez', mun: 'Centro', phase: 'Fase 3', phaseDesc: 'Diagnóstico del equipo', progress: 33, status: 'En proceso', date: '21/05/2024', color: 'text-blue-600 bg-blue-50 border-blue-100' },
-                            { cct: '21DPR2345B', school: 'Primaria Miguel Hidalgo', mun: 'Centro', phase: 'Fase 4', phaseDesc: 'Instalación de contenidos', progress: 44, status: 'En proceso', date: '21/05/2024', color: 'text-amber-600 bg-amber-50 border-amber-100' },
-                            { cct: '21DPR3456C', school: 'Secundaria Técnica No. 8', mun: 'Centro', phase: 'Fase 5', phaseDesc: 'Funcionalidad (pruebas)', progress: 56, status: 'En proceso', date: '20/05/2024', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-                            { cct: '21DPR4567D', school: 'Secundaria General No. 5', mun: 'Centro', phase: 'Fase 6', phaseDesc: 'Guía orientación de uso', progress: 67, status: 'En proceso', date: '20/05/2024', color: 'text-purple-600 bg-purple-50 border-purple-100' },
-                            { cct: '21DPR5678E', school: 'Telesecundaria 14', mun: 'Centro', phase: 'Fase 7', phaseDesc: 'Seguimiento técnico', progress: 78, status: 'En proceso', date: '19/05/2024', color: 'text-cyan-600 bg-cyan-50 border-cyan-100' },
-                            { cct: '21DPR6789F', school: 'Primaria Ignacio Allende', mun: 'Centro', phase: 'Fase 8', phaseDesc: 'Personal capacitado', progress: 89, status: 'En proceso', date: '19/05/2024', color: 'text-orange-600 bg-orange-50 border-orange-100' },
-                          ].map((row, idx) => (
-                            <TableRow key={idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                               <TableCell className="pl-8 font-mono font-black text-[10px] text-primary">{row.cct}</TableCell>
-                               <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[150px]">{row.school}</TableCell>
-                               <TableCell className="text-[10px] font-medium text-slate-400 uppercase">{row.mun}</TableCell>
-                               <TableCell>
-                                  <div className={cn("px-3 py-1 rounded-lg border text-[8px] font-black uppercase inline-flex flex-col", row.color)}>
-                                     <span>{row.phase}</span>
-                                     <span className="opacity-70">{row.phaseDesc}</span>
-                                  </div>
-                               </TableCell>
-                               <TableCell>
-                                  <div className="flex items-center gap-3 w-24">
-                                     <Progress value={row.progress} className={cn("h-1.5", row.progress > 50 ? "bg-emerald-100" : "bg-blue-100")} />
-                                     <span className="text-[9px] font-black text-slate-600">{row.progress}%</span>
-                                  </div>
-                               </TableCell>
-                               <TableCell className="text-center">
-                                  <Badge className={cn("text-[8px] font-black border-none px-2 h-5 rounded-full uppercase", row.status === 'Concluido' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white shadow-lg shadow-blue-500/20')}>{row.status}</Badge>
-                               </TableCell>
-                               <TableCell className="text-right pr-10">
-                                  <div className="flex flex-col items-end">
-                                     <span className="text-[10px] font-black text-slate-700 uppercase">Analista Responsable</span>
-                                     <span className="text-[9px] font-bold text-slate-400 mt-0.5">{row.date}</span>
-                                  </div>
-                               </TableCell>
-                            </TableRow>
-                          ))}
+                          {records.filter(r => r.name === 'Biblioteca Digital').map((row) => {
+                            const activePhases = Object.entries(row.bibliotecaFases || {}).filter(([k, v]) => k.startsWith('fase') && v === true);
+                            const lastPhaseNum = activePhases.length > 0 ? Math.max(...activePhases.map(([k]) => parseInt(k.replace('fase', '')))) : 0;
+                            const phaseLabel = BIBLIOTECA_FASES_LABELS[lastPhaseNum - 1] || { label: 'Pendiente', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+
+                            return (
+                              <TableRow 
+                                key={row.id} 
+                                onClick={() => setSelectedBibliotecaRecord(row)}
+                                className={cn(
+                                  "h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer",
+                                  selectedBibliotecaRecord?.id === row.id && "bg-primary/5"
+                                )}
+                              >
+                                 <TableCell className="pl-8 font-mono font-black text-[10px] text-primary">{row.cct}</TableCell>
+                                 <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[150px]">{row.schoolName}</TableCell>
+                                 <TableCell>
+                                    <div className={cn("px-3 py-1 rounded-lg border text-[8px] font-black uppercase inline-flex flex-col", phaseLabel.color)}>
+                                       <span>Fase {lastPhaseNum > 0 ? lastPhaseNum : '0'}</span>
+                                       <span className="opacity-70 truncate max-w-[140px]">{phaseLabel.label.split('. ')[1]}</span>
+                                    </div>
+                                 </TableCell>
+                                 <TableCell>
+                                    <div className="flex items-center gap-3 w-24 mx-auto">
+                                       <Progress value={row.progress} className={cn("h-1.5", row.progress >= 100 ? "bg-emerald-100" : "bg-blue-100")} />
+                                       <span className="text-[9px] font-black text-slate-600">{row.progress}%</span>
+                                    </div>
+                                 </TableCell>
+                                 <TableCell className="text-right pr-8">
+                                    <div className="flex justify-end gap-1">
+                                       <button onClick={(e) => { e.stopPropagation(); setFormData(row); setEditingId(row.id!); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-3.5 w-3.5" /></button>
+                                       <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id!); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    </div>
+                                 </TableCell>
+                              </TableRow>
+                            )
+                          })}
                        </TableBody>
                     </Table>
                  </div>
               </Card>
 
-              {/* Phase Detail Panel */}
+              {/* Phase Detail Panel - The Stepper */}
               <Card className="lg:col-span-4 rounded-[2rem] border-none shadow-2xl bg-white flex flex-col overflow-hidden">
                  <CardHeader className="p-8 border-b bg-slate-50/50">
                     <CardTitle className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Detalle de Fases del Proyecto</CardTitle>
-                    <CardDescription className="text-[10px] font-bold text-slate-400 uppercase mt-2">(Por CCT seleccionado)</CardDescription>
+                    <CardDescription className="text-[10px] font-bold text-slate-400 uppercase mt-2">Seguimiento técnico individual</CardDescription>
                  </CardHeader>
                  <div className="p-8 space-y-6 flex-1 flex flex-col">
-                    <div className="space-y-1">
-                       <Label className="text-[10px] font-black text-primary uppercase pl-1">Seleccionar CCT:</Label>
-                       <Select defaultValue="benito">
-                          <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold uppercase text-xs shadow-sm bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                             <SelectItem value="benito" className="text-[10px] font-black">21DPR1234A - Primaria Benito Juárez</SelectItem>
-                             <SelectItem value="hidalgo" className="text-[10px] font-black">21DPR2345B - Primaria Miguel Hidalgo</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="flex-1 space-y-4 pt-4 overflow-y-auto pr-2 custom-scrollbar">
-                       {BIBLIOTECA_FASES_LABELS.map((f, i) => (
-                         <div key={f.id} className={cn(
-                           "flex items-start gap-4 p-3 rounded-2xl border-2 transition-all group",
-                           i < 2 ? "bg-emerald-50/30 border-emerald-100" : 
-                           i === 2 ? "bg-blue-50 border-blue-200 shadow-lg scale-[1.02]" : 
-                           "bg-white border-slate-50 opacity-40"
-                         )}>
-                            <div className={cn(
-                              "h-7 w-7 rounded-full flex items-center justify-center shrink-0 border-2",
-                              i < 2 ? "bg-emerald-500 border-emerald-500 text-white" :
-                              i === 2 ? "bg-blue-600 border-blue-600 text-white animate-pulse" :
-                              "bg-white border-slate-200 text-slate-300"
-                            )}>
-                               {i < 2 ? <CheckCircle className="h-4 w-4" /> : <span className="text-[10px] font-black">{i + 1}</span>}
-                            </div>
-                            <p className={cn(
-                              "text-[10px] font-black uppercase leading-tight pt-1",
-                              i < 2 ? "text-emerald-700" : i === 2 ? "text-blue-700" : "text-slate-400"
-                            )}>{f.label}</p>
-                         </div>
-                       ))}
-                    </div>
-                 </div>
-              </Card>
-           </div>
-
-           {/* Bottom Analytics Row */}
-           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              <Card className="rounded-[2rem] border-none shadow-xl bg-white p-8 space-y-6">
-                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><Activity className="h-5 w-5 text-blue-600" /> Visitas por día <span className="text-[10px] font-bold text-slate-400 lowercase">(últimos 7 días)</span></h3>
-                 <div className="h-[200px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <LineChart data={VISITAS_DATA}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                          <XAxis dataKey="name" hide />
-                          <YAxis hide />
-                          <RechartsTooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase' }} />
-                          <Line type="monotone" dataKey="visitas" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8, strokeWidth: 0 }} />
-                       </LineChart>
-                    </ResponsiveContainer>
-                 </div>
-              </Card>
-
-              <Card className="rounded-[2rem] border-none shadow-xl bg-white p-8 space-y-6">
-                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Estatus del Proyecto</h3>
-                 <div className="h-[200px] w-full relative flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                       <PieChart>
-                          <Pie data={ESTATUS_PIE_DATA} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                             {ESTATUS_PIE_DATA.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                          </Pie>
-                          <RechartsTooltip />
-                       </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                       <span className="text-2xl font-black text-slate-800">25</span>
-                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total CCT</span>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 gap-2 pt-2 border-t">
-                    {ESTATUS_PIE_DATA.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center"><div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} /><span className="text-[9px] font-black text-slate-500 uppercase">{item.name}</span></div><span className="text-[10px] font-black text-slate-800">{item.value} ({Math.round((item.value/25)*100)}%)</span></div>
-                    ))}
-                 </div>
-              </Card>
-
-              <Card className="lg:col-span-2 rounded-[2rem] border-none shadow-xl bg-white p-8 flex flex-col overflow-hidden">
-                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Evidencias recientes</h3>
-                    <button className="text-[9px] font-black text-primary hover:underline uppercase tracking-widest">Ver todas las evidencias</button>
-                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1 overflow-hidden">
-                    {[
-                      { img: 'https://picsum.photos/seed/evid1/400/300', cct: '21DPR2345B', school: 'Primaria Miguel Hidalgo', date: '21/05/2024' },
-                      { img: 'https://picsum.photos/seed/evid2/400/300', cct: '21DPR3456C', school: 'Secundaria Técnica No. 8', date: '20/05/2024' },
-                      { img: 'https://picsum.photos/seed/evid3/400/300', cct: '21DPR4567D', school: 'Secundaria Gral. No. 5', date: '20/05/2024' },
-                    ].map((ev, idx) => (
-                      <div key={idx} className="bg-slate-50 rounded-[1.8rem] border border-slate-100 overflow-hidden group flex flex-col">
-                         <div className="relative aspect-video overflow-hidden">
-                            <Image src={ev.img} alt="Evidencia" fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                            <div className="absolute top-2 right-2 flex gap-1"><button className="h-7 w-7 rounded-xl bg-white/90 backdrop-blur-md shadow-lg flex items-center justify-center text-rose-600 hover:bg-white transition-all"><FileText className="h-3.5 w-3.5" /></button></div>
-                         </div>
-                         <div className="p-4 flex flex-col flex-1">
-                            <p className="text-[9px] font-black text-primary font-mono">{ev.cct}</p>
-                            <h4 className="text-[10px] font-black text-slate-700 uppercase leading-tight mt-1 line-clamp-1">{ev.school}</h4>
-                            <p className="text-[8px] font-bold text-slate-400 mt-auto">{ev.date}</p>
-                         </div>
+                    {!selectedBibliotecaRecord ? (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 space-y-4">
+                        <ClipboardCheck className="h-12 w-12" />
+                        <p className="text-[10px] font-black uppercase">Seleccione una escuela para ver su avance</p>
                       </div>
-                    ))}
+                    ) : (
+                      <>
+                        <div className="space-y-2 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                           <p className="text-[9px] font-black text-primary uppercase">Plantel Seleccionado:</p>
+                           <h4 className="text-sm font-black text-slate-800 uppercase leading-tight">{selectedBibliotecaRecord.schoolName}</h4>
+                           <Badge className="bg-primary text-white text-[8px] font-mono">{selectedBibliotecaRecord.cct}</Badge>
+                        </div>
+
+                        <div className="flex-1 space-y-4 pt-4 overflow-y-auto pr-2 custom-scrollbar">
+                           {BIBLIOTECA_FASES_LABELS.map((f, i) => {
+                             const isCompleted = (selectedBibliotecaRecord.bibliotecaFases as any)?.[f.id];
+                             return (
+                               <div 
+                                 key={f.id} 
+                                 onClick={() => handleUpdatePhase(f.id, !isCompleted)}
+                                 className={cn(
+                                   "flex items-start gap-4 p-3 rounded-2xl border-2 transition-all cursor-pointer group",
+                                   isCompleted ? "bg-emerald-50/30 border-emerald-100" : "bg-white border-slate-50 hover:border-primary/20"
+                                 )}
+                               >
+                                  <div className={cn(
+                                    "h-7 w-7 rounded-full flex items-center justify-center shrink-0 border-2 transition-all",
+                                    isCompleted ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white border-slate-200 text-slate-300 group-hover:border-primary group-hover:text-primary"
+                                  )}>
+                                     {isCompleted ? <CheckCircle className="h-4 w-4" /> : <span className="text-[10px] font-black">{i + 1}</span>}
+                                  </div>
+                                  <p className={cn(
+                                    "text-[9px] font-black uppercase leading-tight pt-1",
+                                    isCompleted ? "text-emerald-700" : "text-slate-400 group-hover:text-slate-600"
+                                  )}>{f.label}</p>
+                               </div>
+                             )
+                           })}
+                        </div>
+                      </>
+                    )}
                  </div>
               </Card>
            </div>
@@ -701,9 +646,6 @@ export default function ProgramsPage() {
                               {r.pdfData && (
                                 <button onClick={() => setBitacoraPdfToPreview(r.pdfData!)} className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-all"><FileText className="h-4 w-4" /></button>
                               )}
-                              {r.excelData && (
-                                <button onClick={() => downloadFile(r.excelData!, r.excelName || 'bitacora.xlsx')} className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-all"><FileSpreadsheet className="h-4 w-4" /></button>
-                              )}
                            </div>
                         </TableCell>
                         <TableCell className="pr-10">
@@ -729,7 +671,7 @@ export default function ProgramsPage() {
                   <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><Mail className="h-6 w-6" /></div>
                   <div>
                     <CardTitle className="text-lg font-black text-slate-800 uppercase">Registrar correo institucional</CardTitle>
-                    <CardDescription className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase">Complete el formulario para dar de alta un nuevo acceso oficial.</CardDescription>
+                    <CardDescription className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase">Alta de acceso oficial para servidores públicos.</CardDescription>
                   </div>
                </div>
             </CardHeader>
@@ -776,7 +718,7 @@ export default function ProgramsPage() {
                   <div className="space-y-1">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Nombre del Responsable *</Label>
                     <div className="relative">
-                      <Input placeholder="EJ. MARÍA LÓPEZ GARCÍA" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
+                      <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
                       <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
                     </div>
                   </div>
@@ -795,11 +737,6 @@ export default function ProgramsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Puesto</Label>
-                    <Input placeholder="EJ. COORDINADOR TÉCNICO" className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase" value={formData.puesto} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} />
                   </div>
                </div>
 
@@ -829,16 +766,6 @@ export default function ProgramsPage() {
                      <Search className={cn("h-4 w-4", isVerifying && "animate-spin")} /> VERIFICAR
                    </Button>
                 </div>
-                {verifiedAccount && (
-                  <div className="p-6 rounded-[2rem] bg-emerald-50 border-2 border-emerald-100 flex items-start gap-6 animate-in zoom-in-95 duration-300 shadow-sm">
-                    <div className="h-12 w-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg"><CheckCircle2 className="h-6 w-6" /></div>
-                    <div className="space-y-3 flex-1">
-                       <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none">Resultado de la verificación</p>
-                       <h4 className="text-2xl font-black text-slate-800 lowercase leading-none">{verifiedAccount.email}</h4>
-                       <Badge className="text-[9px] font-black px-3 h-5 rounded-full uppercase border-none bg-emerald-500 text-white">Cuenta Activa</Badge>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -891,13 +818,6 @@ export default function ProgramsPage() {
                 <Calendar className="absolute left-3.5 top-3 h-4 w-4 text-slate-300" />
               </div>
             </div>
-            <div className="flex-1 min-w-[150px] space-y-1">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Tipo de dispositivo</Label>
-              <Select defaultValue="todos">
-                <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem><SelectItem value="laptop">Laptop / PC</SelectItem><SelectItem value="tablet">Tablet</SelectItem></SelectContent>
-              </Select>
-            </div>
             <Button className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] gap-2 shadow-lg"><RotateCcw className="h-4 w-4" /> Actualizar</Button>
           </Card>
 
@@ -933,7 +853,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="flex flex-col flex-1 w-full h-[850px] overflow-hidden bg-white rounded-[3rem] shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-700">
-           {/* Barra de Filtros Multisectorial */}
            <div className="px-8 py-5 bg-slate-50 border-b flex flex-col md:flex-row items-center gap-6 shrink-0">
               <div className="flex flex-1 items-center gap-4 w-full">
                  <div className="flex-1 space-y-1">
@@ -942,13 +861,6 @@ export default function ProgramsPage() {
                        <Input placeholder="EJ. SECUNDARIA TÉCNICA 15..." className="h-11 bg-white border-slate-200 rounded-xl pl-10 font-bold uppercase text-xs shadow-sm" />
                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
                     </div>
-                 </div>
-                 <div className="w-48 space-y-1">
-                    <Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Zona / Municipio</Label>
-                    <Select defaultValue="todos">
-                       <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl font-bold text-xs"><SelectValue placeholder="Todos" /></SelectTrigger>
-                       <SelectContent className="rounded-xl"><SelectItem value="todos">Todos</SelectItem></SelectContent>
-                    </Select>
                  </div>
                  <Button className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] mt-5 shadow-lg gap-2">
                     <Search className="h-4 w-4" /> BUSCAR
@@ -1001,25 +913,6 @@ export default function ProgramsPage() {
                     <Card className="flex-1 rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative group">
                        <div className="absolute inset-0 z-0">
                           <Image src="https://picsum.photos/seed/sat-map-v8/1200/800" alt="Mapa" fill className="object-cover brightness-105" />
-                          <div className="absolute top-[35%] left-[42%] z-10 scale-125">
-                             <div className="h-8 w-8 text-primary drop-shadow-2xl animate-bounce"><MapPin className="h-full w-full" /></div>
-                          </div>
-                       </div>
-                    </Card>
-                 </div>
-              </div>
-
-              <div className="w-full md:w-[400px] border-l bg-white flex flex-col p-8 shrink-0 overflow-y-auto custom-scrollbar">
-                 <div className="space-y-10">
-                    <Card className="p-8 rounded-[3rem] bg-slate-50 border-none shadow-inner">
-                       <div className="flex items-center gap-3 mb-6">
-                          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><PlusCircle className="h-5 w-5" /></div>
-                          <CardTitle className="text-base font-black text-slate-800 uppercase">Registrar Escuela</CardTitle>
-                       </div>
-                       <div className="space-y-4">
-                          <div className="space-y-1"><Label className="text-[10px] font-black text-primary uppercase pl-1">CCT *</Label><Input placeholder="EJ. 15DES0001R" className="h-10 bg-white border-slate-200 rounded-xl font-bold uppercase" /></div>
-                          <div className="space-y-1"><Label className="text-[10px] font-black text-primary uppercase pl-1">Nombre *</Label><Input placeholder="EJ. SECUNDARIA TEC 15" className="h-10 bg-white border-slate-200 rounded-xl font-bold uppercase" /></div>
-                          <Button className="w-full btn-institutional h-11 text-[10px] shadow-xl">GUARDAR ESCUELA</Button>
                        </div>
                     </Card>
                  </div>
@@ -1174,6 +1067,16 @@ export default function ProgramsPage() {
                                <Label className="text-xs font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer">{fase.label}</Label>
                              </div>
                            ))}
+                         </div>
+                         <div className="grid grid-cols-2 gap-8 pt-4">
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label>
+                               <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} />
+                            </div>
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label>
+                               <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} />
+                            </div>
                          </div>
                       </div>
                    </div>
