@@ -26,7 +26,12 @@ import {
   History,
   FileText,
   Wrench,
-  ChevronRight
+  ChevronRight,
+  Home,
+  Target,
+  BarChart3,
+  Briefcase,
+  FileStack
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
@@ -85,13 +90,21 @@ export default function DashboardLayout({
   }
 
   const menuConfig = [
-    { privilege: 'planeacion', name: 'Planeación', path: '/dashboard', icon: <LayoutDashboard className="h-4 w-4" />, group: 'general' },
+    // GRUPO PLANEACIÓN
+    { privilege: 'planeacion', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-4 w-4" />, group: 'planeacion_header' },
+    { privilege: 'planeacion', name: 'Objetivos y Metas', path: '#', icon: <FileText className="h-4 w-4" />, group: 'planeacion_header' },
+    { privilege: 'planeacion', name: 'Proyectos', path: '#', icon: <FileStack className="h-4 w-4" />, group: 'planeacion_header' },
+    { privilege: 'planeacion', name: 'Indicadores', path: '#', icon: <BarChart3 className="h-4 w-4" />, group: 'planeacion_header' },
+
+    // GRUPO GENERAL
     { privilege: 'bitacora-atres', name: 'Bitácora Atres', path: '/dashboard/bitacora-atres', icon: <History className="h-4 w-4" />, group: 'general' },
     
+    // GRUPO OFICINAS
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <FileText className="h-4 w-4" />, group: 'oficinas', color: 'bg-purple-600' },
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" />, group: 'oficinas', color: 'bg-emerald-600' },
     { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <Wrench className="h-4 w-4" />, group: 'oficinas', color: 'bg-orange-500' },
     
+    // GRUPO ADMIN
     { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-4 w-4" />, group: 'admin' },
     { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-4 w-4" />, group: 'admin' },
     { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-4 w-4" />, group: 'admin' },
@@ -102,6 +115,7 @@ export default function DashboardLayout({
     return menuConfig.filter(item => currentUser.privileges.includes(item.privilege))
   }, [currentUser])
 
+  const planeacionItems = allowedItems.filter(i => i.group === 'planeacion_header')
   const generalItems = allowedItems.filter(i => i.group === 'general')
   const oficinaItems = allowedItems.filter(i => i.group === 'oficinas')
   const adminItems = allowedItems.filter(i => i.group === 'admin')
@@ -125,6 +139,41 @@ export default function DashboardLayout({
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-4 space-y-6">
+          {/* GRUPO PLANEACIÓN */}
+          {planeacionItems.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-white/80 font-black text-[11px] uppercase tracking-[0.1em] px-4 mb-3 group-data-[collapsible=icon]:hidden flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-accent" /> Planeación
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1">
+                  {planeacionItems.map((item) => (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton 
+                        onClick={() => item.path !== '#' && router.push(item.path)}
+                        isActive={pathname === item.path}
+                        className={cn(
+                          "h-11 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300",
+                          pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        )}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className={cn(
+                            "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                            pathname === item.path ? 'text-primary' : 'text-white/50'
+                          )}>
+                            {item.icon}
+                          </div>
+                          <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
           {/* GRUPO GENERAL */}
           {generalItems.length > 0 && (
             <SidebarGroup>
@@ -136,7 +185,7 @@ export default function DashboardLayout({
                         onClick={() => router.push(item.path)}
                         isActive={pathname === item.path}
                         className={cn(
-                          "h-12 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300",
+                          "h-11 rounded-xl font-bold text-[11px] tracking-wide px-4 transition-all duration-300",
                           pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'
                         )}
                       >
