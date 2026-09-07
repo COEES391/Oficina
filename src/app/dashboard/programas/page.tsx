@@ -77,6 +77,7 @@ export default function ProgramsPage() {
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
@@ -167,16 +168,27 @@ export default function ProgramsPage() {
 
   const handleSave = async () => {
     if (!formData.cct) {
-      toast({ variant: "destructive", title: "CCT obligatorio" });
+      toast({ 
+        variant: "destructive", 
+        title: "Selección de Plantel Requerida", 
+        description: "Debe usar el buscador superior para identificar un CCT antes de sincronizar en la nube."
+      });
       return;
     }
 
-    const dataToSave = { 
+    setIsSaving(true);
+    
+    // Preparar datos y limpiar nulos/vacíos
+    const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
+    
+    const { id, ...dataToSave } = { 
       ...formData, 
+      emails: cleanEmails,
       name: activeTab, 
       updatedAt: serverTimestamp() 
-    };
+    } as any;
     
+    // Lógica específica por rubro
     if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
       const f = formData.bibliotecaFases;
       const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
@@ -190,10 +202,15 @@ export default function ProgramsPage() {
       } else {
         await addDoc(collection(db, 'programs'), dataToSave);
       }
-      setIsDialogOpen(false); setEditingId(null); setFormData(initialFormState);
-      toast({ title: "Sincronizado", description: "El registro oficial se ha guardado en la nube." });
+      setIsDialogOpen(false); 
+      setEditingId(null); 
+      setFormData(initialFormState);
+      toast({ title: "Sincronizado", description: "El registro oficial se ha guardado exitosamente en la nube." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de conexión" });
+      console.error("Save error:", e);
+      toast({ variant: "destructive", title: "Error de sincronización", description: "Hubo un problema al conectar con el servidor." });
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -408,7 +425,7 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); } }}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); } } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1400px] h-[95vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="font-black text-lg uppercase">Sincronización Oficial: {activeTab}</DialogTitle>
@@ -423,8 +440,8 @@ export default function ProgramsPage() {
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="p-10 space-y-10 max-w-6xl mx-auto">
-                 <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-primary/10 space-y-6 shadow-inner">
-                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Captura de Datos Institucionales</Label>
+                 <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
+                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Captura de Datos Institucionales (Primer Paso)</Label>
                     <div className="relative">
                       <Input placeholder="Buscar CCT o nombre del plantel..." className="h-16 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => setDialogSearchTerm(e.target.value)} />
                       {dialogSearchTerm.length > 2 && (
@@ -450,10 +467,15 @@ export default function ProgramsPage() {
                         </div>
                       )}
                     </div>
-                    {formData.cct && (
+                    {formData.cct ? (
                       <div className="flex items-center gap-6 p-6 bg-white rounded-[2rem] border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
                         <div className="h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-10 w-10" /></div>
                         <div className="min-w-0"><h4 className="text-xl font-bold uppercase truncate leading-tight text-slate-800">{formData.schoolName}</h4><p className="text-[11px] font-mono font-bold text-emerald-700 tracking-widest mt-1 uppercase">Folio de auditoría: {formData.cct}</p></div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-rose-50 rounded-xl flex items-center gap-3 border border-rose-100">
+                         <AlertCircle className="h-5 w-5 text-rose-500" />
+                         <p className="text-[10px] font-black text-rose-600 uppercase">Identificación requerida para habilitar sincronización</p>
                       </div>
                     )}
                  </div>
@@ -521,8 +543,11 @@ export default function ProgramsPage() {
             </ScrollArea>
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0">
-             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
-             <Button onClick={handleSave} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase"><Save className="h-6 w-6" /> Sincronizar en la Nube</Button>
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-14 px-10 rounded-2xl font-bold text-[11px] text-slate-400 hover:text-primary transition-all uppercase">Cancelar</Button>
+             <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-14 px-16 text-xs gap-3 rounded-2xl shadow-2xl uppercase min-w-[280px]">
+               {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-6 w-6" />}
+               {isSaving ? 'Sincronizando...' : 'Sincronizar en la Nube'}
+             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
