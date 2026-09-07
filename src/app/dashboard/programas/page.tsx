@@ -115,7 +115,7 @@ export default function ProgramsPage() {
   })
 
   const initialFormState: ProgramStatus = {
-    name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
+    name: '', progress: 0, status: 'Activa', date: new Date().toISOString().split('T')[0], 
     cct: '', schoolName: '', userName: '', puesto: '', departamento: '',
     email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     latitud: '', longitud: '', observaciones: '', evidencePhotos: [],
@@ -171,8 +171,7 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); 
-      return;
+      toast({ variant: "destructive", title: "Faltan datos" }); return;
     }
     const newSchool = { 
       ...quickAddForm, 
@@ -191,7 +190,7 @@ export default function ProgramsPage() {
     handleCctChange(newSchool.cct);
     setIsQuickAddOpen(false);
     setDialogSearchTerm(newSchool.cct);
-    toast({ title: "Plantel Registrado", description: "Se ha sumado a la base maestra." });
+    toast({ title: "Plantel Registrado" });
   }
 
   const handleSave = async () => {
@@ -208,7 +207,7 @@ export default function ProgramsPage() {
         schoolName: String(formData.schoolName || 'PLANTEL EXTERNO'),
         municipio: String(formData.municipio || 'S/D'),
         valle: String(formData.valle || 'S/D'),
-        status: String(formData.status || 'activo'),
+        status: String(formData.status || 'Activa'),
         date: String(formData.date || new Date().toISOString().split('T')[0]),
         observaciones: String(formData.observaciones || ''),
         updatedAt: serverTimestamp()
@@ -333,6 +332,28 @@ export default function ProgramsPage() {
             </CardHeader>
             <CardContent className="p-8 space-y-6">
                <div className="space-y-4">
+                  {/* SEMÁFORO DE ESTATUS */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Estatus de la Cuenta (Semáforo)</Label>
+                    <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                      <SelectTrigger className={cn(
+                        "h-11 rounded-xl border-none shadow-inner font-black uppercase text-[10px] focus:ring-2 focus:ring-primary/20",
+                        formData.status === 'Activa' ? "bg-emerald-100 text-emerald-700" :
+                        formData.status === 'Inactiva' ? "bg-slate-100 text-slate-400" :
+                        formData.status === 'Bloqueada' ? "bg-amber-100 text-amber-700" :
+                        "bg-rose-100 text-rose-700"
+                      )}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-none shadow-2xl">
+                        <SelectItem value="Activa" className="text-[10px] font-black text-emerald-600">🟢 ACTIVA</SelectItem>
+                        <SelectItem value="Inactiva" className="text-[10px] font-black text-slate-400">⚪ INACTIVA</SelectItem>
+                        <SelectItem value="Bloqueada" className="text-[10px] font-black text-amber-600">🟡 BLOQUEADA</SelectItem>
+                        <SelectItem value="Eliminada" className="text-[10px] font-black text-rose-600">🔴 ELIMINADA</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-1 relative">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Identificar Plantel (CCT)</Label>
                     <div className="relative">
@@ -449,7 +470,11 @@ export default function ProgramsPage() {
                     <div className="space-y-3 flex-1">
                        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none">Resultado de la verificación</p>
                        <h4 className="text-2xl font-black text-slate-800 lowercase leading-none">{verifiedAccount.email}</h4>
-                       <Badge className="bg-emerald-500 text-white border-none text-[9px] font-black px-3 h-5 rounded-full uppercase">Cuenta activa</Badge>
+                       <Badge className={cn("text-[9px] font-black px-3 h-5 rounded-full uppercase border-none", 
+                         verifiedAccount.status === 'Activa' ? "bg-emerald-500 text-white" : "bg-slate-400 text-white"
+                       )}>
+                         Cuenta {verifiedAccount.status}
+                       </Badge>
                        <div className="grid grid-cols-2 gap-y-2 pt-2 border-t border-emerald-200/50">
                           <div><p className="text-[8px] font-black text-slate-400 uppercase">Nombre:</p><p className="text-xs font-black text-slate-700 uppercase">{verifiedAccount.userName}</p></div>
                           <div><p className="text-[8px] font-black text-slate-400 uppercase">Área:</p><p className="text-xs font-black text-slate-700 uppercase">{verifiedAccount.departamento}</p></div>
@@ -487,7 +512,12 @@ export default function ProgramsPage() {
                           <TableCell className="pl-8 text-[10px] font-bold text-slate-400">{rec.date}</TableCell>
                           <TableCell className="text-[11px] font-mono font-black text-slate-700 lowercase">{rec.email}</TableCell>
                           <TableCell className="text-center">
-                             <Badge className={cn("text-[8px] font-black border-none uppercase px-2 h-4", rec.status === 'activo' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400")}>
+                             <Badge className={cn("text-[8px] font-black border-none uppercase px-2 h-4", 
+                               rec.status === 'Activa' ? "bg-emerald-100 text-emerald-700" : 
+                               rec.status === 'Inactiva' ? "bg-slate-100 text-slate-400" :
+                               rec.status === 'Bloqueada' ? "bg-amber-100 text-amber-700" :
+                               "bg-rose-100 text-rose-700"
+                             )}>
                                 {rec.status}
                              </Badge>
                           </TableCell>
@@ -537,8 +567,8 @@ export default function ProgramsPage() {
                     <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell>
                     <TableCell className="text-center">
                        <Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", 
-                         rec.status === 'activo' || rec.status === 'concluido' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
-                         rec.status === 'inactivo' ? "bg-rose-50 text-rose-700 border-rose-200" : 
+                         rec.status === 'activo' || rec.status === 'concluido' || rec.status === 'Activa' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
+                         rec.status === 'inactivo' || rec.status === 'Eliminada' ? "bg-rose-50 text-rose-700 border-rose-200" : 
                          "bg-amber-50 text-amber-700 border-amber-200"
                        )}>{rec.status}</Badge>
                     </TableCell>
