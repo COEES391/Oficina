@@ -57,7 +57,11 @@ import {
   Download,
   Users,
   Eraser,
-  MinusCircle
+  MinusCircle,
+  Home,
+  BarChart3,
+  Settings,
+  Layout
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -264,7 +268,7 @@ export default function ProgramsPage() {
       }
       
       alert("✅ REGISTRO GUARDADO CON ÉXITO EN LA NUBE.");
-      if (activeTab !== 'Cuentas Institucionales') {
+      if (activeTab !== 'Cuentas Institucionales' && activeTab !== 'Conoce mi Escuela') {
         setIsDialogOpen(false);
       } else {
         resetEmailForm();
@@ -321,11 +325,13 @@ export default function ProgramsPage() {
           <h2 className="text-2xl font-black text-primary leading-none uppercase">Módulos Técnicos COEES</h2>
           <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Sistema Integral de Auditoría 2026</p>
         </div>
-        {activeTab === 'ATRES' && (
-           <Button onClick={() => setIsHelpDeskOpen(true)} className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] gap-2 shadow-lg uppercase">
-             <Headset className="h-5 w-5" /> Mesa de ayuda
-           </Button>
-        )}
+        <div className="flex gap-3">
+          {activeTab === 'ATRES' && (
+             <Button onClick={() => setIsHelpDeskOpen(true)} className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] gap-2 shadow-lg uppercase">
+               <Headset className="h-5 w-5" /> Mesa de ayuda
+             </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -553,7 +559,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Geoposición' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full">
-          {/* Dashboard Header Filters */}
           <Card className="p-5 rounded-[2.5rem] bg-white border-none shadow-xl flex flex-wrap items-end gap-6">
             <div className="flex-1 min-w-[200px] space-y-2">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Rango de fechas</Label>
@@ -582,48 +587,16 @@ export default function ProgramsPage() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Mapa Interactivo */}
             <Card className="lg:col-span-7 rounded-[3rem] border-none shadow-2xl overflow-hidden min-h-[600px] flex flex-col relative group">
               <div className="absolute top-6 left-6 z-10 flex gap-2">
                 <Button variant="secondary" className="h-10 px-6 rounded-xl bg-white shadow-xl text-[10px] font-black uppercase border">Mapa</Button>
                 <Button variant="ghost" className="h-10 px-6 rounded-xl bg-white/60 backdrop-blur-md shadow-xl text-[10px] font-black uppercase">Satélite</Button>
               </div>
               <div className="flex-1 relative bg-slate-100">
-                 <Image 
-                   src="https://picsum.photos/seed/map-toluca-v2/1200/800" 
-                   alt="Mapa" 
-                   fill 
-                   className="object-cover opacity-80"
-                   data-ai-hint="city map"
-                 />
-                 {/* Marcadores simulados del COEES */}
+                 <Image src="https://picsum.photos/seed/map-toluca-v2/1200/800" alt="Mapa" fill className="object-cover opacity-80" />
                  <div className="absolute top-[45%] left-[50%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce">
                     <div className="h-2 w-2 bg-white rounded-full" />
                  </div>
-                 <div className="absolute top-[35%] left-[40%] h-8 w-8 bg-blue-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center">
-                    <div className="h-2 w-2 bg-white rounded-full" />
-                 </div>
-                 <div className="absolute top-[60%] left-[55%] h-8 w-8 bg-rose-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center">
-                    <div className="h-2 w-2 bg-white rounded-full" />
-                 </div>
-
-                 {/* Tooltip de dispositivo */}
-                 <div className="absolute top-[45%] left-[52%] bg-white p-4 rounded-[1.5rem] shadow-2xl border border-slate-100 min-w-[240px] animate-in zoom-in-95 duration-500 z-20">
-                    <div className="flex justify-between items-start mb-2">
-                       <h4 className="text-[10px] font-black uppercase text-slate-800">Dispositivo: COEES-001</h4>
-                       <ChevronRight className="h-4 w-4 text-primary" />
-                    </div>
-                    <p className="text-[9px] font-bold text-slate-400">Última ubicación: 15/04/2025 10:24</p>
-                 </div>
-
-                 {/* Zoom Controls */}
-                 <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-                    <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
-                    <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
-                    <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50 mt-4"><Navigation className="h-5 w-5 text-slate-600" /></button>
-                 </div>
-
-                 {/* Legend */}
                  <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-5">
                     <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-emerald-500" /><span className="text-[9px] font-black uppercase text-slate-600">En línea</span></div>
                     <div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-blue-500" /><span className="text-[9px] font-black uppercase text-slate-600">En movimiento</span></div>
@@ -634,102 +607,58 @@ export default function ProgramsPage() {
             </Card>
 
             <div className="lg:col-span-5 space-y-8 flex flex-col">
-               {/* Formulario de Registro */}
                <Card className="p-8 rounded-[3rem] bg-white border-none shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 -rotate-12"><Navigation className="h-40 w-40" /></div>
                   <div className="flex items-center gap-4 mb-6 border-b border-slate-50 pb-4 relative z-10">
                      <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-6 w-6" /></div>
-                     <CardTitle className="text-lg font-black text-slate-800 uppercase">Registrar coordenadas de ubicación</CardTitle>
+                     <CardTitle className="text-lg font-black text-slate-800 uppercase">Registrar coordenadas</CardTitle>
                   </div>
-                  
                   <div className="space-y-6 relative z-10">
-                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Ingresa el CCT y las coordenadas para registrar la ubicación de la escuela.</p>
-                     
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black text-primary uppercase pl-1">CCT *</Label>
                         <div className="relative group">
                           <Input placeholder="Ej. 15DES0001R" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black text-primary pl-12 uppercase" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
                           <Building2 className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
-                          {showSearchResults && dialogSearchTerm.length > 2 && (
-                            <div className="absolute top-14 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 divide-y max-h-40 overflow-auto">
-                               {schoolSearchResults.map(s => (
-                                 <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center" onClick={() => handleCctChange(s.cct)}>
-                                    <span className="text-[10px] font-black uppercase text-slate-700">{s.nombre}</span>
-                                    <Badge className="text-[8px] font-mono">{s.cct}</Badge>
-                                 </div>
-                               ))}
-                            </div>
-                          )}
                         </div>
                      </div>
-
                      <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
                            <Label className="text-[10px] font-black text-primary uppercase pl-1">Latitud *</Label>
-                           <div className="relative group">
-                             <Input placeholder="Ej. 19.6289" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold pl-12" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
-                             <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
-                           </div>
+                           <Input placeholder="Ej. 19.6289" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
                         </div>
                         <div className="space-y-2">
                            <Label className="text-[10px] font-black text-primary uppercase pl-1">Longitud *</Label>
-                           <div className="relative group">
-                             <Input placeholder="Ej. -99.3128" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold pl-12" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
-                             <Navigation className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
-                           </div>
+                           <Input placeholder="Ej. -99.3128" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
                         </div>
                      </div>
-
                      <div className="flex gap-4 pt-4">
-                        <Button onClick={handleSave} className="flex-1 btn-institutional h-14 rounded-2xl shadow-xl text-xs gap-3">
-                           <Save className="h-5 w-5" /> Guardar ubicación
-                        </Button>
-                        <Button variant="outline" onClick={() => setFormData(initialFormState)} className="px-8 h-14 rounded-2xl border-slate-200 text-slate-500 font-black uppercase text-xs gap-2">
-                           <RotateCcw className="h-4 w-4" /> Limpiar
-                        </Button>
-                     </div>
-
-                     <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-100 flex items-start gap-4">
-                        <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                        <div>
-                           <h5 className="text-[10px] font-black text-blue-900 uppercase">Información</h5>
-                           <p className="text-[9px] font-bold text-blue-800/70 mt-1 leading-relaxed">Asegúrate de ingresar el CCT y las coordenadas en formato decimal (latitud y longitud) para registrar correctamente la ubicación de la escuela.</p>
-                        </div>
+                        <Button onClick={handleSave} className="flex-1 btn-institutional h-14 rounded-2xl shadow-xl text-xs gap-3"><Save className="h-5 w-5" /> Guardar</Button>
+                        <Button variant="outline" onClick={() => setFormData(initialFormState)} className="px-8 h-14 rounded-2xl border-slate-200 text-slate-500 font-black uppercase text-xs gap-2"><RotateCcw className="h-4 w-4" /> Limpiar</Button>
                      </div>
                   </div>
                </Card>
 
-               {/* Tabla de Ubicaciones Recientes */}
                <Card className="executive-card bg-white border-none shadow-2xl flex-1 overflow-hidden flex flex-col">
                   <div className="p-6 border-b flex items-center gap-3 bg-slate-50/50">
                      <ClipboardList className="h-5 w-5 text-primary" />
-                     <h4 className="text-sm font-black uppercase text-slate-700 tracking-wider">Últimas ubicaciones registradas</h4>
+                     <h4 className="text-sm font-black uppercase text-slate-700 tracking-wider">Últimas ubicaciones</h4>
                   </div>
                   <div className="flex-1 overflow-hidden">
                      <ScrollArea className="h-full">
                         <Table>
-                           <TableHeader className="bg-slate-50 sticky top-0 z-10 border-b">
+                           <TableHeader className="bg-slate-50 border-b">
                               <TableRow className="h-10">
-                                 <TableHead className="text-[8px] font-black uppercase pl-6">Fecha y hora</TableHead>
+                                 <TableHead className="text-[8px] font-black uppercase pl-6">Fecha</TableHead>
                                  <TableHead className="text-[8px] font-black uppercase text-center">CCT</TableHead>
-                                 <TableHead className="text-[8px] font-black uppercase text-center">Latitud</TableHead>
-                                 <TableHead className="text-[8px] font-black uppercase text-center">Longitud</TableHead>
                                  <TableHead className="text-[8px] font-black uppercase text-center">Estado</TableHead>
-                                 <TableHead className="text-right text-[8px] font-black uppercase pr-8">Acciones</TableHead>
+                                 <TableHead className="text-right text-[8px] font-black uppercase pr-8">Acción</TableHead>
                               </TableRow>
                            </TableHeader>
                            <TableBody>
                               {records.filter(r => r.name === 'Geoposición').slice(0, 8).map((rec, idx) => (
                                 <TableRow key={rec.id || idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                   <TableCell className="text-[9px] font-bold text-slate-400 pl-6">{rec.date} 10:24</TableCell>
+                                   <TableCell className="text-[9px] font-bold text-slate-400 pl-6">{rec.date}</TableCell>
                                    <TableCell className="text-center font-mono font-black text-[9px] text-primary">{rec.cct}</TableCell>
-                                   <TableCell className="text-center font-mono text-[9px] text-slate-600">{rec.latitud?.slice(0, 7)}</TableCell>
-                                   <TableCell className="text-center font-mono text-[9px] text-slate-600">{rec.longitud?.slice(0, 7)}</TableCell>
-                                   <TableCell className="text-center">
-                                      <Badge className={cn("text-[7px] font-black px-2 h-4 border-none uppercase", idx % 3 === 0 ? "bg-emerald-100 text-emerald-700" : idx % 3 === 1 ? "bg-blue-100 text-blue-700" : "bg-rose-100 text-rose-700")}>
-                                         {idx % 3 === 0 ? 'En línea' : idx % 3 === 1 ? 'En movimiento' : 'Sin señal'}
-                                      </Badge>
-                                   </TableCell>
+                                   <TableCell className="text-center"><Badge className="bg-emerald-100 text-emerald-700 text-[7px] font-black px-2 h-4 border-none uppercase">En línea</Badge></TableCell>
                                    <TableCell className="text-right pr-8">
                                       <div className="flex justify-end gap-1">
                                          <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button>
@@ -738,9 +667,6 @@ export default function ProgramsPage() {
                                    </TableCell>
                                 </TableRow>
                               ))}
-                              {records.filter(r => r.name === 'Geoposición').length === 0 && (
-                                <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-[10px] font-black uppercase">Sin ubicaciones registradas</TableCell></TableRow>
-                              )}
                            </TableBody>
                         </Table>
                      </ScrollArea>
@@ -750,149 +676,222 @@ export default function ProgramsPage() {
           </div>
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
-        <div className="space-y-8 animate-in fade-in duration-700">
-           <Card className="relative overflow-hidden rounded-[3rem] border-none shadow-2xl min-h-[320px] group">
-              <Image 
-                src="https://picsum.photos/seed/school-facade/1200/400" 
-                alt="Fachada Escuela" 
-                fill 
-                className="object-cover transition-transform duration-[15s] group-hover:scale-110"
-                data-ai-hint="secondary school facade"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1e293b]/95 via-[#1e293b]/60 to-transparent" />
-              <div className="absolute inset-0 p-12 flex flex-col justify-center max-w-2xl space-y-6">
-                 <div className="space-y-1">
-                    <h2 className="text-4xl font-black text-white tracking-tighter leading-none">Conoce Mi Escuela</h2>
-                    <h3 className="text-2xl font-bold text-white/80 tracking-tighter">DESYSA - COEES</h3>
+        <div className="h-full flex flex-col md:flex-row bg-[#f0f4f9] rounded-[3rem] overflow-hidden shadow-2xl border border-white/50 animate-in fade-in duration-700">
+           {/* Sidebar Interno de Navegación */}
+           <div className="w-full md:w-[240px] bg-[#1e293b] text-white p-6 flex flex-col shrink-0">
+              <div className="flex items-center gap-3 mb-10 px-2">
+                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white shadow-inner">
+                    <School className="h-6 w-6" />
                  </div>
-                 <p className="text-sm font-medium text-white/70 leading-relaxed max-w-lg">
-                    Consulta la información de las escuelas de Educación Secundaria del Estado de México de manera rápida, segura y confiable. Información que fortalece la educación.
-                 </p>
-                 <div className="flex gap-4 items-center">
-                    <div className="bg-rose-600/90 backdrop-blur-md p-4 rounded-2xl border border-rose-400/30 flex items-center gap-4 shadow-2xl">
-                       <BookOpen className="h-8 w-8 text-white" />
-                       <span className="text-xs font-black text-white leading-tight uppercase">Mejores escuelas,<br/>mejores oportunidades</span>
+                 <div className="leading-none">
+                    <h3 className="text-sm font-black uppercase">Conoce Mi Escuela</h3>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">DESYSA - COEES</p>
+                 </div>
+              </div>
+
+              <div className="space-y-1">
+                 {[
+                   { label: 'Inicio', icon: Home, active: true },
+                   { label: 'Buscar escuela', icon: Search },
+                   { label: 'Mapa de escuelas', icon: MapPin },
+                   { label: 'Estadísticas', icon: BarChart3 },
+                   { label: 'Reportes', icon: FileText },
+                   { label: 'Configuración', icon: Settings },
+                 ].map((item, idx) => (
+                   <button key={idx} className={cn("w-full flex items-center gap-4 px-4 h-11 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all", item.active ? "bg-primary text-white shadow-xl" : "text-slate-400 hover:bg-white/5 hover:text-white")}>
+                      <item.icon className={cn("h-4 w-4", item.active ? "text-white" : "text-slate-500")} />
+                      {item.label}
+                   </button>
+                 ))}
+              </div>
+
+              <div className="mt-auto p-4 bg-white/5 rounded-[1.5rem] border border-white/5">
+                 <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg"><UserCheck className="h-4 w-4" /></div>
+                    <div className="min-w-0">
+                       <p className="text-[9px] font-black uppercase truncate">Soporte Técnico</p>
+                       <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Analista en línea</p>
                     </div>
                  </div>
               </div>
-           </Card>
-
-           <Card className="p-6 rounded-[2.5rem] bg-white border-none shadow-xl flex flex-wrap items-end gap-6">
-              <div className="flex-1 min-w-[200px] space-y-2">
-                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
-                 <Select defaultValue="nombre">
-                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl"><SelectItem value="nombre" className="text-xs font-bold">Nombre de la escuela</SelectItem><SelectItem value="cct" className="text-xs font-bold">CCT Oficial</SelectItem></SelectContent>
-                 </Select>
-              </div>
-              <div className="flex-[2] min-w-[300px] space-y-2 relative group">
-                 <Input placeholder="Escribe el nombre de la escuela..." className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold pl-12 focus:bg-white transition-all" />
-                 <Search className="absolute left-4 top-10 h-5 w-5 text-slate-300 group-focus-within:text-primary" />
-              </div>
-              <div className="flex-1 min-w-[200px] space-y-2">
-                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Zona / Municipio</Label>
-                 <Select defaultValue="todos">
-                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent className="rounded-xl"><SelectItem value="todos" className="text-xs font-bold">Todos los Municipios</SelectItem></SelectContent>
-                 </Select>
-              </div>
-              <Button className="h-12 px-10 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs gap-3 shadow-xl">
-                 <Search className="h-5 w-5" /> BUSCAR
-              </Button>
-           </Card>
-
-           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-blue-600', shadow: 'shadow-blue-200' },
-                { label: 'Directores / Responsables', value: '856', icon: Users, color: 'bg-emerald-600', shadow: 'shadow-emerald-200' },
-                { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-rose-900', shadow: 'shadow-rose-200' },
-                { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-cyan-600', shadow: 'shadow-cyan-200' },
-              ].map((stat, idx) => (
-                <Card key={idx} className={cn("p-6 rounded-[2.5rem] border-none shadow-lg transition-transform hover:translate-y-[-4px]", stat.color)}>
-                   <div className="flex items-center gap-5">
-                      <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white"><stat.icon className="h-8 w-8" /></div>
-                      <div className="text-white">
-                         <h4 className="text-3xl font-black leading-none">{stat.value}</h4>
-                         <p className="text-[9px] font-bold uppercase tracking-widest mt-1 opacity-70">{stat.label}</p>
-                      </div>
-                   </div>
-                </Card>
-              ))}
            </div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-5 rounded-[3rem] border-none shadow-2xl overflow-hidden flex flex-col">
-                 <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
-                    <div className="flex items-center gap-3"><Map className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-slate-700">Ubicación de escuelas</h4></div>
-                    <div className="flex gap-2">
-                       <Button variant="secondary" size="sm" className="h-8 rounded-lg font-black text-[9px] px-3 bg-white border">MAPA</Button>
-                       <Button variant="ghost" size="sm" className="h-8 rounded-lg font-black text-[9px] px-3">SATÉLITE</Button>
-                    </div>
-                 </div>
-                 <div className="flex-1 relative min-h-[400px] bg-slate-100">
-                    <Image 
-                      src="https://picsum.photos/seed/school-map/800/600" 
-                      alt="Mapa" 
-                      fill 
-                      className="object-cover grayscale-[0.5]"
-                    />
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                       <button className="h-8 w-8 bg-white rounded-lg shadow-xl flex items-center justify-center font-black text-lg">+</button>
-                       <button className="h-8 w-8 bg-white rounded-lg shadow-xl flex items-center justify-center font-black text-lg">-</button>
-                    </div>
-                    <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border space-y-2">
-                       <div className="flex items-center gap-3"><div className="h-2.5 w-2.5 rounded-full bg-rose-900" /><span className="text-[8px] font-black uppercase text-slate-600">Escuela consultada</span></div>
-                       <div className="flex items-center gap-3"><div className="h-2.5 w-2.5 rounded-full bg-blue-600" /><span className="text-[8px] font-black uppercase text-slate-600">Escuela secundaria</span></div>
-                       <div className="flex items-center gap-3"><div className="h-2.5 w-2.5 rounded-full bg-emerald-600" /><span className="text-[8px] font-black uppercase text-slate-600">Otra categoría</span></div>
-                    </div>
-                 </div>
-              </Card>
-
-              <Card className="lg:col-span-7 rounded-[3rem] border-none shadow-2xl p-8 flex flex-col justify-between bg-white relative overflow-hidden">
-                 <div className="absolute top-0 right-0 p-12 opacity-5 -rotate-12"><School className="h-40 w-40" /></div>
-                 <div className="space-y-8 relative z-10">
-                    <div className="flex justify-between items-start">
-                       <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary"><School className="h-7 w-7" /></div>
-                          <div><h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Escuela Secundaria Técnica No. 15</h3><Badge className="bg-emerald-500 text-white font-black text-[9px] px-3 mt-1 uppercase">Activa</Badge></div>
+           {/* Área Principal de Contenido */}
+           <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Header con Buscador */}
+              <div className="p-8 bg-white border-b shadow-sm z-10">
+                 <div className="flex flex-col lg:flex-row gap-6 items-end">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
+                          <Select defaultValue="CCT">
+                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><School className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
+                             <SelectContent className="rounded-xl"><SelectItem value="CCT" className="text-[10px] font-black">CCT</SelectItem><SelectItem value="Nombre" className="text-[10px] font-black">NOMBRE</SelectItem></SelectContent>
+                          </Select>
+                       </div>
+                       <div className="md:col-span-1 space-y-2 relative group">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1 opacity-0">Input</Label>
+                          <Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner pl-10 font-bold uppercase text-xs" />
+                          <Search className="absolute left-3.5 top-[2.4rem] h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Zona / Municipio</Label>
+                          <Select defaultValue="todos">
+                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
+                             <SelectContent className="rounded-xl"><SelectItem value="todos" className="text-[10px] font-black">TODOS</SelectItem></SelectContent>
+                          </Select>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Estado</Label>
+                          <Select defaultValue="todos">
+                             <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-black text-[10px]"><div className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-primary" /><SelectValue /></div></SelectTrigger>
+                             <SelectContent className="rounded-xl"><SelectItem value="todos" className="text-[10px] font-black">TODOS</SelectItem></SelectContent>
+                          </Select>
                        </div>
                     </div>
+                    <Button className="h-11 px-10 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black uppercase gap-3 shadow-xl shadow-primary/20"><Search className="h-4 w-4" /> Buscar</Button>
+                 </div>
+              </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {/* Grid de Dashboard Interno */}
+              <ScrollArea className="flex-1">
+                 <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Columna Izquierda: Mapa y Stats */}
+                    <div className="lg:col-span-2 space-y-8">
+                       <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white">
+                          <div className="p-4 bg-slate-50 border-b flex gap-4">
+                             <Button variant="secondary" className="h-10 px-8 rounded-xl bg-primary text-white font-black text-[10px] gap-3 uppercase shadow-lg"><Map className="h-4 w-4" /> Mapa</Button>
+                             <Button variant="ghost" className="h-10 px-8 rounded-xl font-black text-[10px] gap-3 uppercase text-slate-500 hover:bg-slate-100"><Layout className="h-4 w-4" /> Lista</Button>
+                          </div>
+                          <div className="aspect-video relative bg-slate-100">
+                             <Image src="https://picsum.photos/seed/school-map-final/1200/800" alt="Mapa" fill className="object-cover opacity-90" />
+                             
+                             {/* Marcadores Simulados */}
+                             <div className="absolute top-[40%] left-[30%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
+                             <div className="absolute top-[60%] left-[55%] h-6 w-6 bg-rose-600 rounded-full border-2 border-white shadow-xl cursor-pointer" />
+                             <div className="absolute top-[35%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
+                                <div className="h-2 w-2 bg-white rounded-full" />
+                             </div>
+
+                             {/* Tooltip de Marcador Activo */}
+                             <div className="absolute top-[35%] left-[48%] bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 min-w-[260px] animate-in zoom-in-95 duration-500 z-30">
+                                <div className="flex justify-between items-start mb-2">
+                                   <div className="leading-tight">
+                                      <p className="text-[10px] font-black text-primary uppercase">CCT: 15DES0001R</p>
+                                      <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">Escuela Secundaria Técnica No. 15</p>
+                                   </div>
+                                   <ChevronRight className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="h-1 bg-primary/10 rounded-full mt-2"><div className="h-full bg-primary rounded-full w-full" /></div>
+                             </div>
+
+                             {/* Zoom Controls */}
+                             <div className="absolute bottom-6 right-6 flex flex-col gap-2">
+                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
+                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
+                                <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50 mt-4"><Navigation className="h-5 w-5 text-slate-600" /></button>
+                             </div>
+
+                             {/* Leyenda Profesional */}
+                             <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-5">
+                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[8px] font-black uppercase text-slate-600">En línea</span></div>
+                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-500" /><span className="text-[8px] font-black uppercase text-slate-600">En movimiento</span></div>
+                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-[8px] font-black uppercase text-slate-600">Sin señal</span></div>
+                                <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-slate-400" /><span className="text-[8px] font-black uppercase text-slate-600">Desconectado</span></div>
+                             </div>
+                          </div>
+                       </Card>
+
+                       {/* Resumen General (Stats) */}
                        <div className="space-y-4">
-                          {[
-                            { icon: LayoutGrid, label: 'CCT:', value: '15DST0015Z' },
-                            { icon: Clock, label: 'Turno:', value: 'Matutino' },
-                            { icon: Users, label: 'Zona Escolar:', value: 'ZONA 001' },
-                            { icon: MapPin, label: 'Municipio:', value: 'Toluca' },
-                            { icon: Navigation, label: 'Dirección:', value: 'Calle Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000' },
-                            { icon: Phone, label: 'Teléfono:', value: '722 123 4567' },
-                            { icon: Mail, label: 'Correo:', value: 'sec15@edugem.gob.mx' },
-                          ].map((item, idx) => (
-                            <div key={idx} className="flex gap-4">
-                               <div className="h-8 w-8 rounded-xl bg-slate-50 shrink-0 flex items-center justify-center text-slate-300"><item.icon className="h-4 w-4" /></div>
-                               <div className="min-w-0"><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{item.label}</p><p className="text-[11px] font-bold text-slate-700 leading-tight mt-1">{item.value}</p></div>
-                            </div>
-                          ))}
-                       </div>
-                       <div className="relative aspect-video rounded-[2rem] overflow-hidden border-4 border-white shadow-2xl shadow-primary/10">
-                          <Image 
-                            src="https://picsum.photos/seed/tech15/600/400" 
-                            alt="Foto Escuela" 
-                            fill 
-                            className="object-cover"
-                            data-ai-hint="technical school"
-                          />
+                          <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                             {[
+                               { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-primary/5 text-primary border-primary/10' },
+                               { label: 'Directores / Responsables', value: '856', icon: Users, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+                               { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-blue-50 text-blue-600 border-blue-100' },
+                               { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-amber-50 text-amber-600 border-amber-100' },
+                             ].map((stat, idx) => (
+                               <Card key={idx} className={cn("p-5 rounded-[2rem] border shadow-sm transition-all hover:shadow-xl hover:translate-y-[-4px]", stat.color)}>
+                                  <div className="flex flex-col items-center text-center gap-3">
+                                     <div className="h-10 w-10 rounded-xl bg-white/80 flex items-center justify-center shadow-inner"><stat.icon className="h-5 w-5" /></div>
+                                     <div className="space-y-0.5">
+                                        <h4 className="text-2xl font-black leading-none">{stat.value}</h4>
+                                        <p className="text-[8px] font-bold uppercase tracking-widest opacity-60 leading-tight">{stat.label}</p>
+                                     </div>
+                                  </div>
+                               </Card>
+                             ))}
+                          </div>
                        </div>
                     </div>
-                 </div>
 
-                 <div className="grid grid-cols-3 gap-4 mt-8 relative z-10 pt-8 border-t border-slate-50">
-                    <Button variant="outline" className="h-12 rounded-xl border-primary/20 text-primary font-black text-[10px] gap-3 uppercase hover:bg-primary/5 shadow-md"><MapPin className="h-4 w-4" /> Ver en mapa</Button>
-                    <Button variant="outline" className="h-12 rounded-xl border-primary/20 text-primary font-black text-[10px] gap-3 uppercase hover:bg-primary/5 shadow-md"><Download className="h-4 w-4" /> Descargar ficha</Button>
-                    <Button className="h-12 rounded-xl bg-primary text-white font-black text-[10px] gap-3 uppercase shadow-xl"><Info className="h-4 w-4" /> Ver más información</Button>
+                    {/* Columna Derecha: Formulario y Ficha */}
+                    <div className="space-y-8">
+                       <Card className="p-8 rounded-[3rem] bg-white border-none shadow-2xl relative overflow-hidden">
+                          <div className="flex items-center gap-4 mb-8 border-b border-slate-50 pb-4 relative z-10">
+                             <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><PlusCircle className="h-6 w-6" /></div>
+                             <div>
+                                <CardTitle className="text-lg font-black text-slate-800 uppercase">Registrar / Editar Escuela</CardTitle>
+                                <CardDescription className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Ingresa la información oficial del plantel.</CardDescription>
+                             </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">CCT *</Label><div className="relative"><Input placeholder="Ej. 15DES0001R" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-black pl-10 uppercase" /><School className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Nombre de la escuela *</Label><div className="relative"><Input placeholder="Ej. Técnica No. 15" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-black pl-10 uppercase" /><Building2 className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Zona *</Label><Select><SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue placeholder="Seleccionar..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="001" className="text-xs font-bold">001</SelectItem></SelectContent></Select></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Municipio *</Label><Select><SelectTrigger className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase"><SelectValue placeholder="Seleccionar..." /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="Toluca" className="text-xs font-bold">TOLUCA</SelectItem></SelectContent></Select></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Teléfono</Label><div className="relative"><Input placeholder="722 123 4567" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Phone className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Correo electrónico</Label><div className="relative"><Input placeholder="escuela@edugem.gob.mx" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Latitud *</Label><div className="relative"><Input placeholder="19.6289" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><MapPin className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                             <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Longitud *</Label><div className="relative"><Input placeholder="-99.3128" className="h-11 bg-slate-50 border-none rounded-xl text-xs font-bold pl-10" /><Navigation className="absolute left-3 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mt-10 relative z-10">
+                             <Button onClick={handleSave} className="h-12 rounded-2xl bg-primary text-white font-black text-[10px] uppercase shadow-xl hover:scale-[1.02] active:scale-95 transition-all">Guardar escuela</Button>
+                             <Button variant="outline" className="h-12 rounded-2xl border-slate-200 text-slate-500 font-black text-[10px] uppercase gap-2 hover:bg-slate-50 transition-all"><RotateCcw className="h-4 w-4" /> Limpiar</Button>
+                          </div>
+                       </Card>
+
+                       <Card className="rounded-[3rem] bg-white border-none shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500">
+                          <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
+                             <div className="flex items-center gap-3"><School className="h-5 w-5 text-primary" /><h4 className="text-[11px] font-black uppercase text-slate-700">Datos de la escuela</h4></div>
+                             <Badge className="bg-emerald-500 text-white font-black text-[8px] px-3 h-5 rounded-full uppercase border-none">En línea</Badge>
+                          </div>
+                          <div className="p-6 space-y-6">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="relative aspect-video rounded-2xl overflow-hidden border shadow-sm">
+                                   <Image src="https://picsum.photos/seed/school-card-v1/600/400" alt="Foto Escuela" fill className="object-cover" />
+                                </div>
+                                <div className="space-y-3">
+                                   {[
+                                     { label: 'CCT:', value: '15DES0001R' },
+                                     { label: 'Nombre:', value: 'Escuela Secundaria Técnica No. 15' },
+                                     { label: 'Zona:', value: '001' },
+                                     { label: 'Municipio:', value: 'Toluca' },
+                                     { label: 'Dirección:', value: 'Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000' },
+                                   ].map((item, idx) => (
+                                     <div key={idx} className="flex gap-2">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase w-16 shrink-0 pt-0.5">{item.label}</span>
+                                        <span className="text-[10px] font-bold text-slate-700 leading-tight">{item.value}</span>
+                                     </div>
+                                   ))}
+                                </div>
+                             </div>
+                             <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+                                <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-slate-300" /><span className="text-[10px] font-bold text-slate-600">722 123 4567</span></div>
+                                <div className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-slate-600 truncate lowercase">esc15@edugem.gob.mx</span></div>
+                             </div>
+                             <div className="grid grid-cols-2 gap-4 pt-6">
+                                <Button variant="outline" className="h-10 rounded-xl border-primary/20 text-primary font-black text-[9px] uppercase gap-2 hover:bg-primary/5 shadow-md"><Map className="h-4 w-4" /> Ver en mapa</Button>
+                                <Button className="h-10 rounded-xl bg-primary text-white font-black text-[9px] uppercase gap-2 shadow-xl shadow-primary/20"><FileText className="h-4 w-4" /> Ver más información</Button>
+                             </div>
+                          </div>
+                       </Card>
+                    </div>
                  </div>
-              </Card>
+              </ScrollArea>
            </div>
         </div>
       ) : (
@@ -926,7 +925,7 @@ export default function ProgramsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
-                ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
+                ) : filteredRecords.length > 0 ? filteredRecords.filter(r => r.name === activeTab).map((rec, idx) => (
                   <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                     <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
                     <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
