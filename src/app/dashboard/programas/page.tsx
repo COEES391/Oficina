@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -12,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Progress } from "@/components/ui/progress"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
@@ -881,7 +881,6 @@ export default function ProgramsPage() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
-             {/* Lado Izquierdo: Mapa + KPI */}
              <div className="lg:col-span-7 flex flex-col gap-8 h-full">
                 <Card className="flex-1 rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col min-h-[500px]">
                    <div className="px-8 py-4 border-b flex justify-between items-center bg-white shrink-0">
@@ -896,7 +895,6 @@ export default function ProgramsPage() {
                    </div>
                    <div className="flex-1 relative z-0">
                       <Image src="https://picsum.photos/seed/school-map-final-v2/1200/800" alt="Mapa" fill className="object-cover brightness-105" />
-                      {/* Pins del Mapa */}
                       <div className="absolute top-[25%] left-[30%] h-8 w-8 text-indigo-600 drop-shadow-2xl animate-pulse"><MapPin className="h-full w-full" /></div>
                       <div className="absolute top-[60%] left-[20%] h-8 w-8 text-rose-600 drop-shadow-2xl"><MapPin className="h-full w-full" /></div>
                       <div className="absolute top-[40%] left-[45%] z-20">
@@ -909,17 +907,6 @@ export default function ProgramsPage() {
                             <h4 className="text-[11px] font-black uppercase text-slate-800 leading-tight">Escuela Secundaria Técnica No. 15</h4>
                          </div>
                       </div>
-                      <div className="absolute top-[35%] left-[70%] h-8 w-8 text-blue-600 drop-shadow-2xl"><MapPin className="h-full w-full" /></div>
-                      <div className="absolute top-[50%] left-[85%] h-8 w-8 text-blue-600 drop-shadow-2xl"><MapPin className="h-full w-full" /></div>
-                      <div className="absolute top-[75%] left-[55%] h-8 w-8 text-rose-600 drop-shadow-2xl"><MapPin className="h-full w-full" /></div>
-
-                      {/* Toluca Label */}
-                      <div className="absolute top-[48%] left-[42%] text-center">
-                         <h3 className="text-xl font-black text-slate-800 drop-shadow-lg leading-none uppercase">Toluca de Lerdo</h3>
-                         <div className="h-20 w-20 rounded-full border-4 border-blue-400/30 bg-blue-400/5 mx-auto mt-2 flex items-center justify-center animate-ping"><div className="h-3 w-3 bg-blue-500 rounded-full shadow-2xl" /></div>
-                      </div>
-
-                      {/* Legend Inferior */}
                       <div className="absolute bottom-6 left-6 right-6 z-30 bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-white/50 flex justify-between items-center px-10">
                         <div className="flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-emerald-500" /><span className="text-[10px] font-black uppercase text-slate-600">En línea</span></div>
                         <div className="flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-blue-500" /><span className="text-[10px] font-black uppercase text-slate-600">En movimiento</span></div>
@@ -929,7 +916,6 @@ export default function ProgramsPage() {
                    </div>
                 </Card>
 
-                {/* KPI Resumen General */}
                 <div className="space-y-4 shrink-0 pb-6">
                    <h3 className="text-sm font-black uppercase text-primary tracking-widest pl-4">Resumen general</h3>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -943,7 +929,6 @@ export default function ProgramsPage() {
                            <div className="flex flex-col items-center text-center gap-3">
                               <div className={cn("h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center shadow-inner", stat.color)}><stat.icon className="h-6 w-6" /></div>
                               <div className="space-y-0.5"><h4 className="text-2xl font-black text-slate-800 leading-none">{stat.value}</h4><p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 leading-tight">{stat.label}</p></div>
-                              <div className="flex items-center gap-2 mt-2"><div className={cn("h-1.5 w-1.5 rounded-full", stat.dot)} /><span className="text-[7px] font-black uppercase text-slate-400">{stat.dot.includes('emerald') ? 'En línea' : stat.dot.includes('blue') ? 'En mov.' : stat.dot.includes('rose') ? 'Sin señal' : 'Desc.'}</span></div>
                            </div>
                         </Card>
                       ))}
@@ -951,7 +936,6 @@ export default function ProgramsPage() {
                 </div>
              </div>
 
-             {/* Lado Derecho: Registro + Detalle */}
              <div className="lg:col-span-5 space-y-8 h-full flex flex-col overflow-y-auto custom-scrollbar pr-1">
                 <Card className="p-8 rounded-[3.5rem] bg-white border-none shadow-2xl shrink-0">
                    <div className="flex items-center gap-4 mb-8">
@@ -964,34 +948,10 @@ export default function ProgramsPage() {
                    <div className="space-y-6">
                       <div className="grid grid-cols-2 gap-6">
                          <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">CCT *</Label>
-                            <div className="relative group"><Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold uppercase" /><Building2 className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-all" /></div>
+                            <div className="relative group"><Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold uppercase" /><Building2 className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
                          </div>
                          <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Nombre de la escuela *</Label>
                             <div className="relative group"><Input placeholder="Ej. Escuela Secundaria Técnica No. 15" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold uppercase" /><FileText className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
-                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Zona *</Label>
-                            <Select defaultValue="none"><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs"><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><SelectValue placeholder="Selecciona una zona" /></div></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="none" className="text-xs">Selecciona una zona</SelectItem></SelectContent></Select>
-                         </div>
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Municipio *</Label>
-                            <Select defaultValue="none"><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs"><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><SelectValue placeholder="Selecciona un municipio" /></div></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="none" className="text-xs">Selecciona un municipio</SelectItem></SelectContent></Select>
-                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Teléfono</Label>
-                            <div className="relative group"><Input placeholder="Ej. 722 123 4567" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold" /><Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
-                         </div>
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Correo electrónico</Label>
-                            <div className="relative group"><Input placeholder="Ej. escuela@edugem.gob.mx" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold lowercase" /><Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
-                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Latitud *</Label>
-                            <div className="relative group"><Input placeholder="Ej. 19.6289" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold" /><Navigation className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
-                         </div>
-                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-primary pl-1 uppercase">Longitud *</Label>
-                            <div className="relative group"><Input placeholder="Ej. -99.3128" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner pl-10 font-bold" /><Navigation className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div>
                          </div>
                       </div>
                       <div className="flex gap-4 pt-4">
@@ -1001,7 +961,6 @@ export default function ProgramsPage() {
                    </div>
                 </Card>
 
-                {/* Detalle Escuela Estilo Imagen */}
                 <Card className="p-8 rounded-[3.5rem] bg-white border-none shadow-2xl flex-1 flex flex-col min-h-[400px]">
                    <div className="flex items-center justify-between mb-8 shrink-0">
                       <div className="flex items-center gap-4">
@@ -1018,9 +977,6 @@ export default function ProgramsPage() {
                          <div className="grid grid-cols-1 gap-y-4">
                             <div className="flex gap-3"><span className="text-[10px] font-black text-slate-400 uppercase w-20">CCT:</span><span className="text-[11px] font-black text-primary font-mono tracking-widest">15DES0001R</span></div>
                             <div className="flex gap-3"><span className="text-[10px] font-black text-slate-400 uppercase w-20">Nombre:</span><span className="text-[11px] font-black text-slate-700 uppercase leading-tight">Escuela Secundaria Técnica No. 15</span></div>
-                            <div className="flex gap-3"><span className="text-[10px] font-black text-slate-400 uppercase w-20">Zona:</span><span className="text-[11px] font-black text-slate-700 uppercase">001</span></div>
-                            <div className="flex gap-3"><span className="text-[10px] font-black text-slate-400 uppercase w-20">Municipio:</span><span className="text-[11px] font-black text-slate-700 uppercase">Toluca</span></div>
-                            <div className="flex gap-3"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Dirección:</span><span className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000</span></div>
                             <div className="pt-4 border-t border-blue-100 flex flex-col gap-3">
                                <div className="flex items-center gap-3 text-primary"><Phone className="h-4 w-4" /><span className="text-[11px] font-black">722 123 4567</span></div>
                                <div className="flex items-center gap-3 text-primary"><Mail className="h-4 w-4" /><span className="text-[11px] font-black lowercase">esc15@edugem.gob.mx</span></div>
@@ -1056,18 +1012,27 @@ export default function ProgramsPage() {
                     <TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead>
                     <TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead>
                     <TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Identificación Oficial</TableHead>
+                    {activeTab === 'Biblioteca Digital' && <TableHead className="text-[10px] font-bold text-primary w-[150px] uppercase text-center">Progreso</TableHead>}
                     <TableHead className="text-[10px] font-bold text-primary w-[100px] uppercase text-center">Estatus</TableHead>
                     <TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead>
                   </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
                 ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
                   <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                     <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
                     <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
                     <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell>
+                    {activeTab === 'Biblioteca Digital' && (
+                      <TableCell>
+                        <div className="flex flex-col items-center gap-1.5 px-4">
+                           <div className="flex justify-between w-full"><span className="text-[9px] font-black text-primary">{rec.progress || 0}%</span></div>
+                           <Progress value={rec.progress || 0} className="h-1.5 w-full bg-slate-100" />
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell className="text-center">
                        <Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", 
                          rec.status === 'activo' || rec.status === 'concluido' || rec.status === 'Activa' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
@@ -1082,7 +1047,7 @@ export default function ProgramsPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                )) : (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros oficiales</TableCell></TableRow>)}
+                )) : (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros oficiales</TableCell></TableRow>)}
               </TableBody>
             </Table>
           </div>
@@ -1178,15 +1143,28 @@ export default function ProgramsPage() {
                  </div>
 
                  {activeTab === 'Biblioteca Digital' && (
-                   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8 animate-in slide-in-from-bottom-2">
-                      <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">
-                        {BIBLIOTECA_FASES_LABELS.map((fase) => (
-                          <div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}>
-                            <Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" />
-                            <Label className="text-xs font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer">{fase.label}</Label>
-                          </div>
-                        ))}
+                   <div className="space-y-8 animate-in slide-in-from-bottom-2">
+                      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8">
+                         <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">
+                           {BIBLIOTECA_FASES_LABELS.map((fase) => (
+                             <div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}>
+                               <Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" />
+                               <Label className="text-xs font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer">{fase.label}</Label>
+                             </div>
+                           ))}
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="space-y-2 bg-slate-50 p-6 rounded-[2rem] border border-primary/5 shadow-inner">
+                            <Label className="text-[10px] font-black text-primary uppercase pl-2">Personal Capacitado</Label>
+                            <Input type="number" className="h-12 bg-white border-none rounded-xl font-black text-xl text-center shadow-sm" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} />
+                         </div>
+                         <div className="space-y-2 bg-slate-50 p-6 rounded-[2rem] border border-primary/5 shadow-inner">
+                            <Label className="text-[10px] font-black text-primary uppercase pl-2">Equipos Habilitados</Label>
+                            <Input type="number" className="h-12 bg-white border-none rounded-xl font-black text-xl text-center shadow-sm" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} />
+                         </div>
                       </div>
                    </div>
                  )}
