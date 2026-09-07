@@ -62,7 +62,8 @@ import {
   Settings,
   LayoutDashboard,
   Bell,
-  Printer
+  Printer,
+  FileSpreadsheet
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -79,6 +80,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore'
 import { type ProgramStatus, type BitacoraEntry } from '@/lib/planning-data'
+import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 
 const PROGRAM_RUBROS = [
@@ -578,8 +580,8 @@ export default function ProgramsPage() {
                       <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
                       {showSearchResults && dialogSearchTerm.length > 2 && (
                         <div className="absolute top-12 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 divide-y max-h-40 overflow-auto">
-                           {schoolSearchResults.map(s => (
-                             <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
+                           {schoolSearchResults.map((s, sidx) => (
+                             <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
                                 <span className="text-[10px] font-black uppercase text-slate-700">{s.nombre}</span>
                                 <Badge className="text-[8px] font-mono">{s.cct}</Badge>
                              </div>
@@ -989,11 +991,11 @@ export default function ProgramsPage() {
                  <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
                     <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
                     <div className="relative">
-                      <Input placeholder="INGRESAR CCT..." className="h-14 rounded-2xl bg-white border-primary/20 font-bold text-xl uppercase shadow-lg pl-6" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
+                      <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
                       {showSearchResults && dialogSearchTerm.length > 2 && (
                         <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
-                          {schoolSearchResults.map(s => (
-                            <div key={`${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                          {schoolSearchResults.map((s, sidx) => (
+                            <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
                               <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
