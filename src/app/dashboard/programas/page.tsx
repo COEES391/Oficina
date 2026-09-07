@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -16,34 +16,28 @@ import { cn } from "@/lib/utils"
 import { 
   PlusCircle, 
   Pencil, 
-  Activity,
   Search,
   School,
   Headset,
   CheckCircle2,
-  Users,
   Plus,
-  FileBox,
   Save,
-  Archive,
-  FileText,
-  X,
-  ShieldCheck,
-  UserCheck,
   Trash2,
   ChevronRight,
   Mail,
-  Upload,
-  ImageIcon,
   Loader2,
+  ShieldCheck,
+  UserCheck,
+  AlertCircle,
   MapPin,
   ClipboardCheck,
-  Globe
+  Globe,
+  X
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import { db } from '@/lib/firebase'
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, where, getDocs } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 
 const PROGRAM_RUBROS = [
@@ -68,7 +62,7 @@ const StatusLight = ({ status }: { status: string }) => (
   <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
     <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'activo' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-900/30 grayscale")} />
     <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'suspendida' ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-amber-900/30 grayscale")} />
-    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'inactivo' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" : "bg-emerald-900/30 grayscale")} />
+    <div className={cn("h-2 w-2 rounded-full border border-black/20 mx-auto", status === 'inactivo' ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" : "bg-rose-900/30 grayscale")} />
   </div>
 );
 
@@ -101,9 +95,26 @@ export default function ProgramsPage() {
   })
 
   const initialFormState: ProgramStatus = {
-    name: activeTab, progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], cct: '', schoolName: '', 
-    userName: '', rfc: '', email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
-    latitud: '', longitud: '', observaciones: '', evidencePhotos: [] as string[],
+    name: activeTab, 
+    progress: 0, 
+    status: 'activo', 
+    date: new Date().toISOString().split('T')[0], 
+    cct: '', 
+    schoolName: '', 
+    userName: '', 
+    rfc: '', 
+    email: '', 
+    emails: [''], 
+    zonaEscolar: '', 
+    sector: '', 
+    modalidad: '', 
+    municipio: '', 
+    region: '', 
+    valle: '',
+    latitud: '', 
+    longitud: '', 
+    observaciones: '', 
+    evidencePhotos: [] as string[],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
       fase5: false, fase6: false, fase7: false, fase7_1: false, personalCapacitado: 0, equiposHabilitados: 0
@@ -136,7 +147,14 @@ export default function ProgramsPage() {
       const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
       if (match) {
         setFormData(prev => ({ 
-          ...prev, schoolName: match.nombre, municipio: match.municipio, valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, sector: match.sector, modalidad: match.modalidad 
+          ...prev, 
+          schoolName: match.nombre, 
+          municipio: match.municipio, 
+          valle: match.valle, 
+          region: match.region, 
+          zonaEscolar: match.zonaEscolar, 
+          sector: match.sector, 
+          modalidad: match.modalidad 
         }))
       }
     }
@@ -144,18 +162,19 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); return;
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son requeridos." }); 
+      return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
-      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
-      localidad: (quickAddForm.localidad || '').toUpperCase(),
-      sector: (quickAddForm.sector || '').toUpperCase(),
-      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
-      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+      valle: quickAddForm.valle.toUpperCase(),
+      region: quickAddForm.region.toUpperCase(),
+      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
+      sector: quickAddForm.sector.toUpperCase(),
+      modalidad: quickAddForm.modalidad.toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -178,30 +197,31 @@ export default function ProgramsPage() {
 
     setIsSaving(true);
     
-    // Preparar datos y limpiar nulos/vacíos
-    const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
-    
-    const { id, ...dataToSave } = { 
-      ...formData, 
-      emails: cleanEmails,
-      name: activeTab, 
-      updatedAt: serverTimestamp() 
-    } as any;
-    
-    // Lógica específica por rubro
-    if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
-      const f = formData.bibliotecaFases;
-      const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
-      dataToSave.progress = Math.round((phases.filter(v => v).length / 7) * 100);
-      dataToSave.status = dataToSave.progress === 100 ? 'concluido' : 'activo';
-    }
-
     try {
+      const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
+      
+      const dataToSave = { 
+        ...formData, 
+        emails: cleanEmails,
+        name: activeTab, 
+        updatedAt: serverTimestamp() 
+      } as any;
+      
+      if (dataToSave.id) delete dataToSave.id;
+
+      if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
+        const f = formData.bibliotecaFases;
+        const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
+        dataToSave.progress = Math.round((phases.filter(v => v).length / 7) * 100);
+        dataToSave.status = dataToSave.progress === 100 ? 'concluido' : 'activo';
+      }
+
       if (editingId) {
         await updateDoc(doc(db, 'programs', editingId), dataToSave);
       } else {
         await addDoc(collection(db, 'programs'), dataToSave);
       }
+      
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
