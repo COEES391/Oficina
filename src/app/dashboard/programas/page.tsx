@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
+import Image from 'next/image'
 import { 
   PlusCircle, 
   Pencil, 
@@ -39,7 +40,15 @@ import {
   User,
   RotateCcw,
   ClipboardList,
-  Eye
+  Eye,
+  Map,
+  Navigation,
+  Activity,
+  Clock,
+  Globe,
+  Calendar,
+  Send,
+  History
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -332,7 +341,6 @@ export default function ProgramsPage() {
             </CardHeader>
             <CardContent className="p-8 space-y-6">
                <div className="space-y-4">
-                  {/* SEMÁFORO DE ESTATUS */}
                   <div className="space-y-1">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Estatus de la Cuenta (Semáforo)</Label>
                     <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
@@ -535,6 +543,177 @@ export default function ProgramsPage() {
             </Card>
           </div>
         </div>
+      ) : activeTab === 'Geoposición' ? (
+        <div className="space-y-6 animate-in fade-in duration-700 w-full">
+          {/* Filters Row */}
+          <Card className="p-4 bg-white border-none shadow-xl rounded-[1.5rem]">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Rango de fechas</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-primary" />
+                  <Input className="h-10 pl-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner" value="01/04/2025 - 15/04/2025" readOnly />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Tipo de dispositivo</Label>
+                <Select defaultValue="todos">
+                  <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="todos" className="text-xs font-bold">Todos los Dispositivos</SelectItem>
+                    <SelectItem value="laptop" className="text-xs font-bold">Equipo portátil</SelectItem>
+                    <SelectItem value="mobile" className="text-xs font-bold">Móvil Institucional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400">Estado de Rastreo</Label>
+                <Select defaultValue="todos">
+                  <SelectTrigger className="h-10 font-bold text-xs bg-slate-50 border-none rounded-xl shadow-inner"><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="todos" className="text-xs font-bold">Todos los Estados</SelectItem>
+                    <SelectItem value="online" className="text-xs font-bold">🟢 En línea</SelectItem>
+                    <SelectItem value="movement" className="text-xs font-bold">🔵 En movimiento</SelectItem>
+                    <SelectItem value="offline" className="text-xs font-bold">🔴 Sin señal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="btn-institutional h-10 gap-2 shadow-lg text-[10px] rounded-xl">
+                <RotateCcw className="h-4 w-4" /> ACTUALIZAR MAPA
+              </Button>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Map Area */}
+            <Card className="lg:col-span-7 h-[650px] bg-slate-100 rounded-[3rem] overflow-hidden relative border-none shadow-2xl group ring-1 ring-black/5">
+              {/* Placeholder for map */}
+              <div className="absolute inset-0 bg-slate-200">
+                <Image 
+                  src="https://picsum.photos/seed/map-toluca/1200/800" 
+                  alt="Mapa de Toluca" 
+                  fill 
+                  className="object-cover opacity-90 transition-transform duration-[10s] group-hover:scale-110"
+                  data-ai-hint="city map"
+                />
+                {/* Mock Markers */}
+                <div className="absolute top-[45%] left-[50%] h-12 w-12 bg-emerald-500/20 rounded-full animate-ping" />
+                <div className="absolute top-[45%] left-[50%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-125 transition-transform">
+                   <div className="h-3 w-3 bg-white rounded-full shadow-inner" />
+                </div>
+                
+                {/* Another Marker */}
+                <div className="absolute top-[60%] left-[40%] h-8 w-8 bg-blue-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center cursor-pointer hover:scale-125 transition-all">
+                   <Navigation className="h-3 w-3 text-white fill-current" />
+                </div>
+
+                {/* Legend on Map */}
+                <div className="absolute bottom-8 left-8 bg-white/95 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/50 flex flex-wrap gap-6 animate-in slide-in-from-left-4 duration-700">
+                   <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En línea</span></div>
+                   <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En movimiento</span></div>
+                   <div className="flex items-center gap-2.5"><div className="h-3.5 w-3.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Sin señal</span></div>
+                </div>
+
+                {/* Map Controls */}
+                <div className="absolute top-6 right-6 flex flex-col gap-2">
+                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">+</button>
+                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center font-black text-lg hover:bg-slate-50">-</button>
+                   <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center hover:bg-slate-50 mt-4"><Globe className="h-5 w-5 text-primary" /></button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Side Details and History */}
+            <div className="lg:col-span-5 space-y-6 flex flex-col h-[650px]">
+               {/* Device Info Card */}
+               <Card className="p-8 bg-white border-none shadow-2xl rounded-[3rem] relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-10 opacity-5 -rotate-12"><Navigation className="h-40 w-40" /></div>
+                  <div className="flex justify-between items-start mb-8 relative z-10">
+                     <div className="flex items-center gap-5">
+                        <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner border border-emerald-100"><Navigation className="h-7 w-7" /></div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                             <h3 className="text-2xl font-black text-slate-800 tracking-tighter">COEES-001</h3>
+                             <Badge className="bg-emerald-500 text-white font-black text-[9px] uppercase px-3 h-5 rounded-full border-none shadow-lg">En línea</Badge>
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2"><Activity className="h-3 w-3 text-emerald-400" /> Monitoreo Activo</p>
+                        </div>
+                     </div>
+                     <Button variant="outline" size="sm" className="h-10 px-6 rounded-xl border-primary/20 text-primary font-black uppercase text-[10px] gap-2 hover:bg-primary/5 shadow-sm">
+                       <History className="h-4 w-4" /> Historial
+                     </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-5 pt-6 border-t border-slate-50 relative z-10">
+                     {[
+                       { icon: User, label: 'Responsable:', value: 'Juan Pérez García' },
+                       { icon: Monitor, label: 'Hardware:', value: 'Laptop Institucional' },
+                       { icon: Navigation, label: 'Coordenadas:', value: '19.6258, -99.5917', mono: true },
+                       { icon: Clock, label: 'Sello de Tiempo:', value: '15/04/2025 10:24:36' },
+                       { icon: MapPin, label: 'Ubicación:', value: 'Av. Paseo Tollocan 1234, Toluca' },
+                     ].map((item, idx) => (
+                       <div key={idx} className="flex items-center gap-5 group">
+                          <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:text-primary transition-colors"><item.icon className="h-4.5 w-4.5" /></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                            <p className={cn("text-sm font-bold text-slate-700 truncate", item.mono && "font-mono font-black")}>{item.value}</p>
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+
+                  <Button className="w-full mt-10 h-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white font-black uppercase text-xs gap-4 shadow-[0_15px_40px_rgba(159,34,65,0.3)] group relative z-10">
+                     <Send className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> VER EN GOOGLE MAPS
+                  </Button>
+               </Card>
+
+               {/* Latest Records Table */}
+               <Card className="p-8 bg-white border-none shadow-2xl rounded-[3rem] flex-1 overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between mb-6 border-b border-slate-50 pb-4 shrink-0">
+                     <div className="flex items-center gap-3">
+                        <Clock className="h-6 w-6 text-primary" />
+                        <h4 className="text-xs font-black uppercase text-slate-700 tracking-wider">Registros de Ubicación</h4>
+                     </div>
+                     <Badge variant="outline" className="text-[8px] font-black text-slate-400 border-slate-200">HOY</Badge>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                     <ScrollArea className="h-full">
+                        <Table>
+                           <TableHeader className="bg-slate-50 border-none sticky top-0 z-10">
+                              <TableRow className="h-10 border-none">
+                                 <TableHead className="text-[9px] font-black uppercase pl-4">Timestamp</TableHead>
+                                 <TableHead className="text-[9px] font-black uppercase">Dirección de Referencia</TableHead>
+                                 <TableHead className="text-right text-[9px] font-black uppercase pr-6">Estado</TableHead>
+                              </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                              {[1,2,3,4,5,6,7,8].map((i) => (
+                                <TableRow key={i} className="h-14 border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                                   <TableCell className="text-[10px] font-bold text-slate-400 pl-4">10:2{i} AM</TableCell>
+                                   <TableCell className="text-[10px] font-black text-slate-700 truncate max-w-[150px] uppercase">Av. Tollocan {1234 + i}, Toluca</TableCell>
+                                   <TableCell className="text-right pr-6">
+                                      <Badge className={cn("text-[8px] font-black px-2.5 h-4.5 rounded-full shadow-sm border-none uppercase", i % 3 === 0 ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700")}>
+                                        {i % 3 === 0 ? 'MÓVIL' : 'ONLINE'}
+                                      </Badge>
+                                   </TableCell>
+                                </TableRow>
+                              ))}
+                           </TableBody>
+                        </Table>
+                     </ScrollArea>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-50 flex justify-between items-center shrink-0">
+                     <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Mostrando registros 1-8 de 124</p>
+                     <div className="flex gap-1.5">
+                        <button className="h-7 w-7 rounded-lg bg-primary text-white text-[9px] font-black">1</button>
+                        <button className="h-7 w-7 rounded-lg border border-slate-100 hover:bg-slate-50 text-[9px] font-bold text-slate-400">2</button>
+                        <button className="h-7 w-7 rounded-lg border border-slate-100 hover:bg-slate-50 flex items-center justify-center"><ChevronRight className="h-3 w-3 text-slate-300" /></button>
+                     </div>
+                  </div>
+               </Card>
+            </div>
+          </div>
+        </div>
       ) : (
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
           <div className="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
@@ -560,7 +739,7 @@ export default function ProgramsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
-                ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
+                ) : filteredRecords.length > 0 ? filteredRecords.filter(r => r.name === activeTab).map((rec, idx) => (
                   <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
                     <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
                     <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
