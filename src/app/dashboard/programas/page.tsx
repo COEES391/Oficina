@@ -218,7 +218,7 @@ export default function ProgramsPage() {
         finalData.userName = String(formData.userName || 'S/R');
         finalData.puesto = String(formData.puesto || 'S/R');
         finalData.departamento = String(formData.departamento || 'S/R');
-        finalData.email = fullEmailPreview || formData.email;
+        finalData.email = fullEmailPreview || formData.email || '';
       } 
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
@@ -341,7 +341,7 @@ export default function ProgramsPage() {
                       {showSearchResults && dialogSearchTerm.length > 2 && (
                         <div className="absolute top-12 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 divide-y max-h-40 overflow-auto">
                            {schoolSearchResults.map(s => (
-                             <div key={s.cct} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
+                             <div key={`${s.cct}-${s.turno}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
                                 <span className="text-[10px] font-black uppercase text-slate-700">{s.nombre}</span>
                                 <Badge className="text-[8px] font-mono">{s.cct}</Badge>
                              </div>
@@ -574,8 +574,8 @@ export default function ProgramsPage() {
                       {showSearchResults && dialogSearchTerm.length > 2 && (
                         <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
                           {schoolSearchResults.map(s => (
-                            <div key={s.cct} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
-                              <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div>
+                            <div key={`${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                              <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
                               <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
                             </div>
                           ))}
