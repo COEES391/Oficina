@@ -3,8 +3,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Esta configuración permite que el sistema funcione en cualquier hosting
-// una vez que el proyecto de Firebase esté vinculado.
+// Configuración centralizada para portabilidad total
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB...",
   authDomain: "planeacin-16143396.firebaseapp.com",
@@ -14,6 +13,7 @@ const firebaseConfig = {
   appId: "1:123456789:web:abcdef"
 };
 
+// Inicialización de instancia única
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);

@@ -38,7 +38,19 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
 import { db } from '@/lib/firebase'
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, where, getDocs, Timestamp } from 'firebase/firestore'
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  serverTimestamp, 
+  where, 
+  getDocs 
+} from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 
 const PROGRAM_RUBROS = [
@@ -96,7 +108,7 @@ export default function ProgramsPage() {
   })
 
   const initialFormState: ProgramStatus = {
-    name: activeTab, 
+    name: '', 
     progress: 0, 
     status: 'activo', 
     date: new Date().toISOString().split('T')[0], 
@@ -115,7 +127,7 @@ export default function ProgramsPage() {
     latitud: '', 
     longitud: '', 
     observaciones: '', 
-    evidencePhotos: [] as string[],
+    evidencePhotos: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
       fase5: false, fase6: false, fase7: false, fase7_1: false, personalCapacitado: 0, equiposHabilitados: 0
@@ -194,8 +206,8 @@ export default function ProgramsPage() {
     if (!formData.cct) {
       toast({ 
         variant: "destructive", 
-        title: "Selección de Plantel Requerida", 
-        description: "Debe usar el buscador superior para identificar un CCT antes de sincronizar en la nube."
+        title: "Identificación Requerida", 
+        description: "Debe buscar y seleccionar un CCT en el campo superior antes de sincronizar."
       });
       return;
     }
@@ -203,57 +215,60 @@ export default function ProgramsPage() {
     setIsSaving(true);
     
     try {
-      const cleanEmails = (formData.emails || []).filter(e => e && e.trim() !== '');
-      
-      // Función de limpieza profunda para evitar errores de Firestore (undefined no está permitido)
-      const deepClean = (obj: any): any => {
-        if (Array.isArray(obj)) return obj.map(deepClean);
-        if (obj !== null && typeof obj === 'object' && !(obj instanceof Timestamp)) {
-          const cleaned: any = {};
-          Object.keys(obj).forEach(key => {
-            const val = obj[key];
-            if (val !== undefined) cleaned[key] = deepClean(val);
-            else cleaned[key] = null;
-          });
-          return cleaned;
-        }
-        return obj;
+      // 1. Construir objeto base limpio
+      const finalData: any = {
+        name: activeTab,
+        cct: formData.cct,
+        schoolName: formData.schoolName || '',
+        municipio: formData.municipio || '',
+        valle: formData.valle || '',
+        region: formData.region || '',
+        zonaEscolar: formData.zonaEscolar || '',
+        sector: formData.sector || '',
+        modalidad: formData.modalidad || '',
+        status: formData.status || 'activo',
+        date: formData.date || new Date().toISOString().split('T')[0],
+        observaciones: formData.observaciones || '',
+        updatedAt: serverTimestamp()
       };
 
-      const dataToSave = deepClean({ 
-        ...formData, 
-        emails: cleanEmails,
-        name: activeTab, 
-        updatedAt: serverTimestamp() 
-      });
-      
-      // Eliminar el ID para que no se guarde como campo interno redundante
-      if (dataToSave.id) delete dataToSave.id;
-
-      // Lógica específica para Biblioteca Digital
-      if (activeTab === 'Biblioteca Digital' && formData.bibliotecaFases) {
-        const f = formData.bibliotecaFases;
+      // 2. Añadir campos específicos por pestaña
+      if (activeTab === 'Cuentas Institucionales') {
+        finalData.userName = formData.userName || '';
+        finalData.rfc = formData.rfc || '';
+        finalData.emails = (formData.emails || []).filter(e => e && e.trim() !== '');
+        // El Verificador usa el primer email como principal
+        finalData.email = finalData.emails[0] || '';
+      } 
+      else if (activeTab === 'Biblioteca Digital') {
+        finalData.bibliotecaFases = formData.bibliotecaFases || initialFormState.bibliotecaFases;
+        const f = finalData.bibliotecaFases;
         const phases = [f.fase1, f.fase2, f.fase3, f.fase4, f.fase5, f.fase6, f.fase7];
-        dataToSave.progress = Math.round((phases.filter(v => v).length / 7) * 100);
-        dataToSave.status = dataToSave.progress === 100 ? 'concluido' : 'activo';
+        finalData.progress = Math.round((phases.filter(v => v).length / 7) * 100);
+        if (finalData.progress === 100) finalData.status = 'concluido';
+      } 
+      else if (activeTab === 'Geoposición') {
+        finalData.latitud = formData.latitud || '';
+        finalData.longitud = formData.longitud || '';
       }
 
+      // 3. Ejecutar operación en Firestore
       if (editingId) {
-        await updateDoc(doc(db, 'programs', editingId), dataToSave);
+        await updateDoc(doc(db, 'programs', editingId), finalData);
       } else {
-        await addDoc(collection(db, 'programs'), dataToSave);
+        await addDoc(collection(db, 'programs'), finalData);
       }
       
+      toast({ title: "Sincronización Exitosa", description: "Los datos oficiales se han guardado en la nube." });
       setIsDialogOpen(false); 
       setEditingId(null); 
       setFormData(initialFormState);
-      toast({ title: "Sincronizado", description: `El registro de ${activeTab} se ha guardado exitosamente en la nube.` });
     } catch (e: any) {
-      console.error("Save error:", e);
+      console.error("Critical Save Error:", e);
       toast({ 
         variant: "destructive", 
-        title: "Error de sincronización", 
-        description: e.message || "Hubo un problema al conectar con el servidor. Verifique su conexión." 
+        title: "Fallo en Sincronización", 
+        description: "Error técnico: " + (e.message || "Conexión rechazada")
       });
     } finally {
       setIsSaving(false);
@@ -261,10 +276,10 @@ export default function ProgramsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este registro oficial?")) return;
+    if (!confirm("¿Eliminar este registro oficial de la nube?")) return;
     try {
       await deleteDoc(doc(db, 'programs', id));
-      toast({ title: "Removido" });
+      toast({ title: "Registro Removido" });
     } catch (e) {
       toast({ variant: "destructive", title: "Error al borrar" });
     }
@@ -288,9 +303,9 @@ export default function ProgramsPage() {
       );
 
       setVerifiedAccount(found);
-      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada", description: "Verifique el RFC o correo ingresado." });
+      if (!found) toast({ variant: "destructive", title: "Cuenta no encontrada", description: "Verifique el RFC o CCT." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de red", description: "No se pudo consultar la base de datos." });
+      toast({ variant: "destructive", title: "Error de consulta" });
     } finally {
       setIsVerifying(false);
     }
@@ -598,7 +613,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white">
