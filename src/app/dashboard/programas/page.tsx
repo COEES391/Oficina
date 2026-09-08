@@ -188,13 +188,13 @@ export default function ProgramsPage() {
 
   const initialFormState: ProgramStatus = {
     name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
-    cct: '', schoolName: '', userName: '', puesto: '', departamento: '',
+    cct: '', schoolName: '', userName: '', rfc: '', puesto: '', departamento: '',
     email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     latitud: '', longitud: '', observaciones: '', evidencePhotos: [],
     asistentes: [],
     bibliotecaFases: {
-      fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
-      fase5: false, fase5_guia: false, fase6: false, fase7: false, fase8: false, fase9: false,
+      fase1: false, fase2: false, fase3: false, fase4: false, fase5: false, fase5_guia: false, 
+      fase6: false, fase7: false, fase8: false, fase9: false,
       personalCapacitado: 0, equiposHabilitados: 0
     }
   }
@@ -280,14 +280,26 @@ export default function ProgramsPage() {
 
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
+    const libCcts = new Set(libRecs.map(r => r.cct));
+    
+    // Visitas: registros únicos de bitácora para planteles en el programa
+    const visitas = new Set(bitacoraRecords.filter(b => libCcts.has(b.cct)).map(b => b.cct + b.fecha)).size;
+    
+    // Atenciones: total de folios de bitácora para estos planteles
+    const atenciones = bitacoraRecords.filter(b => libCcts.has(b.cct)).length;
+    
+    // Evidencias: suma de fotos de evidencias cargadas
+    const evidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
+
     return {
       totalCct: libRecs.length,
       concluidos: libRecs.filter(r => r.progress === 100).length,
-      enProceso: libRecs.filter(r => r.progress > 0 && r.progress < 100).length,
       personalTotal: libRecs.reduce((acc, r) => acc + (r.asistentes?.length || 0), 0),
-      equiposTotal: libRecs.reduce((acc, r) => acc + (r.bibliotecaFases?.equiposHabilitados || 0), 0)
+      visitasTotal: visitas,
+      atencionesTotal: atenciones,
+      evidenciasTotal: evidencias
     };
-  }, [records]);
+  }, [records, bitacoraRecords]);
 
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
@@ -510,9 +522,9 @@ export default function ProgramsPage() {
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
                 { label: 'CCT Registrados', value: statsBiblioteca.totalCct.toString(), sub: 'Planteles', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Visitas Totales', value: '128', sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { label: 'Atenciones', value: '96', sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
-                { label: 'Evidencias', value: '243', sub: 'Fotos / Docs', icon: Camera, color: 'text-orange-500', bg: 'bg-orange-50' },
+                { label: 'Visitas Totales', value: statsBiblioteca.visitasTotal.toString(), sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { label: 'Atenciones', value: statsBiblioteca.atencionesTotal.toString(), sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
+                { label: 'Evidencias', value: statsBiblioteca.evidenciasTotal.toString(), sub: 'Fotos / Docs', icon: Camera, color: 'text-orange-500', bg: 'bg-orange-50' },
                 { label: 'Personal Capacitado', value: statsBiblioteca.personalTotal.toString(), sub: 'Sincronizado', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
                 { label: 'Proyectos Concluidos', value: statsBiblioteca.concluidos.toString(), sub: 'Meta 2026', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50' },
               ].map((stat, idx) => (
@@ -685,9 +697,9 @@ export default function ProgramsPage() {
                         <TableHead className="text-[10px] font-black uppercase text-primary">Folio</TableHead>
                         <TableHead className="text-[10px] font-black uppercase text-primary">Fecha</TableHead>
                         <TableHead className="text-[10px] font-black uppercase text-primary">Plantel / CCT</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-primary min-w-[200px]">Acciones Técnicas</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase text-primary text-center">Analista</TableHead>
-                        <TableHead className="text-right pr-10 text-[10px] font-black uppercase">Docs</TableHead>
+                        <TableHead className="text-[10px) font-black uppercase text-primary min-w-[200px]">Acciones Técnicas</TableHead>
+                        <TableHead className="text-[10px) font-black uppercase text-primary text-center">Analista</TableHead>
+                        <TableHead className="text-right pr-10 text-[10px) font-black uppercase">Docs</TableHead>
                         <TableHead className="w-16"></TableHead>
                      </TableRow>
                   </TableHeader>
@@ -789,11 +801,11 @@ export default function ProgramsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Usuario (sin dominio) *</Label>
+                      <Label className="text-[10px) font-black text-slate-400 pl-1 uppercase">Usuario (sin dominio) *</Label>
                       <Input placeholder="EJ. MARIA.LOPEZ" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio *</Label>
+                      <Label className="text-[10px) font-black text-slate-400 pl-1 uppercase">Dominio *</Label>
                       <Select value={domainPart} onValueChange={setDomainPart}>
                         <SelectTrigger className="h-11 rounded-xl border-slate-200 font-bold"><SelectValue /></SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -844,10 +856,10 @@ export default function ProgramsPage() {
                  <Table>
                    <TableHeader className="bg-slate-50 border-b">
                      <TableRow className="h-10">
-                        <TableHead className="pl-8 text-[9px] font-black uppercase">Fecha de registro</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase">Correo institucional</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase text-center">Estado</TableHead>
-                        <TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead>
+                        <TableHead className="pl-8 text-[9px) font-black uppercase">Fecha de registro</TableHead>
+                        <TableHead className="text-[9px) font-black uppercase">Correo institucional</TableHead>
+                        <TableHead className="text-[9px) font-black uppercase text-center">Estado</TableHead>
+                        <TableHead className="text-right pr-10 text-[9px) font-black uppercase">Acciones</TableHead>
                      </TableRow>
                    </TableHeader>
                    <TableBody>
@@ -874,430 +886,89 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Geoposición' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700 w-full min-h-[700px]">
-          {/* Mapa Interactiva (Izquierda) */}
           <div className="lg:col-span-7 flex flex-col gap-4 h-full">
-            <Card className="flex-1 rounded-[2rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative group">
+            <Card className="flex-1 rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative group">
               <div className="absolute top-4 left-4 z-20 flex gap-2">
                  <button className="px-6 h-9 bg-white rounded-xl shadow-lg border-2 border-primary/10 text-[10px] font-black uppercase text-primary">Mapa</button>
                  <button className="px-6 h-9 bg-white/80 hover:bg-white rounded-xl shadow-lg text-[10px] font-black uppercase text-slate-400 transition-all">Satélite</button>
               </div>
-
-              {/* Simulación de Mapa */}
               <div className="absolute inset-0 z-0">
-                <Image 
-                   src="https://picsum.photos/seed/geoloc-edomex/1200/900" 
-                   alt="Mapa Geoposición" 
-                   fill 
-                   className="object-cover brightness-95 grayscale-[0.2]"
-                />
-                
-                {/* Marcadores Simulados */}
-                <div className="absolute top-[40%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
-                   <div className="h-2 w-2 bg-white rounded-full" />
-                </div>
-                
-                {/* Tooltip del Dispositivo */}
+                <Image src="https://picsum.photos/seed/geoloc-edomex/1200/900" alt="Mapa Geoposición" fill className="object-cover brightness-95 grayscale-[0.2]" />
+                <div className="absolute top-[40%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
                 <div className="absolute top-[32%] left-[48%] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white z-30 animate-in fade-in zoom-in duration-500 min-w-[220px]">
-                   <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-black text-primary uppercase leading-none">Dispositivo: COEES-001</span>
-                      <ChevronRight className="h-4 w-4 text-primary" />
-                   </div>
-                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">Última ubicación: 15/04/2025 10:24</p>
+                   <div className="flex items-center justify-between gap-2 mb-2"><span className="text-[10px] font-black text-primary uppercase leading-none">Dispositivo: COEES-001</span><ChevronRight className="h-4 w-4 text-primary" /></div>
+                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">Última ubicación: {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
                    <div className="absolute bottom-[-10px] left-4 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[10px] border-t-white/90" />
                 </div>
-
-                <div className="absolute top-[55%] left-[30%] h-8 w-8 bg-rose-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
-                <div className="absolute top-[20%] left-[60%] h-8 w-8 bg-slate-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
-                <div className="absolute top-[70%] left-[50%] h-8 w-8 bg-blue-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
               </div>
-
-              {/* Botones de Control del Mapa */}
-              <div className="absolute bottom-24 right-4 z-20 flex flex-col gap-2">
-                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 font-bold hover:bg-slate-50 transition-all text-xl">+</button>
-                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 font-bold hover:bg-slate-50 transition-all text-xl">-</button>
-                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-primary mt-2"><Navigation className="h-5 w-5" /></button>
-              </div>
-
-              {/* Leyenda de Mapa */}
               <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl p-4 rounded-[2rem] shadow-2xl border border-white/50 z-20 flex flex-wrap items-center justify-between gap-4">
                  <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[9px] font-black uppercase text-slate-600">En línea</span></div>
                     <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-600" /><span className="text-[9px] font-black uppercase text-slate-600">En movimiento</span></div>
-                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-[9px] font-black uppercase text-slate-600">Sin señal</span></div>
-                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-slate-500" /><span className="text-[9px] font-black uppercase text-slate-600">Desconectado</span></div>
                  </div>
               </div>
             </Card>
           </div>
-
-          {/* Registro y Tabla (Derecha) */}
           <div className="lg:col-span-5 flex flex-col gap-6 h-full overflow-hidden">
-             {/* Formulario de Registro */}
              <Card className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden shrink-0">
-                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50">
-                   <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-5 w-5" /></div>
-                   <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Registrar coordenadas de ubicación</h3>
-                </div>
+                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50"><div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-5 w-5" /></div><h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Registrar coordenadas</h3></div>
                 <div className="p-8 space-y-6">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ingresa el CCT y las coordenadas para registrar la ubicación de la escuela.</p>
-                   
                    <div className="space-y-4">
-                      <div className="space-y-1 relative">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label>
-                        <div className="relative group">
-                           <Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-mono font-black pl-10 text-primary uppercase focus:bg-white transition-all" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
-                           <School className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
-                        </div>
-                      </div>
-
+                      <div className="space-y-1 relative"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label><Input placeholder="ESCRIBIR CCT..." className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-mono font-black pl-10 text-primary uppercase" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} /></div>
                       <div className="grid grid-cols-2 gap-4">
-                         <div className="space-y-1">
-                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Latitud *</Label>
-                            <div className="relative group">
-                               <Input placeholder="Ej. 19.6289" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-10 shadow-inner" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
-                               <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
-                            </div>
-                         </div>
-                         <div className="space-y-1">
-                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Longitud *</Label>
-                            <div className="relative group">
-                               <Input placeholder="Ej. -99.3128" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-10 shadow-inner" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
-                               <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
-                            </div>
-                         </div>
+                         <div className="space-y-1"><Label className="text-[10px) font-black text-slate-400 uppercase pl-1">Latitud *</Label><Input placeholder="EJ. 19.6289" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-4 shadow-inner" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                         <div className="space-y-1"><Label className="text-[10px) font-black text-slate-400 uppercase pl-1">Longitud *</Label><Input placeholder="EJ. -99.3128" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-4 shadow-inner" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                       </div>
                    </div>
-
-                   <div className="flex gap-4">
-                      <Button onClick={handleSave} disabled={isSaving} className="flex-1 btn-institutional h-12 rounded-xl text-[11px] gap-2 shadow-xl">
-                        <Save className="h-5 w-5" /> GUARDAR UBICACIÓN
-                      </Button>
-                      <Button variant="outline" onClick={resetForm} className="h-12 px-8 rounded-xl border-slate-200 text-slate-500 font-black uppercase text-[11px] gap-2 hover:bg-slate-50">
-                        <RotateCcw className="h-4 w-4" /> LIMPIAR
-                      </Button>
-                   </div>
-
-                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
-                      <div className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5"><Info className="h-3.5 w-3.5" /></div>
-                      <div className="space-y-1">
-                         <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Información</p>
-                         <p className="text-[9px] font-bold text-blue-700/70 uppercase leading-tight">Asegúrese de ingresar el CCT y las coordenadas en formato decimal (latitud y longitud) para registrar correctamente la ubicación de la escuela.</p>
-                      </div>
-                   </div>
+                   <div className="flex gap-4"><Button onClick={handleSave} disabled={isSaving} className="flex-1 btn-institutional h-12 rounded-xl text-[11px] gap-2 shadow-xl">GUARDAR UBICACIÓN</Button></div>
                 </div>
              </Card>
-
-             {/* Tabla de Ubicaciones */}
              <Card className="flex-1 rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden flex flex-col min-h-0">
-                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50">
-                   <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-inner"><ClipboardList className="h-5 w-5" /></div>
-                   <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Últimas ubicaciones registradas</h3>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                   <ScrollArea className="h-full">
-                      <Table>
-                        <TableHeader className="bg-white sticky top-0 z-10 border-b">
-                           <TableRow className="h-10">
-                              <TableHead className="pl-8 text-[8px] font-black uppercase">Fecha y hora</TableHead>
-                              <TableHead className="text-[8px] font-black uppercase w-20">CCT</TableHead>
-                              <TableHead className="text-[8px) font-black uppercase text-center">Latitud</TableHead>
-                              <TableHead className="text-[8px) font-black uppercase text-center">Longitud</TableHead>
-                              <TableHead className="text-center text-[8px) font-black uppercase">Estado</TableHead>
-                              <TableHead className="text-right pr-10 text-[8px) font-black uppercase w-24">Acciones</TableHead>
-                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                           {records.filter(r => r.name === 'Geoposición').map((rec) => (
-                             <TableRow key={rec.id} className="h-14 border-b border-slate-50 hover:bg-slate-50 group">
-                                <TableCell className="pl-8 text-[9px] font-bold text-slate-400">{rec.date}</TableCell>
-                                <TableCell className="font-mono font-black text-[10px] text-primary">{rec.cct}</TableCell>
-                                <TableCell className="text-center text-[9px] font-bold text-slate-600">{rec.latitud}</TableCell>
-                                <TableCell className="text-center text-[9px] font-bold text-slate-600">{rec.longitud}</TableCell>
-                                <TableCell className="text-center">
-                                   <Badge variant="outline" className={cn("text-[7px] font-black uppercase border-none px-3 h-5 rounded-full", 
-                                      rec.status === 'activo' ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700")}>
-                                      {rec.status === 'activo' ? 'En línea' : 'En movimiento'}
-                                   </Badge>
-                                </TableCell>
-                                <TableCell className="text-right pr-8">
-                                   <div className="flex justify-end gap-1">
-                                      <button className="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-primary transition-all"><Eye className="h-3.5 w-3.5" /></button>
-                                      <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
-                                   </div>
-                                </TableCell>
-                             </TableRow>
-                           ))}
-                           {records.filter(r => r.name === 'Geoposición').length === 0 && (
-                             <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-[9px] font-black uppercase">Sin ubicaciones registradas</TableCell></TableRow>
-                           )}
-                        </TableBody>
-                      </Table>
-                   </ScrollArea>
-                </div>
-                {/* Paginación Simulada */}
-                <div className="px-8 py-4 bg-slate-50/50 border-t flex justify-between items-center shrink-0">
-                   <p className="text-[9px] font-bold text-slate-400 uppercase">Mostrando 1 - 5 de {records.filter(r => r.name === 'Geoposición').length} registros</p>
-                   <div className="flex items-center gap-1">
-                      <button className="h-7 w-7 rounded-lg border bg-white flex items-center justify-center text-slate-400 hover:bg-slate-50"><ChevronLeft className="h-4 w-4" /></button>
-                      <button className="h-7 w-7 rounded-lg border bg-primary text-white text-[9px] font-black">1</button>
-                      <button className="h-7 w-7 rounded-lg border bg-white text-[9px] font-black text-slate-400">2</button>
-                      <button className="h-7 w-7 rounded-lg border bg-white text-[9px] font-black text-slate-400">3</button>
-                      <button className="h-7 w-7 rounded-lg border bg-white flex items-center justify-center text-slate-400 hover:bg-slate-50"><ChevronRightIcon className="h-4 w-4" /></button>
-                   </div>
-                </div>
+                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50"><div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-inner"><ClipboardList className="h-5 w-5" /></div><h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Historial</h3></div>
+                <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><Table><TableHeader className="bg-white sticky top-0 z-10 border-b"><TableRow><TableHead className="pl-8 text-[8px) font-black uppercase">Fecha</TableHead><TableHead className="text-[8px) font-black uppercase">CCT</TableHead><TableHead className="text-center text-[8px) font-black uppercase">Lat/Long</TableHead><TableHead className="text-right pr-10 text-[8px) font-black uppercase">Acción</TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Geoposición').map((rec) => (<TableRow key={rec.id} className="h-14 border-b border-slate-50 hover:bg-slate-50"><TableCell className="pl-8 text-[9px) font-bold text-slate-400">{rec.date}</TableCell><TableCell className="font-mono font-black text-[10px) text-primary">{rec.cct}</TableCell><TableCell className="text-center text-[9px) font-bold text-slate-600">{rec.latitud}, {rec.longitud}</TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div>
              </Card>
           </div>
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full">
-           {/* Barra de Búsqueda Superior */}
            <Card className="rounded-3xl bg-white border-none shadow-xl p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-6 items-end">
-                 <div className="lg:col-span-3 space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Buscar por:</Label>
-                    <Select defaultValue="cct">
-                       <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner">
-                          <div className="flex items-center gap-2"><School className="h-4 w-4 text-primary" /><SelectValue /></div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="cct" className="text-xs font-bold uppercase">CCT</SelectItem><SelectItem value="nombre" className="text-xs font-bold uppercase">Nombre</SelectItem></SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-3 space-y-2">
-                    <div className="relative">
-                       <Input placeholder="EJ. 15DES0001R" className="h-11 pl-10 rounded-xl bg-slate-50 border-slate-100 font-bold uppercase text-xs shadow-inner" />
-                       <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                    </div>
-                 </div>
-                 <div className="lg:col-span-2 space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Zona / Municipio</Label>
-                    <Select defaultValue="todos">
-                       <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner">
-                          <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><SelectValue /></div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="todos" className="text-xs font-bold uppercase">Todos</SelectItem></SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-2 space-y-2">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Estado</Label>
-                    <Select defaultValue="todos">
-                       <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner">
-                          <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /><SelectValue /></div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="todos" className="text-xs font-bold uppercase">Todos</SelectItem></SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-2">
-                    <Button className="w-full h-11 bg-primary text-white font-black uppercase text-[10px] shadow-lg gap-2 rounded-xl">
-                       <Search className="h-4 w-4" /> BUSCAR
-                    </Button>
-                 </div>
+                 <div className="lg:col-span-3 space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Buscar por:</Label><Select defaultValue="cct"><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner"><div className="flex items-center gap-2"><School className="h-4 w-4 text-primary" /><SelectValue /></div></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="cct" className="text-xs font-bold uppercase">CCT</SelectItem><SelectItem value="nombre" className="text-xs font-bold uppercase">Nombre</SelectItem></SelectContent></Select></div>
+                 <div className="lg:col-span-3 space-y-2"><div className="relative"><Input placeholder="EJ. 15DES0001R" className="h-11 pl-10 rounded-xl bg-slate-50 border-slate-100 font-bold uppercase text-xs shadow-inner" /><Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" /></div></div>
+                 <div className="lg:col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Zona / Municipio</Label><Select defaultValue="todos"><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner"><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /><SelectValue /></div></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="todos" className="text-xs font-bold uppercase">Todos</SelectItem></SelectContent></Select></div>
+                 <div className="lg:col-span-2 space-y-2"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Estado</Label><Select defaultValue="todos"><SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold text-xs uppercase shadow-inner"><div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /><SelectValue /></div></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="todos" className="text-xs font-bold uppercase">Todos</SelectItem></SelectContent></Select></div>
+                 <div className="lg:col-span-2"><Button className="w-full h-11 bg-primary text-white font-black uppercase text-[10px] shadow-lg gap-2 rounded-xl"><Search className="h-4 w-4" /> BUSCAR</Button></div>
               </div>
            </Card>
-
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Columna Izquierda: Mapa y Estadísticas */}
               <div className="lg:col-span-8 space-y-8 flex flex-col">
                  <Card className="flex-1 min-h-[500px] rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative">
-                    <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b flex justify-between items-center z-10 shrink-0">
-                       <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl shadow-inner">
-                          <button className="px-6 py-2 bg-primary text-white rounded-lg shadow-lg text-[9px] font-black uppercase flex items-center gap-2">
-                             <Globe className="h-3.5 w-3.5" /> Mapa
-                          </button>
-                          <button className="px-6 py-2 text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 transition-all flex items-center gap-2">
-                             <ClipboardList className="h-3.5 w-3.5" /> Lista
-                          </button>
-                       </div>
-                       <div className="flex gap-2">
-                          <button className="px-4 py-1.5 bg-white border border-slate-100 rounded-lg shadow-sm text-[8px] font-black uppercase text-slate-700">Mapa</button>
-                          <button className="px-4 py-1.5 bg-white border border-slate-100 rounded-lg shadow-sm text-[8px] font-black uppercase text-slate-400">Satélite</button>
-                       </div>
-                    </div>
-
-                    <div className="absolute inset-0 z-0">
-                       <Image src="https://picsum.photos/seed/school-map-v10/1200/800" alt="Mapa" fill className="object-cover brightness-105" />
-                       
-                       {/* Marcador Central de Toluca */}
-                       <div className="absolute top-[45%] left-[48%] flex flex-col items-center">
-                          <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white z-20 animate-in zoom-in duration-500 min-w-[200px]">
-                             <div className="flex items-center justify-between gap-2 mb-1">
-                                <Badge className="bg-blue-600 text-white text-[7px] font-mono h-4">CCT: 15DES0001R</Badge>
-                                <ChevronRight className="h-3 w-3 text-blue-600" />
-                             </div>
-                             <p className="text-[9px] font-black text-slate-800 uppercase leading-tight">Escuela Secundaria Técnica No. 15</p>
-                          </div>
-                          <div className="h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce mt-2">
-                             <div className="h-2 w-2 bg-white rounded-full" />
-                          </div>
-                          <div className="h-20 w-20 bg-blue-500/20 rounded-full blur-xl animate-pulse absolute -bottom-6" />
-                       </div>
-
-                       <h3 className="absolute top-[52%] left-[40%] text-xl font-black text-slate-800 drop-shadow-xl opacity-60">Toluca de Lerdo</h3>
-
-                       {/* Otros Marcadores */}
-                       <div className="absolute top-[30%] left-[25%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
-                       <div className="absolute top-[20%] left-[65%] h-6 w-6 bg-rose-500 rounded-full border-2 border-white shadow-lg" />
-                       <div className="absolute top-[60%] left-[75%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
-                       <div className="absolute top-[75%] left-[45%] h-6 w-6 bg-rose-500 rounded-full border-2 border-white shadow-lg" />
-                    </div>
-
-                    <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-xl p-4 rounded-[1.5rem] shadow-2xl border border-white/50 z-20 flex flex-wrap items-center justify-between gap-4">
-                       <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[8px] font-black uppercase text-slate-600">En línea</span></div>
-                          <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-600" /><span className="text-[8px] font-black uppercase text-slate-600">En movimiento</span></div>
-                          <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-[8px] font-black uppercase text-slate-600">Sin señal</span></div>
-                          <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-slate-500" /><span className="text-[8px] font-black uppercase text-slate-600">Desconectado</span></div>
-                       </div>
-                    </div>
+                    <div className="absolute inset-0 z-0"><Image src="https://picsum.photos/seed/school-map-v10/1200/800" alt="Mapa" fill className="object-cover brightness-105" /></div>
                  </Card>
-
-                 <div className="space-y-4">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                       {[
-                         { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-emerald-500' },
-                         { label: 'Directores / Responsables', value: '856', icon: User, color: 'bg-blue-600' },
-                         { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-rose-500' },
-                         { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-slate-500' },
-                       ].map((stat, idx) => (
-                         <Card key={idx} className="p-4 rounded-[1.8rem] bg-white border-none shadow-xl flex flex-col items-center text-center group hover:scale-105 transition-all">
-                            <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-700 mb-3 shadow-inner group-hover:text-primary transition-colors"><stat.icon className="h-5 w-5" /></div>
-                            <h4 className="text-xl font-black text-slate-800 leading-none">{stat.value}</h4>
-                            <p className="text-[8px] font-black uppercase text-slate-400 mt-1">{stat.label}</p>
-                            <div className={cn("h-1.5 w-1.5 rounded-full mt-3 animate-pulse", stat.color)} />
-                         </Card>
-                       ))}
-                    </div>
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'bg-emerald-500' },
+                      { label: 'Directores', value: '856', icon: User, color: 'bg-blue-600' },
+                      { label: 'Municipios', value: '125', icon: MapPin, color: 'bg-rose-500' },
+                      { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'bg-slate-500' },
+                    ].map((stat, idx) => (<Card key={idx} className="p-4 rounded-[1.8rem] bg-white border-none shadow-xl flex flex-col items-center text-center group hover:scale-105 transition-all"><div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-700 mb-3 shadow-inner group-hover:text-primary transition-colors"><stat.icon className="h-5 w-5" /></div><h4 className="text-xl font-black text-slate-800 leading-none">{stat.value}</h4><p className="text-[8px] font-black uppercase text-slate-400 mt-1">{stat.label}</p></Card>))}
                  </div>
               </div>
-
-              {/* Columna Derecha: Registro e Información */}
               <div className="lg:col-span-4 space-y-8 flex flex-col">
-                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden shrink-0">
-                    <div className="p-8 space-y-6">
-                       <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><PlusCircle className="h-6 w-6" /></div>
-                          <div>
-                            <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Registrar / Editar Escuela</h3>
-                            <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Ingresa la información para el sistema.</p>
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">CCT *</Label>
-                             <div className="relative"><Input placeholder="EJ. 15DES0001R" className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold uppercase text-[10px] pl-10 shadow-inner" /><School className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Nombre de la escuela *</Label>
-                             <div className="relative"><Input placeholder="NOMBRE DEL PLANTEL..." className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold uppercase text-[10px] pl-10 shadow-inner" /><FileText className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Zona *</Label>
-                             <Select><SelectTrigger className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] uppercase shadow-inner"><div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-slate-400" /><SelectValue placeholder="SELECCIONAR..." /></div></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="z1" className="text-xs uppercase">Zona 01</SelectItem></SelectContent></Select>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Municipio *</Label>
-                             <Select><SelectTrigger className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] uppercase shadow-inner"><div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-slate-400" /><SelectValue placeholder="SELECCIONAR..." /></div></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="m1" className="text-xs uppercase">Toluca</SelectItem></SelectContent></Select>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Teléfono</Label>
-                             <div className="relative"><Input placeholder="EJ. 722 123 4567" className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] pl-10 shadow-inner" /><Phone className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Correo electrónico</Label>
-                             <div className="relative"><Input placeholder="EJ. ESCUELA@EDUGEM.GOB.MX" className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] pl-10 shadow-inner" /><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Latitud *</Label>
-                             <div className="relative"><Input placeholder="EJ. 19.6289" className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] pl-10 shadow-inner" /><MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                          <div className="space-y-1"><Label className="text-[9px] font-black text-slate-400 uppercase pl-1">Longitud *</Label>
-                             <div className="relative"><Input placeholder="EJ. -99.3128" className="h-10 bg-slate-50 border-slate-100 rounded-xl font-bold text-[10px] pl-10 shadow-inner" /><MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" /></div>
-                          </div>
-                       </div>
-
-                       <div className="flex gap-4 pt-2">
-                          <Button className="flex-1 btn-institutional h-11 text-[10px] shadow-xl"><Save className="h-4 w-4 mr-2" /> GUARDAR ESCUELA</Button>
-                          <Button variant="outline" className="h-11 px-6 rounded-xl border-slate-200 text-slate-500 font-black text-[10px] gap-2"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button>
-                       </div>
-                    </div>
-                 </Card>
-
-                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden flex flex-col">
-                    <div className="px-8 py-5 border-b flex items-center justify-between bg-slate-50/50">
-                       <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><School className="h-5 w-5" /></div>
-                          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">Datos de la escuela</h3>
-                       </div>
-                       <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black uppercase px-3 h-5 rounded-full">En línea</Badge>
-                    </div>
-                    <div className="p-8 space-y-6">
-                       <div className="relative aspect-video rounded-[2rem] overflow-hidden shadow-2xl border-4 border-slate-50 group">
-                          <Image src="https://picsum.photos/seed/school-front-v12/800/600" alt="Fachada" fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                       </div>
-
-                       <div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/5 shadow-inner space-y-4">
-                          {[
-                            { label: 'CCT:', value: '15DES0001R' },
-                            { label: 'Nombre:', value: 'Escuela Secundaria Técnica No. 15' },
-                            { label: 'Zona:', value: '001' },
-                            { label: 'Municipio:', value: 'Toluca' },
-                            { label: 'Dirección:', value: 'Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000' },
-                          ].map((item, idx) => (
-                            <div key={idx} className="flex gap-4">
-                               <span className="text-[9px] font-black text-primary uppercase w-20 shrink-0">{item.label}</span>
-                               <span className="text-[10px] font-bold text-slate-700 uppercase leading-tight">{item.value}</span>
-                            </div>
-                          ))}
-                          <div className="pt-2 flex flex-col gap-2 border-t border-primary/10">
-                             <div className="flex items-center gap-3"><Phone className="h-3.5 w-3.5 text-primary" /><span className="text-[10px] font-black text-slate-600">722 123 4567</span></div>
-                             <div className="flex items-center gap-3"><Mail className="h-3.5 w-3.5 text-primary" /><span className="text-[10px] font-black text-slate-600 lowercase">esc15@edugem.gob.mx</span></div>
-                          </div>
-                       </div>
-                    </div>
-                 </Card>
+                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden shrink-0"><div className="p-8 space-y-6"><h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Identidad Escolar</h3><div className="bg-primary/5 p-6 rounded-[2rem] border border-primary/5 shadow-inner space-y-4">{[ { label: 'CCT:', value: '15DES0001R' }, { label: 'Nombre:', value: 'Escuela Técnica No. 1' } ].map((item, idx) => (<div key={idx} className="flex gap-4"><span className="text-[9px] font-black text-primary uppercase w-20 shrink-0">{item.label}</span><span className="text-[10px] font-bold text-slate-700 uppercase leading-tight">{item.value}</span></div>))}</div></div></Card>
               </div>
            </div>
         </div>
       ) : (
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
           <div className="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
-             <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Briefcase className="h-5 w-5" /></div>
-                <div><h3 className="text-sm font-black uppercase text-slate-800">{activeTab}</h3><p className="text-[9px] font-bold text-slate-400 uppercase">Gestión de Rubro Técnico</p></div>
-             </div>
-             <div className="flex items-center gap-4">
-                <div className="relative w-full sm:w-64">
-                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
-                   <Input placeholder="Buscar..." className="h-9 pl-9 rounded-xl border-slate-200 text-xs font-bold bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                </div>
-             </div>
+             <div className="flex items-center gap-3"><div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Briefcase className="h-5 w-5" /></div><div><h3 className="text-sm font-black uppercase text-slate-800">{activeTab}</h3><p className="text-[9px] font-bold text-slate-400 uppercase">Gestión Técnica</p></div></div>
+             <div className="flex items-center gap-4"><div className="relative w-full sm:w-64"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Buscar..." className="h-9 pl-9 rounded-xl border-slate-200 text-xs font-bold bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div></div>
           </div>
           <div className="overflow-x-auto w-full">
             <Table className="w-full">
-              <TableHeader className="bg-slate-50 border-b">
-                 <TableRow className="h-12">
-                    <TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead>
-                    <TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead>
-                    <TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Identificación Oficial</TableHead>
-                    <TableHead className="text-[10px] font-bold text-primary w-[100px] uppercase text-center">Estatus</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead>
-                  </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>
-                ) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (
-                  <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors">
-                    <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
-                    <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
-                    <TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell>
-                    <TableCell className="text-center">
-                       <Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", rec.status === 'activo' || rec.status === 'Activa' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200")}>{rec.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right pr-10">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setAsistentesLib(rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes : [{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )) : (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros oficiales</TableCell></TableRow>)}
-              </TableBody>
+              <TableHeader className="bg-slate-50 border-b"><TableRow className="h-12"><TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead><TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead><TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Responsable / Escuela</TableHead><TableHead className="text-[10px] font-bold text-primary w-[100px] uppercase text-center">Estatus</TableHead><TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead></TableRow></TableHeader>
+              <TableBody>{isLoading ? (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (<TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors"><TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell><TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell><TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell><TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", rec.status === 'activo' || rec.status === 'Activa' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200")}>{rec.status}</Badge></TableCell><TableCell className="text-right pr-10"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setAsistentesLib(rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes : [{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>)) : (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-xs font-bold uppercase">Sin registros oficiales</TableCell></TableRow>)}</TableBody>
             </Table>
           </div>
         </Card>
@@ -1305,243 +976,25 @@ export default function ProgramsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
-             <DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle>
-             <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button>
-          </DialogHeader>
-
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10"><DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle><button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button></DialogHeader>
           {activeTab === 'Biblioteca Digital' ? (
             <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
-               <div className="px-8 border-b bg-slate-50/50">
-                  <TabsList className="bg-transparent h-14 p-0 gap-8">
-                     <TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Datos del Plantel y Fases</TabsTrigger>
-                     <TabsTrigger 
-                        value="asistentes" 
-                        disabled={(formData.bibliotecaFases?.personalCapacitado || 0) < 1}
-                        className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-30"
-                      >
-                        2. Captura de Personal {(formData.bibliotecaFases?.personalCapacitado || 0) >= 1 && <Badge className="ml-2 bg-primary text-white text-[8px]">{asistentesLib.filter(a => a.rfc).length}</Badge>}
-                     </TabsTrigger>
-                  </TabsList>
-               </div>
-
-               <div className="flex-1 overflow-hidden">
-                  <TabsContent value="datos" className="h-full m-0 p-0">
-                     <ScrollArea className="h-full">
-                        <div className="p-10 space-y-10 max-w-5xl mx-auto">
-                           <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
-                              <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
-                              <div className="relative">
-                                 <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
-                                 {showSearchResults && dialogSearchTerm.length > 2 && (
-                                    <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
-                                       {schoolSearchResults.map((s, sidx) => (
-                                          <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
-                                             <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
-                                             <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
-                                          </div>
-                                       ))}
-                                       {schoolSearchResults.length === 0 && (
-                                          <div className="p-6 text-center">
-                                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-4">CCT NO REGISTRADO EN BASE MAESTRA</p>
-                                             <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
-                                                <Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT
-                                             </Button>
-                                          </div>
-                                       )}
-                                    </div>
-                                 )}
-                              </div>
-                              {formData.cct && (
-                                 <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
-                                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-inner"><School className="h-6 w-6" /></div>
-                                    <div className="flex-1 min-w-0"><h4 className="text-sm font-black uppercase text-slate-800 truncate">{formData.schoolName}</h4><p className="text-[9px] font-mono font-bold text-emerald-700">{formData.cct} • {formData.municipio}</p></div>
-                                 </div>
-                              )}
-                           </div>
-
-                           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8">
-                              <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">
-                                 {BIBLIOTECA_FASES_LABELS.map((fase) => (
-                                    <div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}>
-                                       <Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" />
-                                       <Label className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer leading-tight">{fase.label}</Label>
-                                    </div>
-                                 ))}
-                              </div>
-                              <div className="grid grid-cols-2 gap-8 pt-4">
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label>
-                                    <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} />
-                                 </div>
-                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label>
-                                    <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} />
-                                 </div>
-                              </div>
-                           </div>
-
-                           <div className="space-y-2">
-                              <Label className="text-[10px] font-black text-primary pl-1 uppercase">Observaciones Técnicas</Label>
-                              <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-[1.5rem] p-6 text-sm font-semibold shadow-inner focus:bg-white transition-all uppercase" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
-                           </div>
-                        </div>
-                     </ScrollArea>
-                  </TabsContent>
-                  <TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col">
-                     <div className="flex justify-between items-center mb-6">
-                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm">
-                           <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                           <p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Registro de Asistentes: Ingrese los datos oficiales del personal que recibió la capacitación técnica.</p>
-                        </div>
-                        <Button onClick={addAsistenteRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md"><Plus className="h-5 w-5" /> Añadir Servidor Público</Button>
-                     </div>
-                     <div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white">
-                        <ScrollArea className="h-full">
-                           <div className="w-full overflow-x-auto">
-                              <Table className="min-w-[1000px]">
-                                 <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                                    <TableRow>
-                                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
-                                       <TableHead className="w-[300px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
-                                       <TableHead className="w-[150px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
-                                       <TableHead className="w-[200px] text-[10px] font-black uppercase">Función</TableHead>
-                                       <TableHead className="w-[150px] text-[10px] font-black uppercase">CCT de Origen</TableHead>
-                                       <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
-                                    </TableRow>
-                                 </TableHeader>
-                                 <TableBody>
-                                    {asistentesLib.map((ast, idx) => (
-                                       <TableRow key={idx} className="hover:bg-slate-50/50">
-                                          <TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell>
-                                          <TableCell className="p-2">
-                                             <div className="grid grid-cols-1 gap-1">
-                                                <Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAsistente(idx, 'paterno', e.target.value)} />
-                                                <Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAsistente(idx, 'materno', e.target.value)} />
-                                                <Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAsistente(idx, 'nombres', e.target.value)} />
-                                             </div>
-                                          </TableCell>
-                                          <TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAsistente(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell>
-                                          <TableCell className="p-2">
-                                             <Select value={ast.funcion} onValueChange={(val: any) => updateAsistente(idx, 'funcion', val)}>
-                                                <SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
-                                                <SelectContent>{FUNCIONES_BIBLIOTECA.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
-                                             </Select>
-                                          </TableCell>
-                                          <TableCell className="p-2">
-                                             <Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAsistente(idx, 'cct', e.target.value)} maxLength={10} />
-                                             {ast.schoolName && <p className="text-[7px] font-black text-emerald-600 mt-1 uppercase truncate">{ast.schoolName}</p>}
-                                          </TableCell>
-                                          <TableCell className="p-2 sticky right-0 bg-white shadow-l"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => removeAsistenteRow(idx)} disabled={asistentesLib.length === 1}><Trash2 className="h-4 w-4" /></Button></TableCell>
-                                       </TableRow>
-                                    ))}
-                                 </TableBody>
-                              </Table>
-                           </div>
-                        </ScrollArea>
-                     </div>
-                  </TabsContent>
-               </div>
-            </Tabs>
+               <div className="px-8 border-b bg-slate-50/50"><TabsList className="bg-transparent h-14 p-0 gap-8"><TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Datos y Fases</TabsTrigger><TabsTrigger value="asistentes" disabled={(formData.bibliotecaFases?.personalCapacitado || 0) < 1} className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-30">2. Captura de Personal {(formData.bibliotecaFases?.personalCapacitado || 0) >= 1 && <Badge className="ml-2 bg-primary text-white text-[8px]">{asistentesLib.filter(a => a.rfc).length}</Badge>}</TabsTrigger></TabsList></div>
+               <div className="flex-1 overflow-hidden"><TabsContent value="datos" className="h-full m-0 p-0"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-5xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT</Button></div>)}</div>)}</div></div><div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8"><div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div><div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">{BIBLIOTECA_FASES_LABELS.map((fase) => (<div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}><Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" /><Label className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer leading-tight">{fase.label}</Label></div>))}</div><div className="grid grid-cols-2 gap-8 pt-4"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} /></div></div></div></div></ScrollArea></TabsContent><TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col"><div className="flex justify-between items-center mb-6"><div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm"><CheckCircle2 className="h-6 w-6 text-blue-600" /><p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Registro de Asistentes: Datos oficiales del personal capacitado.</p></div><Button onClick={addAsistenteRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md"><Plus className="h-5 w-5" /> Añadir Servidor</Button></div><div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white"><ScrollArea className="h-full"><div className="w-full overflow-x-auto"><Table className="min-w-[1000px]"><TableHeader className="bg-slate-50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead><TableHead className="w-[300px] text-[10px] font-black uppercase">Nombre(s) y Apellidos</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">RFC</TableHead><TableHead className="w-[200px] text-[10px] font-black uppercase">Función</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">CCT Origen</TableHead><TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead></TableRow></TableHeader><TableBody>{asistentesLib.map((ast, idx) => (<TableRow key={idx} className="hover:bg-slate-50/50"><TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell><TableCell className="p-2"><div className="grid grid-cols-1 gap-1"><Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAsistente(idx, 'paterno', e.target.value)} /><Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAsistente(idx, 'materno', e.target.value)} /><Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAsistente(idx, 'nombres', e.target.value)} /></div></TableCell><TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAsistente(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell><TableCell className="p-2"><Select value={ast.funcion} onValueChange={(val: any) => updateAsistente(idx, 'funcion', val)}><SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent>{FUNCIONES_BIBLIOTECA.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent></Select></TableCell><TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAsistente(idx, 'cct', e.target.value)} maxLength={10} />{ast.schoolName && <p className="text-[7px] font-black text-emerald-600 mt-1 uppercase truncate">{ast.schoolName}</p>}</TableCell><TableCell className="p-2 sticky right-0 bg-white shadow-l"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => removeAsistenteRow(idx)} disabled={asistentesLib.length === 1}><Trash2 className="h-4 w-4" /></Button></TableCell></TableRow>))}</TableBody></Table></div></ScrollArea></div></TabsContent></div></Tabs>
           ) : (
-            <div className="flex-1 overflow-hidden">
-               <ScrollArea className="h-full">
-                  <div className="p-10 space-y-10 max-w-4xl mx-auto">
-                     <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
-                        <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
-                        <div className="relative">
-                           <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
-                           {showSearchResults && dialogSearchTerm.length > 2 && (
-                              <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
-                                 {schoolSearchResults.map((s, sidx) => (
-                                    <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
-                                       <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
-                                       <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
-                                    </div>
-                                 ))}
-                                 {schoolSearchResults.length === 0 && (
-                                    <div className="p-6 text-center">
-                                       <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
-                                          <Plus className="h-4 w-4 mr-2" /> Alta Rápida
-                                       </Button>
-                                    </div>
-                                 )}
-                              </div>
-                           )}
-                        </div>
-                     </div>
-                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-primary pl-1 uppercase">Observaciones Técnicas</Label>
-                        <Textarea className="min-h-[140px] bg-white border-slate-200 rounded-[1.5rem] p-6 text-sm font-semibold shadow-sm focus:ring-4 focus:ring-primary/5 transition-all uppercase" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
-                     </div>
-                  </div>
-               </ScrollArea>
-            </div>
+            <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-4xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}</div>)}</div></div></div></ScrollArea></div>
           )}
-
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
-             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button>
-             <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">
-               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR
-             </Button>
-          </DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white z-[300]">
-          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
-          </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
-                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
-                </div>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
-                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
-                    <SelectTrigger className="font-bold border-slate-200 h-10">
-                      <SelectValue placeholder="SELECCIONAR VALLE..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl">
-                      <SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem>
-                      <SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-             </div>
-          </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
-        </DialogContent>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white z-[300]"><DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0"><DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle></DialogHeader><div className="p-8 space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200 h-10"><SelectValue placeholder="SELECCIONAR VALLE..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem></SelectContent></Select></div></div></div><DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter></DialogContent>
       </Dialog>
 
       <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0">
-             <DialogTitle className="uppercase font-black">Documento Digital</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 bg-slate-800 p-1">
-             <iframe src={bitacoraPdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" />
-          </div>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0">
-             <Button variant="ghost" onClick={() => setBitacoraPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR</Button>
-          </DialogFooter>
-        </DialogContent>
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl"><DialogHeader className="p-6 bg-primary text-white shrink-0"><DialogTitle className="uppercase font-black">Documento Digital</DialogTitle></DialogHeader><div className="flex-1 bg-slate-800 p-1"><iframe src={bitacoraPdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" /></div><DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setBitacoraPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR</Button></DialogFooter></DialogContent>
       </Dialog>
     </div>
   )
 }
-
