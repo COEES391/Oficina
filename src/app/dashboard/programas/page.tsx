@@ -1108,170 +1108,286 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full">
-           {/* Buscador Avanzado Táctico */}
-           <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl p-8 border-b-8 border-b-primary/5 group hover:border-b-primary transition-all duration-700">
-              <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-8 items-end">
-                 <div className="lg:col-span-3 space-y-2">
-                    <Label className="text-[11px] font-black text-slate-400 uppercase pl-2 tracking-widest">Buscador Táctico</Label>
-                    <Select defaultValue="cct">
-                       <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black text-sm uppercase shadow-inner group-focus-within:bg-white transition-all">
-                          <div className="flex items-center gap-4">
-                             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-sm"><School className="h-5 w-5" /></div>
-                             <SelectValue />
-                          </div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-2xl border-none shadow-2xl">
-                          <SelectItem value="cct" className="text-xs font-black uppercase py-3">Filtrar por CCT</SelectItem>
-                          <SelectItem value="nombre" className="text-xs font-black uppercase py-3">Filtrar por Nombre</SelectItem>
-                       </SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-3 space-y-2">
-                    <div className="relative group">
-                       <Input placeholder="EJ. 15DES0001R" className="h-14 pl-14 rounded-2xl bg-slate-50 border-none font-black uppercase text-base shadow-inner focus:bg-white transition-all tracking-tighter" />
-                       <Search className="absolute left-5 top-4.5 h-6 w-6 text-slate-300 group-focus-within:text-primary transition-all" />
+          {/* Fila de Buscador Táctico Superior */}
+          <Card className="rounded-[2rem] bg-white border-none shadow-2xl p-6 overflow-visible z-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Buscar por:</Label>
+                <Select defaultValue="cct">
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[11px]">
+                    <div className="flex items-center gap-2">
+                       <Building2 className="h-4 w-4 text-primary" />
+                       <SelectValue />
                     </div>
-                 </div>
-                 <div className="lg:col-span-2 space-y-2">
-                    <Label className="text-[11px] font-black text-slate-400 uppercase pl-2">Zona / Municipio</Label>
-                    <Select defaultValue="todos">
-                       <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black text-xs uppercase shadow-inner">
-                          <div className="flex items-center gap-3">
-                             <MapPin className="h-5 w-5 text-primary" />
-                             <SelectValue />
-                          </div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-2xl shadow-2xl border-none">
-                          <SelectItem value="todos" className="text-xs font-bold uppercase">Todos</SelectItem>
-                       </SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-2 space-y-2">
-                    <Label className="text-[11px] font-black text-slate-400 uppercase pl-2">Estado Operativo</Label>
-                    <Select defaultValue="todos">
-                       <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black text-xs uppercase shadow-inner">
-                          <div className="flex items-center gap-3">
-                             <ClipboardList className="h-5 w-5 text-primary" />
-                             <SelectValue />
-                          </div>
-                       </SelectTrigger>
-                       <SelectContent className="rounded-2xl shadow-2xl border-none">
-                          <SelectItem value="todos" className="text-xs font-bold uppercase">Cualquier Estado</SelectItem>
-                       </SelectContent>
-                    </Select>
-                 </div>
-                 <div className="lg:col-span-2">
-                    <Button className="w-full h-14 bg-[#9f2241] hover:bg-[#801a34] text-white font-black uppercase text-[11px] shadow-2xl gap-3 rounded-2xl transition-all hover:scale-[1.02] active:scale-95">
-                       <Search className="h-5 w-5" /> EJECUTAR BÚSQUEDA
-                    </Button>
-                 </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="cct" className="text-[11px] font-bold">CCT</SelectItem>
+                    <SelectItem value="nombre" className="text-[11px] font-bold">Nombre</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-           </Card>
 
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 space-y-8 flex flex-col">
-                 {/* Monitor Satelital Interactivo */}
-                 <Card className="flex-1 min-h-[550px] rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative border-8 border-white shadow-primary/5">
-                    <div className="absolute top-6 left-6 z-20 flex gap-2">
-                       <button className="px-8 h-10 bg-white rounded-xl shadow-xl border-2 border-primary/20 text-[10px] font-black uppercase text-primary">Mapa Satelital</button>
-                       <button className="px-8 h-10 bg-white/60 hover:bg-white rounded-xl shadow-xl text-[10px] font-black uppercase text-slate-400 transition-all">Vista de Lista</button>
-                    </div>
-                    <div className="absolute inset-0 z-0">
-                       <Image src="https://picsum.photos/seed/school-map-v10/1200/800" alt="Mapa" fill className="object-cover brightness-105" />
-                       <div className="absolute top-[40%] left-[45%] group/pin cursor-pointer">
-                          <div className="h-12 w-12 bg-[#9f2241] rounded-[1.2rem] border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20"><div className="h-3 w-3 bg-white rounded-full" /></div>
-                          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md p-5 rounded-[1.5rem] shadow-2xl border border-white z-30 opacity-0 group-hover/pin:opacity-100 transition-all duration-500 min-w-[280px]">
-                             <div className="flex items-center justify-between gap-4 mb-3"><span className="text-[12px] font-black text-primary uppercase leading-none tracking-tighter">Secundaria Técnica No. 1</span><Activity className="h-5 w-5 text-emerald-500" /></div>
-                             <div className="space-y-1.5"><p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Última actualización de datos:</p><p className="text-[11px] font-black text-slate-800 uppercase leading-none">Hoy, 10:45 AM</p></div>
-                             <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[10px] border-t-white" />
-                          </div>
-                       </div>
-                    </div>
-                    <div className="absolute bottom-8 left-8 right-24 bg-white/95 backdrop-blur-2xl p-5 rounded-[2.5rem] shadow-2xl border border-white/50 z-20 flex flex-wrap items-center justify-between gap-8">
-                       <div className="flex items-center gap-8">
-                          <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(34,197,94,0.6)]" /><span className="text-[11px] font-black uppercase text-slate-700">En línea</span></div>
-                          <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.6)]" /><span className="text-[11px] font-black uppercase text-slate-700">En movimiento</span></div>
-                          <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]" /><span className="text-[11px] font-black uppercase text-slate-700">Sin señal</span></div>
-                          <div className="flex items-center gap-3"><div className="h-4 w-4 rounded-full bg-slate-400 shadow-[0_0_12px_rgba(148,163,184,0.6)]" /><span className="text-[11px] font-black uppercase text-slate-700">Desconectado</span></div>
-                       </div>
-                       <Button variant="ghost" size="icon" className="h-10 w-10 bg-slate-50 rounded-xl hover:bg-primary/5 text-primary transition-all"><Maximize2 className="h-5 w-5" /></Button>
-                    </div>
-                 </Card>
-
-                 {/* Tarjetas de Resumen Ejecutivo */}
-                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                      { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                      { label: 'Directores / Responsables', value: '856', icon: User, color: 'text-blue-600', bg: 'bg-blue-50' },
-                      { label: 'Municipios Cubiertos', value: '125', icon: MapPin, color: 'text-rose-500', bg: 'bg-rose-50' },
-                      { label: 'Datos actualizados', value: '3,482', icon: RotateCcw, color: 'text-amber-600', bg: 'bg-amber-50' },
-                    ].map((stat, idx) => (
-                      <Card key={idx} className="p-6 rounded-[2rem] bg-white border-none shadow-xl flex flex-col items-center text-center group hover:scale-[1.05] transition-all duration-500 cursor-pointer border-b-4 border-transparent hover:border-primary">
-                        <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 shadow-inner group-hover:rotate-12 transition-transform", stat.bg, stat.color)}><stat.icon className="h-6 w-6" /></div>
-                        <h4 className="text-2xl font-black text-slate-800 leading-none tracking-tighter">{stat.value}</h4>
-                        <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest leading-tight">{stat.label}</p>
-                      </Card>
-                    ))}
+              <div className="space-y-1.5">
+                 <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Identificador:</Label>
+                 <div className="relative group">
+                    <Input placeholder="Ej. 15DES0001R" className="h-12 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                    <Search className="absolute left-3 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary" />
                  </div>
               </div>
 
-              <div className="lg:col-span-4 space-y-8 flex flex-col">
-                 {/* Registro / Edición de Escuela */}
-                 <Card className="rounded-[3rem] bg-white border-none shadow-2xl overflow-hidden shrink-0 group border-4 border-white shadow-primary/5">
-                    <div className="p-8 space-y-8">
-                       <div className="flex items-center gap-4 border-b pb-4">
-                          <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent shadow-inner"><MonitorCheck className="h-7 w-7" /></div>
-                          <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">Registrar o Editar Escuela</h3>
-                       </div>
-                       <div className="space-y-6">
-                          <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label><Input placeholder="ESCRIBIR CCT..." className="h-12 rounded-xl bg-slate-50 border-none font-black text-sm uppercase shadow-inner focus:bg-white transition-all text-primary" /></div>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Latitud *</Label><Input placeholder="EJ. 19.6289" className="h-12 bg-slate-50 border-none rounded-xl font-bold pl-4 shadow-inner focus:bg-white transition-all text-sm" /></div>
-                             <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Longitud *</Label><Input placeholder="EJ. -99.3128" className="h-12 bg-slate-50 border-none rounded-xl font-bold pl-4 shadow-inner focus:bg-white transition-all text-sm" /></div>
-                          </div>
-                          <div className="flex gap-4 pt-2">
-                             <Button className="flex-1 btn-institutional h-14 rounded-2xl text-[11px] gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"><Save className="h-6 w-6" /> GUARDAR</Button>
-                             <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-slate-400 font-black uppercase text-[10px] hover:bg-slate-50"><Eraser className="h-5 w-5" /></Button>
-                          </div>
-                       </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Zona / Municipio:</Label>
+                <Select defaultValue="todos">
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[11px]">
+                    <div className="flex items-center gap-2">
+                       <MapPin className="h-4 w-4 text-primary" />
+                       <SelectValue />
                     </div>
-                 </Card>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="todos" className="text-[11px] font-bold">Todos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                 {/* Identidad Escolar - Ficha Informativa */}
-                 <Card className="flex-1 rounded-[3rem] bg-white border-none shadow-2xl overflow-hidden flex flex-col group border-4 border-white shadow-primary/5">
-                    <div className="relative h-48 w-full overflow-hidden">
-                       <Image src="https://picsum.photos/seed/school-front/600/400" alt="Fachada de Escuela" fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                       <div className="absolute bottom-6 left-6 right-6">
-                          <Badge className="bg-emerald-500 text-white border-none px-4 py-1.5 rounded-full text-[9px] font-black shadow-xl animate-pulse mb-3 uppercase tracking-widest"><Circle className="h-2 w-2 fill-current mr-2" /> En línea</Badge>
-                          <h4 className="text-xl font-black text-white uppercase leading-none tracking-tighter">Secundaria Técnica No. 1</h4>
-                       </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Estado:</Label>
+                <Select defaultValue="todos">
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-[11px]">
+                    <div className="flex items-center gap-2">
+                       <ClipboardList className="h-4 w-4 text-primary" />
+                       <SelectValue />
                     </div>
-                    <div className="p-8 space-y-6 flex-1 bg-slate-50/30">
-                       <div className="bg-white p-6 rounded-[2rem] border border-primary/5 shadow-inner space-y-5">
-                          {[
-                            { label: 'CCT:', value: '15DES0001R', icon: Tag },
-                            { label: 'Zona Escolar:', value: '23', icon: Navigation },
-                            { label: 'Municipio:', value: 'Toluca de Lerdo', icon: MapPin },
-                            { label: 'Dirección:', value: 'Av. Juarez s/n, Centro', icon: Globe },
-                            { label: 'Teléfono:', value: '722 123 4567', icon: Phone },
-                          ].map((item, idx) => (
-                            <div key={idx} className="flex gap-5 group/item">
-                               <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-primary group-hover/item:bg-primary/5 transition-all"><item.icon className="h-4 w-4" /></div>
-                               <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{item.label}</span>
-                                  <span className="text-[11px] font-black text-slate-700 uppercase leading-none tracking-tight">{item.value}</span>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="todos" className="text-[11px] font-bold">Todos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] shadow-lg rounded-xl gap-2">
+                <Search className="h-5 w-5" /> Buscar
+              </Button>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+             {/* Panel Izquierdo: Monitor Satelital y Resumen */}
+             <div className="lg:col-span-7 flex flex-col gap-6">
+                <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden flex flex-col relative h-[500px] border-4 border-white">
+                   <div className="absolute top-6 left-6 z-20 flex gap-1 bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-xl">
+                      <button className="px-6 h-10 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Mapa</button>
+                      <button className="px-6 h-10 text-slate-500 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase">Lista</button>
+                   </div>
+
+                   <div className="absolute inset-0 z-0">
+                      <Image src="https://picsum.photos/seed/school-intel-v1/1200/800" alt="Mapa" fill className="object-cover" />
+                      
+                      {/* Toggle Mapa/Satélite flotante */}
+                      <div className="absolute top-6 left-48 z-20 flex bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-xl">
+                        <button className="px-4 h-10 bg-slate-100 text-slate-800 font-bold text-[10px] rounded-xl mr-1">Mapa</button>
+                        <button className="px-4 h-10 text-slate-400 font-bold text-[10px] hover:text-slate-600">Satélite</button>
+                      </div>
+
+                      {/* Tooltip de Ejemplo */}
+                      <div className="absolute top-[35%] left-[55%] z-20">
+                         <div className="bg-white p-4 rounded-2xl shadow-2xl border border-white min-w-[220px] relative">
+                            <div className="flex justify-between items-center mb-1">
+                               <p className="text-[11px] font-black text-blue-600 uppercase">CCT: 15DES0001R</p>
+                               <ChevronRight className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase leading-none">Escuela Secundaria Técnica No. 15</p>
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white" />
+                         </div>
+                         <div className="h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-xl mx-auto mt-2 flex items-center justify-center">
+                            <div className="h-2 w-2 bg-white rounded-full" />
+                         </div>
+                      </div>
+
+                      {/* Otros Marcadores */}
+                      <div className="absolute top-[20%] left-[20%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
+                      <div className="absolute top-[60%] left-[30%] h-6 w-6 bg-rose-500 rounded-full border-2 border-white shadow-lg" />
+                      <div className="absolute top-[50%] left-[80%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
+                   </div>
+
+                   {/* Controles de Mapa */}
+                   <div className="absolute bottom-20 right-6 z-20 flex flex-col gap-2">
+                      <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">+</button>
+                      <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">-</button>
+                   </div>
+                   <button className="absolute bottom-6 right-6 h-10 w-10 bg-white rounded-xl shadow-xl z-20 flex items-center justify-center text-primary"><LocateFixed className="h-5 w-5" /></button>
+
+                   {/* Leyenda de Estados */}
+                   <div className="absolute bottom-6 left-6 right-18 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white z-20 flex items-center gap-8 overflow-x-auto no-scrollbar">
+                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-emerald-500" /><span className="text-[10px] font-black uppercase text-slate-600">En línea</span></div>
+                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-blue-600" /><span className="text-[10px] font-black uppercase text-slate-600">En movimiento</span></div>
+                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-rose-500" /><span className="text-[10px] font-black uppercase text-slate-600">Sin señal</span></div>
+                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-slate-400" /><span className="text-[10px] font-black uppercase text-slate-600">Desconectado</span></div>
+                   </div>
+                </Card>
+
+                {/* Resumen General KPI Cards */}
+                <div className="space-y-4">
+                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h3>
+                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                      {[
+                        { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
+                        { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: 'Municipios', value: '125', icon: MapPin, color: 'text-blue-700', bg: 'bg-blue-50' },
+                        { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-blue-900', bg: 'bg-slate-50' },
+                      ].map((stat, idx) => (
+                        <Card key={idx} className="p-6 rounded-[2rem] bg-white border-none shadow-xl flex flex-col items-center text-center relative overflow-hidden group hover:scale-105 transition-transform duration-500">
+                           <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 shadow-inner", stat.bg, stat.color)}><stat.icon className="h-6 w-6" /></div>
+                           <h4 className="text-2xl font-black text-slate-800 leading-none">{stat.value}</h4>
+                           <p className="text-[9px] font-black uppercase text-slate-400 mt-2 leading-tight tracking-widest">{stat.label}</p>
+                           
+                           {/* Mini Leyenda en la base de la card */}
+                           <div className="flex gap-1 mt-4">
+                              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                              <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                              <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                           </div>
+                        </Card>
+                      ))}
+                   </div>
+                </div>
+             </div>
+
+             {/* Panel Derecho: Registro y Fichas */}
+             <div className="lg:col-span-5 flex flex-col gap-8">
+                {/* Formulario Registrar / Editar */}
+                <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden">
+                   <div className="p-8 space-y-6">
+                      <div className="flex items-center gap-4">
+                         <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-primary shadow-inner">
+                            <School className="h-7 w-7" />
+                         </div>
+                         <div>
+                            <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Registrar / Editar Escuela</h3>
+                            <p className="text-[10px] font-bold text-blue-600 uppercase mt-1">Ingresa la información de la escuela para registrarla en el sistema.</p>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. 15DES0001R" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                               <Building2 className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Nombre de la escuela *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. Escuela Secundaria Técnica No. 15" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                               <FileText className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Zona *</Label>
+                            <Select>
+                               <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs uppercase pl-10 relative">
+                                  <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300" />
+                                  <SelectValue placeholder="Selecciona una zona" />
+                               </SelectTrigger>
+                               <SelectContent className="rounded-xl border-none shadow-2xl">
+                                  <SelectItem value="001">Zona 001</SelectItem>
+                               </SelectContent>
+                            </Select>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Municipio *</Label>
+                            <Select>
+                               <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs uppercase pl-10 relative">
+                                  <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300" />
+                                  <SelectValue placeholder="Selecciona un municipio" />
+                               </SelectTrigger>
+                               <SelectContent className="rounded-xl border-none shadow-2xl">
+                                  <SelectItem value="toluca">Toluca</SelectItem>
+                               </SelectContent>
+                            </Select>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Teléfono</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. 722 123 4567" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                               <Phone className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Correo electrónico</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. escuela@edugem.gob.mx" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold lowercase text-xs focus:bg-white transition-all" />
+                               <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Latitud *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. 19.6289" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" />
+                               <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Longitud *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. -99.3128" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" />
+                               <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
+                            </div>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                         <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] rounded-xl shadow-lg gap-2">
+                            <Save className="h-5 w-5" /> Guardar escuela
+                         </Button>
+                         <Button variant="outline" className="h-12 border-slate-200 text-slate-500 font-black uppercase text-[11px] rounded-xl gap-2">
+                            <RotateCcw className="h-5 w-5" /> Limpiar
+                         </Button>
+                      </div>
+                   </div>
+                </Card>
+
+                {/* Listado de Fichas de Escuela */}
+                <div className="space-y-6">
+                   {[1, 2].map((item) => (
+                      <Card key={item} className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden group hover:scale-[1.02] transition-all duration-500">
+                         <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                               <School className="h-5 w-5 text-slate-800" />
+                               <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">Datos de la escuela</h4>
+                            </div>
+                            <Badge className="bg-emerald-500 text-white border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg">En línea</Badge>
+                         </div>
+                         <div className="p-6 flex gap-6">
+                            <div className="relative h-32 w-44 rounded-[1.5rem] overflow-hidden shadow-xl border-4 border-white shrink-0">
+                               <Image src="https://picsum.photos/seed/school-prev-v1/400/300" alt="Vista Previa" fill className="object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">CCT:</span><span className="text-[10px] font-black text-slate-700 font-mono">15DES0001R</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Nombre:</span><span className="text-[10px] font-black text-slate-700 uppercase truncate">Escuela Secundaria Técnica No. 15</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Zona:</span><span className="text-[10px] font-black text-slate-700">001</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Municipio:</span><span className="text-[10px] font-black text-slate-700 uppercase">Toluca</span></div>
+                               <div className="col-span-2 flex gap-2">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Dirección:</span>
+                                  <span className="text-[10px] font-bold text-slate-600 uppercase leading-tight">Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000</span>
+                               </div>
+                               <div className="flex items-center gap-2 mt-2">
+                                  <Phone className="h-3 w-3 text-blue-600" />
+                                  <span className="text-[10px] font-black text-blue-600">722 123 4567</span>
+                               </div>
+                               <div className="flex items-center gap-2 mt-2">
+                                  <Mail className="h-3 w-3 text-blue-600" />
+                                  <span className="text-[10px] font-black text-blue-600 lowercase">esc15@edugem.gob.mx</span>
                                </div>
                             </div>
-                          ))}
-                       </div>
-                       <Button variant="ghost" className="w-full text-primary font-black uppercase text-[10px] tracking-widest py-6 rounded-2xl hover:bg-primary/5 gap-3 border-2 border-primary/10 border-dashed">
-                          <Eye className="h-5 w-5" /> VER EXPEDIENTE COMPLETO
-                       </Button>
-                    </div>
-                 </Card>
-              </div>
-           </div>
+                         </div>
+                      </Card>
+                   ))}
+                </div>
+             </div>
+          </div>
         </div>
       ) : (
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
