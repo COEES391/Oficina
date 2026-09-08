@@ -1,6 +1,6 @@
 
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -64,7 +64,10 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
-  LayoutGrid
+  LayoutGrid,
+  Upload,
+  ImageIcon,
+  Archive
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -98,6 +101,8 @@ const DOMINIOS = [
   '@desysa.edu.mx',
   '@edomex.gob.mx'
 ];
+
+const FILE_SIZE_LIMIT = 2 * 1024 * 1024; // 2.0 MB
 
 const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', color: 'text-blue-600 bg-blue-50 border-blue-100' },
@@ -186,11 +191,14 @@ export default function ProgramsPage() {
     { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }
   ])
 
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
   const initialFormState: ProgramStatus = {
     name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
     cct: '', schoolName: '', userName: '', rfc: '', puesto: '', departamento: '',
     email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
-    latitud: '', longitud: '', observaciones: '', evidencePhotos: [],
+    latitud: '', longitud: '', observaciones: '', evidencePhotos: [], reportPdf: '',
     asistentes: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase5: false, fase5_guia: false, 
@@ -252,6 +260,8 @@ export default function ProgramsPage() {
     }, 800);
   }
 
+  const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
+
   const filteredRecords = useMemo(() => {
     const list = records.filter(r => r.name === activeTab);
     if (!searchTerm) return list;
@@ -276,20 +286,13 @@ export default function ProgramsPage() {
     );
   }, [bitacoraRecords, searchTerm]);
 
-  const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
-
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const libCcts = new Set(libRecs.map(r => r.cct));
     
-    // Visitas: registros únicos de bitácora para planteles en el programa
     const visitas = new Set(bitacoraRecords.filter(b => libCcts.has(b.cct)).map(b => b.cct + b.fecha)).size;
-    
-    // Atenciones: total de folios de bitácora para estos planteles
     const atenciones = bitacoraRecords.filter(b => libCcts.has(b.cct)).length;
-    
-    // Evidencias: suma de fotos de evidencias cargadas
-    const evidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
+    const evidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
 
     return {
       totalCct: libRecs.length,
@@ -321,6 +324,36 @@ export default function ProgramsPage() {
       setDialogSearchTerm(match.cct)
       setShowSearchResults(false)
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'pdf' | 'image') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > FILE_SIZE_LIMIT) {
+      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "Límite: 2.0 MB" })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (type === 'pdf') {
+        setFormData(prev => ({ ...prev, reportPdf: base64 }))
+      } else {
+        setFormData(prev => ({ ...prev, evidencePhotos: [...(prev.evidencePhotos || []), base64] }))
+      }
+      toast({ title: "Evidencia añadida" })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidencePhotos: (prev.evidencePhotos || []).filter((_, i) => i !== index)
+    }))
   }
 
   const handleQuickAddCct = () => {
@@ -403,6 +436,8 @@ export default function ProgramsPage() {
         const activePhases = Object.entries(bf).filter(([k, v]) => k.startsWith('fase') && v === true);
         finalData.progress = Math.round((activePhases.length / BIBLIOTECA_FASES_LABELS.length) * 100);
         finalData.asistentes = asistentesLib.filter(a => a.rfc && a.nombres);
+        finalData.reportPdf = formData.reportPdf || '';
+        finalData.evidencePhotos = formData.evidencePhotos || [];
       }
       else if (activeTab === 'Geoposición') {
         finalData.latitud = String(formData.latitud || '');
@@ -697,9 +732,9 @@ export default function ProgramsPage() {
                         <TableHead className="text-[10px] font-black uppercase text-primary">Folio</TableHead>
                         <TableHead className="text-[10px] font-black uppercase text-primary">Fecha</TableHead>
                         <TableHead className="text-[10px] font-black uppercase text-primary">Plantel / CCT</TableHead>
-                        <TableHead className="text-[10px) font-black uppercase text-primary min-w-[200px]">Acciones Técnicas</TableHead>
-                        <TableHead className="text-[10px) font-black uppercase text-primary text-center">Analista</TableHead>
-                        <TableHead className="text-right pr-10 text-[10px) font-black uppercase">Docs</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary min-w-[200px]">Acciones Técnicas</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase text-primary text-center">Analista</TableHead>
+                        <TableHead className="text-right pr-10 text-[10px] font-black uppercase">Docs</TableHead>
                         <TableHead className="w-16"></TableHead>
                      </TableRow>
                   </TableHeader>
@@ -980,7 +1015,28 @@ export default function ProgramsPage() {
           {activeTab === 'Biblioteca Digital' ? (
             <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
                <div className="px-8 border-b bg-slate-50/50"><TabsList className="bg-transparent h-14 p-0 gap-8"><TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Datos y Fases</TabsTrigger><TabsTrigger value="asistentes" disabled={(formData.bibliotecaFases?.personalCapacitado || 0) < 1} className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-30">2. Captura de Personal {(formData.bibliotecaFases?.personalCapacitado || 0) >= 1 && <Badge className="ml-2 bg-primary text-white text-[8px]">{asistentesLib.filter(a => a.rfc).length}</Badge>}</TabsTrigger></TabsList></div>
-               <div className="flex-1 overflow-hidden"><TabsContent value="datos" className="h-full m-0 p-0"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-5xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT</Button></div>)}</div>)}</div></div><div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8"><div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div><div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">{BIBLIOTECA_FASES_LABELS.map((fase) => (<div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}><Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" /><Label className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer leading-tight">{fase.label}</Label></div>))}</div><div className="grid grid-cols-2 gap-8 pt-4"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} /></div></div></div></div></ScrollArea></TabsContent><TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col"><div className="flex justify-between items-center mb-6"><div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm"><CheckCircle2 className="h-6 w-6 text-blue-600" /><p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Registro de Asistentes: Datos oficiales del personal capacitado.</p></div><Button onClick={addAsistenteRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md"><Plus className="h-5 w-5" /> Añadir Servidor</Button></div><div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white"><ScrollArea className="h-full"><div className="w-full overflow-x-auto"><Table className="min-w-[1000px]"><TableHeader className="bg-slate-50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead><TableHead className="w-[300px] text-[10px] font-black uppercase">Nombre(s) y Apellidos</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">RFC</TableHead><TableHead className="w-[200px] text-[10px] font-black uppercase">Función</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">CCT Origen</TableHead><TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead></TableRow></TableHeader><TableBody>{asistentesLib.map((ast, idx) => (<TableRow key={idx} className="hover:bg-slate-50/50"><TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell><TableCell className="p-2"><div className="grid grid-cols-1 gap-1"><Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAsistente(idx, 'paterno', e.target.value)} /><Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAsistente(idx, 'materno', e.target.value)} /><Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAsistente(idx, 'nombres', e.target.value)} /></div></TableCell><TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAsistente(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell><TableCell className="p-2"><Select value={ast.funcion} onValueChange={(val: any) => updateAsistente(idx, 'funcion', val)}><SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent>{FUNCIONES_BIBLIOTECA.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent></Select></TableCell><TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAsistente(idx, 'cct', e.target.value)} maxLength={10} />{ast.schoolName && <p className="text-[7px] font-black text-emerald-600 mt-1 uppercase truncate">{ast.schoolName}</p>}</TableCell><TableCell className="p-2 sticky right-0 bg-white shadow-l"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => removeAsistenteRow(idx)} disabled={asistentesLib.length === 1}><Trash2 className="h-4 w-4" /></Button></TableCell></TableRow>))}</TableBody></Table></div></ScrollArea></div></TabsContent></div></Tabs>
+               <div className="flex-1 overflow-hidden"><TabsContent value="datos" className="h-full m-0 p-0"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-5xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT</Button></div>)}</div>)}</div></div><div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8"><div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div><div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">{BIBLIOTECA_FASES_LABELS.map((fase) => (<div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}><Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" /><Label className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer leading-tight">{fase.label}</Label></div>))}</div><div className="grid grid-cols-2 gap-8 pt-4"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label><Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} /></div></div></div>
+                      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8">
+                         <div className="flex items-center gap-3 border-b pb-2"><Archive className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Evidencias Digitales</h4></div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative group hover:border-primary/40 transition-all">
+                               {formData.reportPdf ? (
+                                 <div className="flex flex-col items-center gap-3"><div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-600"><FileText className="h-8 w-8" /></div><p className="text-[10px] font-black uppercase text-emerald-700">REPORTE CARGADO</p><Button variant="ghost" size="icon" className="absolute top-4 right-4 h-8 w-8 text-rose-500 rounded-full" onClick={() => setFormData(prev => ({...prev, reportPdf: ''}))}><X className="h-4 w-4" /></Button></div>
+                               ) : (
+                                 <><Upload className="h-8 w-8 text-slate-300" /><p className="text-[10px] font-black uppercase text-slate-700 text-center">Subir Reporte PDF (Máx 2.0MB)</p><Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20">Seleccionar PDF</Button></>
+                               )}
+                               <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={(e) => handleFileChange(e, 'pdf')} />
+                            </div>
+                            <div className="p-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center gap-3 relative group hover:border-primary/40 transition-all">
+                               <ImageIcon className="h-8 w-8 text-slate-300" /><p className="text-[10px] font-black uppercase text-slate-700 text-center">Fotos PNG de Evidencia (Máx 2.0MB)</p><Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20">Añadir Imagen</Button>
+                               <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} />
+                               <div className="grid grid-cols-3 gap-3 mt-4 w-full">
+                                 {(formData.evidencePhotos || []).map((img, idx) => (<div key={`ev-img-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white shadow-md group/img"><Image src={img} alt={`Evidencia ${idx}`} fill className="object-cover" /><button onClick={() => removeImage(idx)} className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button></div>))}
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                    </div></ScrollArea></TabsContent><TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col"><div className="flex justify-between items-center mb-6"><div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm"><CheckCircle2 className="h-6 w-6 text-blue-600" /><p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Registro de Asistentes: Datos oficiales del personal capacitado.</p></div><Button onClick={addAsistenteRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md"><Plus className="h-5 w-5" /> Añadir Servidor</Button></div><div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white"><ScrollArea className="h-full"><div className="w-full overflow-x-auto"><Table className="min-w-[1000px]"><TableHeader className="bg-slate-50 sticky top-0 z-10"><TableRow><TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead><TableHead className="w-[300px] text-[10px] font-black uppercase">Nombre(s) y Apellidos</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">RFC</TableHead><TableHead className="w-[200px] text-[10px] font-black uppercase">Función</TableHead><TableHead className="w-[150px] text-[10px] font-black uppercase">CCT Origen</TableHead><TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead></TableRow></TableHeader><TableBody>{asistentesLib.map((ast, idx) => (<TableRow key={idx} className="hover:bg-slate-50/50"><TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell><TableCell className="p-2"><div className="grid grid-cols-1 gap-1"><Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAsistente(idx, 'paterno', e.target.value)} /><Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAsistente(idx, 'materno', e.target.value)} /><Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAsistente(idx, 'nombres', e.target.value)} /></div></TableCell><TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAsistente(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell><TableCell className="p-2"><Select value={ast.funcion} onValueChange={(val: any) => updateAsistente(idx, 'funcion', val)}><SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent>{FUNCIONES_BIBLIOTECA.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent></Select></TableCell><TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAsistente(idx, 'cct', e.target.value)} maxLength={10} />{ast.schoolName && <p className="text-[7px] font-black text-emerald-600 mt-1 uppercase truncate">{ast.schoolName}</p>}</TableCell><TableCell className="p-2 sticky right-0 bg-white shadow-l"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => removeAsistenteRow(idx)} disabled={asistentesLib.length === 1}><Trash2 className="h-4 w-4" /></Button></TableCell></TableRow>))}</TableBody></Table></div></ScrollArea></div></TabsContent></div></Tabs>
           ) : (
             <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-4xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}</div>)}</div></div></div></ScrollArea></div>
           )}
