@@ -292,20 +292,21 @@ export default function ProgramsPage() {
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const libCcts = new Set(libRecs.map(r => r.cct));
-    
     const visitas = new Set(bitacoraRecords.filter(b => libCcts.has(b.cct)).map(b => b.cct + b.fecha)).size;
     const atenciones = bitacoraRecords.filter(b => libCcts.has(b.cct)).length;
     const evidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
-
-    return {
-      totalCct: libRecs.length,
-      concluidos: libRecs.filter(r => r.progress === 100).length,
-      personalTotal: libRecs.reduce((acc, r) => acc + (r.asistentes?.length || 0), 0),
-      visitasTotal: visitas,
-      atencionesTotal: atenciones,
-      evidenciasTotal: evidencias
-    };
+    return { totalCct: libRecs.length, concluidos: libRecs.filter(r => r.progress === 100).length, personalTotal: libRecs.reduce((acc, r) => acc + (r.asistentes?.length || 0), 0), visitasTotal: visitas, atencionesTotal: atenciones, evidenciasTotal: evidencias };
   }, [records, bitacoraRecords]);
+
+  const statsConoceEscuela = useMemo(() => {
+    const conoceRecs = records.filter(r => r.name === 'Conoce mi Escuela');
+    return {
+      totalEscuelas: conoceRecs.length,
+      totalResponsables: new Set(conoceRecs.map(r => r.userName).filter(u => !!u)).size,
+      totalMunicipios: new Set(conoceRecs.map(r => r.municipio).filter(m => !!m)).size,
+      datosActualizados: conoceRecs.length // O un contador incremental si se tuviera histórico
+    };
+  }, [records]);
 
   const fullEmailPreview = useMemo(() => {
     if (!userPart) return '';
@@ -1219,10 +1220,10 @@ export default function ProgramsPage() {
                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h3>
                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                       {[
-                        { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                        { label: 'Municipios', value: '125', icon: MapPin, color: 'text-blue-700', bg: 'bg-blue-50' },
-                        { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-blue-900', bg: 'bg-slate-50' },
+                        { label: 'Escuelas registradas', value: statsConoceEscuela.totalEscuelas.toLocaleString(), icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
+                        { label: 'Directores / Responsables', value: statsConoceEscuela.totalResponsables.toLocaleString(), icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: 'Municipios', value: statsConoceEscuela.totalMunicipios.toLocaleString(), icon: MapPin, color: 'text-blue-700', bg: 'bg-blue-50' },
+                        { label: 'Datos actualizados', value: statsConoceEscuela.datosActualizados.toLocaleString(), icon: FileText, color: 'text-blue-900', bg: 'bg-slate-50' },
                       ].map((stat, idx) => (
                         <Card key={idx} className="p-6 rounded-[2rem] bg-white border-none shadow-xl flex flex-col items-center text-center relative overflow-hidden group hover:scale-105 transition-transform duration-500">
                            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 shadow-inner", stat.bg, stat.color)}><stat.icon className="h-6 w-6" /></div>
@@ -1258,20 +1259,20 @@ export default function ProgramsPage() {
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label>
                             <div className="relative group">
-                               <Input placeholder="Ej. 15DES0001R" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                               <Input placeholder="Ej. 15DES0001R" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
                                <Building2 className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
                             </div>
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Nombre de la escuela *</Label>
                             <div className="relative group">
-                               <Input placeholder="Ej. Escuela Secundaria Técnica No. 15" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" />
+                               <Input placeholder="Ej. Escuela Secundaria Técnica No. 15" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})} />
                                <FileText className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
                             </div>
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Zona *</Label>
-                            <Select>
+                            <Select value={formData.zonaEscolar} onValueChange={v => setFormData({...formData, zonaEscolar: v})}>
                                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs uppercase pl-10 relative">
                                   <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300" />
                                   <SelectValue placeholder="Selecciona una zona" />
@@ -1283,15 +1284,7 @@ export default function ProgramsPage() {
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Municipio *</Label>
-                            <Select>
-                               <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs uppercase pl-10 relative">
-                                  <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300" />
-                                  <SelectValue placeholder="Selecciona un municipio" />
-                               </SelectTrigger>
-                               <SelectContent className="rounded-xl border-none shadow-2xl">
-                                  <SelectItem value="toluca">Toluca</SelectItem>
-                               </SelectContent>
-                            </Select>
+                            <Input placeholder="Ej. TOLUCA" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-xs focus:bg-white transition-all" value={formData.municipio} onChange={e => setFormData({...formData, municipio: e.target.value.toUpperCase()})} />
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Teléfono</Label>
@@ -1310,24 +1303,24 @@ export default function ProgramsPage() {
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Latitud *</Label>
                             <div className="relative group">
-                               <Input placeholder="Ej. 19.6289" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" />
+                               <Input placeholder="Ej. 19.6289" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
                                <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
                             </div>
                          </div>
                          <div className="space-y-1.5">
                             <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Longitud *</Label>
                             <div className="relative group">
-                               <Input placeholder="Ej. -99.3128" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" />
+                               <Input placeholder="Ej. -99.3128" className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs focus:bg-white transition-all" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
                                <MapPin className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-blue-600" />
                             </div>
                          </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 pt-2">
-                         <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] rounded-xl shadow-lg gap-2">
+                         <Button onClick={handleSave} disabled={isSaving} className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] rounded-xl shadow-lg gap-2">
                             <Save className="h-5 w-5" /> Guardar escuela
                          </Button>
-                         <Button variant="outline" className="h-12 border-slate-200 text-slate-500 font-black uppercase text-[11px] rounded-xl gap-2">
+                         <Button variant="outline" onClick={resetForm} className="h-12 border-slate-200 text-slate-500 font-black uppercase text-[11px] rounded-xl gap-2">
                             <RotateCcw className="h-5 w-5" /> Limpiar
                          </Button>
                       </div>
@@ -1335,8 +1328,8 @@ export default function ProgramsPage() {
                 </Card>
 
                 <div className="space-y-6">
-                   {[1, 2].map((item) => (
-                      <Card key={item} className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden group hover:scale-[1.02] transition-all duration-500">
+                   {records.filter(r => r.name === 'Conoce mi Escuela').map((item) => (
+                      <Card key={item.id} className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden group hover:scale-[1.02] transition-all duration-500">
                          <div className="p-5 border-b flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center gap-3">
                                <School className="h-5 w-5 text-slate-800" />
@@ -1349,13 +1342,13 @@ export default function ProgramsPage() {
                                <Image src="https://picsum.photos/seed/school-prev-v1/400/300" alt="Vista Previa" fill className="object-cover" />
                             </div>
                             <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">CCT:</span><span className="text-[10px] font-black text-slate-700 font-mono">15DES0001R</span></div>
-                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Nombre:</span><span className="text-[10px] font-black text-slate-700 uppercase truncate">Escuela Secundaria Técnica No. 15</span></div>
-                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Zona:</span><span className="text-[10px] font-black text-slate-700">001</span></div>
-                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Municipio:</span><span className="text-[10px] font-black text-slate-700 uppercase">Toluca</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">CCT:</span><span className="text-[10px] font-black text-slate-700 font-mono">{item.cct}</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Nombre:</span><span className="text-[10px] font-black text-slate-700 uppercase truncate">{item.schoolName}</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Zona:</span><span className="text-[10px] font-black text-slate-700">{item.zonaEscolar || 'S/D'}</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Municipio:</span><span className="text-[10px] font-black text-slate-700 uppercase">{item.municipio}</span></div>
                                <div className="col-span-2 flex gap-2">
                                   <span className="text-[10px] font-black text-slate-400 uppercase w-20 shrink-0">Dirección:</span>
-                                  <span className="text-[10px] font-bold text-slate-600 uppercase leading-tight">Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000</span>
+                                  <span className="text-[10px] font-bold text-slate-600 uppercase leading-tight">{item.observaciones || 'S/D'}</span>
                                </div>
                                <div className="flex items-center gap-2 mt-2">
                                   <Phone className="h-3 w-3 text-blue-600" />
@@ -1363,7 +1356,7 @@ export default function ProgramsPage() {
                                </div>
                                <div className="flex items-center gap-2 mt-2">
                                   <Mail className="h-3 w-3 text-blue-600" />
-                                  <span className="text-[10px] font-black text-blue-600 lowercase">esc15@edugem.gob.mx</span>
+                                  <span className="text-[10px] font-black text-blue-600 lowercase">{item.email || 'S/D'}</span>
                                </div>
                             </div>
                          </div>
