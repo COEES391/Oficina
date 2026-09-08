@@ -53,7 +53,8 @@ import {
   PlusCircle,
   Plus,
   Globe,
-  Copy
+  Copy,
+  Wifi
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -74,6 +75,7 @@ import {
   deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore'
+import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow'
 
 type Message = {
   id?: string;
@@ -123,6 +125,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [sessionKey, setSessionKey] = useState<string>('')
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   const [currentOrigin, setCurrentOrigin] = useState('')
+  const [isBotThinking, setIsBotThinking] = useState(false)
   
   const [isRemoteHelpRequested, setIsRemoteHelpRequested] = useState(false)
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
@@ -138,10 +141,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [ticketCct, setTicketCct] = useState('')
   const [ticketDetail, setTicketDetail] = useState('')
 
-  const [isTrackTicketDialogOpen, setIsTrackTicketDialogOpen] = useState(false)
-  const [trackFolioInput, setTrackFolioInput] = useState('')
-  const [trackedTicket, setTrackedTicket] = useState<any>(null)
-  
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [finishSearchTerm, setFinishSearchTerm] = useState('')
   const [finishForm, setFinishForm] = useState({
@@ -153,25 +152,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     oficinaRegionalAtencion: ''
   })
   
-  const [pdfToPreview, setPdfToPreview] = useState<string | null>(null)
-  
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
-  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
-    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
-    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
-    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
-    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
-    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
-  })
-
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const activeChatId = useMemo(() => {
-    if (isPublic) return activeTicketNumber || sessionKey;
+    if (isPublic) return sessionKey;
     return selectedRequest?.ticketNumber || null;
-  }, [isPublic, activeTicketNumber, sessionKey, selectedRequest]);
+  }, [isPublic, sessionKey, selectedRequest]);
 
   const generateTurnSessionId = useCallback(() => {
     const now = new Date();
@@ -183,7 +171,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const generateSequentialFolio = () => {
     const now = new Date();
     const year = now.getFullYear();
-    const cycle = now.getMonth() >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
     const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `COEES-${year}-${randomSuffix}`;
   }
@@ -232,15 +219,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!mounted) return;
     const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const currentQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
-      setQueue(currentQueue);
-      if (isPublic && sessionKey) {
-        const myReq = currentQueue.find(r => r.chatKey === sessionKey);
-        if (myReq) setActiveTicketNumber(myReq.ticketNumber);
-      }
+      setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
     });
     return () => unsubscribe();
-  }, [mounted, isPublic, sessionKey]);
+  }, [mounted]);
 
   useEffect(() => {
     if (!mounted || !activeChatId) {
@@ -255,7 +237,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
       if (chatMsgs.length === 0 && isPublic) {
-        setMessages([{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: Date.now() }]);
+        setMessages([{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: { seconds: Date.now()/1000 } }]);
       } else {
         setMessages(chatMsgs);
       }
@@ -273,19 +255,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = activeChatId || sessionKey;
 
     if (isPublic) {
-      const alreadyInQueue = queue.find(r => r.chatKey === sessionKey);
-      if (!alreadyInQueue) {
-        await addDoc(collection(db, 'atres_support_queue'), {
-          remoteId: '',
-          ticketNumber: sessionKey,
-          timestamp: serverTimestamp(),
-          status: 'pending',
-          requestType: 'chat',
-          chatKey: sessionKey
-        });
-      }
+      const queueRef = doc(db, 'atres_support_queue', sessionKey);
+      await setDoc(queueRef, {
+        remoteId: remoteId || '',
+        ticketNumber: sessionKey,
+        timestamp: serverTimestamp(),
+        status: 'pending',
+        requestType: remoteId ? 'remote' : 'chat',
+        chatKey: sessionKey
+      }, { merge: true });
+
       const lowerInput = textToSend.toLowerCase();
-      if (['office', 'windows', 'controlador', 'driver', 'impresora', 'imprimir'].some(word => lowerInput.includes(word))) {
+      if (['office', 'windows', 'controlador', 'driver', 'impresora', 'anydesk'].some(word => lowerInput.includes(word))) {
         setIsRemoteHelpRequested(true);
       }
     }
@@ -301,6 +282,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       fileType: msgData?.fileData?.type || null
     });
 
+    if (isPublic && !msgData?.fileData) {
+      setIsBotThinking(true);
+      try {
+        const aiResponse = await chatWithHelpDesk({ message: textToSend });
+        if (aiResponse?.response) {
+          await addDoc(collection(db, 'chat_messages'), {
+            chatId,
+            role: 'bot',
+            content: aiResponse.response,
+            timestamp: serverTimestamp()
+          });
+        }
+      } finally {
+        setIsBotThinking(false);
+      }
+    }
+
     !msgData?.content && setInput('');
   }
 
@@ -309,26 +307,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "ID Inválido" });
       return;
     }
-    const turn = activeTicketNumber || generateTurnSessionId();
-    const existing = queue.find(r => r.chatKey === sessionKey);
-    if (existing) {
-      await updateDoc(doc(db, 'atres_support_queue', existing.id), {
-        remoteId,
-        requestType: 'remote',
-        status: 'pending'
-      });
-    } else {
-      await addDoc(collection(db, 'atres_support_queue'), {
-        remoteId,
-        ticketNumber: turn,
-        timestamp: serverTimestamp(),
-        status: 'pending',
-        requestType: 'remote',
-        chatKey: sessionKey
-      });
-    }
+    const turn = sessionKey;
+    const queueRef = doc(db, 'atres_support_queue', sessionKey);
+    await setDoc(queueRef, {
+      remoteId,
+      ticketNumber: turn,
+      timestamp: serverTimestamp(),
+      status: 'pending',
+      requestType: 'remote',
+      chatKey: sessionKey
+    }, { merge: true });
+    
     await handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
-    toast({ title: "Soporte Solicitado", description: `Turno: ${turn}` });
+    toast({ title: "Soporte Solicitado", description: `Turno registrado: ${turn}` });
   }
 
   const handleSendNewTicketRequest = async () => {
@@ -359,13 +350,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         requesterName,
         requesterEmail,
         helpTopic,
-        ticketDetail
+        ticketDetail,
+        updatedAt: serverTimestamp()
       });
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
       resetRequestForm();
-      toast({ title: "Solicitud enviada" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al enviar", description: e.message });
     }
@@ -381,7 +372,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Faltan datos" });
       return;
     }
-    const folio = selectedRequest?.ticketNumber || selectedFormal?.folio;
+    const folio = activeChatId || selectedFormal?.folio;
     if (!folio) return;
     const targetBitacora = selectedFormal || formalRequests.find(b => b.folio === folio);
     if (targetBitacora?.id) {
@@ -390,7 +381,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         servicio: finishForm.servicio,
         tecnico: techName,
         oficina: finishForm.oficinaRegionalAtencion,
-        schoolName: finishForm.schoolName
+        schoolName: finishForm.schoolName,
+        updatedAt: serverTimestamp()
       });
     }
     if (selectedRequest?.id) {
@@ -404,7 +396,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado pesado", description: "Límite: 2.0 MB" })
+      toast({ variant: "destructive", title: "Archivo demasiado pesado" })
       return
     }
     const reader = new FileReader()
@@ -423,7 +415,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
-  const printFile = (data: string) => { const win = window.open(); if (!win) return; win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`); }
 
   const showLeftColumn = !isPublic || (isPublic && isRemoteHelpRequested);
 
@@ -506,14 +497,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       size="icon" 
                       className="h-8 w-8 rounded-xl shrink-0 border-primary/20 text-primary hover:bg-primary/5" 
                       onClick={copySupportLink}
-                      title="Copiar liga para el usuario"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-[7px] font-bold text-slate-400 uppercase tracking-wider leading-tight px-1">
-                    Comparte esta liga para que el docente inicie el chat o solicite apoyo remoto AnyDesk.
-                  </p>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-6 overflow-hidden min-h-0 pt-2">
@@ -530,7 +517,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                <span className={cn("text-[9px] font-black", selectedFormal?.id === req.id ? "text-white/60" : "text-primary")}>{req.folio}</span>
                                <span className={cn("text-[11px] font-black truncate max-w-[140px]", selectedFormal?.id === req.id ? "text-white" : "text-slate-700")}>{req.schoolName}</span>
                              </div>
-                             <FilePlus className={cn("h-4 w-4", selectedFormal?.id === req.id ? "text-white" : "text-slate-300")} />
                            </button>
                          ))}
                        </div>
@@ -550,7 +536,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                <span className={cn("text-[9px] font-black", selectedRequest?.id === req.id ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                <span className={cn("text-[11px] font-black", selectedRequest?.id === req.id ? "text-white" : "text-slate-700")}>{req.requestType?.toUpperCase() || 'LIVE'}</span>
                              </div>
-                             <ChevronRight className={cn("h-4 w-4", selectedRequest?.id === req.id ? "text-white" : "text-slate-300")} />
                            </button>
                          ))}
                        </div>
@@ -564,22 +549,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
         {!isPublic && showHistory ? (
-          <div className="flex-1 flex flex-col p-8 animate-in fade-in duration-500 bg-slate-50/30">
+          <div className="flex-1 flex flex-col p-8 bg-slate-50/30">
              <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-6">
                 <div className="flex justify-between items-center border-b pb-4">
                    <h2 className="text-2xl font-black text-primary uppercase flex items-center gap-3"><History className="h-8 w-8 text-accent" /> Servicios de Hoy</h2>
-                   <button onClick={() => setShowHistory(false)} className="px-6 h-10 rounded-xl font-black text-[10px] uppercase border shadow-sm hover:bg-slate-50 transition-all">CERRAR</button>
+                   <button onClick={() => setShowHistory(false)} className="px-6 h-10 rounded-xl font-black text-[10px] uppercase border shadow-sm hover:bg-slate-50">CERRAR</button>
                 </div>
                 <ScrollArea className="flex-1 border rounded-[2.5rem] bg-white shadow-2xl">
                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                       {attendanceHistory.map((hist) => (
-                        <div key={hist.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+                        <div key={hist.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                            <div className="flex justify-between items-start mb-4">
                               <Badge className="bg-primary/5 text-primary border-primary/10 font-mono">{hist.folio}</Badge>
                               <span className="text-[9px] font-black text-slate-300">{hist.fecha}</span>
                            </div>
-                           <h4 className="text-[13px] font-black text-slate-800 uppercase truncate">{hist.schoolName}</h4>
-                           <div className="bg-slate-50 p-4 rounded-2xl border my-4 italic text-[11px] font-semibold text-slate-600">"{hist.servicio}"</div>
+                           <h4 className="text-[13px] font-black text-slate-800 uppercase">{hist.schoolName}</h4>
+                           <div className="bg-slate-50 p-4 rounded-2xl border my-4 text-[11px] font-semibold text-slate-600">"{hist.servicio}"</div>
                            <div className="flex justify-between items-center pt-3 border-t border-slate-50">
                               <span className="text-[10px] font-black text-slate-500 uppercase">{hist.tecnico}</span>
                               <div className="flex items-center gap-1 text-emerald-500 text-[8px] font-black uppercase"><CheckCircle2 className="h-3.5 w-3.5" /> FINALIZADO</div>
@@ -605,12 +590,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-800 uppercase leading-none">{isPublic ? "Mesa de Ayuda ATRES" : "Centro de Control Operativo"}</h2>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Asistente virtual y soporte técnico remoto para el sistema de seguimiento ATRES.</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Wifi className="h-3 w-3 text-emerald-500 animate-pulse" />
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Conexión encriptada establecida</p>
+                  </div>
                   <div className="flex items-center gap-3 mt-1.5">
-                    <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5">{activeChatId}</Badge>
+                    <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5">Chat: {activeChatId}</Badge>
                     {isPublic && (
                       <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-[#B38E5D] hover:bg-[#a67d4a] px-4 h-9 rounded-xl shadow-lg text-white font-black uppercase text-[9px]">
-                        <FilePlus className="h-4 w-4" /> Solicitar Soporte
+                        <FilePlus className="h-4 w-4" /> Nuevo Folio
                       </button>
                     )}
                   </div>
@@ -633,41 +621,47 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 {messages.map((msg, i) => {
                   const isMe = (isPublic && msg.role === 'user') || (!isPublic && msg.role === 'tech');
                   return (
-                    <div key={msg.id || i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-4 duration-500", isMe ? "justify-end" : "justify-start")}>
+                    <div key={msg.id || i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-4", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-4 max-w-[80%]", isMe ? "flex-row-reverse" : "flex-row")}>
                         <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xl border-4 border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
                           {msg.role === 'user' ? <GraduationCap className="h-5 w-5" /> : msg.role === 'tech' ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                         </div>
-                        <div className="space-y-1.5">
-                          <div className={cn("p-4 rounded-3xl text-sm font-semibold shadow-2xl border leading-relaxed", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
-                            {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
-                            {msg.fileData && (
-                              <div className="mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer bg-black/5" onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
-                                <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg">{getFileIcon(msg.fileType || '')}</div>
-                                <div className="flex-1 min-w-0"><p className="text-[10px] font-black truncate uppercase">{msg.fileName}</p></div>
-                                <Download className="h-4 w-4 opacity-50" />
-                              </div>
-                            )}
-                            <div className="text-[8px] mt-3 font-black uppercase flex items-center gap-2 opacity-50">
-                              <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '--:--'}
+                        <div className={cn("p-4 rounded-3xl text-sm font-semibold shadow-2xl border leading-relaxed", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
+                          {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
+                          {msg.fileData && (
+                            <div className="mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer bg-black/5" onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
+                              <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg">{getFileIcon(msg.fileType || '')}</div>
+                              <div className="flex-1 min-w-0"><p className="text-[10px] font-black truncate uppercase">{msg.fileName}</p></div>
+                              <Download className="h-4 w-4 opacity-50" />
                             </div>
+                          )}
+                          <div className="text-[8px] mt-3 font-black uppercase flex items-center gap-2 opacity-50">
+                            <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '--:--'}
                           </div>
                         </div>
                       </div>
                     </div>
                   )
                 })}
+                {isBotThinking && (
+                  <div className="flex justify-start animate-pulse">
+                    <div className="bg-slate-100 px-6 py-3 rounded-full flex gap-2 items-center">
+                       <Bot className="h-4 w-4 text-slate-400" />
+                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Asistente está escribiendo...</span>
+                    </div>
+                  </div>
+                )}
                 <div ref={scrollRef} />
               </div>
             </ScrollArea>
             <footer className="p-6 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
-                  <Input placeholder={isPublic ? "Describa su problema técnico..." : "Escriba una respuesta oficial..."} className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
+                  <Input placeholder={isPublic ? "Escriba su duda técnica..." : "Respuesta oficial..."} className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
                   <button onClick={() => fileInputRef.current?.click()} className="absolute right-5 top-3.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50"><Paperclip className="h-5 w-5" /></button>
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 </div>
-                <button onClick={() => handleSendMessage()} disabled={!input.trim()} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"><Send className="h-6 w-6" /></button>
+                <button onClick={() => handleSendMessage()} disabled={!input.trim() || isBotThinking} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"><Send className="h-6 w-6" /></button>
               </div>
             </footer>
           </>
@@ -677,37 +671,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-2xl">Solicitud de Servicio ATRES</DialogTitle>
-            <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2">
-              Capture los detalles para generar su folio oficial de atención técnica.
-            </DialogDescription>
+            <DialogTitle className="uppercase font-black text-2xl">Nuevo Folio ATRES</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-10 space-y-8">
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Datos de Identificación</Label>
-               <Input placeholder="NOMBRE COMPLETO DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
-               <Input placeholder="CORREO INSTITUCIONAL (@DESYSA.EDU.MX)..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-bold shadow-inner" value={requesterEmail} onChange={e => setRequesterEmail(e.target.value.toLowerCase())} />
-               <Input placeholder="CCT DEL PLANTEL (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
+               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificación</Label>
+               <Input placeholder="NOMBRE DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
+               <Input placeholder="CCT (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
              </div>
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Detalles Técnicos</Label>
-               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="ELEGIR TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
-               <Textarea placeholder="DESCRIBA SU SOLICITUD A DETALLE..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner resize-none focus:bg-white transition-all" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
+               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Solicitud</Label>
+               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
+               <Textarea placeholder="DETALLES TÉCNICOS..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner focus:bg-white transition-all resize-none" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
              </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsNewTicketDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8 text-slate-400">CANCELAR</Button><Button onClick={handleSendNewTicketRequest} className="btn-institutional h-12 px-12 text-[10px] shadow-2xl">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t shrink-0"><Button onClick={handleSendNewTicketRequest} className="w-full btn-institutional h-14 shadow-2xl">ENVIAR SOLICITUD</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
         <DialogContent className="sm:max-w-[400px] rounded-[3rem] p-10 bg-white text-center border-none shadow-2xl">
             <div className="h-20 w-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-10 w-10 text-emerald-500" /></div>
-            <DialogTitle className="text-2xl font-black uppercase text-primary">Folio Generado</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase text-primary">Folio Registrado</DialogTitle>
             <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-primary/10 shadow-inner my-8">
-               <p className="text-[10px] font-black text-primary uppercase mb-2">FOLIO OFICIAL ATRES</p>
+               <p className="text-[10px] font-black text-primary uppercase mb-2">FOLIO OFICIAL</p>
                <h4 className="text-3xl font-black text-slate-800 font-mono tracking-tighter">{lastGeneratedFolio}</h4>
             </div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-6">Su solicitud ha sido registrada en el sistema de auditoría COEES 2026. Un analista le brindará seguimiento a la brevedad.</p>
             <Button onClick={() => setIsConfirmationOpen(false)} className="w-full btn-institutional h-14 shadow-2xl">ENTENDIDO</Button>
         </DialogContent>
       </Dialog>
@@ -718,19 +707,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <DialogTitle className="uppercase font-black text-lg">Concluir Atención Técnica</DialogTitle>
           </DialogHeader>
           <div className="p-8 space-y-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary pl-1">Identificar Plantel</Label>
-              <Input placeholder="CCT O NOMBRE..." className="h-10 bg-slate-50 border-none rounded-xl text-[11px] font-black uppercase px-4 shadow-inner" value={finishSearchTerm} onChange={e => setFinishSearchTerm(e.target.value)} />
-              {finishForm.cct && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3 animate-in zoom-in-95 mt-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /><div className="flex-1 min-w-0"><h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{finishForm.schoolName}</h4><p className="text-[8px] font-mono text-emerald-700">{finishForm.cct}</p></div></div>}
-            </div>
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina Regional Responsable</Label>
               <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
               <Label className="text-[10px] font-black uppercase text-primary pl-1">Resumen del Servicio Realizado</Label>
-              <Textarea placeholder="DETALLE LAS ACCIONES TÉCNICAS APLICADAS..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
+              <Textarea placeholder="DETALLE LAS ACCIONES..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
             </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsFinishDialogOpen(false)} className="font-black text-[10px] uppercase text-slate-400">CANCELAR</Button><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl"><Save className="h-5 w-5" /> REGISTRAR CIERRE</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl"><Save className="h-5 w-5" /> REGISTRAR CIERRE</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
