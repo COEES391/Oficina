@@ -55,7 +55,10 @@ import {
   FileSpreadsheet,
   Camera,
   Layers,
-  CheckCircle
+  CheckCircle,
+  Tag,
+  Globe,
+  MonitorCheck
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -311,6 +314,7 @@ export default function ProgramsPage() {
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
+      valle: quickAddForm.valle.toUpperCase(),
       domicilio: (quickAddForm.domicilio || '').toUpperCase(),
       localidad: (quickAddForm.localidad || '').toUpperCase(),
       sector: (quickAddForm.sector || '').toUpperCase(),
@@ -327,7 +331,6 @@ export default function ProgramsPage() {
     toast({ title: "CCT Registrado" });
   }
 
-  // Attendance management in dialog
   const addAsistenteRow = () => {
     setAsistentesLib([...asistentesLib, { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }])
   }
@@ -906,7 +909,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="flex flex-col flex-1 w-full h-[850px] overflow-hidden bg-white rounded-[3rem] shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-700">
-           {/* Header con Buscador Multisectorial */}
            <div className="px-8 py-5 bg-slate-50 border-b flex flex-col md:flex-row items-center gap-6 shrink-0">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 w-full">
                  <div className="space-y-1">
@@ -928,7 +930,6 @@ export default function ProgramsPage() {
            </div>
 
            <div className="flex-1 flex overflow-hidden">
-              {/* Barra lateral de navegación interna */}
               <div className="w-16 md:w-56 border-r bg-white flex flex-col p-4 shrink-0 overflow-y-auto custom-scrollbar">
                  <div className="space-y-2">
                     {[
@@ -949,9 +950,7 @@ export default function ProgramsPage() {
                  </div>
               </div>
 
-              {/* Contenido principal con Mapa y Estadísticas */}
               <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/30">
-                 {/* Tarjetas de Resumen KPI */}
                  <div className="px-8 pt-8 grid grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
                     {[
                       { label: 'Escuelas registradas', value: '1,248', icon: School, color: 'text-blue-600', dot: 'bg-blue-600' },
@@ -975,7 +974,6 @@ export default function ProgramsPage() {
                     ))}
                  </div>
 
-                 {/* Módulo de Mapa Satelital con Leyenda */}
                  <div className="flex-1 p-8 overflow-hidden flex flex-col">
                     <Card className="flex-1 rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative group">
                        <div className="px-8 py-4 bg-white/90 backdrop-blur-md border-b flex justify-between items-center z-10">
@@ -991,8 +989,6 @@ export default function ProgramsPage() {
                        
                        <div className="absolute inset-0 z-0">
                           <Image src="https://picsum.photos/seed/sat-map-v8/1200/800" alt="Mapa" fill className="object-cover brightness-105" />
-                          
-                          {/* Marcadores de Ejemplo */}
                           <div className="absolute top-[40%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
                           <div className="absolute top-[35%] left-[40%] bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white z-30 animate-in fade-in zoom-in duration-700">
                              <div className="flex items-center gap-2 mb-1">
@@ -1004,7 +1000,6 @@ export default function ProgramsPage() {
                           </div>
                        </div>
 
-                       {/* Leyenda de Mapa */}
                        <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-xl p-4 rounded-[2rem] shadow-2xl border border-white/50 z-20 flex flex-wrap items-center justify-between gap-6">
                           <div className="flex items-center gap-8">
                              {[
@@ -1028,9 +1023,7 @@ export default function ProgramsPage() {
                  </div>
               </div>
 
-              {/* Panel lateral derecho: Registro y Ficha Técnica */}
               <div className="w-16 lg:w-[450px] border-l bg-white flex flex-col shrink-0 overflow-y-auto custom-scrollbar p-8 space-y-10">
-                 {/* Formulario de Captura Técnica */}
                  <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b pb-2">
                        <Pencil className="h-5 w-5 text-accent" />
@@ -1076,7 +1069,6 @@ export default function ProgramsPage() {
                     </div>
                  </div>
 
-                 {/* Ficha de Plantel Seleccionado */}
                  <div className="space-y-6 pt-10 border-t border-slate-100">
                     <div className="flex items-center justify-between">
                        <div className="flex items-center gap-3">
@@ -1166,7 +1158,7 @@ export default function ProgramsPage() {
         </Card>
       )}
 
-      {/* Main Form Dialog */}
+      {/* Diálogo de Formulario Principal */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
@@ -1394,7 +1386,7 @@ export default function ProgramsPage() {
       </Dialog>
 
       {/* Visor de PDF para Bitácora */}
-      <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setPdfToPreview(null)}>
+      <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0">
              <DialogTitle className="uppercase font-black">Documento Digital</DialogTitle>
