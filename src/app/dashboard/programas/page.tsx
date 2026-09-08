@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
@@ -115,6 +116,15 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase9', label: 'Fase 9.- Total de equipos habilitados', color: 'text-blue-600 bg-blue-50 border-blue-100' }
 ];
 
+const FUNCIONES_BIBLIOTECA = [
+  "PAAE",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
+
 const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
   return (
     <div className="inline-flex flex-col gap-0.5 bg-slate-900 p-0.5 rounded-md shadow-lg border border-slate-700/50 w-5">
@@ -176,11 +186,17 @@ export default function ProgramsPage() {
     aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
   })
 
+  // State for dynamic assistants in Biblioteca Digital
+  const [asistentesLib, setAsistentesLib] = useState<any[]>([
+    { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }
+  ])
+
   const initialFormState: ProgramStatus = {
     name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
     cct: '', schoolName: '', userName: '', puesto: '', departamento: '',
     email: '', emails: [''], zonaEscolar: '', sector: '', modalidad: '', municipio: '', region: '', valle: '',
     latitud: '', longitud: '', observaciones: '', evidencePhotos: [],
+    asistentes: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
       fase5: false, fase6: false, fase7: false, fase7_1: false, fase8: false, fase9: false,
@@ -219,7 +235,7 @@ export default function ProgramsPage() {
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory)
 
     return () => { unsubscribe(); bUnsubscribe(); }
-  }, [])
+  }, [selectedBibliotecaRecord])
 
   const filteredRecords = useMemo(() => {
     const list = records.filter(r => r.name === activeTab);
@@ -246,6 +262,25 @@ export default function ProgramsPage() {
   }, [bitacoraRecords, searchTerm]);
 
   const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
+
+  const handleVerifyAccount = async () => {
+    if (!verifyInput.includes('@')) {
+      toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
+      return;
+    }
+    setIsVerifying(true);
+    setTimeout(() => {
+      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === verifyInput.toLowerCase());
+      if (match) {
+        setVerifiedAccount(match);
+        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
+      } else {
+        setVerifiedAccount(null);
+        toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
+      }
+      setIsVerifying(false);
+    }, 800);
+  }
 
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
@@ -280,23 +315,52 @@ export default function ProgramsPage() {
     }
   }
 
-  const handleVerifyAccount = async () => {
-    if (!verifyInput.includes('@')) {
-      toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
-      return;
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
     }
-    setIsVerifying(true);
-    setTimeout(() => {
-      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === verifyInput.toLowerCase());
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm(newSchool.cct);
+    setShowSearchResults(false);
+    toast({ title: "CCT Registrado" });
+  }
+
+  // Attendance management in dialog
+  const addAsistenteRow = () => {
+    setAsistentesLib([...asistentesLib, { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }])
+  }
+
+  const removeAsistenteRow = (index: number) => {
+    if (asistentesLib.length === 1) return
+    setAsistentesLib(asistentesLib.filter((_, i) => i !== index))
+  }
+
+  const updateAsistente = (index: number, field: string, value: string) => {
+    const newList = [...asistentesLib]
+    newList[index] = { ...newList[index], [field]: value.toUpperCase() }
+    
+    if (field === 'cct') {
+      const match = allSchools.find(s => s.cct.toUpperCase() === value.toUpperCase().trim())
       if (match) {
-        setVerifiedAccount(match);
-        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
-      } else {
-        setVerifiedAccount(null);
-        toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
+        newList[index].schoolName = match.nombre
       }
-      setIsVerifying(false);
-    }, 800);
+    }
+    setAsistentesLib(newList)
   }
 
   const handleSave = async () => {
@@ -328,9 +392,9 @@ export default function ProgramsPage() {
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
         finalData.bibliotecaFases = { ...bf };
-        // Calculate progress based on keys that exist in current labels
         const activePhases = Object.entries(bf).filter(([k, v]) => k.startsWith('fase') && v === true);
         finalData.progress = Math.round((activePhases.length / BIBLIOTECA_FASES_LABELS.length) * 100);
+        finalData.asistentes = asistentesLib.filter(a => a.rfc && a.nombres);
       }
       else if (activeTab === 'Geoposición') {
         finalData.latitud = String(formData.latitud || '');
@@ -345,12 +409,22 @@ export default function ProgramsPage() {
       
       setIsDialogOpen(false);
       setEditingId(null);
+      resetForm();
       toast({ title: "Sincronización Exitosa", description: "Datos registrados en la nube." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al Guardar", description: e.message });
     } finally {
       setIsSaving(false);
     }
+  }
+
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setEditingId(null);
+    setDialogSearchTerm('');
+    setUserPart('');
+    setShowSearchResults(false);
+    setAsistentesLib([{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]);
   }
 
   const handleUpdatePhase = async (phaseId: string, value: boolean) => {
@@ -414,7 +488,7 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (
              <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
           )}
-          <Button onClick={() => { setFormData(initialFormState); setEditingId(null); setDialogSearchTerm(''); setUserPart(''); setShowSearchResults(false); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
+          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
              <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
           </Button>
         </div>
@@ -483,14 +557,7 @@ export default function ProgramsPage() {
                        </TableHeader>
                        <TableBody>
                           {records.filter(r => r.name === 'Biblioteca Digital').map((row) => {
-                            const activePhases = Object.entries(row.bibliotecaFases || {}).filter(([k, v]) => k.startsWith('fase') && v === true);
-                            const lastPhaseNum = activePhases.length > 0 ? Math.max(...activePhases.map(([k]) => {
-                                const numPart = k.replace('fase', '').replace('_guia', '');
-                                return parseInt(numPart) || 0;
-                            })) : 0;
-                            
-                            // Get the most relevant phase label
-                            const currentFaseObj = BIBLIOTECA_FASES_LABELS.find(f => (row.bibliotecaFases as any)?.[f.id]) || { label: 'Pendiente', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+                            const currentFaseObj = BIBLIOTECA_FASES_LABELS.findLast(f => (row.bibliotecaFases as any)?.[f.id]) || { label: 'Sin Avance', color: 'text-slate-400 bg-slate-50 border-slate-100' };
 
                             return (
                               <TableRow 
@@ -517,7 +584,7 @@ export default function ProgramsPage() {
                                  </TableCell>
                                  <TableCell className="text-right pr-8">
                                     <div className="flex justify-end gap-1">
-                                       <button onClick={(e) => { e.stopPropagation(); setFormData({...row}); setEditingId(row.id!); setDialogSearchTerm(row.cct); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-3.5 w-3.5" /></button>
+                                       <button onClick={(e) => { e.stopPropagation(); setFormData({...row}); setEditingId(row.id!); setDialogSearchTerm(row.cct); setAsistentesLib(row.asistentes && row.asistentes.length > 0 ? row.asistentes : [{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-3.5 w-3.5" /></button>
                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id!); }} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
                                     </div>
                                  </TableCell>
@@ -958,7 +1025,7 @@ export default function ProgramsPage() {
                     </TableCell>
                     <TableCell className="text-right pr-10">
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
+                        <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setAsistentesLib(rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes : [{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button>
                         <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </TableCell>
@@ -972,130 +1039,222 @@ export default function ProgramsPage() {
 
       <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
 
-      <Dialog open={isBitacoraEditDialogOpen} onOpenChange={(open) => { if(!open) setBitacoraEditingRecord(null); setIsBitacoraEditDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0">
-            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
-              <Pencil className="h-6 w-6 text-accent" /> Corregir Registro ATRES
-            </DialogTitle>
-          </DialogHeader>
-          {bitacoraEditingRecord && (
-            <div className="p-8 space-y-6">
-               <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Folio Operativo</Label>
-                     <div className="h-11 bg-slate-50 rounded-xl flex items-center px-4 font-mono font-black text-primary border border-slate-100 text-lg">{bitacoraEditingRecord.folio}</div>
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Analista Designado</Label>
-                     <Input className="h-11 bg-white rounded-xl border-slate-200 font-black uppercase text-xs" value={bitacoraEditingRecord.tecnico} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, tecnico: e.target.value.toUpperCase()})} />
-                  </div>
-               </div>
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase text-primary pl-1">Estatus de Atención</Label>
-                  <div className="flex items-center gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-2xl">
-                    <TrafficLight status={bitacoraEditingRecord.status} />
-                    <Select value={bitacoraEditingRecord.status} onValueChange={(val: any) => setBitacoraEditingRecord({...bitacoraEditingRecord, status: val})}>
-                      <SelectTrigger className="h-10 rounded-xl bg-white/10 border-white/20 font-black uppercase text-[10px] text-white"><SelectValue /></SelectTrigger>
-                      <SelectContent className="rounded-2xl border-slate-700 shadow-2xl">
-                          <SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">ATENDIDO</SelectItem>
-                          <SelectItem value="proceso" className="text-[10px] font-black text-amber-600">EN PROCESO</SelectItem>
-                          <SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">PENDIENTE</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-               </div>
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black text-primary pl-1">Resumen del Servicio</Label>
-                  <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-[1.5rem] p-5 text-xs font-semibold shadow-inner focus:bg-white transition-all" value={bitacoraEditingRecord.servicio} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, servicio: e.target.value.toUpperCase()})} />
-               </div>
-            </div>
-          )}
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4">
-             <Button variant="ghost" onClick={() => setIsBitacoraEditDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button>
-             <Button onClick={saveBitacoraEdits} className="btn-institutional h-12 px-10 text-[10px] gap-2 rounded-xl"><Save className="h-4 w-4" /> GUARDAR</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-12">
-            <div className="space-y-1">
-              <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4"><FileText className="h-6 w-6 text-accent" /> VISOR COEES</DialogTitle>
-            </div>
-            <Button onClick={() => bitacoraPdfToPreview && printFile(bitacoraPdfToPreview)} className="bg-white text-primary hover:bg-slate-100 font-black text-[10px] uppercase h-10 px-6 rounded-xl shadow-xl"><Printer className="h-4 w-4" /> Imprimir</Button>
-          </DialogHeader>
-          <div className="flex-1 bg-slate-800 p-1"><iframe src={bitacoraPdfToPreview || ''} className="w-full h-full border-none rounded-xl bg-white" title="PDF Preview" /></div>
-          <DialogFooter className="p-4 bg-slate-50 border-t shrink-0"><Button variant="ghost" onClick={() => setBitacoraPdfToPreview(null)} className="h-10 px-10 font-black uppercase text-[10px]">CERRAR</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) { setFormData(initialFormState); setEditingId(null); setShowSearchResults(false); } } }}>
-        <DialogContent className="w-[98vw] lg:max-w-[1000px] h-[90vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
+      {/* Main Form Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
+        <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
              <DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle>
              <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="p-10 space-y-10 max-w-4xl mx-auto">
-                 <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
-                    <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
-                    <div className="relative">
-                      <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
-                      {showSearchResults && dialogSearchTerm.length > 2 && (
-                        <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
-                          {schoolSearchResults.map((s, sidx) => (
-                            <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
-                              <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
-                              <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
-                            </div>
-                          ))}
+
+          {activeTab === 'Biblioteca Digital' ? (
+            <Tabs defaultValue="datos" className="flex-1 flex flex-col overflow-hidden">
+               <div className="px-8 border-b bg-slate-50/50">
+                  <TabsList className="bg-transparent h-14 p-0 gap-8">
+                     <TabsTrigger value="datos" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Datos del Plantel y Fases</TabsTrigger>
+                     <TabsTrigger 
+                        value="asistentes" 
+                        disabled={(formData.bibliotecaFases?.personalCapacitado || 0) < 1}
+                        className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-30"
+                      >
+                        2. Captura de Personal {(formData.bibliotecaFases?.personalCapacitado || 0) >= 1 && <Badge className="ml-2 bg-primary text-white text-[8px]">{asistentesLib.filter(a => a.rfc).length}</Badge>}
+                     </TabsTrigger>
+                  </TabsList>
+               </div>
+
+               <div className="flex-1 overflow-hidden">
+                  <TabsContent value="datos" className="h-full m-0 p-0">
+                     <ScrollArea className="h-full">
+                        <div className="p-10 space-y-10 max-w-5xl mx-auto">
+                           <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
+                              <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
+                              <div className="relative">
+                                 <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
+                                 {showSearchResults && dialogSearchTerm.length > 2 && (
+                                    <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
+                                       {schoolSearchResults.map((s, sidx) => (
+                                          <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                                             <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
+                                             <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
+                                          </div>
+                                       ))}
+                                       {schoolSearchResults.length === 0 && (
+                                          <div className="p-6 text-center">
+                                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-4">CCT NO REGISTRADO EN BASE MAESTRA</p>
+                                             <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
+                                                <Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT
+                                             </Button>
+                                          </div>
+                                       )}
+                                    </div>
+                                 )}
+                              </div>
+                              {formData.cct && (
+                                 <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-emerald-100 shadow-sm animate-in zoom-in-95">
+                                    <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-inner"><School className="h-6 w-6" /></div>
+                                    <div className="flex-1 min-w-0"><h4 className="text-sm font-black uppercase text-slate-800 truncate">{formData.schoolName}</h4><p className="text-[9px] font-mono font-bold text-emerald-700">{formData.cct} • {formData.municipio}</p></div>
+                                 </div>
+                              )}
+                           </div>
+
+                           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8">
+                              <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">
+                                 {BIBLIOTECA_FASES_LABELS.map((fase) => (
+                                    <div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}>
+                                       <Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" />
+                                       <Label className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer leading-tight">{fase.label}</Label>
+                                    </div>
+                                 ))}
+                              </div>
+                              <div className="grid grid-cols-2 gap-8 pt-4">
+                                 <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label>
+                                    <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} />
+                                 </div>
+                                 <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label>
+                                    <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} />
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="space-y-2">
+                              <Label className="text-[10px] font-black text-primary pl-1 uppercase">Observaciones Técnicas</Label>
+                              <Textarea className="min-h-[140px] bg-slate-50 border-none rounded-[1.5rem] p-6 text-sm font-semibold shadow-inner focus:bg-white transition-all uppercase" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
+                           </div>
                         </div>
-                      )}
-                    </div>
-                 </div>
+                     </ScrollArea>
+                  </TabsContent>
+                  <TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col">
+                     <div className="flex justify-between items-center mb-6">
+                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm">
+                           <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                           <p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Registro de Asistentes: Ingrese los datos oficiales del personal que recibió la capacitación técnica.</p>
+                        </div>
+                        <Button onClick={addAsistenteRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md"><Plus className="h-5 w-5" /> Añadir Servidor Público</Button>
+                     </div>
+                     <div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white">
+                        <ScrollArea className="h-full">
+                           <div className="w-full overflow-x-auto">
+                              <Table className="min-w-[1000px]">
+                                 <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                                    <TableRow>
+                                       <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
+                                       <TableHead className="w-[300px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                                       <TableHead className="w-[150px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
+                                       <TableHead className="w-[200px] text-[10px] font-black uppercase">Función</TableHead>
+                                       <TableHead className="w-[150px] text-[10px] font-black uppercase">CCT de Origen</TableHead>
+                                       <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
+                                    </TableRow>
+                                 </TableHeader>
+                                 <TableBody>
+                                    {asistentesLib.map((ast, idx) => (
+                                       <TableRow key={idx} className="hover:bg-slate-50/50">
+                                          <TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell>
+                                          <TableCell className="p-2">
+                                             <div className="grid grid-cols-1 gap-1">
+                                                <Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAsistente(idx, 'paterno', e.target.value)} />
+                                                <Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAsistente(idx, 'materno', e.target.value)} />
+                                                <Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAsistente(idx, 'nombres', e.target.value)} />
+                                             </div>
+                                          </TableCell>
+                                          <TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAsistente(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell>
+                                          <TableCell className="p-2">
+                                             <Select value={ast.funcion} onValueChange={(val: any) => updateAsistente(idx, 'funcion', val)}>
+                                                <SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
+                                                <SelectContent>{FUNCIONES_BIBLIOTECA.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
+                                             </Select>
+                                          </TableCell>
+                                          <TableCell className="p-2">
+                                             <Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAsistente(idx, 'cct', e.target.value)} maxLength={10} />
+                                             {ast.schoolName && <p className="text-[7px] font-black text-emerald-600 mt-1 uppercase truncate">{ast.schoolName}</p>}
+                                          </TableCell>
+                                          <TableCell className="p-2 sticky right-0 bg-white shadow-l"><Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => removeAsistenteRow(idx)} disabled={asistentesLib.length === 1}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                                       </TableRow>
+                                    ))}
+                                 </TableBody>
+                              </Table>
+                           </div>
+                        </ScrollArea>
+                     </div>
+                  </TabsContent>
+               </div>
+            </Tabs>
+          ) : (
+            <div className="flex-1 overflow-hidden">
+               <ScrollArea className="h-full">
+                  <div className="p-10 space-y-10 max-w-4xl mx-auto">
+                     <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
+                        <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
+                        <div className="relative">
+                           <input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
+                           {showSearchResults && dialogSearchTerm.length > 2 && (
+                              <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
+                                 {schoolSearchResults.map((s, sidx) => (
+                                    <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                                       <div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio} • {s.turno}</span></div>
+                                       <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
+                                    </div>
+                                 ))}
+                                 {schoolSearchResults.length === 0 && (
+                                    <div className="p-6 text-center">
+                                       <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
+                                          <Plus className="h-4 w-4 mr-2" /> Alta Rápida
+                                       </Button>
+                                    </div>
+                                 )}
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-primary pl-1 uppercase">Observaciones Técnicas</Label>
+                        <Textarea className="min-h-[140px] bg-white border-slate-200 rounded-[1.5rem] p-6 text-sm font-semibold shadow-sm focus:ring-4 focus:ring-primary/5 transition-all uppercase" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
+                     </div>
+                  </div>
+               </ScrollArea>
+            </div>
+          )}
 
-                 {activeTab === 'Biblioteca Digital' && (
-                   <div className="space-y-8 animate-in slide-in-from-bottom-2">
-                      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 space-y-8">
-                         <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Fases de Implementación</h4></div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 bg-slate-50 p-6 rounded-[2rem] border">
-                           {BIBLIOTECA_FASES_LABELS.map((fase) => (
-                             <div key={fase.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [fase.id]: !((formData.bibliotecaFases as any)[fase.id])}})}>
-                               <Checkbox id={fase.id} checked={(formData.bibliotecaFases as any)?.[fase.id]} onCheckedChange={() => {}} className="h-5 w-5 border-primary/30" />
-                               <Label className="text-xs font-bold text-slate-600 uppercase group-hover:text-primary transition-colors cursor-pointer">{fase.label}</Label>
-                             </div>
-                           ))}
-                         </div>
-                         <div className="grid grid-cols-2 gap-8 pt-4">
-                            <div className="space-y-2">
-                               <Label className="text-[10px] font-black uppercase text-primary">Personal Capacitado</Label>
-                               <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.personalCapacitado} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})} />
-                            </div>
-                            <div className="space-y-2">
-                               <Label className="text-[10px] font-black uppercase text-primary">Equipos Habilitados</Label>
-                               <Input type="number" className="h-12 bg-slate-50 border-none rounded-xl font-black text-center text-xl" value={formData.bibliotecaFases?.equiposHabilitados} onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})} />
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                 )}
-
-                 <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-primary pl-1 uppercase">Observaciones Técnicas</Label>
-                    <Textarea className="min-h-[140px] bg-white border-slate-200 rounded-[1.5rem] p-6 text-sm font-semibold shadow-sm focus:ring-4 focus:ring-primary/5 transition-all uppercase" value={formData.observaciones || ''} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} />
-                 </div>
-              </div>
-            </ScrollArea>
-          </div>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button>
              <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">
                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR
              </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Alta Rápida de CCT */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white z-[300]">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                </div>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                </div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
