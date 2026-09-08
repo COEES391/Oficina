@@ -108,10 +108,11 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase3', label: 'Fase 3. Diagnóstico del equipo de cómputo existente', color: 'text-blue-600 bg-blue-50 border-blue-100' },
   { id: 'fase4', label: 'Fase 4. Instalación total de los contenidos del proyecto', color: 'text-amber-600 bg-amber-50 border-amber-100' },
   { id: 'fase5', label: 'Fase 5. Funcionalidad (pruebas de uso y manejo)', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-  { id: 'fase6', label: 'Fase 6. Guía orientación de uso y manejo de la herramienta', color: 'text-purple-600 bg-purple-50 border-purple-100' },
-  { id: 'fase7', label: 'Fase 7. Envío vía correo al CCT el formulario de seguimiento', color: 'text-cyan-600 bg-cyan-50 border-cyan-100' },
-  { id: 'fase8', label: 'Fase 8. Total de personal capacitado', color: 'text-orange-600 bg-orange-50 border-orange-100' },
-  { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' }
+  { id: 'fase5_guia', label: 'Fase 5.- Guía orientación de uso y manejo de la herramienta', color: 'text-purple-600 bg-purple-50 border-purple-100' },
+  { id: 'fase6', label: 'Fase 6.- Envió vía correo al CCT el formulario de seguimiento', color: 'text-cyan-600 bg-cyan-50 border-cyan-100' },
+  { id: 'fase7', label: 'Fase 7.- Seguimiento técnico al CCT', color: 'text-orange-600 bg-orange-50 border-orange-100' },
+  { id: 'fase8', label: 'Fase 8- Total de personal capacitado', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+  { id: 'fase9', label: 'Fase 9.- Total de equipos habilitados', color: 'text-blue-600 bg-blue-50 border-blue-100' }
 ];
 
 const TrafficLight = ({ status }: { status: BitacoraEntry['status'] }) => {
@@ -327,8 +328,9 @@ export default function ProgramsPage() {
       else if (activeTab === 'Biblioteca Digital') {
         const bf = formData.bibliotecaFases || initialFormState.bibliotecaFases!;
         finalData.bibliotecaFases = { ...bf };
-        const phases = [bf.fase1, bf.fase2, bf.fase3, bf.fase4, bf.fase5, bf.fase6, bf.fase7, bf.fase8, bf.fase9];
-        finalData.progress = Math.round((phases.filter(v => v).length / 9) * 100);
+        // Calculate progress based on keys that exist in current labels
+        const activePhases = Object.entries(bf).filter(([k, v]) => k.startsWith('fase') && v === true);
+        finalData.progress = Math.round((activePhases.length / BIBLIOTECA_FASES_LABELS.length) * 100);
       }
       else if (activeTab === 'Geoposición') {
         finalData.latitud = String(formData.latitud || '');
@@ -360,8 +362,8 @@ export default function ProgramsPage() {
         [phaseId]: value 
       };
       
-      const phases = [newFases.fase1, newFases.fase2, newFases.fase3, newFases.fase4, newFases.fase5, newFases.fase6, newFases.fase7, newFases.fase8, newFases.fase9];
-      const newProgress = Math.round((phases.filter(v => v).length / 9) * 100);
+      const activePhases = Object.entries(newFases).filter(([k, v]) => k.startsWith('fase') && v === true);
+      const newProgress = Math.round((activePhases.length / BIBLIOTECA_FASES_LABELS.length) * 100);
       
       await updateDoc(doc(db, 'programs', selectedBibliotecaRecord.id), {
         bibliotecaFases: newFases,
@@ -482,8 +484,13 @@ export default function ProgramsPage() {
                        <TableBody>
                           {records.filter(r => r.name === 'Biblioteca Digital').map((row) => {
                             const activePhases = Object.entries(row.bibliotecaFases || {}).filter(([k, v]) => k.startsWith('fase') && v === true);
-                            const lastPhaseNum = activePhases.length > 0 ? Math.max(...activePhases.map(([k]) => parseInt(k.replace('fase', '')))) : 0;
-                            const phaseLabel = BIBLIOTECA_FASES_LABELS[lastPhaseNum - 1] || { label: 'Pendiente', color: 'text-slate-400 bg-slate-50 border-slate-100' };
+                            const lastPhaseNum = activePhases.length > 0 ? Math.max(...activePhases.map(([k]) => {
+                                const numPart = k.replace('fase', '').replace('_guia', '');
+                                return parseInt(numPart) || 0;
+                            })) : 0;
+                            
+                            // Get the most relevant phase label
+                            const currentFaseObj = BIBLIOTECA_FASES_LABELS.find(f => (row.bibliotecaFases as any)?.[f.id]) || { label: 'Pendiente', color: 'text-slate-400 bg-slate-50 border-slate-100' };
 
                             return (
                               <TableRow 
@@ -497,9 +504,9 @@ export default function ProgramsPage() {
                                  <TableCell className="pl-8 font-mono font-black text-[10px] text-primary">{row.cct}</TableCell>
                                  <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[150px]">{row.schoolName}</TableCell>
                                  <TableCell>
-                                    <div className={cn("px-3 py-1 rounded-lg border text-[8px] font-black uppercase inline-flex flex-col", phaseLabel.color)}>
-                                       <span>Fase {lastPhaseNum > 0 ? lastPhaseNum : '0'}</span>
-                                       <span className="opacity-70 truncate max-w-[140px]">{phaseLabel.label.split('. ')[1]}</span>
+                                    <div className={cn("px-3 py-1 rounded-lg border text-[8px] font-black uppercase inline-flex flex-col", currentFaseObj.color)}>
+                                       <span>{currentFaseObj.label.split('.')[0]}</span>
+                                       <span className="opacity-70 truncate max-w-[140px]">{currentFaseObj.label.split('.')[1]?.trim() || currentFaseObj.label}</span>
                                     </div>
                                  </TableCell>
                                  <TableCell>
@@ -683,10 +690,10 @@ export default function ProgramsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
-                        <SelectItem value="activo" className="text-[10px] font-black text-emerald-600">🟢 ACTIVA</SelectItem>
-                        <SelectItem value="inactivo" className="text-[10px] font-black text-slate-400">⚪ INACTIVA</SelectItem>
-                        <SelectItem value="suspendida" className="text-[10px] font-black text-amber-600">🟡 BLOQUEADA</SelectItem>
-                        <SelectItem value="Eliminada" className="text-[10px] font-black text-rose-600">🔴 ELIMINADA</SelectItem>
+                        <SelectItem value="activo" className="text-[10px] font-black text-emerald-600">activa</SelectItem>
+                        <SelectItem value="inactivo" className="text-[10px] font-black text-slate-400">inactiva</SelectItem>
+                        <SelectItem value="suspendida" className="text-[10px] font-black text-amber-600">bloqueada</SelectItem>
+                        <SelectItem value="Eliminada" className="text-[10px] font-black text-rose-600">eliminada</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
