@@ -189,7 +189,7 @@ export default function ProgramsPage() {
     asistentes: [],
     bibliotecaFases: {
       fase1: false, fase2: false, fase3: false, fase4: false, fase4_1: false, fase4_2: false,
-      fase5: false, fase6: false, fase7: false, fase7_1: false, fase8: false, fase9: false,
+      fase5: false, fase5_guia: false, fase6: false, fase7: false, fase8: false, fase9: false,
       personalCapacitado: 0, equiposHabilitados: 0
     }
   }
@@ -1370,12 +1370,12 @@ export default function ProgramsPage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
                   <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
-                    <SelectTrigger className="font-bold border-slate-200">
-                      <SelectValue />
+                    <SelectTrigger className="font-bold border-slate-200 h-10">
+                      <SelectValue placeholder="SELECCIONAR VALLE..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MEXICO">MÉXICO</SelectItem>
-                      <SelectItem value="TOLUCA">TOLUCA</SelectItem>
+                    <SelectContent className="z-[400] rounded-xl border-none shadow-2xl">
+                      <SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
