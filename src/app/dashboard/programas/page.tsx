@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -534,7 +533,7 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (
              <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
           )}
-          {!['Geoposición', 'Conoce mi Escuela'].includes(activeTab) && (
+          {!['Geoposición', 'Conoce mi Escuela', 'Cuentas Institucionales'].includes(activeTab) && (
             <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
             </Button>
@@ -842,7 +841,7 @@ export default function ProgramsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Usuario (sin dominio) *</Label>
-                      <Input placeholder="EJ. MARIA.LOPEZ" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
+                      <Input placeholder="ej. maria.lopez" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio *</Label>
@@ -926,7 +925,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Geoposición' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-700 w-full">
-          {/* Panel de Mapa Satelital (Izquierda) */}
           <div className="lg:col-span-7 flex flex-col gap-4">
             <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative h-[650px] group border-4 border-white">
               <div className="absolute top-6 left-6 z-20 flex gap-2">
@@ -942,7 +940,6 @@ export default function ProgramsPage() {
                   className="object-cover brightness-105" 
                 />
                 
-                {/* Marcadores de Estado Dinámicos (Simulados) */}
                 <div className="absolute top-[40%] left-[45%] group/pin cursor-pointer">
                   <div className="h-10 w-10 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
                     <div className="h-3 w-3 bg-white rounded-full" />
@@ -962,10 +959,9 @@ export default function ProgramsPage() {
                 <div className="absolute top-[55%] left-[70%] h-8 w-8 bg-slate-400 rounded-full border-4 border-white shadow-xl flex items-center justify-center"><div className="h-2 w-2 bg-white rounded-full" /></div>
               </div>
 
-              {/* Controles de Mapa */}
               <div className="absolute bottom-24 right-6 flex flex-col gap-2 z-20">
-                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all"><Plus className="h-5 w-5" /></button>
-                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all"><MinusCircle className="h-5 w-5" /></button>
+                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">+</button>
+                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">-</button>
               </div>
               <button className="absolute bottom-8 right-6 h-10 w-10 bg-white rounded-xl shadow-xl z-20 flex items-center justify-center text-primary hover:bg-primary/5 transition-all">
                 <LocateFixed className="h-6 w-6" />
@@ -982,7 +978,6 @@ export default function ProgramsPage() {
             </Card>
           </div>
 
-          {/* Registro y Bitácora (Derecha) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
              <Card className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden shrink-0">
                 <div className="px-8 py-5 border-b flex items-center gap-4 bg-slate-50/50">
@@ -1109,7 +1104,6 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-6 animate-in fade-in duration-700 w-full">
-          {/* Fila de Buscador Táctico Superior */}
           <Card className="rounded-[2rem] bg-white border-none shadow-2xl p-6 overflow-visible z-50">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
               <div className="space-y-1.5">
@@ -1173,7 +1167,6 @@ export default function ProgramsPage() {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-             {/* Panel Izquierdo: Monitor Satelital y Resumen */}
              <div className="lg:col-span-7 flex flex-col gap-6">
                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden flex flex-col relative h-[500px] border-4 border-white">
                    <div className="absolute top-6 left-6 z-20 flex gap-1 bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-xl">
@@ -1184,13 +1177,11 @@ export default function ProgramsPage() {
                    <div className="absolute inset-0 z-0">
                       <Image src="https://picsum.photos/seed/school-intel-v1/1200/800" alt="Mapa" fill className="object-cover" />
                       
-                      {/* Toggle Mapa/Satélite flotante */}
                       <div className="absolute top-6 left-48 z-20 flex bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-xl">
                         <button className="px-4 h-10 bg-slate-100 text-slate-800 font-bold text-[10px] rounded-xl mr-1">Mapa</button>
                         <button className="px-4 h-10 text-slate-400 font-bold text-[10px] hover:text-slate-600">Satélite</button>
                       </div>
 
-                      {/* Tooltip de Ejemplo */}
                       <div className="absolute top-[35%] left-[55%] z-20">
                          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-white min-w-[220px] relative">
                             <div className="flex justify-between items-center mb-1">
@@ -1205,20 +1196,17 @@ export default function ProgramsPage() {
                          </div>
                       </div>
 
-                      {/* Otros Marcadores */}
                       <div className="absolute top-[20%] left-[20%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
                       <div className="absolute top-[60%] left-[30%] h-6 w-6 bg-rose-500 rounded-full border-2 border-white shadow-lg" />
                       <div className="absolute top-[50%] left-[80%] h-6 w-6 bg-blue-600 rounded-full border-2 border-white shadow-lg" />
                    </div>
 
-                   {/* Controles de Mapa */}
                    <div className="absolute bottom-20 right-6 z-20 flex flex-col gap-2">
                       <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">+</button>
                       <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all font-black text-xl">-</button>
                    </div>
                    <button className="absolute bottom-6 right-6 h-10 w-10 bg-white rounded-xl shadow-xl z-20 flex items-center justify-center text-primary"><LocateFixed className="h-5 w-5" /></button>
 
-                   {/* Leyenda de Estados */}
                    <div className="absolute bottom-6 left-6 right-18 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white z-20 flex items-center gap-8 overflow-x-auto no-scrollbar">
                       <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-emerald-500" /><span className="text-[10px] font-black uppercase text-slate-600">En línea</span></div>
                       <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-blue-600" /><span className="text-[10px] font-black uppercase text-slate-600">En movimiento</span></div>
@@ -1227,7 +1215,6 @@ export default function ProgramsPage() {
                    </div>
                 </Card>
 
-                {/* Resumen General KPI Cards */}
                 <div className="space-y-4">
                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest pl-2">Resumen general</h3>
                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1242,7 +1229,6 @@ export default function ProgramsPage() {
                            <h4 className="text-2xl font-black text-slate-800 leading-none">{stat.value}</h4>
                            <p className="text-[9px] font-black uppercase text-slate-400 mt-2 leading-tight tracking-widest">{stat.label}</p>
                            
-                           {/* Mini Leyenda en la base de la card */}
                            <div className="flex gap-1 mt-4">
                               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                               <div className="h-1.5 w-1.5 rounded-full bg-blue-600" />
@@ -1255,9 +1241,7 @@ export default function ProgramsPage() {
                 </div>
              </div>
 
-             {/* Panel Derecho: Registro y Fichas */}
              <div className="lg:col-span-5 flex flex-col gap-8">
-                {/* Formulario Registrar / Editar */}
                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden">
                    <div className="p-8 space-y-6">
                       <div className="flex items-center gap-4">
@@ -1350,7 +1334,6 @@ export default function ProgramsPage() {
                    </div>
                 </Card>
 
-                {/* Listado de Fichas de Escuela */}
                 <div className="space-y-6">
                    {[1, 2].map((item) => (
                       <Card key={item} className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden group hover:scale-[1.02] transition-all duration-500">
