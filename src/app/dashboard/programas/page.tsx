@@ -57,7 +57,12 @@ import {
   CheckCircle,
   Tag,
   Globe,
-  MonitorCheck
+  MonitorCheck,
+  Navigation,
+  Info,
+  Eye,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -864,46 +869,179 @@ export default function ProgramsPage() {
           </div>
         </div>
       ) : activeTab === 'Geoposición' ? (
-        <div className="space-y-6 animate-in fade-in duration-700 w-full min-h-[850px] flex flex-col">
-          <Card className="p-5 rounded-[2.5rem] bg-white border-none shadow-xl flex flex-wrap items-end gap-6 shrink-0">
-            <div className="flex-1 min-w-[200px] space-y-1">
-              <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Rango de fechas</Label>
-              <div className="relative group">
-                <Input value="01/04/2025 - 15/04/2025" readOnly className="h-10 rounded-xl bg-slate-50 border-none shadow-inner font-bold text-xs pl-10" />
-                <Calendar className="absolute left-3.5 top-3 h-4 w-4 text-slate-300" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700 w-full min-h-[700px]">
+          {/* Mapa Interactiva (Izquierda) */}
+          <div className="lg:col-span-7 flex flex-col gap-4 h-full">
+            <Card className="flex-1 rounded-[2rem] border-none shadow-2xl overflow-hidden bg-white flex flex-col relative group">
+              <div className="absolute top-4 left-4 z-20 flex gap-2">
+                 <button className="px-6 h-9 bg-white rounded-xl shadow-lg border-2 border-primary/10 text-[10px] font-black uppercase text-primary">Mapa</button>
+                 <button className="px-6 h-9 bg-white/80 hover:bg-white rounded-xl shadow-lg text-[10px] font-black uppercase text-slate-400 transition-all">Satélite</button>
               </div>
-            </div>
-            <Button className="h-10 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] gap-2 shadow-lg"><RotateCcw className="h-4 w-4" /> Actualizar</Button>
-          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 overflow-hidden min-h-0">
-            <Card className="lg:col-span-8 rounded-[3rem] border-none shadow-2xl overflow-hidden flex flex-col relative bg-slate-100">
-               <div className="absolute inset-0 z-0">
-                  <Image src="https://picsum.photos/seed/map-rastreo-v5/1200/800" alt="Mapa Rastreo" fill className="object-cover grayscale-[0.3] brightness-90" />
-                  <div className="absolute top-[40%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
-               </div>
+              {/* Simulación de Mapa */}
+              <div className="absolute inset-0 z-0">
+                <Image 
+                   src="https://picsum.photos/seed/geoloc-edomex/1200/900" 
+                   alt="Mapa Geoposición" 
+                   fill 
+                   className="object-cover brightness-95 grayscale-[0.2]"
+                />
+                
+                {/* Marcadores Simulados */}
+                <div className="absolute top-[40%] left-[45%] h-8 w-8 bg-emerald-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center animate-bounce z-20">
+                   <div className="h-2 w-2 bg-white rounded-full" />
+                </div>
+                
+                {/* Tooltip del Dispositivo */}
+                <div className="absolute top-[32%] left-[48%] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-white z-30 animate-in fade-in zoom-in duration-500 min-w-[220px]">
+                   <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-[10px] font-black text-primary uppercase leading-none">Dispositivo: COEES-001</span>
+                      <ChevronRight className="h-4 w-4 text-primary" />
+                   </div>
+                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">Última ubicación: 15/04/2025 10:24</p>
+                   <div className="absolute bottom-[-10px] left-4 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[10px] border-t-white/90" />
+                </div>
+
+                <div className="absolute top-[55%] left-[30%] h-8 w-8 bg-rose-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
+                <div className="absolute top-[20%] left-[60%] h-8 w-8 bg-slate-500 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
+                <div className="absolute top-[70%] left-[50%] h-8 w-8 bg-blue-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center z-20"><div className="h-2 w-2 bg-white rounded-full" /></div>
+              </div>
+
+              {/* Botones de Control del Mapa */}
+              <div className="absolute bottom-24 right-4 z-20 flex flex-col gap-2">
+                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 font-bold hover:bg-slate-50 transition-all text-xl">+</button>
+                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 font-bold hover:bg-slate-50 transition-all text-xl">-</button>
+                 <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-primary mt-2"><Navigation className="h-5 w-5" /></button>
+              </div>
+
+              {/* Leyenda de Mapa */}
+              <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl p-4 rounded-[2rem] shadow-2xl border border-white/50 z-20 flex flex-wrap items-center justify-between gap-4">
+                 <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><span className="text-[9px] font-black uppercase text-slate-600">En línea</span></div>
+                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-blue-600" /><span className="text-[9px] font-black uppercase text-slate-600">En movimiento</span></div>
+                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-[9px] font-black uppercase text-slate-600">Sin señal</span></div>
+                    <div className="flex items-center gap-2"><div className="h-2.5 w-2.5 rounded-full bg-slate-500" /><span className="text-[9px] font-black uppercase text-slate-600">Desconectado</span></div>
+                 </div>
+              </div>
             </Card>
+          </div>
 
-            <div className="lg:col-span-4 space-y-6 overflow-y-auto pr-2 custom-scrollbar flex flex-col">
-               <Card className="p-8 rounded-[3rem] bg-white border-none shadow-2xl shrink-0">
-                  <div className="flex items-center gap-3 mb-6 border-b border-slate-50 pb-4">
-                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-5 w-5" /></div>
-                     <CardTitle className="text-base font-black text-slate-800 uppercase">Registrar Coordenadas</CardTitle>
-                  </div>
-                  <div className="space-y-6">
-                     <div className="space-y-2 relative">
-                        <Label className="text-[10px] font-black text-primary uppercase pl-1">CCT del Plantel *</Label>
-                        <Input placeholder="15DES0000X" className="h-11 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black text-primary pl-10 uppercase" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
-                        <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Latitud</Label><Input placeholder="19.4326" className="h-10 bg-slate-50 border-none rounded-xl font-bold text-center" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                        <div className="space-y-1"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Longitud</Label><Input placeholder="-99.1332" className="h-10 bg-slate-50 border-none rounded-xl font-bold text-center" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
-                     </div>
-                     <Button onClick={handleSave} className="w-full btn-institutional h-12 rounded-xl shadow-xl text-[10px] gap-2"><Save className="h-4 w-4" /> GUARDAR UBICACIÓN</Button>
-                  </div>
-               </Card>
-            </div>
+          {/* Registro y Tabla (Derecha) */}
+          <div className="lg:col-span-5 flex flex-col gap-6 h-full overflow-hidden">
+             {/* Formulario de Registro */}
+             <Card className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden shrink-0">
+                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50">
+                   <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-5 w-5" /></div>
+                   <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Registrar coordenadas de ubicación</h3>
+                </div>
+                <div className="p-8 space-y-6">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ingresa el CCT y las coordenadas para registrar la ubicación de la escuela.</p>
+                   
+                   <div className="space-y-4">
+                      <div className="space-y-1 relative">
+                        <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">CCT *</Label>
+                        <div className="relative group">
+                           <Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-mono font-black pl-10 text-primary uppercase focus:bg-white transition-all" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
+                           <School className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Latitud *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. 19.6289" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-10 shadow-inner" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                               <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
+                            </div>
+                         </div>
+                         <div className="space-y-1">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase pl-1">Longitud *</Label>
+                            <div className="relative group">
+                               <Input placeholder="Ej. -99.3128" className="h-11 bg-slate-50 border-none rounded-xl font-bold pl-10 shadow-inner" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                               <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary" />
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="flex gap-4">
+                      <Button onClick={handleSave} disabled={isSaving} className="flex-1 btn-institutional h-12 rounded-xl text-[11px] gap-2 shadow-xl">
+                        <Save className="h-5 w-5" /> GUARDAR UBICACIÓN
+                      </Button>
+                      <Button variant="outline" onClick={resetForm} className="h-12 px-8 rounded-xl border-slate-200 text-slate-500 font-black uppercase text-[11px] gap-2 hover:bg-slate-50">
+                        <RotateCcw className="h-4 w-4" /> LIMPIAR
+                      </Button>
+                   </div>
+
+                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
+                      <div className="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5"><Info className="h-3.5 w-3.5" /></div>
+                      <div className="space-y-1">
+                         <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Información</p>
+                         <p className="text-[9px] font-bold text-blue-700/70 uppercase leading-tight">Asegúrese de ingresar el CCT y las coordenadas en formato decimal (latitud y longitud) para registrar correctamente la ubicación de la escuela.</p>
+                      </div>
+                   </div>
+                </div>
+             </Card>
+
+             {/* Tabla de Ubicaciones */}
+             <Card className="flex-1 rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden flex flex-col min-h-0">
+                <div className="px-8 py-5 border-b flex items-center gap-3 bg-slate-50/50">
+                   <div className="h-8 w-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-inner"><ClipboardList className="h-5 w-5" /></div>
+                   <h3 className="text-base font-black text-slate-800 uppercase tracking-widest leading-none">Últimas ubicaciones registradas</h3>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                   <ScrollArea className="h-full">
+                      <Table>
+                        <TableHeader className="bg-white sticky top-0 z-10 border-b">
+                           <TableRow className="h-10">
+                              <TableHead className="pl-8 text-[8px] font-black uppercase">Fecha y hora</TableHead>
+                              <TableHead className="text-[8px] font-black uppercase w-20">CCT</TableHead>
+                              <TableHead className="text-[8px] font-black uppercase text-center">Latitud</TableHead>
+                              <TableHead className="text-[8px] font-black uppercase text-center">Longitud</TableHead>
+                              <TableHead className="text-center text-[8px] font-black uppercase">Estado</TableHead>
+                              <TableHead className="text-right pr-10 text-[8px] font-black uppercase w-24">Acciones</TableHead>
+                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {records.filter(r => r.name === 'Geoposición').map((rec) => (
+                             <TableRow key={rec.id} className="h-14 border-b border-slate-50 hover:bg-slate-50 group">
+                                <TableCell className="pl-8 text-[9px] font-bold text-slate-400">{rec.date}</TableCell>
+                                <TableCell className="font-mono font-black text-[10px] text-primary">{rec.cct}</TableCell>
+                                <TableCell className="text-center text-[9px] font-bold text-slate-600">{rec.latitud}</TableCell>
+                                <TableCell className="text-center text-[9px] font-bold text-slate-600">{rec.longitud}</TableCell>
+                                <TableCell className="text-center">
+                                   <Badge variant="outline" className={cn("text-[7px] font-black uppercase border-none px-3 h-5 rounded-full", 
+                                      rec.status === 'activo' ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700")}>
+                                      {rec.status === 'activo' ? 'En línea' : 'En movimiento'}
+                                   </Badge>
+                                </TableCell>
+                                <TableCell className="text-right pr-8">
+                                   <div className="flex justify-end gap-1">
+                                      <button className="h-7 w-7 flex items-center justify-center text-slate-300 hover:text-primary transition-all"><Eye className="h-3.5 w-3.5" /></button>
+                                      <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
+                                   </div>
+                                </TableCell>
+                             </TableRow>
+                           ))}
+                           {records.filter(r => r.name === 'Geoposición').length === 0 && (
+                             <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 text-[9px] font-black uppercase">Sin ubicaciones registradas</TableCell></TableRow>
+                           )}
+                        </TableBody>
+                      </Table>
+                   </ScrollArea>
+                </div>
+                {/* Paginación Simulada */}
+                <div className="px-8 py-4 bg-slate-50/50 border-t flex justify-between items-center shrink-0">
+                   <p className="text-[9px] font-bold text-slate-400 uppercase">Mostrando 1 - 5 de {records.filter(r => r.name === 'Geoposición').length} registros</p>
+                   <div className="flex items-center gap-1">
+                      <button className="h-7 w-7 rounded-lg border bg-white flex items-center justify-center text-slate-400 hover:bg-slate-50"><ChevronLeft className="h-4 w-4" /></button>
+                      <button className="h-7 w-7 rounded-lg border bg-primary text-white text-[9px] font-black">1</button>
+                      <button className="h-7 w-7 rounded-lg border bg-white text-[9px] font-black text-slate-400">2</button>
+                      <button className="h-7 w-7 rounded-lg border bg-white text-[9px] font-black text-slate-400">3</button>
+                      <button className="h-7 w-7 rounded-lg border bg-white flex items-center justify-center text-slate-400 hover:bg-slate-50"><ChevronRightIcon className="h-4 w-4" /></button>
+                   </div>
+                </div>
+             </Card>
           </div>
         </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
