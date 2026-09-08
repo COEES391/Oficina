@@ -70,7 +70,8 @@ import {
   LocateFixed,
   Maximize2,
   Circle,
-  Building2
+  Building2,
+  MessageSquare
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -304,7 +305,7 @@ export default function ProgramsPage() {
       totalEscuelas: conoceRecs.length,
       totalResponsables: new Set(conoceRecs.map(r => r.userName).filter(u => !!u)).size,
       totalMunicipios: new Set(conoceRecs.map(r => r.municipio).filter(m => !!m)).size,
-      datosActualizados: conoceRecs.length // O un contador incremental si se tuviera histórico
+      datosActualizados: conoceRecs.length
     };
   }, [records]);
 
@@ -703,7 +704,7 @@ export default function ProgramsPage() {
                   <Bell className="h-3 w-3 text-white" />
                   <p className="text-[8px] font-black uppercase tracking-widest leading-none">{bitacoraPendingCount} PENDIENTES</p>
                </div>
-               <Button onClick={() => setSearchTerm('pendiente')} className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded-lg border-none">ATENDER</Button>
+               <Button onClick={() => setSearchTerm('pendiente')} className="bg-white text-rose-600 hover:bg-slate-100 font-black uppercase text-[7px] h-6 px-3 rounded-lg border-none shadow-md">ATENDER</Button>
             </div>
            )}
 
@@ -721,6 +722,9 @@ export default function ProgramsPage() {
                        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-all" />
                        <Input placeholder="Buscar CCT o Folio..." className="h-11 pl-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
+                    <Button onClick={() => setIsHelpDeskOpen(true)} className="h-11 px-6 rounded-xl bg-[#B38E5D] text-white font-black uppercase text-[10px] gap-2 shadow-lg hover:bg-[#a67d4a]">
+                      <MessageSquare className="h-4 w-4" /> Mesa de Ayuda
+                    </Button>
                     <Button onClick={downloadExcelBitacora} variant="outline" className="h-11 px-6 rounded-xl border-emerald-200 text-emerald-700 font-black uppercase text-[10px] gap-2 hover:bg-emerald-50 shadow-md">
                       <FileSpreadsheet className="h-4 w-4" /> Exportar
                     </Button>
@@ -760,7 +764,10 @@ export default function ProgramsPage() {
                         <TableCell className="text-right pr-4">
                            <div className="flex justify-end gap-1">
                               {r.pdfData && (
-                                <button onClick={() => setBitacoraPdfToPreview(r.pdfData!)} className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-all"><FileText className="h-4 w-4" /></button>
+                                <button onClick={() => setBitacoraPdfToPreview(r.pdfData!)} className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-all shadow-sm"><FileText className="h-4 w-4" /></button>
+                              )}
+                              {r.excelData && (
+                                <button onClick={() => downloadFile(r.excelData!, r.excelName || 'base.xlsx')} className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-all shadow-sm"><FileSpreadsheet className="h-4 w-4" /></button>
                               )}
                            </div>
                         </TableCell>
@@ -778,6 +785,13 @@ export default function ProgramsPage() {
                 </Table>
               </div>
            </Card>
+
+           <div className="flex items-center gap-2.5 p-4 bg-accent/5 border border-accent/10 rounded-2xl mt-4">
+              <AlertCircle className="h-5 w-5 text-accent" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-accent">
+                Información auditada en tiempo real. Los folios en semáforo rojo requieren atención inmediata del departamento técnico.
+              </p>
+           </div>
         </div>
       ) : activeTab === 'Cuentas Institucionales' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -1418,6 +1432,33 @@ export default function ProgramsPage() {
 
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white z-[300]"><DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0"><DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle></DialogHeader><div className="p-8 space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" /></div></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200 h-10"><SelectValue placeholder="SELECCIONAR VALLE..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl"><SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem><SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem></SelectContent></Select></div></div></div><DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter></DialogContent>
+      </Dialog>
+
+      <Dialog open={isBitacoraEditDialogOpen} onOpenChange={(open) => { setIsBitacoraEditDialogOpen(open); if(!open) setBitacoraEditingRecord(null); }}>
+        <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-primary text-white">
+            <DialogTitle className="uppercase font-black text-white text-xl flex items-center gap-4">
+              <Pencil className="h-6 w-6 text-accent" /> Corregir Registro ATRES
+            </DialogTitle>
+          </DialogHeader>
+          {bitacoraEditingRecord && (
+            <div className="p-8 space-y-6">
+               <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Folio Operativo</Label><div className="h-11 bg-slate-50 rounded-xl flex items-center px-4 font-mono font-black text-primary border border-slate-100 text-lg">{bitacoraEditingRecord.folio}</div></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-400">Analista Designado</Label><Input className="h-11 bg-white rounded-xl border-slate-200 font-black uppercase text-xs" value={bitacoraEditingRecord.tecnico} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, tecnico: e.target.value.toUpperCase()})} /></div>
+               </div>
+               <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase text-primary">Actualizar Estatus</Label>
+                  <Select value={bitacoraEditingRecord.status} onValueChange={(val: any) => setBitacoraEditingRecord({...bitacoraEditingRecord, status: val})}>
+                    <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-black uppercase text-[10px] shadow-inner"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="atendido" className="text-[10px] font-black text-emerald-600">ATENDIDO (VERDE)</SelectItem><SelectItem value="proceso" className="text-[10px] font-black text-amber-600">EN PROCESO (AMARILLO)</SelectItem><SelectItem value="pendiente" className="text-[10px] font-black text-rose-600">PENDIENTE (ROJO)</SelectItem></SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Resumen del Servicio</Label><Textarea className="min-h-[140px] bg-slate-50 border-none rounded-[1.5rem] p-5 text-xs font-semibold shadow-inner" value={bitacoraEditingRecord.servicio} onChange={e => setBitacoraEditingRecord({...bitacoraEditingRecord, servicio: e.target.value.toUpperCase()})} /></div>
+            </div>
+          )}
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4"><Button variant="ghost" onClick={() => setIsBitacoraEditDialogOpen(false)} className="font-black text-[10px] uppercase h-12 px-8">Cancelar</Button><Button onClick={saveBitacoraEdits} disabled={isSaving} className="btn-institutional h-12 px-10 text-[10px] gap-2 rounded-xl shadow-xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar Cambios</Button></DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
