@@ -70,7 +70,8 @@ import {
   Archive,
   LocateFixed,
   Maximize2,
-  Circle
+  Circle,
+  Building2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskDialog } from '@/components/HelpDeskDialog'
@@ -961,7 +962,7 @@ export default function ProgramsPage() {
                 <div className="absolute top-[55%] left-[70%] h-8 w-8 bg-slate-400 rounded-full border-4 border-white shadow-xl flex items-center justify-center"><div className="h-2 w-2 bg-white rounded-full" /></div>
               </div>
 
-              {/* Controles de Mapa (Estilo Imagen) */}
+              {/* Controles de Mapa */}
               <div className="absolute bottom-24 right-6 flex flex-col gap-2 z-20">
                  <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all"><Plus className="h-5 w-5" /></button>
                  <button className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all"><MinusCircle className="h-5 w-5" /></button>
