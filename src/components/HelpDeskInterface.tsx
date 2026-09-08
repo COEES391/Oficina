@@ -1,5 +1,10 @@
 
 'use client'
+/**
+ * @fileOverview Interfaz de Mesa de Ayuda ATRES.
+ * Maneja la comunicación en tiempo real entre usuarios externos y analistas internos.
+ */
+
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,7 +59,8 @@ import {
   Plus,
   Globe,
   Copy,
-  Wifi
+  Wifi,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -126,6 +132,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [attendedTodayCount, setAttendedTodayCount] = useState(0)
   const [currentOrigin, setCurrentOrigin] = useState('')
   const [isBotThinking, setIsBotThinking] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   
   const [isRemoteHelpRequested, setIsRemoteHelpRequested] = useState(false)
   const [isNewTicketDialogOpen, setIsNewTicketDialogOpen] = useState(false)
@@ -142,7 +149,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [ticketDetail, setTicketDetail] = useState('')
 
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
-  const [finishSearchTerm, setFinishSearchTerm] = useState('')
   const [finishForm, setFinishForm] = useState({
     cct: '',
     schoolName: '',
@@ -204,24 +210,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   useEffect(() => {
     if (!mounted) return;
-    const q = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[];
-      setFormalRequests(allEntries.filter(b => b.status === 'pendiente' || b.status === 'proceso'));
-      const today = format(new Date(), 'dd/MM/yyyy');
-      setAttendanceHistory(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)));
-      setAttendedTodayCount(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)).length);
-    });
-    return () => unsubscribe();
+    try {
+      const q = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[];
+        setFormalRequests(allEntries.filter(b => b.status === 'pendiente' || b.status === 'proceso'));
+        const today = format(new Date(), 'dd/MM/yyyy');
+        setAttendanceHistory(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)));
+        setAttendedTodayCount(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)).length);
+      });
+      return () => unsubscribe();
+    } catch (e) { console.error("Error bitacora:", e); }
   }, [mounted]);
 
   useEffect(() => {
     if (!mounted) return;
-    const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
-    });
-    return () => unsubscribe();
+    try {
+      const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
+      });
+      return () => unsubscribe();
+    } catch (e) { console.error("Error queue:", e); }
   }, [mounted]);
 
   useEffect(() => {
@@ -229,20 +239,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setMessages([]);
       return;
     }
-    const q = query(
-      collection(db, 'chat_messages'), 
-      where('chatId', '==', activeChatId),
-      orderBy('timestamp', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
-      if (chatMsgs.length === 0 && isPublic) {
-        setMessages([{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: { seconds: Date.now()/1000 } }]);
-      } else {
-        setMessages(chatMsgs);
-      }
-    });
-    return () => unsubscribe();
+    try {
+      const q = query(
+        collection(db, 'chat_messages'), 
+        where('chatId', '==', activeChatId),
+        orderBy('timestamp', 'asc')
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
+        if (chatMsgs.length === 0 && isPublic) {
+          setMessages([{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: { seconds: Date.now()/1000 } }]);
+        } else {
+          setMessages(chatMsgs);
+        }
+      });
+      return () => unsubscribe();
+    } catch (e) { console.error("Error messages:", e); }
   }, [mounted, activeChatId, isPublic]);
 
   useEffect(() => {
@@ -254,52 +266,65 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!textToSend.trim() && !msgData?.fileData) return;
     const chatId = activeChatId || sessionKey;
 
-    if (isPublic) {
-      const queueRef = doc(db, 'atres_support_queue', sessionKey);
-      await setDoc(queueRef, {
-        remoteId: remoteId || '',
-        ticketNumber: sessionKey,
-        timestamp: serverTimestamp(),
-        status: 'pending',
-        requestType: remoteId ? 'remote' : 'chat',
-        chatKey: sessionKey
-      }, { merge: true });
-
-      const lowerInput = textToSend.toLowerCase();
-      if (['office', 'windows', 'controlador', 'driver', 'impresora', 'anydesk'].some(word => lowerInput.includes(word))) {
-        setIsRemoteHelpRequested(true);
-      }
+    if (!chatId) {
+      toast({ variant: "destructive", title: "Iniciando Sesión", description: "Espere un momento por favor..." });
+      return;
     }
 
-    await addDoc(collection(db, 'chat_messages'), {
-      chatId,
-      role: isPublic ? 'user' : 'tech',
-      content: textToSend,
-      timestamp: serverTimestamp(),
-      senderName: !isPublic ? techName : undefined,
-      fileData: msgData?.fileData?.data || null,
-      fileName: msgData?.fileData?.name || null,
-      fileType: msgData?.fileData?.type || null
-    });
+    setIsSending(true);
+    try {
+      if (isPublic) {
+        const queueRef = doc(db, 'atres_support_queue', sessionKey);
+        await setDoc(queueRef, {
+          remoteId: remoteId || '',
+          ticketNumber: sessionKey,
+          timestamp: serverTimestamp(),
+          status: 'pending',
+          requestType: remoteId ? 'remote' : 'chat',
+          chatKey: sessionKey
+        }, { merge: true });
 
-    if (isPublic && !msgData?.fileData) {
-      setIsBotThinking(true);
-      try {
-        const aiResponse = await chatWithHelpDesk({ message: textToSend });
-        if (aiResponse?.response) {
-          await addDoc(collection(db, 'chat_messages'), {
-            chatId,
-            role: 'bot',
-            content: aiResponse.response,
-            timestamp: serverTimestamp()
-          });
+        const lowerInput = textToSend.toLowerCase();
+        if (['office', 'windows', 'controlador', 'driver', 'impresora', 'anydesk'].some(word => lowerInput.includes(word))) {
+          setIsRemoteHelpRequested(true);
         }
-      } finally {
-        setIsBotThinking(false);
       }
-    }
 
-    !msgData?.content && setInput('');
+      await addDoc(collection(db, 'chat_messages'), {
+        chatId,
+        role: isPublic ? 'user' : 'tech',
+        content: textToSend,
+        timestamp: serverTimestamp(),
+        senderName: !isPublic ? techName : undefined,
+        fileData: msgData?.fileData?.data || null,
+        fileName: msgData?.fileData?.name || null,
+        fileType: msgData?.fileData?.type || null
+      });
+
+      !msgData?.content && setInput('');
+
+      if (isPublic && !msgData?.fileData) {
+        setIsBotThinking(true);
+        // Respuesta de IA no bloqueante para el usuario
+        chatWithHelpDesk({ message: textToSend }).then(async (aiResponse) => {
+          if (aiResponse?.response) {
+            await addDoc(collection(db, 'chat_messages'), {
+              chatId,
+              role: 'bot',
+              content: aiResponse.response,
+              timestamp: serverTimestamp()
+            });
+          }
+        }).finally(() => {
+          setIsBotThinking(false);
+        });
+      }
+    } catch (error: any) {
+      console.error("Chat Error:", error);
+      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo enviar el mensaje a la nube." });
+    } finally {
+      setIsSending(false);
+    }
   }
 
   const handleRequestRemoteSupport = async () => {
@@ -308,18 +333,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return;
     }
     const turn = sessionKey;
-    const queueRef = doc(db, 'atres_support_queue', sessionKey);
-    await setDoc(queueRef, {
-      remoteId,
-      ticketNumber: turn,
-      timestamp: serverTimestamp(),
-      status: 'pending',
-      requestType: 'remote',
-      chatKey: sessionKey
-    }, { merge: true });
-    
-    await handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
-    toast({ title: "Soporte Solicitado", description: `Turno registrado: ${turn}` });
+    try {
+      const queueRef = doc(db, 'atres_support_queue', sessionKey);
+      await setDoc(queueRef, {
+        remoteId,
+        ticketNumber: turn,
+        timestamp: serverTimestamp(),
+        status: 'pending',
+        requestType: 'remote',
+        chatKey: sessionKey
+      }, { merge: true });
+      
+      await handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
+      toast({ title: "Soporte Solicitado", description: `Turno registrado: ${turn}` });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al solicitar", description: "Verifique su conexión a internet." });
+    }
   }
 
   const handleSendNewTicketRequest = async () => {
@@ -327,6 +356,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Datos Incompletos" });
       return;
     }
+    setIsSending(true);
     try {
       const folio = generateSequentialFolio();
       let pdfContent = "";
@@ -359,6 +389,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       resetRequestForm();
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al enviar", description: e.message });
+    } finally {
+      setIsSending(false);
     }
   }
 
@@ -372,24 +404,31 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       toast({ variant: "destructive", title: "Faltan datos" });
       return;
     }
-    const folio = activeChatId || selectedFormal?.folio;
-    if (!folio) return;
-    const targetBitacora = selectedFormal || formalRequests.find(b => b.folio === folio);
-    if (targetBitacora?.id) {
-      await updateDoc(doc(db, 'atres_bitacora', targetBitacora.id), {
-        status: 'atendido',
-        servicio: finishForm.servicio,
-        tecnico: techName,
-        oficina: finishForm.oficinaRegionalAtencion,
-        schoolName: finishForm.schoolName,
-        updatedAt: serverTimestamp()
-      });
+    setIsSending(true);
+    try {
+      const folio = activeChatId || selectedFormal?.folio;
+      if (!folio) return;
+      const targetBitacora = selectedFormal || formalRequests.find(b => b.folio === folio);
+      if (targetBitacora?.id) {
+        await updateDoc(doc(db, 'atres_bitacora', targetBitacora.id), {
+          status: 'atendido',
+          servicio: finishForm.servicio,
+          tecnico: techName,
+          oficina: finishForm.oficinaRegionalAtencion,
+          schoolName: finishForm.schoolName,
+          updatedAt: serverTimestamp()
+        });
+      }
+      if (selectedRequest?.id) {
+        await deleteDoc(doc(db, 'atres_support_queue', selectedRequest.id));
+      }
+      setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null);
+      toast({ title: "Atención Finalizada" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al concluir" });
+    } finally {
+      setIsSending(false);
     }
-    if (selectedRequest?.id) {
-      await deleteDoc(doc(db, 'atres_support_queue', selectedRequest.id));
-    }
-    setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null);
-    toast({ title: "Atención Finalizada" });
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -613,7 +652,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     municipio: '', valle: '', oficinaRegionalAtencion: ''
                   });
                   setIsFinishDialogOpen(true);
-                }} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl"><CheckCircle2 className="h-5 w-5" /> CONCLUIR</Button>
+                }} disabled={isSending} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl">
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} CONCLUIR
+                </Button>
               )}
             </header>
             <ScrollArea className="flex-1 px-8 py-10">
@@ -657,18 +698,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <footer className="p-6 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
-                  <Input placeholder={isPublic ? "Escriba su duda técnica..." : "Respuesta oficial..."} className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
-                  <button onClick={() => fileInputRef.current?.click()} className="absolute right-5 top-3.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50"><Paperclip className="h-5 w-5" /></button>
+                  <Input placeholder={isPublic ? "Escriba su duda técnica..." : "Respuesta oficial..."} className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} disabled={isSending} />
+                  <button onClick={() => fileInputRef.current?.click()} className="absolute right-5 top-3.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50" disabled={isSending}><Paperclip className="h-5 w-5" /></button>
                   <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
                 </div>
-                <button onClick={() => handleSendMessage()} disabled={!input.trim() || isBotThinking} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"><Send className="h-6 w-6" /></button>
+                <button onClick={() => handleSendMessage()} disabled={!input.trim() || isBotThinking || isSending} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center">
+                  {isSending ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6" />}
+                </button>
               </div>
             </footer>
           </>
         )}
       </div>
 
-      <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
+      <Dialog open={isNewTicketDialogOpen} onOpenChange={(o) => !isSending && setIsNewTicketDialogOpen(o)}>
         <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-2xl">Nuevo Folio ATRES</DialogTitle>
@@ -676,16 +719,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="flex-1 overflow-y-auto p-10 space-y-8">
              <div className="space-y-4">
                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificación</Label>
-               <Input placeholder="NOMBRE DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
-               <Input placeholder="CCT (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
+               <Input placeholder="NOMBRE DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} disabled={isSending} />
+               <Input placeholder="CCT (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} disabled={isSending} />
              </div>
              <div className="space-y-4">
                <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Solicitud</Label>
-               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
-               <Textarea placeholder="DETALLES TÉCNICOS..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner focus:bg-white transition-all resize-none" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
+               <Select value={helpTopic} onValueChange={setHelpTopic} disabled={isSending}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
+               <Textarea placeholder="DETALLES TÉCNICOS..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner focus:bg-white transition-all resize-none" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} disabled={isSending} />
              </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t shrink-0"><Button onClick={handleSendNewTicketRequest} className="w-full btn-institutional h-14 shadow-2xl">ENVIAR SOLICITUD</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t shrink-0">
+            <Button onClick={handleSendNewTicketRequest} disabled={isSending} className="w-full btn-institutional h-14 shadow-2xl">
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              ENVIAR SOLICITUD
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -701,7 +749,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
+      <Dialog open={isFinishDialogOpen} onOpenChange={(o) => !isSending && setIsFinishDialogOpen(o)}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
           <DialogHeader className="p-8 bg-[#9f2241] text-white">
             <DialogTitle className="uppercase font-black text-lg">Concluir Atención Técnica</DialogTitle>
@@ -709,12 +757,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="p-8 space-y-6">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina Regional Responsable</Label>
-              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
+              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})} disabled={isSending}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
               <Label className="text-[10px] font-black uppercase text-primary pl-1">Resumen del Servicio Realizado</Label>
-              <Textarea placeholder="DETALLE LAS ACCIONES..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} />
+              <Textarea placeholder="DETALLE LAS ACCIONES..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} disabled={isSending} />
             </div>
           </div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button onClick={handleFinishConfirm} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl"><Save className="h-5 w-5" /> REGISTRAR CIERRE</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+            <Button onClick={handleFinishConfirm} disabled={isSending} className="btn-institutional h-12 px-10 text-[10px] gap-2 shadow-2xl">
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} REGISTRAR CIERRE
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
