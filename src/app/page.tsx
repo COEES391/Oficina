@@ -24,34 +24,36 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     const cleanRfc = rfc.trim().toUpperCase()
-    if (!cleanRfc || !password) {
+    const cleanPass = password.trim()
+
+    if (!cleanRfc || !cleanPass) {
       toast({ variant: "destructive", title: "Campos incompletos", description: "Ingrese su usuario y contraseña oficial." })
       return
     }
 
     setIsLoading(true)
     try {
-      // Credenciales Maestras (Hardcoded para redundancia)
-      if (cleanRfc === 'COEES' && password === '123456') {
+      // Credenciales Maestras Hardcoded para acceso garantizado
+      if (cleanRfc === 'COEES' && cleanPass === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         router.push('/dashboard/programas') 
         return
       }
       
-      if (cleanRfc === 'CISF840114L34' && password === 'Programas12') {
+      if (cleanRfc === 'CISF840114L34' && cleanPass === 'Programas12') {
         localStorage.setItem('userRfc', cleanRfc)
         router.push('/dashboard/programas')
         return
       }
 
-      if (cleanRfc === 'HEAS740508Q23' && password === 'Soporte12') {
+      if (cleanRfc === 'HEAS740508Q23' && cleanPass === 'Soporte12') {
         localStorage.setItem('userRfc', cleanRfc)
         router.push('/dashboard/soporte')
         return
       }
       
       const usersRef = collection(db, 'users')
-      const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', password))
+      const q = query(usersRef, where('rfc', '==', cleanRfc), where('password', '==', cleanPass))
       const querySnapshot = await getDocs(q)
 
       if (!querySnapshot.empty) {
@@ -69,7 +71,7 @@ export default function LoginPage() {
           router.push('/dashboard')
         }
       } else {
-        toast({ variant: "destructive", title: "Acceso denegado", description: "Credenciales incorrectas." })
+        toast({ variant: "destructive", title: "Acceso denegado", description: "Credenciales incorrectas. Verifique RFC y contraseña." })
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Error de sistema", description: "No se pudo conectar con el servidor." })
@@ -83,7 +85,6 @@ export default function LoginPage() {
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-[#f4f4f4] font-sans p-4">
       <Card className="w-full max-w-[850px] shadow-[0_30px_90px_rgba(0,0,0,0.15)] border-none rounded-none overflow-hidden flex flex-col md:flex-row relative z-10 animate-in fade-in zoom-in-95 duration-700">
-        {/* Lado Izquierdo: Identidad */}
         <div className="w-full md:w-[35%] bg-[#9f2241] p-10 flex flex-col items-center justify-center text-center space-y-6">
           <div className="relative h-24 w-24 mb-2">
             <GraduationCap className="w-full h-full text-white/90" strokeWidth={1.5} />
@@ -97,13 +98,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Lado Derecho: Formulario */}
         <div className="flex-1 bg-white p-8 md:p-14 flex flex-col justify-center">
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-6">
             <div className="relative group">
               <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
               <Input 
-                placeholder="Usuario" 
+                placeholder="RFC DEL SERVIDOR PÚBLICO" 
                 className="h-12 pl-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold shadow-inner focus:bg-white transition-all uppercase" 
                 value={rfc} 
                 onChange={(e) => setRfc(e.target.value.toUpperCase())} 
@@ -115,7 +115,7 @@ export default function LoginPage() {
               <KeyRound className="absolute left-4 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
               <Input 
                 type="password" 
-                placeholder="Contraseña" 
+                placeholder="CONTRASEÑA OFICIAL" 
                 className="h-12 pl-12 rounded-lg bg-slate-50 border-slate-200 text-sm font-bold shadow-inner focus:bg-white transition-all" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
@@ -127,9 +127,9 @@ export default function LoginPage() {
               <Button 
                 type="submit" 
                 disabled={isLoading} 
-                className="w-40 h-11 text-xs font-black uppercase tracking-widest rounded-lg bg-[#B38E5D] hover:bg-[#a08252] text-white shadow-xl transition-all"
+                className="w-full md:w-48 h-11 text-xs font-black uppercase tracking-widest rounded-lg bg-[#B38E5D] hover:bg-[#a08252] text-white shadow-xl transition-all"
               >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ingresar"}
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ingresar al sistema"}
               </Button>
             </div>
           </form>
@@ -137,7 +137,7 @@ export default function LoginPage() {
           <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-center gap-3">
              <ShieldCheck className="h-4 w-4 text-emerald-500" />
              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
-               Acceso Oficial Seguro
+               Acceso Oficial Seguro • Auditoría 2026
              </span>
           </div>
         </div>

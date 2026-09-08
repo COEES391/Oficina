@@ -66,6 +66,18 @@ export default function DashboardLayout({
         })
         return
       }
+
+      if (rfc === 'CISF840114L34') {
+        setCurrentUser({
+          id: 'cis-user',
+          rfc: rfc,
+          name: 'Coordinación de Programas',
+          password: '',
+          role: 'user',
+          privileges: ['programas', 'base-cct', 'base-participantes']
+        })
+        return
+      }
       
       try {
         const q = query(collection(db, 'users'), where('rfc', '==', rfc))
@@ -87,18 +99,15 @@ export default function DashboardLayout({
   }
 
   const menuConfig = [
-    // GRUPO PLANEACIÓN
     { privilege: 'planeacion', name: 'Dashboard', path: '/dashboard', icon: <Home className="h-4 w-4" />, group: 'planeacion' },
     { privilege: 'planeacion', name: 'Objetivos y Metas', path: '#', icon: <FileText className="h-4 w-4" />, group: 'planeacion' },
     { privilege: 'planeacion', name: 'Proyectos', path: '#', icon: <FileStack className="h-4 w-4" />, group: 'planeacion' },
     { privilege: 'planeacion', name: 'Indicadores', path: '#', icon: <BarChart3 className="h-4 w-4" />, group: 'planeacion' },
 
-    // GRUPO OFICINAS
     { privilege: 'programas', name: 'Programas', path: '/dashboard/programas', icon: <FileText className="h-4 w-4" />, group: 'oficinas', color: 'bg-purple-600' },
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" />, group: 'oficinas', color: 'bg-emerald-600' },
     { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <Wrench className="h-4 w-4" />, group: 'oficinas', color: 'bg-orange-500' },
     
-    // GRUPO ADMIN
     { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-4 w-4" />, group: 'admin' },
     { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-4 w-4" />, group: 'admin' },
     { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-4 w-4" />, group: 'admin' },
@@ -132,7 +141,6 @@ export default function DashboardLayout({
         </SidebarHeader>
 
         <SidebarContent className="px-2 py-4 space-y-6">
-          {/* CABECERA PLANEACIÓN */}
           {planeacionItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/80 font-black text-[11px] uppercase tracking-[0.1em] px-4 mb-3 group-data-[collapsible=icon]:hidden flex items-center gap-2">
@@ -167,7 +175,6 @@ export default function DashboardLayout({
             </SidebarGroup>
           )}
 
-          {/* CABECERA OFICINAS */}
           {oficinaItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">
@@ -204,7 +211,6 @@ export default function DashboardLayout({
             </SidebarGroup>
           )}
 
-          {/* CABECERA ADMINISTRACIÓN */}
           {adminItems.length > 0 && (
             <SidebarGroup>
               <SidebarGroupLabel className="text-white/40 font-black text-[9px] uppercase tracking-[0.2em] px-5 mb-2 group-data-[collapsible=icon]:hidden">

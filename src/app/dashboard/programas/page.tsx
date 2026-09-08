@@ -175,7 +175,6 @@ export default function ProgramsPage() {
     aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
   })
 
-  // State for dynamic assistants in Biblioteca Digital
   const [asistentesLib, setAsistentesLib] = useState<any[]>([
     { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }
   ])
@@ -253,13 +252,14 @@ export default function ProgramsPage() {
   const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
 
   const handleVerifyAccount = async () => {
-    if (!verifyInput.includes('@')) {
+    const searchVal = verifyInput.trim().toLowerCase();
+    if (!searchVal.includes('@')) {
       toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
       return;
     }
     setIsVerifying(true);
     setTimeout(() => {
-      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === verifyInput.toLowerCase());
+      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === searchVal);
       if (match) {
         setVerifiedAccount(match);
         toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
@@ -1157,7 +1157,6 @@ export default function ProgramsPage() {
         </Card>
       )}
 
-      {/* Diálogo de Formulario Principal */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
@@ -1344,7 +1343,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white z-[300]">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white">
@@ -1372,7 +1370,7 @@ export default function ProgramsPage() {
                     <SelectTrigger className="font-bold border-slate-200 h-10">
                       <SelectValue placeholder="SELECCIONAR VALLE..." />
                     </SelectTrigger>
-                    <SelectContent className="z-[500] rounded-xl border-none shadow-2xl">
+                    <SelectContent className="rounded-xl border-none shadow-2xl">
                       <SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem>
                       <SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem>
                     </SelectContent>
@@ -1384,7 +1382,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Visor de PDF para Bitácora */}
       <Dialog open={!!bitacoraPdfToPreview} onOpenChange={() => setBitacoraPdfToPreview(null)}>
         <DialogContent className="sm:max-w-[1000px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-6 bg-primary text-white shrink-0">
