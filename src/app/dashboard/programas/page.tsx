@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -149,6 +150,7 @@ export default function ProgramsPage() {
   const [records, setRecords] = useState<ProgramStatus[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isHelpDeskOpen, setIsHelpDeskOpen] = useState(false)
@@ -156,6 +158,8 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [verifyInput, setVerifyInput] = useState('')
+  const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
   
   const [selectedBibliotecaRecord, setSelectedBibliotecaRecord] = useState<ProgramStatus | null>(null)
 
@@ -166,9 +170,6 @@ export default function ProgramsPage() {
 
   const [userPart, setUserPart] = useState('')
   const [domainPart, setDomainPart] = useState(DOMINIOS[0])
-  const [verifyInput, setVerifyInput] = useState('')
-  const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
-  const [isVerifying, setIsVerifying] = useState(false)
 
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
@@ -230,6 +231,26 @@ export default function ProgramsPage() {
     return () => { unsubscribe(); bUnsubscribe(); }
   }, [selectedBibliotecaRecord])
 
+  const handleVerifyAccount = async () => {
+    const searchVal = verifyInput.trim().toLowerCase();
+    if (!searchVal.includes('@')) {
+      toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
+      return;
+    }
+    setIsVerifying(true);
+    setTimeout(() => {
+      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === searchVal);
+      if (match) {
+        setVerifiedAccount(match);
+        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
+      } else {
+        setVerifiedAccount(null);
+        toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
+      }
+      setIsVerifying(false);
+    }, 800);
+  }
+
   const filteredRecords = useMemo(() => {
     const list = records.filter(r => r.name === activeTab);
     if (!searchTerm) return list;
@@ -256,33 +277,13 @@ export default function ProgramsPage() {
 
   const bitacoraPendingCount = useMemo(() => bitacoraRecords.filter(r => r.status === 'pendiente').length, [bitacoraRecords]);
 
-  const handleVerifyAccount = async () => {
-    const searchVal = verifyInput.trim().toLowerCase();
-    if (!searchVal.includes('@')) {
-      toast({ variant: "destructive", title: "Formato inválido", description: "Ingrese un correo completo institucional." });
-      return;
-    }
-    setIsVerifying(true);
-    setTimeout(() => {
-      const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === searchVal);
-      if (match) {
-        setVerifiedAccount(match);
-        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
-      } else {
-        setVerifiedAccount(null);
-        toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
-      }
-      setIsVerifying(false);
-    }, 800);
-  }
-
   const statsBiblioteca = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     return {
       totalCct: libRecs.length,
       concluidos: libRecs.filter(r => r.progress === 100).length,
       enProceso: libRecs.filter(r => r.progress > 0 && r.progress < 100).length,
-      personalTotal: libRecs.reduce((acc, r) => acc + (r.bibliotecaFases?.personalCapacitado || 0), 0),
+      personalTotal: libRecs.reduce((acc, r) => acc + (r.asistentes?.length || 0), 0),
       equiposTotal: libRecs.reduce((acc, r) => acc + (r.bibliotecaFases?.equiposHabilitados || 0), 0)
     };
   }, [records]);
@@ -480,9 +481,11 @@ export default function ProgramsPage() {
           {activeTab === 'ATRES' && (
              <HelpDeskDialog open={isHelpDeskOpen} onOpenChange={setIsHelpDeskOpen} />
           )}
-          <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
-             <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
-          </Button>
+          {activeTab !== 'Geoposición' && (
+            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
+               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+            </Button>
+          )}
         </div>
       </div>
 
