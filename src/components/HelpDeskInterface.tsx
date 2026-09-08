@@ -1,4 +1,3 @@
-
 'use client'
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES.
@@ -60,7 +59,8 @@ import {
   Globe,
   Copy,
   Wifi,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -119,7 +119,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [remoteId, setRemoteId] = useState('') 
-  const [activeTicketNumber, setActiveTicketNumber] = useState<string | null>(null)
   const [queue, setQueue] = useState<SupportRequest[]>([])
   const [formalRequests, setFormalRequests] = useState<BitacoraEntry[]>([])
   const [attendanceHistory, setAttendanceHistory] = useState<BitacoraEntry[]>([])
@@ -143,7 +142,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [excelFile, setExcelFile] = useState<File | null>(null)
   
   const [requesterName, setRequesterName] = useState('')
-  const [requesterEmail, setRequesterEmail] = useState('')
   const [helpTopic, setHelpTopic] = useState('')
   const [ticketCct, setTicketCct] = useState('')
   const [ticketDetail, setTicketDetail] = useState('')
@@ -187,6 +185,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     toast({ title: "Enlace Copiado", description: "La liga de la Mesa de Ayuda está lista para compartir." });
   }
 
+  // Inicialización de Sesión
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
@@ -202,59 +201,79 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         sessionStorage.setItem('atres_session_id', sKey);
       }
       setSessionKey(sKey);
+      
+      // Asegurar que el analista vea al usuario aunque no haya escrito
+      const initQueue = async () => {
+        try {
+          const queueRef = doc(db, 'atres_support_queue', sKey);
+          await setDoc(queueRef, {
+            remoteId: '',
+            ticketNumber: sKey,
+            timestamp: serverTimestamp(),
+            status: 'pending',
+            requestType: 'chat',
+            chatKey: sKey
+          }, { merge: true });
+        } catch (e) {
+          console.error("Queue Init Error:", e);
+        }
+      }
+      initQueue();
     } else {
       const savedTechName = localStorage.getItem('atres_tech_name') || 'Analista COEES';
       setTechName(savedTechName);
     }
   }, [isPublic, generateTurnSessionId]);
 
+  // Escuchar Bitácora
   useEffect(() => {
     if (!mounted) return;
-    try {
-      const q = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[];
-        setFormalRequests(allEntries.filter(b => b.status === 'pendiente' || b.status === 'proceso'));
-        const today = format(new Date(), 'dd/MM/yyyy');
-        setAttendanceHistory(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)));
-        setAttendedTodayCount(allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today)).length);
-      });
-      return () => unsubscribe();
-    } catch (e) { console.error("Error bitacora:", e); }
+    const q = query(collection(db, 'atres_bitacora'), orderBy('fecha', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as BitacoraEntry[];
+      setFormalRequests(allEntries.filter(b => b.status === 'pendiente' || b.status === 'proceso'));
+      const today = format(new Date(), 'dd/MM/yyyy');
+      const history = allEntries.filter(b => b.status === 'atendido' && b.fecha.includes(today));
+      setAttendanceHistory(history);
+      setAttendedTodayCount(history.length);
+    });
+    return () => unsubscribe();
   }, [mounted]);
 
+  // Escuchar Cola Live
   useEffect(() => {
     if (!mounted) return;
-    try {
-      const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
-      });
-      return () => unsubscribe();
-    } catch (e) { console.error("Error queue:", e); }
+    const q = query(collection(db, 'atres_support_queue'), orderBy('timestamp', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
+    });
+    return () => unsubscribe();
   }, [mounted]);
 
+  // Escuchar Mensajes
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
       return;
     }
-    try {
-      const q = query(
-        collection(db, 'chat_messages'), 
-        where('chatId', '==', activeChatId),
-        orderBy('timestamp', 'asc')
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
-        if (chatMsgs.length === 0 && isPublic) {
-          setMessages([{ role: 'bot', content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', timestamp: { seconds: Date.now()/1000 } }]);
-        } else {
-          setMessages(chatMsgs);
-        }
-      });
-      return () => unsubscribe();
-    } catch (e) { console.error("Error messages:", e); }
+    const q = query(
+      collection(db, 'chat_messages'), 
+      where('chatId', '==', activeChatId),
+      orderBy('timestamp', 'asc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
+      if (chatMsgs.length === 0 && isPublic) {
+        setMessages([{ 
+          role: 'bot', 
+          content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', 
+          timestamp: { seconds: Date.now()/1000 } 
+        }]);
+      } else {
+        setMessages(chatMsgs);
+      }
+    });
+    return () => unsubscribe();
   }, [mounted, activeChatId, isPublic]);
 
   useEffect(() => {
@@ -264,30 +283,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleSendMessage = async (msgData?: { content?: string, fileData?: { data: string, name: string, type: string } }) => {
     const textToSend = msgData?.content ?? input;
     if (!textToSend.trim() && !msgData?.fileData) return;
+    
     const chatId = activeChatId || sessionKey;
-
-    if (!chatId) {
-      toast({ variant: "destructive", title: "Iniciando Sesión", description: "Espere un momento por favor..." });
-      return;
-    }
+    if (!chatId) return;
 
     setIsSending(true);
     try {
       if (isPublic) {
+        // Asegurar presencia en cola al enviar mensaje
         const queueRef = doc(db, 'atres_support_queue', sessionKey);
         await setDoc(queueRef, {
-          remoteId: remoteId || '',
           ticketNumber: sessionKey,
           timestamp: serverTimestamp(),
           status: 'pending',
-          requestType: remoteId ? 'remote' : 'chat',
           chatKey: sessionKey
         }, { merge: true });
-
-        const lowerInput = textToSend.toLowerCase();
-        if (['office', 'windows', 'controlador', 'driver', 'impresora', 'anydesk'].some(word => lowerInput.includes(word))) {
-          setIsRemoteHelpRequested(true);
-        }
       }
 
       await addDoc(collection(db, 'chat_messages'), {
@@ -301,27 +311,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         fileType: msgData?.fileData?.type || null
       });
 
-      !msgData?.content && setInput('');
+      if (!msgData?.content) setInput('');
 
+      // IA solo responde en vista pública si no es un archivo
       if (isPublic && !msgData?.fileData) {
         setIsBotThinking(true);
-        // Respuesta de IA no bloqueante para el usuario
-        chatWithHelpDesk({ message: textToSend }).then(async (aiResponse) => {
-          if (aiResponse?.response) {
+        chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
+          if (aiRes?.response) {
             await addDoc(collection(db, 'chat_messages'), {
               chatId,
               role: 'bot',
-              content: aiResponse.response,
+              content: aiRes.response,
               timestamp: serverTimestamp()
             });
           }
-        }).finally(() => {
-          setIsBotThinking(false);
-        });
+        }).finally(() => setIsBotThinking(false));
       }
-    } catch (error: any) {
-      console.error("Chat Error:", error);
-      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo enviar el mensaje a la nube." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error de envío", description: "Verifique su conexión o permisos de base de datos." });
     } finally {
       setIsSending(false);
     }
@@ -329,15 +336,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleRequestRemoteSupport = async () => {
     if (remoteId.length < 9) {
-      toast({ variant: "destructive", title: "ID Inválido" });
+      toast({ variant: "destructive", title: "ID AnyDesk Inválido" });
       return;
     }
-    const turn = sessionKey;
     try {
       const queueRef = doc(db, 'atres_support_queue', sessionKey);
       await setDoc(queueRef, {
         remoteId,
-        ticketNumber: turn,
+        ticketNumber: sessionKey,
         timestamp: serverTimestamp(),
         status: 'pending',
         requestType: 'remote',
@@ -345,72 +351,66 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }, { merge: true });
       
       await handleSendMessage({ content: `SOLICITUD DE APOYO REMOTO - ID ANYDESK: ${remoteId}` });
-      toast({ title: "Soporte Solicitado", description: `Turno registrado: ${turn}` });
+      toast({ title: "Soporte Solicitado", description: "Un analista se conectará pronto." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al solicitar", description: "Verifique su conexión a internet." });
+      toast({ variant: "destructive", title: "Error en solicitud" });
     }
   }
 
   const handleSendNewTicketRequest = async () => {
-    if (!requesterName || !requesterEmail || !helpTopic || !ticketCct || !ticketDetail) {
-      toast({ variant: "destructive", title: "Datos Incompletos" });
+    if (!requesterName || !helpTopic || !ticketCct || !ticketDetail) {
+      toast({ variant: "destructive", title: "Faltan datos obligatorios" });
       return;
     }
     setIsSending(true);
     try {
       const folio = generateSequentialFolio();
-      let pdfContent = "";
-      let excelContent = "";
-      if (pdfFile) pdfContent = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(pdfFile); });
-      if (excelFile) excelContent = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(excelFile); });
+      let pdfBase64 = "";
+      if (pdfFile) {
+        pdfBase64 = await new Promise((res) => {
+          const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(pdfFile);
+        });
+      }
+
       const school = allSchools.find(s => s.cct === ticketCct.toUpperCase());
       await addDoc(collection(db, 'atres_bitacora'), {
         folio,
         cct: ticketCct.toUpperCase(),
-        schoolName: school?.nombre || "CCT NO IDENTIFICADO",
+        schoolName: school?.nombre || "CCT EXTERNO",
         servicio: `${helpTopic.toUpperCase()}: ${ticketDetail}`,
         oficina: "MESA DE AYUDA",
         fecha: format(new Date(), 'dd/MM/yyyy HH:mm'),
         tecnico: "POR ASIGNAR",
         status: 'pendiente',
-        pdfData: pdfContent || null,
+        pdfData: pdfBase64 || null,
         pdfName: pdfFile?.name || null,
-        excelData: excelContent || null,
-        excelName: excelFile?.name || null,
-        requesterName,
-        requesterEmail,
-        helpTopic,
-        ticketDetail,
         updatedAt: serverTimestamp()
       });
+
       setLastGeneratedFolio(folio);
       setIsConfirmationOpen(true);
       setIsNewTicketDialogOpen(false);
       resetRequestForm();
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error al enviar", description: e.message });
+      toast({ variant: "destructive", title: "Falla de envío", description: e.message });
     } finally {
       setIsSending(false);
     }
   }
 
   const resetRequestForm = () => {
-    setPdfFile(null); setExcelFile(null);
-    setRequesterName(''); setRequesterEmail(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
+    setPdfFile(null); setRequesterName(''); setHelpTopic(''); setTicketCct(''); setTicketDetail('');
   }
 
   const handleFinishConfirm = async () => {
     if (!finishForm.cct || !finishForm.servicio || !finishForm.oficinaRegionalAtencion) {
-      toast({ variant: "destructive", title: "Faltan datos" });
-      return;
+      toast({ variant: "destructive", title: "Faltan datos de cierre" }); return;
     }
     setIsSending(true);
     try {
-      const folio = activeChatId || selectedFormal?.folio;
-      if (!folio) return;
-      const targetBitacora = selectedFormal || formalRequests.find(b => b.folio === folio);
-      if (targetBitacora?.id) {
-        await updateDoc(doc(db, 'atres_bitacora', targetBitacora.id), {
+      const target = selectedFormal || formalRequests.find(b => b.folio === activeChatId);
+      if (target?.id) {
+        await updateDoc(doc(db, 'atres_bitacora', target.id), {
           status: 'atendido',
           servicio: finishForm.servicio,
           tecnico: techName,
@@ -423,39 +423,25 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         await deleteDoc(doc(db, 'atres_support_queue', selectedRequest.id));
       }
       setIsFinishDialogOpen(false); setSelectedRequest(null); setSelectedFormal(null);
-      toast({ title: "Atención Finalizada" });
+      toast({ title: "Atención Concluida" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al concluir" });
+      toast({ variant: "destructive", title: "Error al cerrar folio" });
     } finally {
       setIsSending(false);
     }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > FILE_SIZE_LIMIT) {
-      toast({ variant: "destructive", title: "Archivo demasiado pesado" })
-      return
-    }
-    const reader = new FileReader()
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > FILE_SIZE_LIMIT) { toast({ variant: "destructive", title: "PDF demasiado pesado (Máx 2MB)" }); return; }
+    const reader = new FileReader();
     reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      handleSendMessage({ fileData: { data: base64, name: file.name, type: file.type } })
+      handleSendMessage({ fileData: { data: ev.target?.result as string, name: file.name, type: file.type } });
     }
-    reader.readAsDataURL(file)
-    e.target.value = ''
+    reader.readAsDataURL(file);
+    e.target.value = '';
   }
-
-  const getFileIcon = (type: string) => {
-    if (type?.includes('pdf')) return <FileText className="h-4 w-4 text-rose-500" />
-    if (type?.includes('excel') || type?.includes('spreadsheet')) return <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-    return <FileCode className="h-4 w-4 text-slate-400" />
-  }
-
-  const downloadFile = (data: string, name: string) => { const link = document.createElement('a'); link.href = data; link.download = name; link.click(); }
-
-  const showLeftColumn = !isPublic || (isPublic && isRemoteHelpRequested);
 
   if (!mounted) return null;
 
@@ -464,8 +450,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       "flex flex-1 w-full flex-col md:flex-row border border-white/40 overflow-hidden transition-all duration-700", 
       isPublic ? "rounded-[3rem] shadow-2xl bg-white/40 h-[calc(100vh-140px)]" : "bg-[#f8f5f0] h-full"
     )}>
-      {showLeftColumn && (
-        <div className="w-full md:w-[320px] flex flex-col p-4 shrink-0 transition-all duration-500 relative z-20 overflow-hidden bg-white border-r border-slate-100 shadow-xl animate-in slide-in-from-left duration-500">
+      {/* Columna Izquierda (Queue / Remote) */}
+      {( (!isPublic) || (isPublic && isRemoteHelpRequested) ) && (
+        <div className="w-full md:w-[320px] flex flex-col p-4 shrink-0 bg-white border-r border-slate-100 shadow-xl z-20 overflow-hidden animate-in slide-in-from-left duration-500">
            {isPublic ? (
              <div className="flex-1 flex flex-col gap-6">
                 <div className="bg-[#9f2241] p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
@@ -492,7 +479,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </Button>
                   </div>
                 </div>
-
                 <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
                    <div className="text-[10px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2"><ArrowRightCircle className="h-4 w-4 text-[#B38E5D]" /> Guía de Soporte</div>
                    <div className="space-y-3">
@@ -519,26 +505,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <span className="text-4xl font-black leading-none">{attendedTodayCount}</span>
                         <Target className="h-4 w-4 mb-1 text-accent" />
                       </div>
-                      <Badge variant="secondary" className="bg-white/20 text-white border-none text-[8px] font-black uppercase px-2 h-5">VER LISTA</Badge>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100 shadow-sm space-y-3 shrink-0">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-primary">
-                    <Globe className="h-3.5 w-3.5 text-accent" /> Enlace para el Docente
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-[9px] font-mono font-bold text-slate-500 truncate shadow-inner">
-                       {currentOrigin ? `${currentOrigin}/helpdesk` : 'Cargando enlace...'}
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8 rounded-xl shrink-0 border-primary/20 text-primary hover:bg-primary/5" 
-                      onClick={copySupportLink}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                      <Badge variant="secondary" className="bg-white/20 text-white border-none text-[8px] font-black uppercase px-2 h-5">HISTORIAL</Badge>
                   </div>
                 </div>
 
@@ -575,6 +542,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                <span className={cn("text-[9px] font-black", selectedRequest?.id === req.id ? "text-white/60" : "text-accent")}>{req.ticketNumber}</span>
                                <span className={cn("text-[11px] font-black", selectedRequest?.id === req.id ? "text-white" : "text-slate-700")}>{req.requestType?.toUpperCase() || 'LIVE'}</span>
                              </div>
+                             {req.remoteId && <Monitor className={cn("h-4 w-4", selectedRequest?.id === req.id ? "text-white" : "text-primary")} />}
                            </button>
                          ))}
                        </div>
@@ -586,12 +554,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       )}
 
+      {/* Area de Chat */}
       <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
         {!isPublic && showHistory ? (
           <div className="flex-1 flex flex-col p-8 bg-slate-50/30">
              <div className="max-w-5xl mx-auto w-full flex flex-col h-full space-y-6">
                 <div className="flex justify-between items-center border-b pb-4">
-                   <h2 className="text-2xl font-black text-primary uppercase flex items-center gap-3"><History className="h-8 w-8 text-accent" /> Servicios de Hoy</h2>
+                   <h2 className="text-2xl font-black text-primary uppercase flex items-center gap-3"><History className="h-8 w-8 text-accent" /> Servicios Finalizados</h2>
                    <button onClick={() => setShowHistory(false)} className="px-6 h-10 rounded-xl font-black text-[10px] uppercase border shadow-sm hover:bg-slate-50">CERRAR</button>
                 </div>
                 <ScrollArea className="flex-1 border rounded-[2.5rem] bg-white shadow-2xl">
@@ -604,10 +573,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                            </div>
                            <h4 className="text-[13px] font-black text-slate-800 uppercase">{hist.schoolName}</h4>
                            <div className="bg-slate-50 p-4 rounded-2xl border my-4 text-[11px] font-semibold text-slate-600">"{hist.servicio}"</div>
-                           <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                              <span className="text-[10px] font-black text-slate-500 uppercase">{hist.tecnico}</span>
-                              <div className="flex items-center gap-1 text-emerald-500 text-[8px] font-black uppercase"><CheckCircle2 className="h-3.5 w-3.5" /> FINALIZADO</div>
-                           </div>
                         </div>
                       ))}
                    </div>
@@ -616,47 +581,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         ) : !isPublic && !selectedRequest && !selectedFormal ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6 opacity-30">
-            <MessageSquare className="h-16 w-16" />
+            <MessageSquare className="h-20 w-20" />
             <h3 className="text-3xl font-black uppercase">Panel de Analista</h3>
-            <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Seleccione un chat o solicitud para iniciar la atención técnica.</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Seleccione un turno o folio para iniciar la atención técnica.</p>
           </div>
         ) : (
           <>
             <header className={cn("px-8 py-4 flex justify-between items-center z-10 shrink-0 border-b", isPublic ? "bg-white/60 backdrop-blur-3xl" : "bg-white shadow-sm")}>
               <div className="flex items-center gap-5">
-                <div className="h-14 w-14 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl relative overflow-hidden group">
-                  {isPublic ? <Bot className="h-7 w-7 relative z-10" /> : <UserCog className="h-7 w-7 relative z-10" />}
+                <div className="h-14 w-14 rounded-2xl bg-[#9f2241] text-white flex items-center justify-center shadow-2xl">
+                  {isPublic ? <Bot className="h-7 w-7" /> : <UserCog className="h-7 w-7" />}
                 </div>
                 <div>
                   <h2 className="text-xl font-black text-slate-800 uppercase leading-none">{isPublic ? "Mesa de Ayuda ATRES" : "Centro de Control Operativo"}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Wifi className="h-3 w-3 text-emerald-500 animate-pulse" />
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Conexión encriptada establecida</p>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5">Chat: {activeChatId}</Badge>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge variant="outline" className="text-[9px] font-mono border-primary/20 text-primary bg-primary/5">ID: {activeChatId}</Badge>
                     {isPublic && (
                       <button onClick={() => setIsNewTicketDialogOpen(true)} className="flex items-center gap-2 bg-[#B38E5D] hover:bg-[#a67d4a] px-4 h-9 rounded-xl shadow-lg text-white font-black uppercase text-[9px]">
-                        <FilePlus className="h-4 w-4" /> Nuevo Folio
+                        <FilePlus className="h-4 w-4" /> Solicitar Folio
                       </button>
                     )}
                   </div>
                 </div>
               </div>
-              {!isPublic && (selectedRequest || selectedFormal) && (
+              {!isPublic && (
                 <Button onClick={() => {
                   setFinishForm({
-                    cct: selectedFormal?.cct || '',
-                    schoolName: selectedFormal?.schoolName || '',
+                    cct: selectedFormal?.cct || selectedRequest?.remoteId || '',
+                    schoolName: selectedFormal?.schoolName || 'ATENCION LIVE',
                     servicio: selectedFormal?.servicio || '',
                     municipio: '', valle: '', oficinaRegionalAtencion: ''
                   });
                   setIsFinishDialogOpen(true);
-                }} disabled={isSending} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl">
-                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} CONCLUIR
+                }} className="btn-institutional h-11 px-8 text-[11px] gap-2 shadow-2xl">
+                  <CheckCircle2 className="h-5 w-5" /> CONCLUIR
                 </Button>
               )}
             </header>
+
             <ScrollArea className="flex-1 px-8 py-10">
               <div className="max-w-4xl mx-auto space-y-8 min-h-full flex flex-col justify-end pb-8">
                 {messages.map((msg, i) => {
@@ -664,16 +626,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   return (
                     <div key={msg.id || i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-4", isMe ? "justify-end" : "justify-start")}>
                       <div className={cn("flex gap-4 max-w-[80%]", isMe ? "flex-row-reverse" : "flex-row")}>
-                        <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xl border-4 border-white", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
+                        <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xl", msg.role === 'user' ? "bg-[#B38E5D] text-white" : msg.role === 'tech' ? "bg-[#9f2241] text-white" : "bg-slate-800 text-white")}>
                           {msg.role === 'user' ? <GraduationCap className="h-5 w-5" /> : msg.role === 'tech' ? <UserCog className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
                         </div>
-                        <div className={cn("p-4 rounded-3xl text-sm font-semibold shadow-2xl border leading-relaxed", isMe ? (msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none border-transparent" : "bg-[#9f2241] text-white rounded-tr-none border-transparent") : msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
+                        <div className={cn("p-4 rounded-3xl text-sm font-semibold shadow-2xl border leading-relaxed", isMe ? "bg-primary text-white rounded-tr-none border-transparent" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                           {msg.content && <p className="whitespace-pre-wrap">{msg.content}</p>}
                           {msg.fileData && (
                             <div className="mt-4 p-4 rounded-2xl border flex items-center gap-4 cursor-pointer bg-black/5" onClick={() => downloadFile(msg.fileData!, msg.fileName!)}>
-                              <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-lg">{getFileIcon(msg.fileType || '')}</div>
-                              <div className="flex-1 min-w-0"><p className="text-[10px] font-black truncate uppercase">{msg.fileName}</p></div>
-                              <Download className="h-4 w-4 opacity-50" />
+                               <FileText className="h-5 w-5 text-rose-500" />
+                               <div className="flex-1 min-w-0"><p className="text-[10px] font-black truncate uppercase">{msg.fileName}</p></div>
+                               <Download className="h-4 w-4 opacity-50" />
                             </div>
                           )}
                           <div className="text-[8px] mt-3 font-black uppercase flex items-center gap-2 opacity-50">
@@ -685,24 +647,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   )
                 })}
                 {isBotThinking && (
-                  <div className="flex justify-start animate-pulse">
-                    <div className="bg-slate-100 px-6 py-3 rounded-full flex gap-2 items-center">
-                       <Bot className="h-4 w-4 text-slate-400" />
-                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Asistente está escribiendo...</span>
-                    </div>
-                  </div>
+                  <div className="flex justify-start animate-pulse"><div className="bg-slate-100 px-6 py-3 rounded-full flex gap-2 items-center"><Bot className="h-4 w-4 text-slate-400" /><span className="text-[10px] font-black uppercase text-slate-400">Analizando...</span></div></div>
                 )}
                 <div ref={scrollRef} />
               </div>
             </ScrollArea>
+
             <footer className="p-6 bg-white/40 backdrop-blur-3xl border-t border-white/40 shrink-0">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
-                  <Input placeholder={isPublic ? "Escriba su duda técnica..." : "Respuesta oficial..."} className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 focus:border-[#9f2241]/20 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} disabled={isSending} />
+                  <Input placeholder={isPublic ? "Escriba su duda técnica..." : "Respuesta oficial..." } className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-8 pr-14 font-semibold shadow-inner focus:ring-8 focus:ring-[#9f2241]/5 text-sm transition-all" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} disabled={isSending} />
                   <button onClick={() => fileInputRef.current?.click()} className="absolute right-5 top-3.5 h-7 w-7 text-slate-300 hover:text-primary transition-all flex items-center justify-center rounded-xl hover:bg-slate-50" disabled={isSending}><Paperclip className="h-5 w-5" /></button>
-                  <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                  <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" onChange={handleFileUpload} />
                 </div>
-                <button onClick={() => handleSendMessage()} disabled={!input.trim() || isBotThinking || isSending} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center">
+                <button onClick={() => handleSendMessage()} disabled={!input.trim() || isSending} className="h-14 w-14 rounded-2xl bg-[#9f2241] hover:bg-[#801a34] text-white shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center">
                   {isSending ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6" />}
                 </button>
               </div>
@@ -711,27 +669,33 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      <Dialog open={isNewTicketDialogOpen} onOpenChange={(o) => !isSending && setIsNewTicketDialogOpen(o)}>
-        <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[95vh] flex flex-col border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
+      {/* Dialogos de Apoyo */}
+      <Dialog open={isNewTicketDialogOpen} onOpenChange={setIsNewTicketDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-[3rem] p-0 overflow-hidden bg-white max-h-[90vh] flex flex-col border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-[#9f2241] text-white">
             <DialogTitle className="uppercase font-black text-2xl">Nuevo Folio ATRES</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-10 space-y-8">
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificación</Label>
-               <Input placeholder="NOMBRE DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase shadow-inner" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} disabled={isSending} />
-               <Input placeholder="CCT (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black uppercase shadow-inner" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} disabled={isSending} />
+               <Label className="text-[10px] font-black uppercase text-slate-400">Identificación</Label>
+               <Input placeholder="NOMBRE DEL SOLICITANTE..." className="h-12 bg-slate-50 border-none rounded-xl text-xs font-black uppercase" value={requesterName} onChange={e => setRequesterName(e.target.value.toUpperCase())} />
+               <Input placeholder="CCT (10 CARACTERES)..." className="h-12 bg-slate-50 border-none rounded-xl text-sm font-mono font-black" value={ticketCct} onChange={e => setTicketCct(e.target.value.toUpperCase())} maxLength={10} />
              </div>
              <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Solicitud</Label>
-               <Select value={helpTopic} onValueChange={setHelpTopic} disabled={isSending}><SelectTrigger className="h-12 bg-slate-50 rounded-xl text-xs font-black shadow-inner border-none"><SelectValue placeholder="TEMA DEL SOPORTE..." /></SelectTrigger><SelectContent className="rounded-2xl shadow-2xl border-none"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
-               <Textarea placeholder="DETALLES TÉCNICOS..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner focus:bg-white transition-all resize-none" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} disabled={isSending} />
+               <Label className="text-[10px] font-black uppercase text-slate-400">Tema de Soporte</Label>
+               <Select value={helpTopic} onValueChange={setHelpTopic}><SelectTrigger className="h-12 bg-slate-50 rounded-xl border-none font-black text-xs"><SelectValue placeholder="TEMA..." /></SelectTrigger><SelectContent className="rounded-2xl z-[300]"><SelectItem value="cuenta" className="font-black text-[10px] uppercase">Cuentas Institucionales</SelectItem><SelectItem value="atres" className="font-black text-[10px] uppercase">Sistema ATRES</SelectItem><SelectItem value="hardware" className="font-black text-[10px] uppercase">Soporte Hardware</SelectItem><SelectItem value="redes" className="font-black text-[10px] uppercase">Red Local / Edusat</SelectItem></SelectContent></Select>
+               <Textarea placeholder="DETALLES TÉCNICOS..." className="h-32 bg-slate-50 border-none rounded-xl p-6 text-xs font-semibold shadow-inner" value={ticketDetail} onChange={e => setTicketDetail(e.target.value.toUpperCase())} />
+             </div>
+             <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center gap-2">
+                <FileText className="h-8 w-8 text-slate-300" />
+                <p className="text-[10px] font-black uppercase text-slate-500">{pdfFile ? pdfFile.name : "Adjuntar Oficio (PDF)"}</p>
+                <Button variant="outline" size="sm" onClick={() => document.getElementById('ticket-pdf')?.click()} className="h-9 px-6 rounded-xl text-[9px] font-black uppercase">{pdfFile ? "Cambiar" : "Seleccionar"}</Button>
+                <input type="file" id="ticket-pdf" className="hidden" accept=".pdf" onChange={e => setPdfFile(e.target.files?.[0] || null)} />
              </div>
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t shrink-0">
-            <Button onClick={handleSendNewTicketRequest} disabled={isSending} className="w-full btn-institutional h-14 shadow-2xl">
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              ENVIAR SOLICITUD
+            <Button onClick={handleSendNewTicketRequest} disabled={isSending} className="w-full btn-institutional h-14">
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />} ENVIAR SOLICITUD
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -749,7 +713,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isFinishDialogOpen} onOpenChange={(o) => !isSending && setIsFinishDialogOpen(o)}>
+      <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
           <DialogHeader className="p-8 bg-[#9f2241] text-white">
             <DialogTitle className="uppercase font-black text-lg">Concluir Atención Técnica</DialogTitle>
@@ -757,7 +721,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="p-8 space-y-6">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Oficina Regional Responsable</Label>
-              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})} disabled={isSending}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl border-none shadow-2xl">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
+              <Select value={finishForm.oficinaRegionalAtencion} onValueChange={v => setFinishForm({...finishForm, oficinaRegionalAtencion: v})} disabled={isSending}><SelectTrigger className="h-10 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase shadow-inner"><SelectValue placeholder="ELEGIR..." /></SelectTrigger><SelectContent className="rounded-xl z-[300]">{REGIONAL_OFFICES.map(off => <SelectItem key={`off-${off}`} value={off} className="text-[10px] font-black uppercase">{off.replace("Oficina de ", "")}</SelectItem>)}</SelectContent></Select>
               <Label className="text-[10px] font-black uppercase text-primary pl-1">Resumen del Servicio Realizado</Label>
               <Textarea placeholder="DETALLE LAS ACCIONES..." className="h-24 bg-slate-50 border-none rounded-2xl p-4 text-[11px] font-semibold shadow-inner focus:bg-white transition-all resize-none" value={finishForm.servicio} onChange={e => setFinishForm({...finishForm, servicio: e.target.value.toUpperCase()})} disabled={isSending} />
             </div>
