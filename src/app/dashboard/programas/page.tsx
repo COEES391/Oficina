@@ -169,7 +169,8 @@ export default function ProgramsPage() {
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [verifyInput, setVerifyInput] = useState('')
-  const [verifiedAccount, setVerifiedAccount] = useState<any>(null)
+  const [verifiedAccount, setVerifiedAccount] = useState<ProgramStatus | null>(null)
+  const [isVerifyResultDialogOpen, setIsVerifyResultDialogOpen] = useState(false)
   
   const [selectedBibliotecaRecord, setSelectedBibliotecaRecord] = useState<ProgramStatus | null>(null)
 
@@ -255,7 +256,7 @@ export default function ProgramsPage() {
       const match = records.find(r => r.name === 'Cuentas Institucionales' && r.email?.toLowerCase() === searchVal);
       if (match) {
         setVerifiedAccount(match);
-        toast({ title: "Cuenta Localizada", description: `El correo pertenece a: ${match.userName}` });
+        setIsVerifyResultDialogOpen(true);
       } else {
         setVerifiedAccount(null);
         toast({ variant: "destructive", title: "Sin Registro", description: "El correo no se encuentra en la base de datos oficial." });
@@ -1394,6 +1395,45 @@ export default function ProgramsPage() {
           </div>
         </Card>
       )}
+
+      <Dialog open={isVerifyResultDialogOpen} onOpenChange={setIsVerifyResultDialogOpen}>
+        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-3xl bg-[#f0f7ff] shadow-2xl">
+          <div className="p-8 flex gap-6">
+            <div className="shrink-0 pt-1">
+              <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+            </div>
+            <div className="flex-1 space-y-6">
+              <div className="space-y-1">
+                <p className="text-[#003366] font-bold text-sm">Resultado de la verificación</p>
+                <h3 className="text-2xl font-black text-emerald-600 truncate">{verifiedAccount?.email}</h3>
+                <Badge className="bg-emerald-500/20 text-emerald-700 hover:bg-emerald-500/30 border-none px-4 py-1 rounded-full text-[10px] font-bold mt-2">
+                  Cuenta activa
+                </Badge>
+              </div>
+              
+              <div className="space-y-2 pt-2">
+                <div className="flex gap-8">
+                  <span className="text-[#003366] font-bold text-sm w-24">Nombre:</span>
+                  <span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.userName}</span>
+                </div>
+                <div className="flex gap-8">
+                  <span className="text-[#003366] font-bold text-sm w-24">Área:</span>
+                  <span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.puesto || verifiedAccount?.departamento || 'S/D'}</span>
+                </div>
+                <div className="flex gap-8">
+                  <span className="text-slate-400 font-bold text-xs w-24">Fecha de alta:</span>
+                  <span className="text-slate-400 font-semibold text-xs">{verifiedAccount?.date}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-white/50 border-t flex justify-end">
+             <Button onClick={() => setIsVerifyResultDialogOpen(false)} variant="ghost" className="text-[#003366] font-black uppercase text-[10px]">Cerrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
