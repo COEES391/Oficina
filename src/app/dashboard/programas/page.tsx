@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -1373,7 +1372,7 @@ export default function ProgramsPage() {
                     <SelectTrigger className="font-bold border-slate-200 h-10">
                       <SelectValue placeholder="SELECCIONAR VALLE..." />
                     </SelectTrigger>
-                    <SelectContent className="z-[400] rounded-xl border-none shadow-2xl">
+                    <SelectContent className="z-[500] rounded-xl border-none shadow-2xl">
                       <SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem>
                       <SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem>
                     </SelectContent>

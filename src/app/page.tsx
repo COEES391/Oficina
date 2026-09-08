@@ -31,13 +31,14 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
+      // Credenciales Maestras (Hardcoded para redundancia)
       if (cleanRfc === 'COEES' && password === '123456') {
         localStorage.setItem('userRfc', cleanRfc)
         router.push('/dashboard/programas') 
         return
       }
       
-      if (cleanRfc === 'CISF840114L34' && password === 'Chimal12') {
+      if (cleanRfc === 'CISF840114L34' && password === 'Programas12') {
         localStorage.setItem('userRfc', cleanRfc)
         router.push('/dashboard/programas')
         return
