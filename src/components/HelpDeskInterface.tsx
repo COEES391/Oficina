@@ -2,6 +2,7 @@
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
  * Sistema de 3 columnas para analistas y Dashboard de servicios para usuarios públicos.
+ * Sincronización robusta con Firestore.
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -143,7 +144,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${dateStr}-${random}`;
   }, []);
 
-  // Inicialización de Sesión y Cola de Soporte
+  // Inicialización de Sesión y Registro en Cola (Heartbeat)
   useEffect(() => {
     setMounted(true);
     
@@ -157,7 +158,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         setSessionKey(sKey);
         
         try {
-          const queueRef = doc(db, 'atres_support_queue', sKey);
+          // Aseguramos que la entrada en la cola exista para que el analista lo vea de inmediato
+          const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
             id: sKey,
             ticketNumber: sKey,
@@ -166,7 +168,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             requestType: 'chat',
             chatKey: sKey,
             lastActivity: serverTimestamp(),
-            userName: `Usuario ${sKey.split('-').at(-1)}`
+            userName: `Usuario ${sKey.split('-').at(-1)}`,
+            lastMessage: 'Inició conversación'
           }, { merge: true });
         } catch (e) {
           console.error("Error al inicializar cola de soporte:", e);
@@ -183,10 +186,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // Listener para la cola de soporte (Vista Analista)
   useEffect(() => {
     if (!mounted || isPublic) return;
-    const q = query(collection(db, 'atres_support_queue'), orderBy('lastActivity', 'desc'));
+    // Escuchamos la cola sin ordenamiento estricto para evitar fallas por marca de tiempo nula inicial
+    const q = query(collection(db, 'support_queue'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatedQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
-      setQueue(updatedQueue);
+      // Ordenamos en el cliente para mayor robustez
+      setQueue(updatedQueue.sort((a, b) => {
+        const timeA = a.lastActivity?.seconds || 0;
+        const timeB = b.lastActivity?.seconds || 0;
+        return timeB - timeA;
+      }));
+    }, (err) => {
+      console.error("Queue Listener Error:", err);
     });
     return () => unsubscribe();
   }, [mounted, isPublic]);
@@ -205,6 +216,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
       setMessages(chatMsgs);
+    }, (err) => {
+      console.error("Messages Listener Error:", err);
     });
     return () => unsubscribe();
   }, [mounted, activeChatId]);
@@ -219,21 +232,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const chatId = activeChatId || sessionKey;
     if (!chatId) {
-      toast({ variant: "destructive", title: "Iniciando sesión", description: "Por favor espere un momento..." });
+      toast({ variant: "destructive", title: "Iniciando sesión", description: "Sincronizando con el servidor..." });
       return;
     }
 
     setIsSending(true);
     try {
-      // Actualizamos siempre la entrada en la cola para asegurar visibilidad al analista
-      const queueRef = doc(db, 'atres_support_queue', chatId);
+      // 1. Actualizar metadatos en la cola (para que el analista reciba notificación)
+      const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         lastActivity: serverTimestamp(), 
-        lastMessage: textToSend.substring(0, 40),
+        lastMessage: textToSend.substring(0, 50),
         status: isPublic ? 'pending' : 'attending' 
       }, { merge: true });
 
-      // Registramos el mensaje
+      // 2. Registrar el mensaje en la colección de mensajes
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -247,7 +260,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       if (!msgData?.content) setInput('');
 
-      // Respuesta de IA (Solo vista pública)
+      // 3. Respuesta de IA (Solo vista pública)
       if (isPublic && !msgData?.fileData) {
         setIsBotThinking(true);
         chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
@@ -263,7 +276,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }
     } catch (e: any) {
       console.error("Send Error:", e);
-      toast({ variant: "destructive", title: "Falla de envío", description: "No se pudo sincronizar el mensaje." });
+      toast({ variant: "destructive", title: "Falla de envío", description: "Verifique su conexión a internet." });
     } finally {
       setIsSending(false);
     }
@@ -273,7 +286,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!selectedRequest) return;
     if (confirm("¿Desea finalizar y archivar esta conversación?")) {
       try {
-        await updateDoc(doc(db, 'atres_support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() });
+        await updateDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() });
         setSelectedRequest(null);
         toast({ title: "Conversación cerrada" });
       } catch (e) {
@@ -422,7 +435,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
                    <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
-                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Escribe tu problema en el cuadro inferior. Un analista te responderá a la brevedad.</p>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Describe tu problema en el cuadro inferior. Un analista te responderá a la brevedad.</p>
                 </div>
 
                 {/* Messages View */}
@@ -433,7 +446,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         msg.role === 'user' ? "bg-[#0052cc] text-white rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none border border-slate-100")}>
                         <p className="whitespace-pre-wrap">{msg.content}</p>
                         <div className="text-[8px] mt-2 font-black uppercase opacity-40 flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : 'Enviando...'}
+                          <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '...'}
                         </div>
                       </div>
                     </div>
