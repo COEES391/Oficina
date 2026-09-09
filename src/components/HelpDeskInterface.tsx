@@ -2,7 +2,7 @@
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
  * Sistema de 3 columnas para analistas y Dashboard de servicios para usuarios públicos.
- * Sincronización robusta con Firestore.
+ * Sincronización robusta con Firestore para comunicación bidireccional.
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -36,9 +36,7 @@ import {
   QrCode,
   Users,
   UserPlus,
-  Smile,
   PlusCircle,
-  Bell,
   BookOpen,
   HelpCircle,
   Lock,
@@ -46,11 +44,12 @@ import {
   Laptop,
   GraduationCap,
   MoreHorizontal,
-  ShieldCheck,
   Headphones,
   Info,
   RefreshCcw,
-  ChevronLeft
+  ChevronLeft,
+  ChevronRight,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -64,7 +63,6 @@ import {
   orderBy, 
   where, 
   doc, 
-  updateDoc, 
   setDoc,
   serverTimestamp 
 } from 'firebase/firestore';
@@ -77,9 +75,6 @@ type Message = {
   content: string;
   timestamp: any;
   senderName?: string;
-  fileData?: string; 
-  fileName?: string;
-  fileType?: string;
 };
 
 type SupportRequest = {
@@ -87,12 +82,9 @@ type SupportRequest = {
   ticketNumber: string;
   timestamp: any;
   status: 'pending' | 'attending' | 'closed';
-  requestType?: 'remote' | 'chat';
-  chatKey: string;
   userName?: string;
   lastMessage?: string;
   lastActivity: any;
-  unreadCount?: number;
 };
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
@@ -132,13 +124,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const initSupportSession = async () => {
       if (isPublic) {
-        let sKey = localStorage.getItem('atres_session_id_v2');
+        let sKey = localStorage.getItem('atres_session_v2026');
         if (!sKey) {
           sKey = generateTurnSessionId();
-          localStorage.setItem('atres_session_id_v2', sKey);
+          localStorage.setItem('atres_session_v2026', sKey);
         }
         setSessionKey(sKey);
         
+        // Registrar sesión inicial en Firestore (Heartbeat)
         try {
           const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
@@ -146,24 +139,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             ticketNumber: sKey,
             timestamp: serverTimestamp(),
             status: 'pending',
-            requestType: 'chat',
-            chatKey: sKey,
-            lastActivity: serverTimestamp(),
             userName: `Usuario ${sKey.split('-').at(-1)}`,
+            lastActivity: serverTimestamp(),
             lastMessage: 'Conectado a la Mesa de Ayuda'
           }, { merge: true });
         } catch (e) {
-          console.error("Error heartbeat:", e);
+          console.error("Error inicializando sesión:", e);
         }
       } else {
-        const savedTechName = localStorage.getItem('atres_tech_name') || 'ANALISTA COEES';
-        setTechName(savedTechName);
+        setTechName(localStorage.getItem('userRfc') || 'ANALISTA COEES');
       }
     };
 
     initSupportSession();
   }, [isPublic, generateTurnSessionId]);
 
+  // Listener para la cola de soporte (Vista Técnico)
   useEffect(() => {
     if (!mounted || isPublic) return;
     
@@ -175,12 +166,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         const timeB = b.lastActivity?.seconds || Date.now() / 1000;
         return timeB - timeA;
       }));
-    }, (err) => {
-      console.error("Queue Listener Error:", err);
     });
     return () => unsubscribe();
   }, [mounted, isPublic]);
 
+  // Listener para los mensajes del chat activo
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
@@ -196,8 +186,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
       setMessages(chatMsgs);
-    }, (err) => {
-      console.error("Messages Listener Error:", err);
     });
     return () => unsubscribe();
   }, [mounted, activeChatId]);
@@ -206,33 +194,41 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (msgData?: { content?: string }) => {
-    const textToSend = msgData?.content ?? input;
+  const handleSendMessage = async (msgContent?: string) => {
+    const textToSend = msgContent || input;
     if (!textToSend.trim()) return;
     
     const chatId = activeChatId || sessionKey;
-    if (!chatId) return;
+    if (!chatId) {
+      toast({ variant: "destructive", title: "Error de Sesión", description: "Reconectando..." });
+      window.location.reload();
+      return;
+    }
 
     setIsSending(true);
     try {
+      // 1. Asegurar que el registro en la cola esté activo (Upsert)
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
+        id: chatId,
+        userName: isPublic ? `Usuario ${chatId.split('-').at(-1)}` : undefined,
         lastActivity: serverTimestamp(), 
-        lastMessage: textToSend.substring(0, 50),
-        status: isPublic ? 'pending' : 'attending',
-        userName: isPublic ? `Usuario ${chatId.split('-').at(-1)}` : undefined
+        lastMessage: textToSend.substring(0, 60),
+        status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
+      // 2. Registrar el mensaje en la base de datos
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: textToSend,
         timestamp: serverTimestamp(),
-        senderName: !isPublic ? techName : undefined
+        senderName: !isPublic ? techName : 'Usuario Final'
       });
 
-      if (!msgData?.content) setInput('');
+      if (!msgContent) setInput('');
 
+      // 3. Respuesta Automática de IA (Solo modo público)
       if (isPublic) {
         setIsBotThinking(true);
         chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
@@ -247,8 +243,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }).catch(() => {}).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      console.error("Send Error:", e);
-      toast({ variant: "destructive", title: "Error de comunicación", description: "Reintente en unos momentos." });
+      console.error("Falla de comunicación:", e);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo entregar el mensaje." });
     } finally {
       setIsSending(false);
     }
@@ -256,23 +252,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleCloseChat = async () => {
     if (!selectedRequest) return;
-    if (confirm("¿Finalizar y archivar esta atención técnica?")) {
-      try {
-        await updateDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() });
-        setSelectedRequest(null);
-        toast({ title: "Atención Cerrada" });
-      } catch (e) {
-        toast({ variant: "destructive", title: "Falla al cerrar ticket" });
-      }
+    try {
+      await setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() }, { merge: true });
+      setSelectedRequest(null);
+      toast({ title: "Atención Finalizada", description: "El ticket ha sido archivado." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al cerrar" });
     }
   };
 
   if (!mounted) return null;
 
+  // RENDER PÚBLICO (ASISTENTE VIRTUAL)
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
-        <aside className="hidden lg:flex w-[260px] bg-[#1a2b4b] flex-col shrink-0 p-6">
+        <aside className="hidden lg:flex w-[280px] bg-[#1a2b4b] flex-col shrink-0 p-6">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
               <Bot className="h-6 w-6 text-white" />
@@ -289,6 +284,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </Button>
             {[
               { label: 'Mis solicitudes', icon: Clock },
+              { label: 'Anuncios', icon: Bell },
               { label: 'Base de conocimiento', icon: BookOpen },
               { label: 'Preguntas frecuentes', icon: HelpCircle },
             ].map((item, idx) => (
@@ -299,10 +295,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             ))}
           </nav>
 
-          <div className="mt-auto space-y-6">
+          <div className="mt-auto">
              <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] border border-white/5 space-y-4">
-                <p className="text-[10px] font-black text-white uppercase tracking-wider leading-relaxed">¿Apoyo inmediato?</p>
-                <p className="text-[9px] text-white/50 leading-relaxed">Si tu incidencia es crítica, contacta directamente.</p>
+                <p className="text-[10px] font-black text-white uppercase tracking-wider">¿Apoyo inmediato?</p>
+                <p className="text-[9px] text-white/50 leading-relaxed">Si tu incidencia es crítica, contacta directamente con un analista.</p>
                 <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2">
                    <Headphones className="h-4 w-4" /> Hablar con técnico
                 </Button>
@@ -316,28 +312,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 z-20 shadow-sm">
-             <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                   <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Mesa de Ayuda ATRES</h2>
-                   <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">
-                      <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> Sistema Conectado
-                   </Badge>
-                </div>
+             <div className="flex items-center gap-3">
+                <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Mesa de Ayuda ATRES</h2>
+                <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">
+                   <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> Sistema Conectado
+                </Badge>
              </div>
-             <div className="flex items-center gap-8">
-                <div className="hidden md:flex items-center gap-2">
-                   <Clock className="h-4 w-4 text-slate-300" />
-                   <div className="space-y-0">
-                      <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Horario de atención</p>
-                      <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
-                   </div>
+             <div className="hidden md:flex items-center gap-2">
+                <Clock className="h-4 w-4 text-slate-300" />
+                <div className="space-y-0">
+                   <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Horario de atención</p>
+                   <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
                 </div>
              </div>
           </header>
 
           <ScrollArea className="flex-1 bg-[#f4f7f9] p-8">
              <div className="max-w-4xl mx-auto space-y-10 pb-20">
-                <div className="bg-[#eef4ff] rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-sm border border-white relative overflow-hidden">
+                <div className="bg-[#eef4ff] rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-sm border border-white">
                    <div className="relative shrink-0">
                       <div className="h-32 w-32 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-[#e1ebff]">
                          <Bot className="h-16 w-16 text-[#0052cc]" />
@@ -348,7 +340,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    </div>
                    <div className="space-y-4 text-center md:text-left flex-1">
                       <h3 className="text-2xl font-black text-[#1a2b4b] uppercase tracking-tighter">¡Hola! Soy tu Asistente COEES</h3>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-lg">Describe tu incidencia o elige una categoría para canalizarte con un técnico de soporte en tiempo real.</p>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed">Describe tu incidencia técnica o elige una de las opciones de abajo para canalizarte con un técnico de soporte en tiempo real.</p>
                    </div>
                 </div>
 
@@ -429,8 +421,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
+  // RENDER ANALISTA (DASHBOARD)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
+      {/* Columna 1: Navegación Táctica */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
         <div className="p-6 flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 mb-8">
@@ -475,7 +469,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="mt-auto space-y-3">
              <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-colors bg-white/5 rounded-xl border border-white/10">
                 <QrCode className="h-4 w-4" />
-                <span className="text-[11px] font-black uppercase tracking-widest">Acceso Móvil (QR)</span>
+                <span className="text-[11px] font-black uppercase tracking-widest">Acceso Usuarios (QR)</span>
              </button>
              <button onClick={() => window.location.reload()} className="w-full flex items-center gap-3 px-4 py-3 text-white/40 hover:text-white transition-colors">
                 <RefreshCcw className="h-4 w-4" />
@@ -495,6 +489,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       </div>
 
+      {/* Columna 2: Lista de Conversaciones */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
@@ -548,6 +543,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
+      {/* Columna 3: Ventana de Chat */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5]">
         {selectedRequest ? (
           <>
@@ -616,13 +612,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </div>
              <h3 className="text-3xl font-black uppercase text-slate-800 tracking-tighter leading-none">Mesa de Ayuda Operativa</h3>
              <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500 mt-4">Auditoría COEES Ciclo 2025-2026</p>
-             <p className="text-[10px] font-black uppercase text-slate-400 mt-10 tracking-widest max-w-xs leading-relaxed">Seleccione una conversación del buzón izquierdo para iniciar la atención técnica remota.</p>
           </div>
         )}
       </div>
 
+      {/* Diálogo del Código QR */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white animate-in zoom-in-95">
+        <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
           <DialogHeader className="p-8 pb-4 text-center">
             <DialogTitle className="uppercase font-black text-xl flex items-center justify-center gap-3">
               <QrCode className="h-7 w-7 text-emerald-400" /> Acceso Móvil ATRES
@@ -652,10 +648,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <Button onClick={() => window.open(supportUrl, '_blank')} className="bg-white text-[#0b4135] font-black uppercase text-[9px] h-11 rounded-xl shadow-lg hover:bg-slate-50">PROBAR LIGA</Button>
                   <Button variant="ghost" onClick={() => setIsQrDialogOpen(false)} className="text-white/60 font-black uppercase text-[9px] border border-white/10 h-11 rounded-xl hover:bg-white/5">CERRAR VENTANA</Button>
                </div>
-            </div>
-            <div className="flex items-center gap-2 opacity-30 pt-2">
-               <ShieldCheck className="h-3.5 w-3.5" />
-               <span className="text-[8px] font-bold uppercase tracking-widest leading-none">Seguridad Cifrada Auditoría 2026</span>
             </div>
           </div>
         </DialogContent>
