@@ -551,52 +551,52 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Diálogo de Acceso Móvil (QR) */}
+      {/* Diálogo de Acceso Móvil (QR) - Ajustado para visualización completa */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
-          <div className="p-10 space-y-10 text-center">
-            <div className="space-y-4">
-              <div className="h-16 w-16 rounded-3xl bg-white/10 flex items-center justify-center mx-auto shadow-inner">
-                 <QrCode className="h-8 w-8 text-emerald-400" />
+        <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
+          <div className="p-8 space-y-8 text-center flex flex-col items-center">
+            <div className="space-y-3">
+              <div className="h-14 w-14 rounded-3xl bg-white/10 flex items-center justify-center mx-auto shadow-inner">
+                 <QrCode className="h-7 w-7 text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-black uppercase tracking-tighter">Acceso Móvil ATRES</h2>
-              <p className="text-xs font-bold text-emerald-400/60 uppercase tracking-widest">Liga oficial de soporte técnico remoto</p>
+              <h2 className="text-xl font-black uppercase tracking-tight">Acceso Móvil ATRES</h2>
+              <p className="text-[10px] font-bold text-emerald-400/60 uppercase tracking-widest">Liga oficial de soporte técnico remoto</p>
             </div>
 
-            <div className="relative group p-4 bg-white rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500">
-               <div className="aspect-square relative overflow-hidden rounded-[2.5rem] border-8 border-slate-50">
+            <div className="relative group p-4 bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-500 w-full max-w-[280px]">
+               <div className="aspect-square relative overflow-hidden rounded-[2rem] border-4 border-slate-50">
                   <Image 
                     src={qrUrl} 
                     alt="QR Soporte" 
                     fill 
-                    className="object-contain p-4"
+                    className="object-contain p-2"
                     unoptimized
                   />
                </div>
-               <div className="absolute inset-0 bg-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] flex items-center justify-center pointer-events-none">
-                  <Share2 className="h-10 w-10 text-emerald-600" />
+               <div className="absolute inset-0 bg-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] flex items-center justify-center pointer-events-none">
+                  <Share2 className="h-8 w-8 text-emerald-600" />
                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 w-full">
                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
-                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">Enlace Directo</p>
-                  <div className="flex items-center gap-3">
-                     <div className="flex-1 min-w-0 bg-black/20 px-4 py-3 rounded-xl border border-white/5 text-[10px] font-mono text-white/40 truncate">
+                  <p className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">Enlace Directo</p>
+                  <div className="flex items-center gap-2">
+                     <div className="flex-1 min-w-0 bg-black/20 px-3 py-2 rounded-lg border border-white/5 text-[9px] font-mono text-white/40 truncate text-left">
                         {supportUrl}
                      </div>
-                     <Button onClick={copySupportLink} className="h-11 w-11 rounded-xl bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 shrink-0">
-                        <Copy className="h-5 w-5" />
+                     <Button onClick={copySupportLink} className="h-10 w-10 rounded-lg bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 shrink-0 p-0">
+                        <Copy className="h-4 w-4" />
                      </Button>
                   </div>
                </div>
-               <Button onClick={() => window.open(supportUrl, '_blank')} className="w-full h-14 rounded-2xl bg-white text-[#0b4135] font-black uppercase text-xs gap-3 shadow-xl hover:bg-slate-100">
-                  <ExternalLink className="h-5 w-5" /> Probar en nueva pestaña
+               <Button onClick={() => window.open(supportUrl, '_blank')} className="w-full h-12 rounded-xl bg-white text-[#0b4135] font-black uppercase text-[10px] gap-2 shadow-xl hover:bg-slate-100">
+                  <ExternalLink className="h-4 w-4" /> Probar en nueva pestaña
                </Button>
             </div>
           </div>
-          <DialogFooter className="p-6 bg-black/20 border-t border-white/5 flex justify-center">
-             <button onClick={() => setIsQrDialogOpen(false)} className="text-[10px] font-black uppercase text-white/30 hover:text-white transition-colors">Cerrar Generador</button>
+          <DialogFooter className="p-5 bg-black/20 border-t border-white/5 flex justify-center">
+             <button onClick={() => setIsQrDialogOpen(false)} className="text-[9px] font-black uppercase text-white/30 hover:text-white transition-colors">Cerrar Generador</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
