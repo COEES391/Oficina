@@ -1,3 +1,4 @@
+
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
@@ -132,7 +133,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }
         setSessionKey(sKey);
         
-        // Registrar sesión inicial en Firestore (Heartbeat)
+        // Asegurar que el registro en la cola exista para que el técnico lo vea
         try {
           const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
@@ -201,14 +202,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const chatId = activeChatId || sessionKey;
     if (!chatId) {
-      toast({ variant: "destructive", title: "Error de Sesión", description: "Reconectando..." });
-      window.location.reload();
+      toast({ variant: "destructive", title: "Reconectando...", description: "Espere un momento." });
       return;
     }
 
     setIsSending(true);
     try {
-      // 1. Asegurar que el registro en la cola esté activo (Upsert)
+      // 1. Forzar creación/actualización del registro en la cola para que el técnico lo vea
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         id: chatId,
@@ -218,7 +218,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // 2. Registrar el mensaje en la base de datos
+      // 2. Registrar el mensaje
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -229,7 +229,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       if (!msgContent) setInput('');
 
-      // 3. Respuesta Automática de IA (Solo modo público)
+      // 3. IA responde al usuario si estamos en modo público
       if (isPublic) {
         setIsBotThinking(true);
         chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
@@ -244,8 +244,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }).catch(() => {}).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      console.error("Falla de comunicación:", e);
-      toast({ variant: "destructive", title: "Error", description: "No se pudo entregar el mensaje." });
+      console.error("Falla de envío:", e);
+      toast({ variant: "destructive", title: "Error de envío", description: "Verifique su conexión." });
     } finally {
       setIsSending(false);
     }
@@ -256,15 +256,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     try {
       await setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() }, { merge: true });
       setSelectedRequest(null);
-      toast({ title: "Atención Finalizada", description: "El ticket ha sido archivado." });
+      toast({ title: "Caso Cerrado" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al cerrar" });
+      toast({ variant: "destructive", title: "Error al cerrar sesión" });
     }
   };
 
   if (!mounted) return null;
 
-  // RENDER PÚBLICO (ASISTENTE VIRTUAL)
+  // VISTA PÚBLICA (USUARIO FINAL)
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
@@ -299,13 +299,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="mt-auto">
              <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] border border-white/5 space-y-4">
                 <p className="text-[10px] font-black text-white uppercase tracking-wider">¿Apoyo inmediato?</p>
-                <p className="text-[9px] text-white/50 leading-relaxed">Si tu incidencia es crítica, contacta directamente con un analista.</p>
+                <p className="text-[9px] text-white/50 leading-relaxed">Contacta directamente con un analista de soporte técnico.</p>
                 <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2">
                    <Headphones className="h-4 w-4" /> Hablar con técnico
                 </Button>
                 <div className="flex items-center gap-2 mt-2">
                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Sincronizado</span>
+                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Chat Sincronizado</span>
                 </div>
              </div>
           </div>
@@ -314,15 +314,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 z-20 shadow-sm">
              <div className="flex items-center gap-3">
-                <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Mesa de Ayuda ATRES</h2>
+                <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Asistente COEES</h2>
                 <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">
-                   <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> Sistema Conectado
+                   <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> En línea • Chat Seguro
                 </Badge>
              </div>
              <div className="hidden md:flex items-center gap-2">
                 <Clock className="h-4 w-4 text-slate-300" />
                 <div className="space-y-0">
-                   <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Horario de atención</p>
+                   <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Atención Institucional</p>
                    <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
                 </div>
              </div>
@@ -340,8 +340,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       </div>
                    </div>
                    <div className="space-y-4 text-center md:text-left flex-1">
-                      <h3 className="text-2xl font-black text-[#1a2b4b] uppercase tracking-tighter">¡Hola! Soy tu Asistente COEES</h3>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed">Describe tu incidencia técnica o elige una de las opciones de abajo para canalizarte con un técnico de soporte en tiempo real.</p>
+                      <h3 className="text-2xl font-black text-[#1a2b4b] uppercase tracking-tighter">¡Buen día! Soy tu Asistente Virtual</h3>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed">Escribe tu problema en el cuadro inferior o elige una categoría para canalizarte con un técnico analista en tiempo real.</p>
                    </div>
                 </div>
 
@@ -358,11 +358,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       ].map((cat) => (
                         <button 
                           key={cat.id} 
-                          onClick={() => { setSelectedCategory(cat.label); setInput(`Apoyo con ${cat.label.toLowerCase()}: `); }}
-                          className={cn(
-                            "flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105",
-                            selectedCategory === cat.label && "border-[#0052cc] ring-2 ring-blue-500/10 shadow-lg"
-                          )}
+                          onClick={() => setInput(`Solicito apoyo en: ${cat.label} - `)}
+                          className="flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105"
                         >
                            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-inner", cat.bg, cat.color)}>
                               <cat.icon className="h-6 w-6" />
@@ -376,7 +373,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
                    <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
-                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que necesitas, escríbenos tu problema en el cuadro de abajo y te ayudaremos.</p>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que buscas, detalla tu incidencia en la barra inferior.</p>
                 </div>
 
                 <div className="space-y-6 pt-10 border-t">
@@ -400,7 +397,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <footer className="p-8 bg-white border-t border-slate-100 z-30">
             <div className="max-w-4xl mx-auto flex items-center gap-4 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-6 focus-within:border-blue-500/30 focus-within:bg-white transition-all shadow-inner">
               <Input 
-                placeholder="Escribe tu incidencia técnica aquí..."
+                placeholder="Describa su problema aquí..."
                 className="h-14 bg-transparent border-none font-bold text-sm text-slate-700 focus:ring-0 px-0"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -422,7 +419,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // RENDER ANALISTA (DASHBOARD)
+  // VISTA TÉCNICO (DASHBOARD)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
       {/* Columna 1: Navegación Táctica */}
@@ -436,16 +433,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <h3 className="text-white font-black uppercase text-sm leading-none truncate">Mesa de Ayuda</h3>
                 <div className="flex items-center gap-1.5 mt-1.5">
                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Online</span>
+                   <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Sincronizado</span>
                 </div>
              </div>
           </div>
 
           <nav className="space-y-1">
             {[
-              { id: 'conversaciones', label: 'Buzón Soporte', icon: MessageSquare, badge: queue.length },
+              { id: 'conversaciones', label: 'Buzón Soporte', icon: MessageSquare, badge: queue.filter(q => q.status === 'pending').length },
               { id: 'mias', label: 'Mis casos', icon: User, badge: null },
-              { id: 'no-asignadas', label: 'No asignadas', icon: UserPlus, badge: queue.filter(q => q.status === 'pending').length },
+              { id: 'no-asignadas', label: 'No asignadas', icon: UserPlus, badge: null },
               { id: 'cerradas', label: 'Historial', icon: Archive, badge: null },
             ].map(item => (
               <button 
@@ -460,7 +457,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <item.icon className="h-4 w-4" />
                   <span className="text-xs font-black uppercase tracking-wider">{item.label}</span>
                 </div>
-                {item.badge !== null && (
+                {item.badge !== null && item.badge > 0 && (
                   <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full">{item.badge}</Badge>
                 )}
               </button>
@@ -471,10 +468,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-colors bg-white/5 rounded-xl border border-white/10">
                 <QrCode className="h-4 w-4" />
                 <span className="text-[11px] font-black uppercase tracking-widest">Acceso Usuarios (QR)</span>
-             </button>
-             <button onClick={() => window.location.reload()} className="w-full flex items-center gap-3 px-4 py-3 text-white/40 hover:text-white transition-colors">
-                <RefreshCcw className="h-4 w-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Reconectar</span>
              </button>
           </div>
         </div>
@@ -495,7 +488,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Conversaciones</h2>
-             <button onClick={() => {}} className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><PlusCircle className="h-4 w-4" /></button>
+             <button className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><PlusCircle className="h-4 w-4" /></button>
           </div>
           <div className="relative group">
             <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
@@ -529,7 +522,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        <span className="text-[8px] font-black text-slate-400 font-mono">#{chat.id.split('-').at(-1)}</span>
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 truncate uppercase">
-                      {chat.lastMessage || 'Solicitud de apoyo...'}
+                      {chat.lastMessage || 'Nueva solicitud de soporte...'}
                     </p>
                   </div>
                </button>
