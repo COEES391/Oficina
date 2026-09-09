@@ -1,7 +1,7 @@
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
- * Sistema de 3 columnas (Navegación, Lista, Chat) con generador de QR integrado.
+ * Sistema de 3 columnas para analistas y Dashboard de servicios para usuarios públicos.
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -52,7 +52,18 @@ import {
   ListFilter,
   PlusCircle,
   ExternalLink,
-  Share2
+  Share2,
+  Menu,
+  Bell,
+  BookOpen,
+  HelpCircle,
+  Lock,
+  Mail,
+  Laptop,
+  GraduationCap,
+  MoreHorizontal,
+  ShieldCheck,
+  Headphones
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -112,6 +123,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [isSending, setIsSending] = useState(false);
   const [currentFilter, setCurrentFilter] = useState<'conversaciones' | 'mias' | 'no-asignadas' | 'cerradas'>('conversaciones');
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -183,16 +195,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
-      if (chatMsgs.length === 0 && isPublic) {
-        setMessages([{ 
-          role: 'bot', 
-          role_id: 'bot',
-          content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', 
-          timestamp: { seconds: Date.now()/1000 } 
-        } as any]);
-      } else {
-        setMessages(chatMsgs);
-      }
+      setMessages(chatMsgs);
     });
     return () => unsubscribe();
   }, [mounted, activeChatId, isPublic]);
@@ -271,55 +274,216 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (isPublic) {
     return (
-      <div className="flex flex-col h-full bg-[#f8f5f0] overflow-hidden rounded-[3rem] shadow-2xl border border-white/40">
-        <header className="px-8 py-6 bg-white border-b flex justify-between items-center shadow-sm shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-[#B38E5D] text-white flex items-center justify-center shadow-xl">
-              <Bot className="h-7 w-7" />
+      <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
+        {/* Sidebar Public View */}
+        <aside className="hidden lg:flex w-[260px] bg-[#1a2b4b] flex-col shrink-0 p-6">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
+              <Bot className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-800 uppercase leading-none">Asistente COEES</h2>
-              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">En línea • Chat Seguro</p>
+            <div className="space-y-0">
+               <h1 className="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] leading-none">Mesa de Ayuda</h1>
+               <p className="text-sm font-black text-white uppercase leading-none mt-1">ATRES <span className="text-white/40">COEES</span></p>
             </div>
           </div>
-        </header>
-        <ScrollArea className="flex-1 px-8 py-10">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((msg, i) => (
-              <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                <div className={cn("max-w-[85%] p-4 rounded-3xl text-sm font-semibold shadow-md", 
-                  msg.role === 'user' ? "bg-[#B38E5D] text-white rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none")}>
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <div className="text-[8px] mt-2 font-black uppercase opacity-40 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '--:--'}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {isBotThinking && <div className="flex justify-start animate-pulse"><div className="bg-white/50 px-4 py-2 rounded-full text-[9px] font-black text-slate-400 uppercase">Analizando...</div></div>}
-            <div ref={scrollRef} />
-          </div>
-        </ScrollArea>
-        <footer className="p-6 bg-white/50 backdrop-blur-md border-t border-white/20 shrink-0">
-          <div className="max-w-4xl mx-auto flex gap-3">
-            <Input 
-              placeholder="Escriba su duda técnica aquí..." 
-              className="h-12 rounded-2xl bg-white border-2 border-slate-100 px-6 font-semibold"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-            />
-            <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isSending} className="h-12 w-12 rounded-2xl bg-[#9f2241] shadow-xl">
-              {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+
+          <nav className="space-y-1">
+            <Button variant="ghost" className="w-full justify-start text-white bg-white/10 hover:bg-white/20 rounded-xl h-11 text-xs font-bold gap-3 mb-4">
+              <PlusCircle className="h-4 w-4" /> Nueva conversación
             </Button>
+            {[
+              { label: 'Mis solicitudes', icon: Clock },
+              { label: 'Anuncios', icon: Bell },
+              { label: 'Base de conocimiento', icon: BookOpen },
+              { label: 'Preguntas frecuentes', icon: HelpCircle },
+            ].map((item, idx) => (
+              <button key={idx} className="w-full flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 transition-all rounded-xl text-xs font-bold">
+                 <item.icon className="h-4 w-4" />
+                 {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="mt-auto space-y-6">
+             <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] space-y-4">
+                <p className="text-[10px] font-black text-white uppercase tracking-wider leading-relaxed">¿Necesitas ayuda inmediata?</p>
+                <p className="text-[9px] text-white/50 leading-relaxed">Si tu problema es urgente, conéctate con un técnico.</p>
+                <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2">
+                   <Headphones className="h-4 w-4" /> Hablar con un técnico
+                </Button>
+                <div className="flex items-center gap-2 mt-2">
+                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">En línea: 2 técnicos disponibles</span>
+                </div>
+             </div>
+
+             <div className="flex items-center gap-3 opacity-40 px-2">
+                <ShieldCheck className="h-4 w-4 text-white" />
+                <div className="space-y-0.5">
+                   <p className="text-[8px] font-black text-white uppercase leading-none">Soporte confiable</p>
+                   <p className="text-[7px] text-white font-bold leading-tight">Tu solicitud será atendida y daremos seguimiento hasta su solución.</p>
+                </div>
+             </div>
           </div>
-        </footer>
+        </aside>
+
+        {/* Main Content Public View */}
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 relative z-20">
+             <div className="flex items-center gap-4">
+                <Menu className="h-5 w-5 text-slate-400 lg:hidden" />
+                <div className="flex items-center gap-3">
+                   <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Mesa de Ayuda ATRES</h2>
+                   <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">
+                      <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> En línea
+                   </Badge>
+                </div>
+             </div>
+
+             <div className="flex items-center gap-8">
+                <div className="hidden md:flex items-center gap-2">
+                   <Clock className="h-4 w-4 text-slate-300" />
+                   <div className="space-y-0">
+                      <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Horario de atención</p>
+                      <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-3 pl-8 border-l">
+                   <Avatar className="h-8 w-8 shadow-sm">
+                      <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-[10px]">IN</AvatarFallback>
+                   </Avatar>
+                   <div className="hidden sm:flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-700 uppercase">Invitado</span>
+                      <ChevronDown className="h-4 w-4 text-slate-300" />
+                   </div>
+                </div>
+             </div>
+          </header>
+
+          <ScrollArea className="flex-1 bg-[#f4f7f9] p-8">
+             <div className="max-w-4xl mx-auto space-y-10 pb-20">
+                {/* Hero Section */}
+                <div className="bg-[#eef4ff] rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-sm border border-white relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+                   <div className="relative shrink-0">
+                      <div className="h-32 w-32 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-[#e1ebff]">
+                         <Bot className="h-16 w-16 text-[#0052cc]" />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg animate-bounce">
+                         <Smile className="h-5 w-5" />
+                      </div>
+                   </div>
+                   <div className="space-y-4 text-center md:text-left flex-1 relative z-10">
+                      <h3 className="text-2xl font-black text-[#1a2b4b] uppercase leading-tight tracking-tighter">¡Hola! 👋 Soy el Asistente Virtual de COEES</h3>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-lg">Estoy aquí para ayudarte. Describe tu problema y lo canalizaremos con un técnico de soporte que te dará seguimiento hasta su solución.</p>
+                      <div className="flex flex-wrap items-center gap-6 pt-2">
+                         <div className="flex items-center gap-2.5">
+                            <div className="h-9 w-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-[#0052cc]"><FileText className="h-5 w-5" /></div>
+                            <div><p className="text-[9px] font-black text-slate-800 uppercase leading-none">Crea tu solicitud</p><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">En segundos</p></div>
+                         </div>
+                         <div className="flex items-center gap-2.5">
+                            <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600"><Users className="h-5 w-5" /></div>
+                            <div><p className="text-[9px] font-black text-slate-800 uppercase leading-none">Un técnico te atenderá</p><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">De forma personalizada</p></div>
+                         </div>
+                         <div className="flex items-center gap-2.5">
+                            <div className="h-9 w-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600"><Clock className="h-5 w-5" /></div>
+                            <div><p className="text-[9px] font-black text-slate-800 uppercase leading-none">Damos seguimiento</p><p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">Hasta resolver tu caso</p></div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Categories */}
+                <div className="space-y-8 pt-4">
+                   <h4 className="text-base font-black text-slate-800 uppercase tracking-widest text-center md:text-left">¿En qué podemos ayudarte hoy?</h4>
+                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      {[
+                        { id: 'pass', label: 'Restablecer contraseña', icon: Lock, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Problemas para iniciar sesión.' },
+                        { id: 'mail', label: 'Correo institucional', icon: Mail, color: 'text-emerald-600', bg: 'bg-emerald-50', sub: 'Acceso, envío o configuración.' },
+                        { id: 'tech', label: 'Soporte técnico', icon: Laptop, color: 'text-orange-500', bg: 'bg-orange-50', sub: 'Fallas en equipos, impresoras, red, etc.' },
+                        { id: 'lib', label: 'Biblioteca Digital', icon: BookOpen, color: 'text-purple-600', bg: 'bg-purple-50', sub: 'Acceso, errores o contenidos.' },
+                        { id: 'edu', label: 'Moodle / Plataforma Educativa', icon: GraduationCap, color: 'text-cyan-600', bg: 'bg-cyan-50', sub: 'Acceso, actividades o calificaciones.' },
+                        { id: 'other', label: 'Otro problema', icon: MoreHorizontal, color: 'text-rose-500', bg: 'bg-rose-50', sub: 'Otro tipo de consulta o incidencia.' },
+                      ].map((cat) => (
+                        <button 
+                          key={cat.id} 
+                          onClick={() => setSelectedCategory(cat.label)}
+                          className={cn(
+                            "flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105 group",
+                            selectedCategory === cat.label && "border-[#0052cc] ring-2 ring-blue-500/20 shadow-xl"
+                          )}
+                        >
+                           <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-inner transition-transform group-hover:rotate-6", cat.bg, cat.color)}>
+                              <cat.icon className="h-6 w-6" />
+                           </div>
+                           <h5 className="text-[10px] font-black text-slate-800 uppercase leading-tight mb-2 min-h-[2.5rem] flex items-center justify-center">{cat.label}</h5>
+                           <p className="text-[8px] font-bold text-slate-400 uppercase leading-relaxed tracking-wider">{cat.sub}</p>
+                        </button>
+                      ))}
+                   </div>
+                </div>
+
+                <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                   <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que necesitas, escríbenos tu problema en el cuadro de abajo y te ayudaremos.</p>
+                </div>
+
+                {/* Messages if any */}
+                {messages.length > 0 && (
+                   <div className="space-y-6 pt-10 border-t">
+                      {messages.map((msg, i) => (
+                        <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                          <div className={cn("max-w-[85%] p-5 rounded-3xl text-sm font-semibold shadow-md", 
+                            msg.role === 'user' ? "bg-[#0052cc] text-white rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none")}>
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                            <div className="text-[8px] mt-2 font-black uppercase opacity-40 flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '--:--'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {isBotThinking && <div className="flex justify-start animate-pulse"><div className="bg-white/50 px-5 py-2.5 rounded-full text-[9px] font-black text-slate-400 uppercase">El asistente está analizando...</div></div>}
+                      <div ref={scrollRef} />
+                   </div>
+                )}
+             </div>
+          </ScrollArea>
+
+          {/* Input Area Public View */}
+          <footer className="p-8 bg-white border-t border-slate-100 shrink-0 relative z-30">
+            <div className="max-w-4xl mx-auto space-y-4">
+              <div className="flex items-center gap-4 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-6 focus-within:border-blue-500/30 focus-within:bg-white transition-all shadow-inner">
+                <button className="h-10 w-10 text-slate-400 hover:text-[#0052cc] transition-colors"><Paperclip className="h-6 w-6" /></button>
+                <Input 
+                  placeholder={selectedCategory ? `Dinos más sobre ${selectedCategory.toLowerCase()}...` : "Describe tu incidencia o escribe tu mensaje para comunicarte con un técnico..."}
+                  className="h-14 bg-transparent border-none font-bold text-sm text-slate-700 focus:ring-0 px-0"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button 
+                  onClick={() => handleSendMessage()} 
+                  disabled={!input.trim() || isSending} 
+                  className="bg-[#0052cc] hover:bg-[#0047b3] text-white font-black uppercase text-[11px] h-10 px-8 rounded-xl shadow-xl gap-2 transition-all active:scale-95"
+                >
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Enviar
+                </Button>
+              </div>
+              <div className="flex justify-center items-center gap-2 opacity-30">
+                 <ShieldCheck className="h-3 w-3 text-slate-500" />
+                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Tu información está segura. Consulta nuestro aviso de privacidad.</p>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
+      {/* Analist View Sidebar (Left) */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-8">
@@ -405,6 +569,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       </div>
 
+      {/* Analist View Middle Column (Conversation List) */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
@@ -462,6 +627,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
+      {/* Analist View Chat Window (Right) */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] relative">
         {selectedRequest ? (
           <>
@@ -497,7 +663,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     const isTech = msg.role === 'tech';
                     const isBot = msg.role === 'bot';
                     return (
-                      <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", isTech ? "justify-end" : "justify-start")}>
+                      <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", isTech ? "justify-end" : "justify-start")}>
                         <div className={cn("max-w-[70%] p-3.5 rounded-2xl text-sm font-semibold shadow-xl border relative", 
                           isTech ? "bg-[#e7ffdb] text-slate-700 rounded-tr-none border-emerald-100" : 
                           isBot ? "bg-slate-800 text-white border-none" :
@@ -548,6 +714,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
+      {/* QR Code Dialog */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
           <DialogHeader className="p-8 pb-0 text-center">
