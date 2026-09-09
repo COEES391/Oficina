@@ -49,7 +49,8 @@ import {
   RefreshCcw,
   ChevronLeft,
   ChevronRight,
-  Printer
+  Printer,
+  Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -375,7 +376,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
                    <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
-                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción, escríbenos tu problema abajo. Un analista te responderá a la brevedad.</p>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que necesitas, escríbenos tu problema en el cuadro de abajo y te ayudaremos.</p>
                 </div>
 
                 <div className="space-y-6 pt-10 border-t">
