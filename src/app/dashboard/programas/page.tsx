@@ -229,6 +229,10 @@ export default function ProgramsPage() {
     }, 800);
   }
 
+  const bitacoraPendingCount = useMemo(() => {
+    return records.filter(r => r.name === 'ATRES' && r.status === 'pendiente').length;
+  }, [records]);
+
   const filteredRecords = useMemo(() => {
     const list = records.filter(r => r.name === activeTab);
     if (!searchTerm) return list;
@@ -863,6 +867,10 @@ export default function ProgramsPage() {
 
       <Dialog open={isVerifyResultDialogOpen} onOpenChange={setIsVerifyResultDialogOpen}>
         <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-3xl bg-[#f0f7ff] shadow-2xl">
+          <DialogHeader className="p-8 pb-0 sr-only">
+             <DialogTitle>Resultado de la verificación</DialogTitle>
+             <DialogDescription>Muestra el estatus oficial de la cuenta institucional verificada.</DialogDescription>
+          </DialogHeader>
           <div className="p-8 flex gap-6">
             <div className="shrink-0 pt-1">
               <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
@@ -902,7 +910,10 @@ export default function ProgramsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10"><DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle><button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button></DialogHeader>
+          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
+             <DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle>
+             <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button>
+          </DialogHeader>
           <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-4xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}</div>)}</div></div></div></ScrollArea></div>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button></DialogFooter>
         </DialogContent>

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
 import { 
   Dialog, 
   DialogContent, 
@@ -162,7 +162,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   }, [isPublic, generateTurnSessionId]);
 
-  // Escuchar Cola Live
   useEffect(() => {
     if (!mounted || isPublic) return;
     const q = query(collection(db, 'atres_support_queue'), orderBy('lastActivity', 'desc'));
@@ -172,7 +171,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return () => unsubscribe();
   }, [mounted, isPublic]);
 
-  // Escuchar Mensajes
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
@@ -267,7 +265,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // Renderizado para Usuario Público
   if (isPublic) {
     return (
       <div className="flex flex-col h-full bg-[#f8f5f0] overflow-hidden rounded-[3rem] shadow-2xl border border-white/40">
@@ -317,10 +314,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // Renderizado para Analista (3 Columnas)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
-      {/* Columna 1: Navegación Táctica (Verde Oscuro) */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-8">
@@ -406,7 +401,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       </div>
 
-      {/* Columna 2: Listado de Chats (Gris Claro) */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
@@ -464,7 +458,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
-      {/* Columna 3: Ventana de Chat (Blanco/Beige) */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] relative">
         {selectedRequest ? (
           <>
@@ -551,18 +544,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Diálogo de Acceso Móvil (QR) - Ajustado para visualización completa */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
+          <DialogHeader className="p-8 pb-0 text-center">
+            <DialogTitle className="uppercase font-black text-xl flex items-center justify-center gap-3">
+              <QrCode className="h-7 w-7 text-emerald-400" /> Acceso Móvil ATRES
+            </DialogTitle>
+            <DialogDescription className="text-emerald-400/60 text-[10px] font-bold uppercase tracking-widest mt-1">
+              Liga oficial de soporte técnico remoto
+            </DialogDescription>
+          </DialogHeader>
           <div className="p-8 space-y-8 text-center flex flex-col items-center">
-            <div className="space-y-3">
-              <div className="h-14 w-14 rounded-3xl bg-white/10 flex items-center justify-center mx-auto shadow-inner">
-                 <QrCode className="h-7 w-7 text-emerald-400" />
-              </div>
-              <h2 className="text-xl font-black uppercase tracking-tight">Acceso Móvil ATRES</h2>
-              <p className="text-[10px] font-bold text-emerald-400/60 uppercase tracking-widest">Liga oficial de soporte técnico remoto</p>
-            </div>
-
             <div className="relative group p-4 bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-500 w-full max-w-[280px]">
                <div className="aspect-square relative overflow-hidden rounded-[2rem] border-4 border-slate-50">
                   <Image 
