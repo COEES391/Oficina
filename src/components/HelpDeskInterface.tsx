@@ -68,7 +68,9 @@ import {
   where, 
   doc, 
   setDoc,
-  serverTimestamp 
+  serverTimestamp,
+  getDocs,
+  limit
 } from 'firebase/firestore';
 import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow';
 import Image from 'next/image';
@@ -122,6 +124,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${dateStr}-${random}`;
   }, []);
 
+  // Inicialización de Sesión y Heartbeat
   useEffect(() => {
     setMounted(true);
     
@@ -134,7 +137,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }
         setSessionKey(sKey);
         
-        // Registrar presencia inicial en Firestore
+        // Registrar presencia inicial forzada en Firestore
         try {
           const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
@@ -147,7 +150,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             lastMessage: 'Conectado a la Mesa de Ayuda'
           }, { merge: true });
         } catch (e) {
-          console.error("Falla inicialización:", e);
+          console.error("Falla heartbeat inicial:", e);
         }
       } else {
         setTechName(localStorage.getItem('userRfc') || 'ANALISTA COEES');
@@ -157,21 +160,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     initSupportSession();
   }, [isPublic, generateTurnSessionId]);
 
-  // Listener Global de Conversaciones (Vista Técnico)
+  // Listener Global de Conversaciones (Vista Técnico) - Alta Disponibilidad
   useEffect(() => {
     if (!mounted || isPublic) return;
     
-    const q = query(collection(db, 'support_queue'));
+    // Consulta sin orderBy para evitar fallos por campos nulos durante latencia
+    const q = query(collection(db, 'support_queue'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatedQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
+      
+      // Ordenamiento en cliente para máxima resiliencia
       setQueue(updatedQueue.sort((a, b) => {
-        const timeA = a.lastActivity?.seconds || Date.now() / 1000;
-        const timeB = b.lastActivity?.seconds || Date.now() / 1000;
+        const timeA = a.lastActivity?.seconds || (a.lastActivity instanceof Date ? a.lastActivity.getTime() / 1000 : Date.now() / 1000);
+        const timeB = b.lastActivity?.seconds || (b.lastActivity instanceof Date ? b.lastActivity.getTime() / 1000 : Date.now() / 1000);
         return timeB - timeA;
       }));
+    }, (error) => {
+      console.error("Error en listener de cola:", error);
+      toast({ variant: "destructive", title: "Falla de sincronización", description: "El buzón de soporte podría no estar actualizado." });
     });
+
     return () => unsubscribe();
-  }, [mounted, isPublic]);
+  }, [mounted, isPublic, toast]);
 
   // Filtrado de la cola según la navegación lateral del técnico
   const filteredQueue = useMemo(() => {
@@ -179,6 +189,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (currentFilter === 'cerradas') return queue.filter(q => q.status === 'closed');
     if (currentFilter === 'no-asignadas') return queue.filter(q => q.status === 'pending');
     if (currentFilter === 'mias') return queue.filter(q => q.status === 'attending');
+    // Default: Buzón Soporte (pendientes y atendiendo)
     return queue.filter(q => q.status !== 'closed');
   }, [queue, currentFilter, isPublic]);
 
@@ -210,7 +221,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const textToSend = msgContent || input;
     if (!textToSend.trim()) return;
     
-    const chatId = activeChatId || sessionKey;
+    // Obtener ID de sesión garantizado
+    const chatId = activeChatId || sessionKey || localStorage.getItem('atres_session_v2026');
     if (!chatId) {
       toast({ variant: "destructive", title: "Error de sesión", description: "Reinicie el chat por favor." });
       return;
@@ -218,17 +230,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     setIsSending(true);
     try {
-      // 1. Upsert en la cola para notificar al técnico
+      // 1. Upsert en la cola para notificar al técnico de forma instantánea
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         id: chatId,
         lastActivity: serverTimestamp(), 
-        lastMessage: textToSend.substring(0, 60),
+        lastMessage: textToSend.substring(0, 80),
         status: isPublic ? 'pending' : 'attending',
         ...(isPublic ? { userName: `Usuario ${chatId.split('-').at(-1)}` } : {})
       }, { merge: true });
 
-      // 2. Registro del mensaje en la base de datos
+      // 2. Registro del mensaje en la base de datos cronológica
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -251,11 +263,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               timestamp: serverTimestamp()
             });
           }
-        }).catch(() => {}).finally(() => setIsBotThinking(false));
+        }).catch((err) => {
+          console.error("AI Error:", err);
+        }).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      console.error("Falla de envío:", e);
-      toast({ variant: "destructive", title: "Sin conexión", description: "No se pudo entregar el mensaje." });
+      console.error("Falla crítica de envío:", e);
+      toast({ variant: "destructive", title: "Error de Red", description: "No se pudo sincronizar el mensaje con el servidor." });
     } finally {
       setIsSending(false);
     }
@@ -266,7 +280,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     try {
       await setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() }, { merge: true });
       setSelectedRequest(null);
-      toast({ title: "Atención Finalizada", description: "El caso ha sido archivado." });
+      toast({ title: "Atención Finalizada", description: "El caso ha sido archivado correctamente." });
     } catch (e) {
       toast({ variant: "destructive", title: "Error al cerrar" });
     }
@@ -278,9 +292,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
-        <aside className="hidden lg:flex w-[280px] bg-[#1a2b4b] flex-col shrink-0 p-6">
+        <aside className="hidden lg:flex w-[280px] bg-[#1a2b4b] flex-col shrink-0 p-6 shadow-2xl relative z-30">
           <div className="flex items-center gap-3 mb-10">
-            <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
+            <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10 shadow-inner">
               <Bot className="h-6 w-6 text-white" />
             </div>
             <div className="space-y-0">
@@ -290,7 +304,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
 
           <nav className="space-y-1">
-            <Button onClick={() => setMessages([])} variant="ghost" className="w-full justify-start text-white bg-white/10 hover:bg-white/20 rounded-xl h-11 text-xs font-bold gap-3 mb-4">
+            <Button onClick={() => { localStorage.removeItem('atres_session_v2026'); window.location.reload(); }} variant="ghost" className="w-full justify-start text-white bg-white/10 hover:bg-white/20 rounded-xl h-11 text-xs font-bold gap-3 mb-4 transition-all">
               <PlusCircle className="h-4 w-4" /> Nueva conversación
             </Button>
             {[
@@ -299,8 +313,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               { label: 'Base de conocimiento', icon: BookOpen },
               { label: 'Preguntas frecuentes', icon: HelpCircle },
             ].map((item, idx) => (
-              <button key={idx} className="w-full flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 transition-all rounded-xl text-xs font-bold">
-                 <item.icon className="h-4 w-4" />
+              <button key={idx} className="w-full flex items-center gap-3 px-4 py-3 text-white/60 hover:text-white hover:bg-white/5 transition-all rounded-xl text-xs font-bold group">
+                 <item.icon className="h-4 w-4 transition-transform group-hover:scale-110" />
                  {item.label}
               </button>
             ))}
@@ -310,12 +324,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] border border-white/5 space-y-4 shadow-xl">
                 <p className="text-[10px] font-black text-white uppercase tracking-wider">¿Apoyo inmediato?</p>
                 <p className="text-[9px] text-white/50 leading-relaxed">Contacta directamente con un analista de soporte técnico.</p>
-                <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2 shadow-lg">
+                <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2 shadow-lg transition-all active:scale-95">
                    <Headphones className="h-4 w-4" /> Hablar con técnico
                 </Button>
                 <div className="flex items-center gap-2 mt-2">
                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">En línea ahora</span>
+                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Analistas en línea</span>
                 </div>
              </div>
           </div>
@@ -329,11 +343,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> Chat Seguro
                 </Badge>
              </div>
-             <div className="hidden md:flex items-center gap-2">
-                <Clock className="h-4 w-4 text-slate-300" />
-                <div className="space-y-0">
-                   <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Atención Institucional</p>
-                   <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
+             <div className="hidden md:flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                   <Clock className="h-4 w-4 text-slate-300" />
+                   <div className="space-y-0">
+                      <p className="text-[8px] font-black text-slate-400 uppercase leading-none">Atención Institucional</p>
+                      <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
+                   </div>
+                </div>
+                <div className="h-8 w-px bg-slate-100" />
+                <div className="flex items-center gap-3">
+                   <p className="text-[9px] font-black text-primary uppercase">Folio: {sessionKey.split('-').at(-1)}</p>
                 </div>
              </div>
           </header>
@@ -368,7 +388,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       ].map((cat) => (
                         <button 
                           key={cat.id} 
-                          onClick={() => setInput(`Solicito apoyo en: ${cat.label} - `)}
+                          onClick={() => handleSendMessage(`Solicitud de apoyo: ${cat.label.toUpperCase()}`)}
                           className="flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105 group"
                         >
                            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-inner transition-transform group-hover:rotate-12", cat.bg, cat.color)}>
@@ -383,18 +403,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
                    <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
-                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que necesitas, escríbenos tu problema en el cuadro de abajo y te ayudaremos.</p>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción que necesitas, escríbenos tu problema en el cuadro de abajo y te ayudaremos de inmediato.</p>
                 </div>
 
                 <div className="space-y-6 pt-10 border-t border-slate-100">
                   {messages.map((msg, i) => (
                     <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-[85%] p-5 rounded-3xl text-sm font-semibold shadow-md", 
-                        msg.role === 'user' ? "bg-[#0052cc] text-white rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none border border-slate-100")}>
+                      <div className={cn("max-w-[85%] p-5 rounded-3xl text-sm font-semibold shadow-md transition-transform hover:scale-[1.01]", 
+                        msg.role === 'user' ? "bg-[#0052cc] text-white rounded-tr-none" : 
+                        msg.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none" :
+                        "bg-white text-slate-700 rounded-tl-none border border-slate-100")}>
                         <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                         <div className="text-[8px] mt-2 font-black uppercase opacity-40 text-right flex items-center justify-end gap-1">
                           <Clock className="h-2.5 w-2.5" />
-                          {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '...'}
+                          {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : 'Sincronizando...'}
                         </div>
                       </div>
                     </div>
@@ -413,7 +435,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             <div className="max-w-4xl mx-auto flex items-center gap-4 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-6 py-2 focus-within:border-blue-500/30 focus-within:bg-white transition-all shadow-inner">
               <button className="h-10 w-10 text-slate-300 hover:text-blue-500 transition-colors shrink-0"><Paperclip className="h-5 w-5" /></button>
               <Input 
-                placeholder="Describa su problema aquí..."
+                placeholder="Describa su problema técnico aquí..."
                 className="h-12 bg-transparent border-none font-bold text-sm text-slate-700 focus:ring-0 px-0 placeholder:text-slate-300"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -440,14 +462,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
       {/* Columna 1: Navegación Táctica */}
-      <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
+      <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden shadow-2xl relative z-40">
         <div className="p-6 flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 mb-8">
-             <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 shadow-inner">
+             <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 shadow-inner border border-white/5">
                 <Bot className="h-7 w-7" />
              </div>
              <div className="min-w-0">
-                <h3 className="text-white font-black uppercase text-sm leading-none truncate">Mesa de Ayuda</h3>
+                <h3 className="text-white font-black uppercase text-sm leading-none truncate tracking-tighter">Mesa de Ayuda</h3>
                 <div className="flex items-center gap-1.5 mt-1.5">
                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Sincronizado</span>
@@ -467,7 +489,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 onClick={() => setCurrentFilter(item.id as any)}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all group",
-                  currentFilter === item.id ? "bg-[#128c7e] text-white shadow-xl" : "text-white/60 hover:bg-white/5 hover:text-white"
+                  currentFilter === item.id ? "bg-[#128c7e] text-white shadow-xl scale-[1.02]" : "text-white/60 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -475,21 +497,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <span className="text-xs font-black uppercase tracking-wider">{item.label}</span>
                 </div>
                 {item.badge !== null && item.badge > 0 && (
-                  <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full shadow-lg">{item.badge}</Badge>
+                  <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full shadow-lg animate-in zoom-in">{item.badge}</Badge>
                 )}
               </button>
             ))}
           </nav>
 
           <div className="mt-auto space-y-3">
-             <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-colors bg-white/5 rounded-xl border border-white/10 shadow-lg">
-                <QrCode className="h-4 w-4" />
+             <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-all bg-white/5 rounded-xl border border-white/10 shadow-lg group">
+                <QrCode className="h-4 w-4 group-hover:rotate-6 transition-transform" />
                 <span className="text-[11px] font-black uppercase tracking-widest">Acceso Usuarios (QR)</span>
              </button>
           </div>
         </div>
 
-        <div className="p-6 bg-black/20 flex items-center gap-4">
+        <div className="p-6 bg-black/20 flex items-center gap-4 border-t border-white/5">
            <Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-lg">
               <AvatarFallback className="bg-emerald-800 text-white font-black text-xs">AN</AvatarFallback>
            </Avatar>
@@ -501,35 +523,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </div>
 
       {/* Columna 2: Lista de Conversaciones */}
-      <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
-        <div className="p-6 space-y-6">
+      <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0 relative z-30">
+        <div className="p-6 space-y-6 bg-white/50 backdrop-blur-sm border-b">
           <div className="flex items-center justify-between">
              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Conversaciones</h2>
-             <button onClick={() => setQueue([])} className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><RefreshCcw className="h-4 w-4" /></button>
+             <button onClick={() => window.location.reload()} className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"><RefreshCcw className="h-4 w-4" /></button>
           </div>
           <div className="relative group">
             <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
             <Input 
               placeholder="Buscar folio o usuario..." 
-              className="h-11 pl-10 rounded-2xl bg-white border-none shadow-inner text-xs font-bold uppercase"
+              className="h-11 pl-10 rounded-2xl bg-white border-none shadow-inner text-xs font-bold uppercase ring-1 ring-slate-100 focus:ring-emerald-500/30"
             />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-           <div className="px-3 pb-6 space-y-1">
+           <div className="px-3 py-6 space-y-2">
              {filteredQueue.map((chat) => (
                <button 
                  key={chat.id}
                  onClick={() => setSelectedRequest(chat)}
                  className={cn(
                    "w-full p-4 rounded-[2rem] text-left transition-all duration-300 flex items-center gap-4 relative border-2",
-                   selectedRequest?.id === chat.id ? "bg-emerald-50 border-emerald-200 shadow-lg scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80"
+                   selectedRequest?.id === chat.id ? "bg-emerald-50 border-emerald-200 shadow-lg scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80 hover:border-slate-100"
                  )}
                >
                   <div className="relative shrink-0">
-                    <Avatar className="h-12 w-12 shadow-sm border-2 border-white">
-                      <AvatarFallback className="bg-primary text-white font-black text-sm">{chat.userName?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                    <Avatar className="h-12 w-12 shadow-md border-2 border-white">
+                      <AvatarFallback className="bg-primary text-white font-black text-sm uppercase">{chat.userName?.slice(0, 2) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className={cn("absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm", chat.status === 'pending' ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500')} />
                   </div>
@@ -545,9 +567,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                </button>
              ))}
              {filteredQueue.length === 0 && (
-               <div className="py-24 text-center opacity-30 px-10">
-                  <MessageSquare className="h-14 w-14 mx-auto mb-4 text-slate-300" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sin folios activos en esta sección</p>
+               <div className="py-24 text-center opacity-30 px-10 flex flex-col items-center">
+                  <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+                    <MessageSquare className="h-10 w-10 text-slate-300" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-relaxed">Sin solicitudes activas<br/>en esta sección</p>
                </div>
              )}
            </div>
@@ -555,16 +579,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       </div>
 
       {/* Columna 3: Ventana de Chat Dinámica */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5]">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] relative z-20">
         {selectedRequest ? (
           <>
             <header className="px-8 py-4 bg-white border-b flex justify-between items-center shrink-0 shadow-sm z-10">
               <div className="flex items-center gap-5">
                 <Avatar className="h-12 w-12 border-2 border-slate-100 shadow-sm">
-                   <AvatarFallback className="bg-slate-200 text-slate-500 font-black">U</AvatarFallback>
+                   <AvatarFallback className="bg-slate-200 text-slate-500 font-black uppercase">{selectedRequest.userName?.slice(0, 1) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>
-                   <h2 className="text-base font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h2>
+                   <h2 className="text-base font-black text-slate-800 uppercase leading-none tracking-tight">{selectedRequest.userName}</h2>
                    <div className="flex items-center gap-2 mt-1.5">
                       <Badge className={cn("border-none text-[8px] font-black uppercase px-2 h-5 rounded-full shadow-sm", 
                         selectedRequest.status === 'pending' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700')}>
@@ -613,7 +637,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <button className="h-12 w-12 rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-500 transition-all flex items-center justify-center shadow-sm"><Paperclip className="h-5 w-5" /></button>
                   <Input 
                     placeholder="Escribir respuesta técnica..." 
-                    className="h-12 rounded-2xl bg-white border-none shadow-inner px-6 font-bold text-sm text-slate-700 uppercase"
+                    className="h-12 rounded-2xl bg-white border-none shadow-inner px-6 font-bold text-sm text-slate-700 uppercase focus:ring-2 focus:ring-emerald-500/20 transition-all"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
@@ -639,13 +663,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       {/* Diálogo de Acceso Móvil (QR) */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
-          <DialogHeader className="p-8 pb-4 text-center">
+          <DialogHeader className="p-8 pb-4 text-center bg-white/5 border-b border-white/10 shrink-0">
             <DialogTitle className="uppercase font-black text-xl flex items-center justify-center gap-3">
               <QrCode className="h-8 w-8 text-emerald-400" /> Acceso Móvil ATRES
             </DialogTitle>
             <DialogDescription className="text-white/40 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Sincronización segura con portal de usuario</DialogDescription>
           </DialogHeader>
-          <div className="px-8 pb-8 space-y-6 flex flex-col items-center text-center">
+          <div className="px-8 pb-8 pt-8 space-y-6 flex flex-col items-center text-center">
             <div className="p-6 bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[260px] mx-auto border-4 border-emerald-500/20">
                <div className="aspect-square relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white">
                   <Image 
@@ -665,7 +689,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                </div>
                <div className="grid grid-cols-2 gap-3 w-full">
-                  <Button onClick={() => window.open(supportUrl, '_blank')} className="bg-white text-[#0b4135] font-black uppercase text-[9px] h-11 rounded-xl shadow-lg hover:bg-slate-50">PROBAR LIGA</Button>
+                  <Button onClick={() => window.open(supportUrl, '_blank')} className="bg-white text-[#0b4135] font-black uppercase text-[9px] h-11 rounded-xl shadow-lg hover:bg-slate-50 transition-all">PROBAR LIGA</Button>
                   <Button variant="ghost" onClick={() => setIsQrDialogOpen(false)} className="text-white/60 font-black uppercase text-[9px] border border-white/10 h-11 rounded-xl hover:bg-white/5">CERRAR</Button>
                </div>
             </div>
@@ -675,4 +699,3 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     </div>
   );
 }
-
