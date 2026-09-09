@@ -1,4 +1,3 @@
-
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
@@ -9,10 +8,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Dialog, 
   DialogContent, 
@@ -24,38 +22,22 @@ import {
 import { 
   Send, 
   Bot, 
-  UserCog,
   MessageSquare,
   CheckCircle2,
-  Paperclip,
-  FileText,
   Clock,
   Activity,
-  Monitor,
   X,
   Search,
   User,
-  History,
+  Archive,
   Circle,
   Copy,
   Loader2,
   QrCode,
   Users,
   UserPlus,
-  Zap,
-  Tag,
-  BarChart3,
-  Settings,
-  MoreVertical,
-  Star,
-  Mic,
   Smile,
-  ChevronDown,
-  ListFilter,
   PlusCircle,
-  ExternalLink,
-  Share2,
-  Menu,
   Bell,
   BookOpen,
   HelpCircle,
@@ -67,7 +49,8 @@ import {
   ShieldCheck,
   Headphones,
   Info,
-  RefreshCcw
+  RefreshCcw,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +66,6 @@ import {
   doc, 
   updateDoc, 
   setDoc,
-  deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow';
@@ -129,7 +111,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeChatId = useMemo(() => {
     if (isPublic) return sessionKey;
@@ -146,7 +127,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${dateStr}-${random}`;
   }, []);
 
-  // Inicialización Robusta de Sesión
   useEffect(() => {
     setMounted(true);
     
@@ -160,7 +140,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         setSessionKey(sKey);
         
         try {
-          // Registrar presencia en la cola de soporte (Heartbeat)
           const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
             id: sKey,
@@ -171,10 +150,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             chatKey: sKey,
             lastActivity: serverTimestamp(),
             userName: `Usuario ${sKey.split('-').at(-1)}`,
-            lastMessage: 'En espera de atención...'
+            lastMessage: 'Conectado a la Mesa de Ayuda'
           }, { merge: true });
         } catch (e) {
-          console.error("Falla de registro en cola:", e);
+          console.error("Error heartbeat:", e);
         }
       } else {
         const savedTechName = localStorage.getItem('atres_tech_name') || 'ANALISTA COEES';
@@ -185,16 +164,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     initSupportSession();
   }, [isPublic, generateTurnSessionId]);
 
-  // Listener del Buzón de Soporte (Vista Analista)
   useEffect(() => {
     if (!mounted || isPublic) return;
     
-    // Escuchamos todos los cambios en la cola sin orderBy para evitar bloqueos por índices o timestamps nulos
     const q = query(collection(db, 'support_queue'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatedQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
-      
-      // Ordenamiento manual para manejar timestamps nulos (nuevos registros)
       setQueue(updatedQueue.sort((a, b) => {
         const timeA = a.lastActivity?.seconds || Date.now() / 1000;
         const timeB = b.lastActivity?.seconds || Date.now() / 1000;
@@ -202,12 +177,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       }));
     }, (err) => {
       console.error("Queue Listener Error:", err);
-      toast({ variant: "destructive", title: "Error de sincronización", description: "Verifique permisos de Firestore." });
     });
     return () => unsubscribe();
-  }, [mounted, isPublic, toast]);
+  }, [mounted, isPublic]);
 
-  // Listener de Mensajes del Chat Activo
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
@@ -233,19 +206,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async (msgData?: { content?: string, fileData?: { data: string, name: string, type: string } }) => {
+  const handleSendMessage = async (msgData?: { content?: string }) => {
     const textToSend = msgData?.content ?? input;
-    if (!textToSend.trim() && !msgData?.fileData) return;
+    if (!textToSend.trim()) return;
     
     const chatId = activeChatId || sessionKey;
-    if (!chatId) {
-      toast({ variant: "destructive", title: "Iniciando sesión", description: "Sincronizando sesión técnica..." });
-      return;
-    }
+    if (!chatId) return;
 
     setIsSending(true);
     try {
-      // 1. Actualizar metadatos en el buzón (para visibilidad del analista)
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         lastActivity: serverTimestamp(), 
@@ -254,22 +223,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         userName: isPublic ? `Usuario ${chatId.split('-').at(-1)}` : undefined
       }, { merge: true });
 
-      // 2. Registrar el mensaje oficial
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: textToSend,
         timestamp: serverTimestamp(),
-        senderName: !isPublic ? techName : undefined,
-        fileData: msgData?.fileData?.data || null,
-        fileName: msgData?.fileData?.name || null,
-        fileType: msgData?.fileData?.type || null
+        senderName: !isPublic ? techName : undefined
       });
 
       if (!msgData?.content) setInput('');
 
-      // 3. IA COEES (Solo vista pública para asistencia inmediata)
-      if (isPublic && !msgData?.fileData) {
+      if (isPublic) {
         setIsBotThinking(true);
         chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
           if (aiRes?.response) {
@@ -283,8 +247,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }).catch(() => {}).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      console.error("Falla al enviar mensaje:", e);
-      toast({ variant: "destructive", title: "Sin comunicación", description: "No se pudo conectar con el servidor." });
+      console.error("Send Error:", e);
+      toast({ variant: "destructive", title: "Error de comunicación", description: "Reintente en unos momentos." });
     } finally {
       setIsSending(false);
     }
@@ -308,7 +272,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
-        {/* Sidebar Vista Pública */}
         <aside className="hidden lg:flex w-[260px] bg-[#1a2b4b] flex-col shrink-0 p-6">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
@@ -351,7 +314,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         </aside>
 
-        {/* Contenido Principal Vista Pública */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 z-20 shadow-sm">
              <div className="flex items-center gap-4">
@@ -381,7 +343,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <Bot className="h-16 w-16 text-[#0052cc]" />
                       </div>
                       <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg">
-                         <Smile className="h-5 w-5" />
+                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                    </div>
                    <div className="space-y-4 text-center md:text-left flex-1">
@@ -467,10 +429,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // Vista del Analista (Dashboard)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
-      {/* Columna Izquierda: Navegación Táctica */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
         <div className="p-6 flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 mb-8">
@@ -535,11 +495,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </div>
       </div>
 
-      {/* Columna Central: Listado de Conversaciones */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-             <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Buzón de Soporte</h2>
+             <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Conversaciones</h2>
              <button onClick={() => {}} className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><PlusCircle className="h-4 w-4" /></button>
           </div>
           <div className="relative group">
@@ -589,7 +548,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
-      {/* Columna Derecha: Ventana de Chat Operativo */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5]">
         {selectedRequest ? (
           <>
@@ -663,7 +621,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         )}
       </div>
 
-      {/* Diálogo de QR Adaptado para Visibilidad Total */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
         <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white animate-in zoom-in-95">
           <DialogHeader className="p-8 pb-4 text-center">
