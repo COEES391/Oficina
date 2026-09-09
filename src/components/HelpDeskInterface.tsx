@@ -1,7 +1,7 @@
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
- * Rediseñada para implementar el sistema de 3 columnas (Navegación, Lista, Chat).
+ * Sistema de 3 columnas (Navegación, Lista, Chat) con generador de QR integrado.
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -11,6 +11,14 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { 
   Send, 
   Bot, 
@@ -42,7 +50,9 @@ import {
   Smile,
   ChevronDown,
   ListFilter,
-  PlusCircle
+  PlusCircle,
+  ExternalLink,
+  Share2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +72,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { chatWithHelpDesk } from '@/ai/flows/help-desk-flow';
+import Image from 'next/image';
 
 type Message = {
   id?: string;
@@ -92,7 +103,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [remoteId, setRemoteId] = useState(''); 
   const [queue, setQueue] = useState<SupportRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
   const [techName, setTechName] = useState('');
@@ -101,6 +111,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [currentFilter, setCurrentFilter] = useState<'conversaciones' | 'mias' | 'no-asignadas' | 'cerradas'>('conversaciones');
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +120,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (isPublic) return sessionKey;
     return selectedRequest?.ticketNumber || null;
   }, [isPublic, sessionKey, selectedRequest]);
+
+  const supportUrl = "https://6000-firebase-planeacin-1776866447103.cluster-gizzoza7hzhfyxzo5d76y3flkw.cloudworkstations.dev/helpdesk";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(supportUrl)}`;
 
   const generateTurnSessionId = useCallback(() => {
     const now = new Date();
@@ -246,6 +260,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
   };
 
+  const copySupportLink = () => {
+    navigator.clipboard.writeText(supportUrl);
+    toast({ title: "Liga copiada", description: "Enlace de soporte listo para compartir." });
+  };
+
   if (!mounted) return null;
 
   // Renderizado para Usuario Público
@@ -352,6 +371,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="mt-10 space-y-4">
              <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] px-4">Herramientas</p>
              <nav className="space-y-1">
+                <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-2.5 text-emerald-400 hover:text-white transition-colors bg-emerald-500/10 rounded-xl mb-4">
+                   <QrCode className="h-4 w-4" />
+                   <span className="text-[11px] font-bold uppercase tracking-wide">Acceso Usuarios (QR)</span>
+                </button>
                 {[
                   { label: 'Respuestas rápidas', icon: Zap },
                   { label: 'Etiquetas', icon: Tag },
@@ -475,10 +498,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   
                   {messages.map((msg, i) => {
                     const isTech = msg.role === 'tech';
+                    const isBot = msg.role === 'bot';
                     return (
                       <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", isTech ? "justify-end" : "justify-start")}>
                         <div className={cn("max-w-[70%] p-3.5 rounded-2xl text-sm font-semibold shadow-xl border relative", 
-                          isTech ? "bg-[#e7ffdb] text-slate-700 rounded-tr-none border-emerald-100" : "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
+                          isTech ? "bg-[#e7ffdb] text-slate-700 rounded-tr-none border-emerald-100" : 
+                          isBot ? "bg-slate-800 text-white border-none" :
+                          "bg-white text-slate-700 rounded-tl-none border-slate-100")}>
                            <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                            <div className="flex items-center justify-end gap-1.5 mt-2 opacity-40">
                               <span className="text-[8px] font-black uppercase">11:41</span>
@@ -524,6 +550,56 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </div>
         )}
       </div>
+
+      {/* Diálogo de Acceso Móvil (QR) */}
+      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
+          <div className="p-10 space-y-10 text-center">
+            <div className="space-y-4">
+              <div className="h-16 w-16 rounded-3xl bg-white/10 flex items-center justify-center mx-auto shadow-inner">
+                 <QrCode className="h-8 w-8 text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-black uppercase tracking-tighter">Acceso Móvil ATRES</h2>
+              <p className="text-xs font-bold text-emerald-400/60 uppercase tracking-widest">Liga oficial de soporte técnico remoto</p>
+            </div>
+
+            <div className="relative group p-4 bg-white rounded-[3rem] shadow-2xl animate-in zoom-in-95 duration-500">
+               <div className="aspect-square relative overflow-hidden rounded-[2.5rem] border-8 border-slate-50">
+                  <Image 
+                    src={qrUrl} 
+                    alt="QR Soporte" 
+                    fill 
+                    className="object-contain p-4"
+                    unoptimized
+                  />
+               </div>
+               <div className="absolute inset-0 bg-emerald-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] flex items-center justify-center pointer-events-none">
+                  <Share2 className="h-10 w-10 text-emerald-600" />
+               </div>
+            </div>
+
+            <div className="space-y-4">
+               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">Enlace Directo</p>
+                  <div className="flex items-center gap-3">
+                     <div className="flex-1 min-w-0 bg-black/20 px-4 py-3 rounded-xl border border-white/5 text-[10px] font-mono text-white/40 truncate">
+                        {supportUrl}
+                     </div>
+                     <Button onClick={copySupportLink} className="h-11 w-11 rounded-xl bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 shrink-0">
+                        <Copy className="h-5 w-5" />
+                     </Button>
+                  </div>
+               </div>
+               <Button onClick={() => window.open(supportUrl, '_blank')} className="w-full h-14 rounded-2xl bg-white text-[#0b4135] font-black uppercase text-xs gap-3 shadow-xl hover:bg-slate-100">
+                  <ExternalLink className="h-5 w-5" /> Probar en nueva pestaña
+               </Button>
+            </div>
+          </div>
+          <DialogFooter className="p-6 bg-black/20 border-t border-white/5 flex justify-center">
+             <button onClick={() => setIsQrDialogOpen(false)} className="text-[10px] font-black uppercase text-white/30 hover:text-white transition-colors">Cerrar Generador</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
