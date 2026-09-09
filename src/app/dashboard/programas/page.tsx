@@ -121,15 +121,6 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase9', label: 'Fase 9.- Total de equipos habilitados', color: 'text-blue-600 bg-blue-50 border-blue-100' }
 ];
 
-const FUNCIONES_BIBLIOTECA = [
-  "PAAE",
-  "DOCENTE",
-  "DIRECTIVO",
-  "JEFE DE ENSEÑANZA",
-  "SUPERVISOR",
-  "ASESOR TECNICO PEDAGOGICO"
-]
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -681,14 +672,14 @@ export default function ProgramsPage() {
              </div>
              <div className="lg:col-span-5 flex flex-col gap-8">
                 <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl p-8 space-y-6">
-                   <div className="flex items-center gap-4 border-b pb-4"><Building2 className="h-6 w-6 text-primary" /><h3 className="text-base font-black uppercase tracking-widest">Registrar Escuela</h3></div>
+                   <div className="flex items-center gap-4 border-b pb-4"><Building2 className="h-6 w-6 text-primary" /><h3 className="text-base font-black uppercase tracking-widest text-slate-800">Registrar Escuela</h3></div>
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">CCT *</Label><Input value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs" /></div>
                       <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Nombre *</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})} className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs" /></div>
                       <div className="grid grid-cols-2 gap-4 col-span-2">
                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Latitud *</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} className="h-11 bg-slate-50 border-none rounded-xl" /></div>
                         <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Longitud *</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} className="h-11 bg-slate-50 border-none rounded-xl" /></div>
-                      </div>
+                   </div>
                    </div>
                    <Button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] h-12 rounded-xl"><Save className="h-5 w-5 mr-2" /> Guardar escuela</Button>
                 </Card>
@@ -867,9 +858,11 @@ export default function ProgramsPage() {
 
       <Dialog open={isVerifyResultDialogOpen} onOpenChange={setIsVerifyResultDialogOpen}>
         <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-3xl bg-[#f0f7ff] shadow-2xl">
-          <DialogHeader className="p-8 pb-0 sr-only">
-             <DialogTitle>Resultado de la verificación</DialogTitle>
-             <DialogDescription>Muestra el estatus oficial de la cuenta institucional verificada.</DialogDescription>
+          <DialogHeader className="p-8 pb-0">
+             <DialogTitle className="uppercase font-black text-emerald-600 flex items-center gap-3">
+               <CheckCircle2 className="h-6 w-6" /> Resultado de la verificación
+             </DialogTitle>
+             <DialogDescription className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Muestra el estatus oficial de la cuenta institucional verificada.</DialogDescription>
           </DialogHeader>
           <div className="p-8 flex gap-6">
             <div className="shrink-0 pt-1">
@@ -879,7 +872,7 @@ export default function ProgramsPage() {
             </div>
             <div className="flex-1 space-y-6">
               <div className="space-y-1">
-                <p className="text-[#003366] font-bold text-sm">Resultado de la verificación</p>
+                <p className="text-[#003366] font-bold text-sm">Registro Localizado</p>
                 <h3 className="text-2xl font-black text-emerald-600 truncate">{verifiedAccount?.email}</h3>
                 <Badge className="bg-emerald-500/20 text-emerald-700 hover:bg-emerald-500/30 border-none px-4 py-1 rounded-full text-[10px] font-bold mt-2">
                   Cuenta activa
@@ -914,8 +907,49 @@ export default function ProgramsPage() {
              <DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle>
              <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><div className="p-10 space-y-10 max-w-4xl mx-auto"><div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}><Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label><div className="relative"><input placeholder="INGRESAR CCT..." className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" value={dialogSearchTerm} onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />{showSearchResults && dialogSearchTerm.length > 2 && (<div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">{schoolSearchResults.map((s, sidx) => (<div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}><div className="flex flex-col"><span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span></div><ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" /></div>))}{schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}</div>)}</div></div></div></ScrollArea></div>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button></DialogFooter>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-10 space-y-10 max-w-4xl mx-auto">
+                <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
+                  <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
+                  <div className="relative">
+                    <input 
+                      placeholder="INGRESAR CCT..." 
+                      className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                      value={dialogSearchTerm} 
+                      onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} 
+                    />
+                    {showSearchResults && dialogSearchTerm.length > 2 && (
+                      <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
+                        {schoolSearchResults.map((s, sidx) => (
+                          <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span>
+                              <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary transition-all" />
+                          </div>
+                        ))}
+                        {schoolSearchResults.length === 0 && (
+                          <div className="p-6 text-center">
+                            <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
+                              <Plus className="h-4 w-4 mr-2" /> Alta Rápida
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button>
+            <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

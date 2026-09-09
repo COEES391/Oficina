@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Dialog, 
   DialogContent, 
@@ -186,9 +186,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       if (chatMsgs.length === 0 && isPublic) {
         setMessages([{ 
           role: 'bot', 
+          role_id: 'bot',
           content: '¡Hola! Soy tu Asistente Virtual COEES. ¿En qué puedo apoyarte hoy con el sistema ATRES o soporte técnico?', 
           timestamp: { seconds: Date.now()/1000 } 
-        }]);
+        } as any]);
       } else {
         setMessages(chatMsgs);
       }
@@ -205,7 +206,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!textToSend.trim() && !msgData?.fileData) return;
     
     const chatId = activeChatId || sessionKey;
-    if (!chatId) return;
+    if (!chatId) {
+      toast({ variant: "destructive", title: "Error de sesión", description: "Iniciando conexión segura..." });
+      return;
+    }
 
     setIsSending(true);
     try {
@@ -243,7 +247,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }).catch(() => {}).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error al enviar mensaje" });
+      toast({ variant: "destructive", title: "Error al enviar mensaje", description: "Verifique su conexión a internet." });
     } finally {
       setIsSending(false);
     }
