@@ -40,6 +40,18 @@
         "folio": { "type": "string" },
         "date": { "type": "string" }
       }
+    },
+    "SupportRequest": {
+      "title": "Solicitud de Soporte",
+      "description": "Registro de usuario en espera de atención técnica",
+      "type": "object",
+      "properties": {
+        "ticketNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "attending", "closed"] },
+        "userName": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastActivity": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -61,6 +73,14 @@
     "/users/{userId}": {
       "schema": "object",
       "description": "Perfiles de acceso del sistema"
+    },
+    "/support_queue/{requestId}": {
+      "schema": "SupportRequest",
+      "description": "Cola de atención técnica en tiempo real"
+    },
+    "/chat_messages/{messageId}": {
+      "schema": "object",
+      "description": "Historial de mensajes de chat de soporte"
     }
   }
 }

@@ -1,3 +1,4 @@
+
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
@@ -65,7 +66,8 @@ import {
   MoreHorizontal,
   ShieldCheck,
   Headphones,
-  Info
+  Info,
+  RefreshCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -144,21 +146,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${dateStr}-${random}`;
   }, []);
 
-  // Inicialización de Sesión y Registro en Cola (Heartbeat)
+  // Inicialización Robusta de Sesión
   useEffect(() => {
     setMounted(true);
     
     const initSupportSession = async () => {
       if (isPublic) {
-        let sKey = localStorage.getItem('atres_session_id');
+        let sKey = localStorage.getItem('atres_session_id_v2');
         if (!sKey) {
           sKey = generateTurnSessionId();
-          localStorage.setItem('atres_session_id', sKey);
+          localStorage.setItem('atres_session_id_v2', sKey);
         }
         setSessionKey(sKey);
         
         try {
-          // Aseguramos que la entrada en la cola exista para que el analista lo vea de inmediato
+          // Registrar presencia en la cola de soporte (Heartbeat)
           const queueRef = doc(db, 'support_queue', sKey);
           await setDoc(queueRef, {
             id: sKey,
@@ -169,13 +171,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             chatKey: sKey,
             lastActivity: serverTimestamp(),
             userName: `Usuario ${sKey.split('-').at(-1)}`,
-            lastMessage: 'Inició conversación'
+            lastMessage: 'En espera de atención...'
           }, { merge: true });
         } catch (e) {
-          console.error("Error al inicializar cola de soporte:", e);
+          console.error("Falla de registro en cola:", e);
         }
       } else {
-        const savedTechName = localStorage.getItem('atres_tech_name') || 'Laura Gómez';
+        const savedTechName = localStorage.getItem('atres_tech_name') || 'ANALISTA COEES';
         setTechName(savedTechName);
       }
     };
@@ -183,36 +185,41 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     initSupportSession();
   }, [isPublic, generateTurnSessionId]);
 
-  // Listener para la cola de soporte (Vista Analista)
+  // Listener del Buzón de Soporte (Vista Analista)
   useEffect(() => {
     if (!mounted || isPublic) return;
-    // Escuchamos la cola sin ordenamiento estricto para evitar fallas por marca de tiempo nula inicial
+    
+    // Escuchamos todos los cambios en la cola sin orderBy para evitar bloqueos por índices o timestamps nulos
     const q = query(collection(db, 'support_queue'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatedQueue = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[];
-      // Ordenamos en el cliente para mayor robustez
+      
+      // Ordenamiento manual para manejar timestamps nulos (nuevos registros)
       setQueue(updatedQueue.sort((a, b) => {
-        const timeA = a.lastActivity?.seconds || 0;
-        const timeB = b.lastActivity?.seconds || 0;
+        const timeA = a.lastActivity?.seconds || Date.now() / 1000;
+        const timeB = b.lastActivity?.seconds || Date.now() / 1000;
         return timeB - timeA;
       }));
     }, (err) => {
       console.error("Queue Listener Error:", err);
+      toast({ variant: "destructive", title: "Error de sincronización", description: "Verifique permisos de Firestore." });
     });
     return () => unsubscribe();
-  }, [mounted, isPublic]);
+  }, [mounted, isPublic, toast]);
 
-  // Listener para mensajes del chat activo
+  // Listener de Mensajes del Chat Activo
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
       return;
     }
+    
     const q = query(
       collection(db, 'chat_messages'), 
       where('chatId', '==', activeChatId),
       orderBy('timestamp', 'asc')
     );
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const chatMsgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
       setMessages(chatMsgs);
@@ -232,21 +239,22 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const chatId = activeChatId || sessionKey;
     if (!chatId) {
-      toast({ variant: "destructive", title: "Iniciando sesión", description: "Sincronizando con el servidor..." });
+      toast({ variant: "destructive", title: "Iniciando sesión", description: "Sincronizando sesión técnica..." });
       return;
     }
 
     setIsSending(true);
     try {
-      // 1. Actualizar metadatos en la cola (para que el analista reciba notificación)
+      // 1. Actualizar metadatos en el buzón (para visibilidad del analista)
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         lastActivity: serverTimestamp(), 
         lastMessage: textToSend.substring(0, 50),
-        status: isPublic ? 'pending' : 'attending' 
+        status: isPublic ? 'pending' : 'attending',
+        userName: isPublic ? `Usuario ${chatId.split('-').at(-1)}` : undefined
       }, { merge: true });
 
-      // 2. Registrar el mensaje en la colección de mensajes
+      // 2. Registrar el mensaje oficial
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -260,7 +268,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       if (!msgData?.content) setInput('');
 
-      // 3. Respuesta de IA (Solo vista pública)
+      // 3. IA COEES (Solo vista pública para asistencia inmediata)
       if (isPublic && !msgData?.fileData) {
         setIsBotThinking(true);
         chatWithHelpDesk({ message: textToSend }).then(async (aiRes) => {
@@ -275,8 +283,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         }).catch(() => {}).finally(() => setIsBotThinking(false));
       }
     } catch (e: any) {
-      console.error("Send Error:", e);
-      toast({ variant: "destructive", title: "Falla de envío", description: "Verifique su conexión a internet." });
+      console.error("Falla al enviar mensaje:", e);
+      toast({ variant: "destructive", title: "Sin comunicación", description: "No se pudo conectar con el servidor." });
     } finally {
       setIsSending(false);
     }
@@ -284,20 +292,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleCloseChat = async () => {
     if (!selectedRequest) return;
-    if (confirm("¿Desea finalizar y archivar esta conversación?")) {
+    if (confirm("¿Finalizar y archivar esta atención técnica?")) {
       try {
         await updateDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed', lastActivity: serverTimestamp() });
         setSelectedRequest(null);
-        toast({ title: "Conversación cerrada" });
+        toast({ title: "Atención Cerrada" });
       } catch (e) {
-        toast({ variant: "destructive", title: "Error al cerrar" });
+        toast({ variant: "destructive", title: "Falla al cerrar ticket" });
       }
     }
-  };
-
-  const copySupportLink = () => {
-    navigator.clipboard.writeText(supportUrl);
-    toast({ title: "Liga copiada", description: "Enlace de soporte técnico institucional." });
   };
 
   if (!mounted) return null;
@@ -305,7 +308,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
-        {/* Sidebar Public View */}
+        {/* Sidebar Vista Pública */}
         <aside className="hidden lg:flex w-[260px] bg-[#1a2b4b] flex-col shrink-0 p-6">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center">
@@ -323,7 +326,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </Button>
             {[
               { label: 'Mis solicitudes', icon: Clock },
-              { label: 'Anuncios', icon: Bell },
               { label: 'Base de conocimiento', icon: BookOpen },
               { label: 'Preguntas frecuentes', icon: HelpCircle },
             ].map((item, idx) => (
@@ -335,36 +337,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           </nav>
 
           <div className="mt-auto space-y-6">
-             <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] space-y-4">
-                <p className="text-[10px] font-black text-white uppercase tracking-wider leading-relaxed">¿Necesitas ayuda inmediata?</p>
-                <p className="text-[9px] text-white/50 leading-relaxed">Si tu problema es urgente, conéctate con un técnico.</p>
+             <div className="bg-[#2a3c5d] p-5 rounded-[1.8rem] border border-white/5 space-y-4">
+                <p className="text-[10px] font-black text-white uppercase tracking-wider leading-relaxed">¿Apoyo inmediato?</p>
+                <p className="text-[9px] text-white/50 leading-relaxed">Si tu incidencia es crítica, contacta directamente.</p>
                 <Button className="w-full bg-[#0052cc] hover:bg-[#0047b3] text-white rounded-xl h-10 text-[10px] font-black gap-2">
-                   <Headphones className="h-4 w-4" /> Hablar con un técnico
+                   <Headphones className="h-4 w-4" /> Hablar con técnico
                 </Button>
                 <div className="flex items-center gap-2 mt-2">
                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Técnicos disponibles</span>
-                </div>
-             </div>
-             <div className="flex items-center gap-3 opacity-40 px-2">
-                <ShieldCheck className="h-4 w-4 text-white" />
-                <div className="space-y-0.5">
-                   <p className="text-[8px] font-black text-white uppercase leading-none">Soporte seguro</p>
-                   <p className="text-[7px] text-white font-bold leading-tight">Auditoría COEES 2026.</p>
+                   <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Sincronizado</span>
                 </div>
              </div>
           </div>
         </aside>
 
-        {/* Main Content Public View */}
+        {/* Contenido Principal Vista Pública */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <header className="h-16 bg-white border-b flex items-center justify-between px-8 shrink-0 z-20 shadow-sm">
              <div className="flex items-center gap-4">
-                <Menu className="h-5 w-5 text-slate-400 lg:hidden" />
                 <div className="flex items-center gap-3">
                    <h2 className="text-sm font-black text-slate-700 uppercase tracking-tight">Mesa de Ayuda ATRES</h2>
                    <Badge className="bg-emerald-50 text-emerald-600 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">
-                      <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> En línea
+                      <Circle className="h-1.5 w-1.5 fill-current mr-1.5" /> Sistema Conectado
                    </Badge>
                 </div>
              </div>
@@ -376,36 +370,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <p className="text-[10px] font-bold text-slate-600 mt-0.5">8:00 a.m. - 4:00 p.m.</p>
                    </div>
                 </div>
-                <div className="flex items-center gap-3 pl-8 border-l">
-                   <Avatar className="h-8 w-8 shadow-sm">
-                      <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-[10px]">IN</AvatarFallback>
-                   </Avatar>
-                   <span className="text-[10px] font-black text-slate-700 uppercase">Invitado</span>
-                </div>
              </div>
           </header>
 
           <ScrollArea className="flex-1 bg-[#f4f7f9] p-8">
              <div className="max-w-4xl mx-auto space-y-10 pb-20">
-                {/* Hero Section */}
                 <div className="bg-[#eef4ff] rounded-[3rem] p-10 flex flex-col md:flex-row items-center gap-10 shadow-sm border border-white relative overflow-hidden">
                    <div className="relative shrink-0">
                       <div className="h-32 w-32 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-[#e1ebff]">
                          <Bot className="h-16 w-16 text-[#0052cc]" />
                       </div>
-                      <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg animate-bounce">
+                      <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center text-white shadow-lg">
                          <Smile className="h-5 w-5" />
                       </div>
                    </div>
-                   <div className="space-y-4 text-center md:text-left flex-1 relative z-10">
-                      <h3 className="text-2xl font-black text-[#1a2b4b] uppercase leading-tight tracking-tighter">¡Hola! 👋 Soy el Asistente COEES</h3>
-                      <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-lg">Bienvenido a la Mesa de Ayuda ATRES. Describe tu incidencia para que un técnico de soporte te asista en tiempo real.</p>
+                   <div className="space-y-4 text-center md:text-left flex-1">
+                      <h3 className="text-2xl font-black text-[#1a2b4b] uppercase tracking-tighter">¡Hola! Soy tu Asistente COEES</h3>
+                      <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-lg">Describe tu incidencia o elige una categoría para canalizarte con un técnico de soporte en tiempo real.</p>
                    </div>
                 </div>
 
-                {/* Categories */}
                 <div className="space-y-8 pt-4">
-                   <h4 className="text-base font-black text-slate-800 uppercase tracking-widest text-center md:text-left">Canales de atención</h4>
+                   <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">Canales de atención</h4>
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       {[
                         { id: 'pass', label: 'Contraseña', icon: Lock, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Acceso' },
@@ -417,13 +403,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       ].map((cat) => (
                         <button 
                           key={cat.id} 
-                          onClick={() => { setSelectedCategory(cat.label); setInput(`Necesito apoyo con ${cat.label.toLowerCase()}: `); }}
+                          onClick={() => { setSelectedCategory(cat.label); setInput(`Apoyo con ${cat.label.toLowerCase()}: `); }}
                           className={cn(
-                            "flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105 group",
-                            selectedCategory === cat.label && "border-[#0052cc] ring-2 ring-blue-500/20 shadow-xl"
+                            "flex flex-col items-center text-center p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:scale-105",
+                            selectedCategory === cat.label && "border-[#0052cc] ring-2 ring-blue-500/10 shadow-lg"
                           )}
                         >
-                           <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-inner transition-transform group-hover:rotate-6", cat.bg, cat.color)}>
+                           <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-5 shadow-inner", cat.bg, cat.color)}>
                               <cat.icon className="h-6 w-6" />
                            </div>
                            <h5 className="text-[10px] font-black text-slate-800 uppercase leading-tight mb-1">{cat.label}</h5>
@@ -435,51 +421,45 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                 <div className="flex items-center gap-4 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
                    <Info className="h-5 w-5 text-[#0052cc] shrink-0" />
-                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Describe tu problema en el cuadro inferior. Un analista te responderá a la brevedad.</p>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">Si no encuentras la opción, escríbenos tu problema abajo. Un analista te responderá a la brevedad.</p>
                 </div>
 
-                {/* Messages View */}
                 <div className="space-y-6 pt-10 border-t">
                   {messages.map((msg, i) => (
-                    <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                    <div key={i} className={cn("flex w-full animate-in fade-in", msg.role === 'user' ? "justify-end" : "justify-start")}>
                       <div className={cn("max-w-[85%] p-5 rounded-3xl text-sm font-semibold shadow-md", 
                         msg.role === 'user' ? "bg-[#0052cc] text-white rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none border border-slate-100")}>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                        <div className="text-[8px] mt-2 font-black uppercase opacity-40 flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '...'}
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        <div className="text-[8px] mt-2 font-black uppercase opacity-40 text-right">
+                          {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '...'}
                         </div>
                       </div>
                     </div>
                   ))}
-                  {isBotThinking && <div className="flex justify-start animate-pulse"><div className="bg-white/50 px-5 py-2.5 rounded-full text-[9px] font-black text-slate-400 uppercase">El asistente está analizando tu solicitud...</div></div>}
+                  {isBotThinking && <div className="flex justify-start animate-pulse"><div className="bg-white/50 px-5 py-2 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest">IA Analizando...</div></div>}
                   <div ref={scrollRef} />
                 </div>
              </div>
           </ScrollArea>
 
-          {/* Input Area */}
-          <footer className="p-8 bg-white border-t border-slate-100 shrink-0 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <div className="flex items-center gap-4 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-6 focus-within:border-blue-500/30 focus-within:bg-white transition-all shadow-inner">
-                <button onClick={() => fileInputRef.current?.click()} className="h-10 w-10 text-slate-400 hover:text-[#0052cc] transition-colors"><Paperclip className="h-6 w-6" /></button>
-                <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => {}} />
-                <Input 
-                  placeholder="Describe tu incidencia técnica aquí..."
-                  className="h-14 bg-transparent border-none font-bold text-sm text-slate-700 focus:ring-0 px-0"
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                  disabled={isSending}
-                />
-                <Button 
-                  onClick={() => handleSendMessage()} 
-                  disabled={!input.trim() || isSending} 
-                  className="bg-[#0052cc] hover:bg-[#0047b3] text-white font-black uppercase text-[11px] h-10 px-8 rounded-xl shadow-xl gap-2"
-                >
-                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Enviar
-                </Button>
-              </div>
+          <footer className="p-8 bg-white border-t border-slate-100 z-30">
+            <div className="max-w-4xl mx-auto flex items-center gap-4 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-6 focus-within:border-blue-500/30 focus-within:bg-white transition-all shadow-inner">
+              <Input 
+                placeholder="Escribe tu incidencia técnica aquí..."
+                className="h-14 bg-transparent border-none font-bold text-sm text-slate-700 focus:ring-0 px-0"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                disabled={isSending}
+              />
+              <Button 
+                onClick={() => handleSendMessage()} 
+                disabled={!input.trim() || isSending} 
+                className="bg-[#0052cc] hover:bg-[#0047b3] text-white font-black uppercase text-[11px] h-10 px-8 rounded-xl shadow-xl gap-2"
+              >
+                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Enviar
+              </Button>
             </div>
           </footer>
         </div>
@@ -487,38 +467,38 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
+  // Vista del Analista (Dashboard)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
-      {/* Analist View Sidebar (Left) */}
+      {/* Columna Izquierda: Navegación Táctica */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden">
         <div className="p-6 flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 mb-8">
-             <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-emerald-400 shadow-inner">
-                <Bot className="h-6 w-6" />
+             <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 shadow-inner">
+                <Bot className="h-7 w-7" />
              </div>
              <div className="min-w-0">
                 <h3 className="text-white font-black uppercase text-sm leading-none truncate">Mesa de Ayuda</h3>
                 <div className="flex items-center gap-1.5 mt-1.5">
                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Sincronizado</span>
+                   <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Online</span>
                 </div>
              </div>
           </div>
 
           <nav className="space-y-1">
             {[
-              { id: 'conversaciones', label: 'Conversaciones', icon: MessageSquare, badge: queue.length },
-              { id: 'mias', label: 'Mías', icon: User, badge: null },
+              { id: 'conversaciones', label: 'Buzón Soporte', icon: MessageSquare, badge: queue.length },
+              { id: 'mias', label: 'Mis casos', icon: User, badge: null },
               { id: 'no-asignadas', label: 'No asignadas', icon: UserPlus, badge: queue.filter(q => q.status === 'pending').length },
-              { id: 'cerradas', label: 'Cerradas', icon: CheckCircle2, badge: queue.filter(q => q.status === 'closed').length },
-              { id: 'todas', label: 'Todas', icon: ListFilter, badge: queue.length },
+              { id: 'cerradas', label: 'Historial', icon: Archive, badge: null },
             ].map(item => (
               <button 
                 key={item.id}
                 onClick={() => setCurrentFilter(item.id as any)}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all group",
-                  currentFilter === item.id ? "bg-[#128c7e] text-white shadow-lg" : "text-white/60 hover:bg-white/5 hover:text-white"
+                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all",
+                  currentFilter === item.id ? "bg-[#128c7e] text-white shadow-xl" : "text-white/60 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -526,105 +506,108 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <span className="text-xs font-black uppercase tracking-wider">{item.label}</span>
                 </div>
                 {item.badge !== null && (
-                  <Badge className={cn(
-                    "h-5 min-w-5 flex items-center justify-center rounded-full text-[9px] font-black border-none",
-                    currentFilter === item.id ? "bg-white text-[#128c7e]" : "bg-white/10 text-white/60"
-                  )}>{item.badge}</Badge>
+                  <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full">{item.badge}</Badge>
                 )}
               </button>
             ))}
           </nav>
 
-          <div className="mt-10 space-y-4">
-             <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-colors bg-emerald-500/10 rounded-xl">
+          <div className="mt-auto space-y-3">
+             <button onClick={() => setIsQrDialogOpen(true)} className="w-full flex items-center gap-3 px-4 py-3 text-emerald-400 hover:text-white transition-colors bg-white/5 rounded-xl border border-white/10">
                 <QrCode className="h-4 w-4" />
-                <span className="text-[11px] font-black uppercase">Acceso Usuarios (QR)</span>
+                <span className="text-[11px] font-black uppercase tracking-widest">Acceso Móvil (QR)</span>
+             </button>
+             <button onClick={() => window.location.reload()} className="w-full flex items-center gap-3 px-4 py-3 text-white/40 hover:text-white transition-colors">
+                <RefreshCcw className="h-4 w-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Reconectar</span>
              </button>
           </div>
         </div>
 
-        <div className="p-6 bg-black/20">
-           <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 border-2 border-emerald-500">
-                 <AvatarFallback className="bg-emerald-700 text-white font-black">LG</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                 <p className="text-xs font-black text-white uppercase leading-none truncate">{techName}</p>
-                 <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1">Analista COEES</p>
-              </div>
+        <div className="p-6 bg-black/20 flex items-center gap-4">
+           <Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-lg">
+              <AvatarFallback className="bg-emerald-800 text-white font-black">AN</AvatarFallback>
+           </Avatar>
+           <div className="min-w-0">
+              <p className="text-xs font-black text-white uppercase truncate">{techName}</p>
+              <p className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1">Analista Auditor</p>
            </div>
         </div>
       </div>
 
-      {/* Analist View Middle Column (Conversation List) */}
+      {/* Columna Central: Listado de Conversaciones */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
         <div className="p-6 space-y-6">
-          <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Buzón de Soporte</h2>
+          <div className="flex items-center justify-between">
+             <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Buzón de Soporte</h2>
+             <button onClick={() => {}} className="h-8 w-8 rounded-lg bg-white shadow-sm border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><PlusCircle className="h-4 w-4" /></button>
+          </div>
           <div className="relative group">
-            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
+            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
             <Input 
-              placeholder="Filtrar mensajes..." 
-              className="h-11 pl-10 rounded-2xl bg-white border-none shadow-sm text-xs font-bold uppercase"
+              placeholder="Buscar folio o usuario..." 
+              className="h-11 pl-10 rounded-2xl bg-white border-none shadow-inner text-xs font-bold uppercase"
             />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
            <div className="px-3 pb-6 space-y-1">
-             {queue.map((chat) => (
+             {queue.filter(q => q.status !== 'closed' || currentFilter === 'cerradas').map((chat) => (
                <button 
                  key={chat.id}
                  onClick={() => setSelectedRequest(chat)}
                  className={cn(
-                   "w-full p-4 rounded-[1.8rem] text-left transition-all duration-300 flex items-center gap-4 relative",
-                   selectedRequest?.id === chat.id ? "bg-emerald-50 shadow-md border border-emerald-100" : "hover:bg-white/80"
+                   "w-full p-4 rounded-[2rem] text-left transition-all duration-300 flex items-center gap-4 relative border-2",
+                   selectedRequest?.id === chat.id ? "bg-emerald-50 border-emerald-200 shadow-lg" : "bg-transparent border-transparent hover:bg-white/80"
                  )}
                >
                   <div className="relative shrink-0">
-                    <Avatar className="h-12 w-12 shadow-md">
+                    <Avatar className="h-12 w-12 shadow-sm">
                       <AvatarFallback className="bg-primary text-white font-black">{chat.userName?.slice(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
-                    <div className={cn("absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white", chat.status === 'pending' ? 'bg-rose-500' : 'bg-emerald-500')} />
+                    <div className={cn("absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white", chat.status === 'pending' ? 'bg-rose-500' : 'bg-emerald-500')} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
+                    <div className="flex justify-between items-center mb-1">
                        <span className="text-[12px] font-black text-slate-800 uppercase leading-none truncate">{chat.userName}</span>
+                       <span className="text-[8px] font-black text-slate-400 font-mono">#{chat.id.split('-').at(-1)}</span>
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 truncate uppercase">
-                      {chat.lastMessage || 'Solicitud de apoyo remoto'}
+                      {chat.lastMessage || 'Solicitud de apoyo...'}
                     </p>
                   </div>
                </button>
              ))}
              {queue.length === 0 && (
                <div className="py-20 text-center opacity-30 px-10">
-                  <MessageSquare className="h-10 w-10 mx-auto mb-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Sin solicitudes pendientes</p>
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sin folios activos</p>
                </div>
              )}
            </div>
         </ScrollArea>
       </div>
 
-      {/* Analist View Chat Window (Right) */}
+      {/* Columna Derecha: Ventana de Chat Operativo */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5]">
         {selectedRequest ? (
           <>
-            <header className="px-8 py-4 bg-white border-b flex justify-between items-center shrink-0">
+            <header className="px-8 py-4 bg-white border-b flex justify-between items-center shrink-0 shadow-sm z-10">
               <div className="flex items-center gap-5">
-                <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                   <AvatarFallback className="bg-slate-200 text-slate-500">U</AvatarFallback>
+                <Avatar className="h-12 w-12 border-2 border-slate-100 shadow-sm">
+                   <AvatarFallback className="bg-slate-200 text-slate-500 font-black">U</AvatarFallback>
                 </Avatar>
                 <div>
                    <h2 className="text-base font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h2>
                    <div className="flex items-center gap-2 mt-1.5">
-                      <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-black uppercase">Atendiendo</Badge>
-                      <span className="text-[9px] font-mono text-slate-400">{selectedRequest.id}</span>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-black uppercase px-2 h-5 rounded-full">Atendiendo</Badge>
+                      <span className="text-[9px] font-mono text-slate-400 tracking-tighter uppercase">{selectedRequest.id}</span>
                    </div>
                 </div>
               </div>
-              <Button onClick={handleCloseChat} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] h-10 px-6 rounded-xl shadow-lg">
-                Cerrar conversación
+              <Button onClick={handleCloseChat} className="bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[10px] h-10 px-8 rounded-xl shadow-xl transition-all active:scale-95">
+                Finalizar Atención
               </Button>
             </header>
 
@@ -634,13 +617,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     const isTech = msg.role === 'tech';
                     const isBot = msg.role === 'bot';
                     return (
-                      <div key={i} className={cn("flex w-full animate-in fade-in", isTech ? "justify-end" : "justify-start")}>
-                        <div className={cn("max-w-[75%] p-4 rounded-2xl text-sm font-semibold shadow-lg border", 
-                          isTech ? "bg-[#e7ffdb] border-emerald-100 rounded-tr-none" : 
-                          isBot ? "bg-slate-800 text-white border-none" :
-                          "bg-white border-slate-100 rounded-tl-none")}>
+                      <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", isTech ? "justify-end" : "justify-start")}>
+                        <div className={cn("max-w-[75%] p-5 rounded-3xl text-sm font-semibold shadow-lg", 
+                          isTech ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : 
+                          isBot ? "bg-slate-800 text-white border-none rounded-tl-none" :
+                          "bg-white border border-slate-200 rounded-tl-none text-slate-800")}>
                            <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                           <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2">
+                           <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1">
+                             <Clock className="h-2.5 w-2.5" />
                              {msg.timestamp?.seconds ? format(new Date(msg.timestamp.seconds * 1000), 'HH:mm') : '...'}
                            </div>
                         </div>
@@ -651,53 +635,70 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                </div>
             </ScrollArea>
 
-            <footer className="p-6 bg-slate-50 border-t shrink-0">
+            <footer className="p-6 bg-slate-50 border-t shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
                <div className="max-w-5xl mx-auto flex items-center gap-4">
                   <Input 
-                    placeholder="Escribir mensaje técnico..." 
-                    className="h-12 rounded-2xl bg-white border-none shadow-sm px-6 font-semibold text-sm uppercase"
+                    placeholder="Escribir respuesta técnica..." 
+                    className="h-12 rounded-2xl bg-white border-none shadow-inner px-6 font-bold text-sm text-slate-700 uppercase"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                     disabled={isSending}
                   />
-                  <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isSending} className="bg-emerald-600 h-12 w-12 rounded-2xl shadow-xl p-0">
+                  <Button onClick={() => handleSendMessage()} disabled={!input.trim() || isSending} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0 transition-all active:scale-90">
                     {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                   </Button>
                </div>
             </footer>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center opacity-30">
-             <MessageSquare className="h-20 w-20 mb-6 text-slate-400" />
-             <h3 className="text-3xl font-black uppercase text-slate-800 tracking-tighter">Mesa de Ayuda Operativa</h3>
-             <p className="text-sm font-bold uppercase tracking-widest text-slate-500 max-w-md mx-auto mt-2">Seleccione una conversación para iniciar el soporte.</p>
+          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center opacity-20">
+             <div className="h-32 w-32 rounded-full bg-slate-200 flex items-center justify-center mb-8 shadow-inner">
+                <MessageSquare className="h-16 w-16 text-slate-400" />
+             </div>
+             <h3 className="text-3xl font-black uppercase text-slate-800 tracking-tighter leading-none">Mesa de Ayuda Operativa</h3>
+             <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500 mt-4">Auditoría COEES Ciclo 2025-2026</p>
+             <p className="text-[10px] font-black uppercase text-slate-400 mt-10 tracking-widest max-w-xs leading-relaxed">Seleccione una conversación del buzón izquierdo para iniciar la atención técnica remota.</p>
           </div>
         )}
       </div>
 
-      {/* QR Dialog */}
+      {/* Diálogo de QR Adaptado para Visibilidad Total */}
       <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white">
-          <DialogHeader className="p-8 pb-0 text-center">
+        <DialogContent className="sm:max-w-[450px] w-[95vw] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl bg-[#0b4135] text-white animate-in zoom-in-95">
+          <DialogHeader className="p-8 pb-4 text-center">
             <DialogTitle className="uppercase font-black text-xl flex items-center justify-center gap-3">
               <QrCode className="h-7 w-7 text-emerald-400" /> Acceso Móvil ATRES
             </DialogTitle>
+            <DialogDescription className="text-white/40 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">Conexión Segura para Usuarios Finales</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-8 flex flex-col items-center text-center">
-            <div className="p-4 bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[280px]">
-               <div className="aspect-square relative overflow-hidden rounded-[2rem] border-4 border-slate-50">
-                  <Image src={qrUrl} alt="QR" fill className="object-contain p-2" unoptimized />
+          <div className="px-8 pb-8 space-y-6 flex flex-col items-center text-center">
+            <div className="p-6 bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[280px] mx-auto border-4 border-emerald-500/20">
+               <div className="aspect-square relative overflow-hidden rounded-[2rem] border border-slate-100 bg-white">
+                  <Image 
+                    src={qrUrl} 
+                    alt="Código QR de Soporte" 
+                    fill 
+                    className="object-contain p-4" 
+                    unoptimized 
+                  />
                </div>
             </div>
             <div className="space-y-4 w-full">
-               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+               <div className="p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-md">
                   <div className="flex items-center gap-2">
-                     <div className="flex-1 min-w-0 bg-black/20 px-3 py-2 rounded-lg text-[9px] font-mono text-white/40 truncate text-left">{supportUrl}</div>
-                     <Button onClick={copySupportLink} className="h-10 w-10 rounded-lg bg-emerald-500 text-white shadow-lg p-0"><Copy className="h-4 w-4" /></Button>
+                     <div className="flex-1 min-w-0 bg-black/20 px-3 py-2.5 rounded-xl text-[9px] font-mono text-emerald-400/80 truncate text-left border border-white/5">{supportUrl}</div>
+                     <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado" }); }} className="h-10 w-10 rounded-xl bg-emerald-500 text-white shadow-xl p-0 hover:scale-105 transition-transform"><Copy className="h-4 w-4" /></Button>
                   </div>
                </div>
-               <Button onClick={() => window.open(supportUrl, '_blank')} className="w-full h-12 rounded-xl bg-white text-[#0b4135] font-black uppercase text-[10px] shadow-xl">Probar en nueva pestaña</Button>
+               <div className="grid grid-cols-2 gap-3 w-full">
+                  <Button onClick={() => window.open(supportUrl, '_blank')} className="bg-white text-[#0b4135] font-black uppercase text-[9px] h-11 rounded-xl shadow-lg hover:bg-slate-50">PROBAR LIGA</Button>
+                  <Button variant="ghost" onClick={() => setIsQrDialogOpen(false)} className="text-white/60 font-black uppercase text-[9px] border border-white/10 h-11 rounded-xl hover:bg-white/5">CERRAR VENTANA</Button>
+               </div>
+            </div>
+            <div className="flex items-center gap-2 opacity-30 pt-2">
+               <ShieldCheck className="h-3.5 w-3.5" />
+               <span className="text-[8px] font-bold uppercase tracking-widest leading-none">Seguridad Cifrada Auditoría 2026</span>
             </div>
           </div>
         </DialogContent>
