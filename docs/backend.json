@@ -14,7 +14,12 @@
         "email": { "type": "string" },
         "emails": { "type": "array", "items": { "type": "string" } },
         "progress": { "type": "number" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "asistentes": { "type": "array", "items": { "type": "object" } },
+        "bibliotecaFases": { "type": "object" },
+        "observaciones": { "type": "string" },
+        "latitud": { "type": "string" },
+        "longitud": { "type": "string" }
       }
     },
     "WarehouseItem": {
