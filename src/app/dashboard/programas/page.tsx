@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -71,7 +72,8 @@ import {
   Maximize2,
   Circle,
   Building2,
-  MessageSquare
+  MessageSquare,
+  Layout
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
@@ -86,7 +88,8 @@ import {
   orderBy, 
   onSnapshot, 
   serverTimestamp,
-  where
+  where,
+  limit
 } from 'firebase/firestore'
 import { type ProgramStatus, type BitacoraEntry } from '@/lib/planning-data'
 import { format } from 'date-fns'
@@ -119,6 +122,15 @@ const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase7', label: 'Fase 7.- Seguimiento técnico al CCT', color: 'text-orange-600 bg-orange-50 border-orange-100' },
   { id: 'fase8', label: 'Fase 8- Total de personal capacitado', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
   { id: 'fase9', label: 'Fase 9.- Total de equipos habilitados', color: 'text-blue-600 bg-blue-50 border-blue-100' }
+];
+
+const FUNCIONES = [
+  "PAAE",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
 ];
 
 export default function ProgramsPage() {
@@ -220,10 +232,6 @@ export default function ProgramsPage() {
     }, 800);
   }
 
-  const bitacoraPendingCount = useMemo(() => {
-    return records.filter(r => r.name === 'ATRES' && r.status === 'pendiente').length;
-  }, [records]);
-
   const filteredRecords = useMemo(() => {
     const list = records.filter(r => r.name === activeTab);
     if (!searchTerm) return list;
@@ -240,16 +248,6 @@ export default function ProgramsPage() {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const evidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
     return { totalCct: libRecs.length, concluidos: libRecs.filter(r => r.progress === 100).length, personalTotal: libRecs.reduce((acc, r) => acc + (r.asistentes?.length || 0), 0), evidenciasTotal: evidencias };
-  }, [records]);
-
-  const statsConoceEscuela = useMemo(() => {
-    const conoceRecs = records.filter(r => r.name === 'Conoce mi Escuela');
-    return {
-      totalEscuelas: conoceRecs.length,
-      totalResponsables: new Set(conoceRecs.map(r => r.userName).filter(u => !!u)).size,
-      totalMunicipios: new Set(conoceRecs.map(r => r.municipio).filter(m => !!m)).size,
-      datosActualizados: conoceRecs.length
-    };
   }, [records]);
 
   const fullEmailPreview = useMemo(() => {
@@ -304,36 +302,26 @@ export default function ProgramsPage() {
     }))
   }
 
-  const handleQuickAddCct = () => {
-    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos" }); return;
-    }
-    const newSchool: SchoolInfo = { 
-      ...quickAddForm, 
-      cct: quickAddForm.cct.toUpperCase(), 
-      nombre: quickAddForm.nombre.toUpperCase(), 
-      municipio: quickAddForm.municipio.toUpperCase(),
-      valle: quickAddForm.valle.toUpperCase(),
-      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
-      localidad: (quickAddForm.localidad || '').toUpperCase(),
-      sector: (quickAddForm.sector || '').toUpperCase(),
-      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
-      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
-    };
-    const updated = [newSchool, ...allSchools];
-    setAllSchools(updated);
-    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctChange(newSchool.cct);
-    setIsQuickAddOpen(false);
-    setDialogSearchTerm(newSchool.cct);
-    setShowSearchResults(false);
-    toast({ title: "CCT Registrado" });
+  const handleAddAssistant = () => {
+    setAsistentesLib([...asistentesLib, { rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }])
+  }
+
+  const handleRemoveAssistant = (index: number) => {
+    if (asistentesLib.length === 1) return;
+    setAsistentesLib(asistentesLib.filter((_, i) => i !== index))
+  }
+
+  const updateAssistant = (index: number, field: string, value: string) => {
+    const newList = [...asistentesLib];
+    newList[index] = { ...newList[index], [field]: value.toUpperCase() };
+    setAsistentesLib(newList);
   }
 
   const handleSave = async () => {
     const currentCct = (formData.cct || dialogSearchTerm || '').toUpperCase().trim();
     if (!currentCct && activeTab !== 'Conoce mi Escuela' && activeTab !== 'Cuentas Institucionales') {
-      alert("ERROR: Identificación de CCT requerida."); return;
+      toast({ variant: "destructive", title: "CCT Requerido", description: "Debe identificar un CCT para continuar." });
+      return;
     }
 
     setIsSaving(true);
@@ -368,7 +356,6 @@ export default function ProgramsPage() {
       else if (activeTab === 'Geoposición') {
         finalData.latitud = String(formData.latitud || '');
         finalData.longitud = String(formData.longitud || '');
-        finalData.status = ['En línea', 'En movimiento', 'Sin señal', 'Desconectado'][Math.floor(Math.random() * 4)];
       }
 
       if (editingId) {
@@ -380,7 +367,7 @@ export default function ProgramsPage() {
       setIsDialogOpen(false);
       setEditingId(null);
       resetForm();
-      toast({ title: "Sincronización Exitosa" });
+      toast({ title: "Sincronización Exitosa", description: "El registro ha sido guardado en la nube." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error al Guardar", description: e.message });
     } finally {
@@ -409,7 +396,7 @@ export default function ProgramsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar permanentemente?")) return;
+    if (!confirm("¿Eliminar permanentemente de la base de datos?")) return;
     await deleteDoc(doc(db, 'programs', id));
     toast({ title: "Registro Removido" });
   }
@@ -426,9 +413,9 @@ export default function ProgramsPage() {
           <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Sistema Integral de Auditoría 2026</p>
         </div>
         <div className="flex gap-3">
-          {!['ATRES', 'Geoposición', 'Conoce mi Escuela', 'Cuentas Institucionales'].includes(activeTab) && (
+          {!['ATRES', 'Geoposición', 'Conoce mi Escuela'].includes(activeTab) && (
             <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase">
-               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
+               <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro {activeTab === 'Biblioteca Digital' ? 'CCT' : 'Cuenta'}
             </Button>
           )}
         </div>
@@ -611,89 +598,6 @@ export default function ProgramsPage() {
                   <Button onClick={handleSave} className="w-full btn-institutional h-12 text-[11px] gap-2 shadow-xl"><Save className="h-5 w-5" /> GUARDAR UBICACIÓN</Button>
                 </div>
              </Card>
-             <Card className="flex-1 rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden flex flex-col min-h-0">
-                <div className="px-8 py-5 border-b bg-slate-50/50 flex items-center gap-4"><ClipboardList className="h-6 w-6 text-accent" /><h3 className="text-base font-black uppercase tracking-widest text-slate-800">Historial de rastreo</h3></div>
-                <ScrollArea className="h-[250px]">
-                   <Table>
-                      <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                         <TableRow><TableHead className="pl-8 text-[9px] font-black uppercase">CCT</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estado</TableHead><TableHead className="text-right pr-10"></TableHead></TableRow>
-                      </TableHeader>
-                      <TableBody>
-                         {records.filter(r => r.name === 'Geoposición').map(rec => (
-                           <TableRow key={rec.id} className="h-14 border-b border-slate-50">
-                              <TableCell className="pl-8 font-mono font-black text-primary text-[10px]">{rec.cct}</TableCell>
-                              <TableCell className="text-center"><Badge className={cn("text-[8px] font-black border-none uppercase px-3 h-5 rounded-full", rec.status === 'En línea' ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500")}><Circle className="h-1.5 w-1.5 fill-current mr-1.5" />{rec.status || 'En línea'}</Badge></TableCell>
-                              <TableCell className="text-right pr-8"><button onClick={() => handleDelete(rec.id!)} className="text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></TableCell>
-                           </TableRow>
-                         ))}
-                      </TableBody>
-                   </Table>
-                </ScrollArea>
-             </Card>
-          </div>
-        </div>
-      ) : activeTab === 'Conoce mi Escuela' ? (
-        <div className="space-y-6 animate-in fade-in duration-700 w-full">
-          <Card className="rounded-[2rem] bg-white border-none shadow-2xl p-6 overflow-visible">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-              <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Buscar por:</Label><Select defaultValue="cct"><SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cct">CCT</SelectItem><SelectItem value="nombre">Nombre</SelectItem></SelectContent></Select></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Identificador:</Label><div className="relative group"><Input placeholder="Ej. 15DES0001R" className="h-12 pl-10 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs" /><Search className="absolute left-3 top-3.5 h-5 w-5 text-slate-300" /></div></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Zona / Municipio:</Label><Select defaultValue="todos"><SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem></SelectContent></Select></div>
-              <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Estado:</Label><Select defaultValue="todos"><SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase text-[11px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem></SelectContent></Select></div>
-              <Button className="h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] rounded-xl gap-2"><Search className="h-5 w-5" /> Buscar</Button>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-             <div className="lg:col-span-7 flex flex-col gap-6">
-                <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl overflow-hidden flex flex-col relative h-[450px] border-4 border-white">
-                   <Image src="https://picsum.photos/seed/school-intel-v1/1200/800" alt="Mapa" fill className="object-cover" />
-                   <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white z-20 flex items-center gap-8 overflow-x-auto no-scrollbar">
-                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-emerald-500" /><span className="text-[10px] font-black uppercase text-slate-600">En línea</span></div>
-                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-blue-600" /><span className="text-[10px] font-black uppercase text-slate-600">En movimiento</span></div>
-                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-rose-500" /><span className="text-[10px] font-black uppercase text-slate-600">Sin señal</span></div>
-                      <div className="flex items-center gap-2"><div className="h-3.5 w-3.5 rounded-full bg-slate-400" /><span className="text-[10px] font-black uppercase text-slate-600">Desconectado</span></div>
-                   </div>
-                </Card>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                   {[
-                     { label: 'Escuelas registradas', value: statsConoceEscuela.totalEscuelas.toString(), icon: School, color: 'text-blue-600', bg: 'bg-blue-50' },
-                     { label: 'Directores / Responsables', value: statsConoceEscuela.totalResponsables.toString(), icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                     { label: 'Municipios', value: statsConoceEscuela.totalMunicipios.toString(), icon: MapPin, color: 'text-blue-700', bg: 'bg-blue-50' },
-                     { label: 'Datos actualizados', value: statsConoceEscuela.datosActualizados.toString(), icon: FileText, color: 'text-blue-900', bg: 'bg-slate-50' },
-                   ].map((stat, idx) => (
-                     <Card key={idx} className="p-6 rounded-[2rem] bg-white border-none shadow-xl flex flex-col items-center text-center">
-                        <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 shadow-inner", stat.bg, stat.color)}><stat.icon className="h-6 w-6" /></div>
-                        <h4 className="text-2xl font-black text-slate-800">{stat.value}</h4>
-                        <p className="text-[9px] font-black uppercase text-slate-400 mt-2 leading-tight tracking-widest">{stat.label}</p>
-                     </Card>
-                   ))}
-                </div>
-             </div>
-             <div className="lg:col-span-5 flex flex-col gap-8">
-                <Card className="rounded-[2.5rem] bg-white border-none shadow-2xl p-8 space-y-6">
-                   <div className="flex items-center gap-4 border-b pb-4"><Building2 className="h-6 w-6 text-primary" /><h3 className="text-base font-black uppercase tracking-widest text-slate-800">Registrar Escuela</h3></div>
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">CCT *</Label><Input value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs" /></div>
-                      <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Nombre *</Label><Input value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})} className="h-11 rounded-xl bg-slate-50 border-none font-bold uppercase text-xs" /></div>
-                      <div className="grid grid-cols-2 gap-4 col-span-2">
-                        <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Latitud *</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} className="h-11 bg-slate-50 border-none rounded-xl" /></div>
-                        <div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-400 uppercase">Longitud *</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} className="h-11 bg-slate-50 border-none rounded-xl" /></div>
-                   </div>
-                   </div>
-                   <Button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] h-12 rounded-xl"><Save className="h-5 w-5 mr-2" /> Guardar escuela</Button>
-                </Card>
-                {records.filter(r => r.name === 'Conoce mi Escuela').slice(0, 3).map((item) => (
-                   <Card key={item.id} className="rounded-[2.5rem] bg-white border-none shadow-xl overflow-hidden p-6 flex gap-6">
-                      <div className="relative h-24 w-32 rounded-2xl overflow-hidden shadow-xl shrink-0"><Image src="https://picsum.photos/seed/school-prev-v1/400/300" alt="Vista Previa" fill className="object-cover" /></div>
-                      <div className="flex-1 min-w-0">
-                         <div className="flex justify-between items-start mb-2"><Badge className="bg-emerald-500 text-white border-none text-[8px] font-black">En línea</Badge><span className="text-[10px] font-mono text-primary font-black">{item.cct}</span></div>
-                         <h4 className="text-xs font-black text-slate-800 uppercase truncate">{item.schoolName}</h4>
-                         <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 truncate">{item.municipio}</p>
-                      </div>
-                   </Card>
-                ))}
-             </div>
           </div>
         </div>
       ) : activeTab === 'Cuentas Institucionales' ? (
@@ -711,21 +615,17 @@ export default function ProgramsPage() {
             <CardContent className="p-8 space-y-6">
                <div className="space-y-4">
                   <div className="space-y-1">
-                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Estatus de la Cuenta (Semáforo)</Label>
+                    <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Estatus de la Cuenta</Label>
                     <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
                       <SelectTrigger className={cn(
-                        "h-11 rounded-xl border-none shadow-inner font-black uppercase text-[10px] focus:ring-2 focus:ring-primary/20",
-                        formData.status === 'activo' || formData.status === 'Activa' ? "bg-emerald-100 text-emerald-700" :
-                        formData.status === 'inactivo' || formData.status === 'Inactiva' ? "bg-slate-100 text-slate-400" :
-                        "bg-rose-100 text-rose-700"
+                        "h-11 rounded-xl border-none shadow-inner font-black uppercase text-[10px]",
+                        formData.status === 'activo' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
                       )}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
                         <SelectItem value="activo" className="text-[10px] font-black text-emerald-600">activa</SelectItem>
-                        <SelectItem value="inactivo" className="text-[10px] font-black text-slate-400">inactiva</SelectItem>
-                        <SelectItem value="suspendida" className="text-[10px] font-black text-amber-600">bloqueada</SelectItem>
-                        <SelectItem value="Eliminada" className="text-[10px] font-black text-rose-600">eliminada</SelectItem>
+                        <SelectItem value="inactivo" className="text-[10px] font-black text-rose-600">inactiva</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -735,31 +635,18 @@ export default function ProgramsPage() {
                     <div className="relative">
                       <Input placeholder="ESCRIBIR CCT..." className="h-11 rounded-xl bg-slate-50 border-slate-100 shadow-inner font-bold uppercase pl-10" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} />
                       <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                      {showSearchResults && dialogSearchTerm.length > 2 && (
-                        <div className="absolute top-12 left-0 right-0 bg-white border rounded-xl shadow-2xl z-50 divide-y max-h-40 overflow-auto">
-                           {schoolSearchResults.map((s, sidx) => (
-                             <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
-                                <span className="text-[10px] font-black uppercase text-slate-700">{s.nombre}</span>
-                                <Badge className="text-[8px] font-mono">{s.cct}</Badge>
-                             </div>
-                           ))}
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Nombre del Responsable *</Label>
-                    <div className="relative">
-                      <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase pl-10" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
-                      <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-300" />
-                    </div>
+                    <Input placeholder="NOMBRE COMPLETO..." className="h-11 rounded-xl bg-white border-slate-200 font-bold uppercase px-4" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Usuario (sin dominio) *</Label>
-                      <Input placeholder="ej. maria.lopez" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase pl-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
+                      <Input placeholder="ej. maria.lopez" className="h-11 rounded-xl bg-white border-slate-200 font-bold lowercase px-4" value={userPart} onChange={e => setUserPart(e.target.value)} />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio *</Label>
@@ -792,7 +679,7 @@ export default function ProgramsPage() {
               <CardContent className="p-8 space-y-6">
                 <div className="flex gap-2">
                    <div className="relative flex-1">
-                      <Input placeholder="EJ. USUARIO@COEES.EDU.MX" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold lowercase pl-10" value={verifyInput} onChange={e => setVerifyInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
+                      <Input placeholder="EJ. USUARIO@COEES.EDU.MX" className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold lowercase pl-10" value={verifyInput} onChange={e => setVerifyInput(e.target.value)} />
                       <Mail className="absolute left-3.5 top-4 h-4 w-4 text-slate-300" />
                    </div>
                    <Button onClick={handleVerifyAccount} disabled={isVerifying} className="h-12 px-8 rounded-xl bg-primary text-white font-black text-[10px] uppercase shadow-lg gap-2">
@@ -813,8 +700,8 @@ export default function ProgramsPage() {
                  <Table>
                    <TableHeader className="bg-slate-50 border-b">
                      <TableRow className="h-10">
-                        <TableHead className="pl-8 text-[9px] font-black uppercase">Fecha de registro</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase">Correo institucional</TableHead>
+                        <TableHead className="pl-8 text-[9px] font-black uppercase">Fecha</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase">Correo</TableHead>
                         <TableHead className="text-[9px] font-black uppercase text-center">Estado</TableHead>
                         <TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead>
                      </TableRow>
@@ -825,12 +712,12 @@ export default function ProgramsPage() {
                           <TableCell className="pl-8 text-[10px] font-bold text-slate-400">{rec.date}</TableCell>
                           <TableCell className="text-[11px] font-mono font-black text-slate-700 lowercase">{rec.email}</TableCell>
                           <TableCell className="text-center">
-                             <Badge className={cn("text-[8px] font-black border-none uppercase px-2 h-4", rec.status === 'activo' || rec.status === 'Activa' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{rec.status}</Badge>
+                             <Badge className={cn("text-[8px] font-black border-none uppercase px-2 h-4", rec.status === 'activo' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")}>{rec.status}</Badge>
                           </TableCell>
                           <TableCell className="text-right pr-8">
                              <div className="flex justify-end gap-1">
-                                <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Pencil className="h-4 w-4" /></button>
-                                <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
+                                <button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setIsDialogOpen(true); }} className="h-7 w-7 flex items-center justify-center text-slate-400 hover:text-primary"><Pencil className="h-3.5 w-3.5" /></button>
+                                <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 flex items-center justify-center text-rose-300 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
                              </div>
                           </TableCell>
                        </TableRow>
@@ -849,8 +736,8 @@ export default function ProgramsPage() {
           </div>
           <div className="overflow-x-auto w-full">
             <Table className="w-full">
-              <TableHeader className="bg-slate-50 border-b"><TableRow className="h-12"><TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead><TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead><TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Responsable / Escuela</TableHead><TableHead className="text-[10px] font-bold text-primary w-[100px] uppercase text-center">Estatus</TableHead><TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead></TableRow></TableHeader>
-              <TableBody>{isLoading ? (<TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (<TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors"><TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell><TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell><TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell><TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", rec.status === 'activo' || rec.status === 'Activa' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200")}>{rec.status}</Badge></TableCell><TableCell className="text-right pr-10"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setAsistentesLib(rec.asistentes && rec.asistentes.length > 0 ? rec.asistentes : [{ rfc: '', nombres: '', paterno: '', materno: '', funcion: '', email: '', cct: '', schoolName: '' }]); setShowSearchResults(false); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg"><Pencil className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>)) : (<TableRow><TableCell colSpan={6} className="text-center py-24 opacity-30 text-sm font-bold uppercase tracking-widest">Sin registros oficiales</TableCell></TableRow>)}</TableBody>
+              <TableHeader className="bg-slate-50 border-b"><TableRow className="h-12"><TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead><TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead><TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Nombre / Escuela</TableHead><TableHead className="text-[10px] font-bold text-primary w-[100px] uppercase text-center">Estatus</TableHead><TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead></TableRow></TableHeader>
+              <TableBody>{isLoading ? (<TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sincronizando...</p></TableCell></TableRow>) : filteredRecords.length > 0 ? filteredRecords.map((rec, idx) => (<TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14 transition-colors"><TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell><TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell><TableCell className="py-2 min-w-0"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-700 leading-tight truncate uppercase">{rec.schoolName || rec.userName}</span><span className="text-[9px] font-bold text-muted-foreground opacity-70 truncate uppercase">{rec.municipio} • {rec.valle}</span></div></TableCell><TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-bold px-2 h-5 rounded-full border-2 uppercase", rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200")}>{rec.status}</Badge></TableCell><TableCell className="text-right pr-10"><div className="flex justify-end gap-1"><button onClick={() => { setFormData({...rec}); setEditingId(rec.id!); setDialogSearchTerm(rec.cct); setIsDialogOpen(true); }} className="h-8 w-8 flex items-center justify-center text-slate-400 hover:text-primary"><Pencil className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 flex items-center justify-center text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>)) : (<TableRow><TableCell colSpan={5} className="text-center py-24 opacity-30 text-sm font-bold uppercase tracking-widest">Sin registros oficiales</TableCell></TableRow>)}</TableBody>
             </Table>
           </div>
         </Card>
@@ -862,36 +749,17 @@ export default function ProgramsPage() {
              <DialogTitle className="uppercase font-black text-emerald-600 flex items-center gap-3">
                <CheckCircle2 className="h-6 w-6" /> Resultado de la verificación
              </DialogTitle>
-             <DialogDescription className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Muestra el estatus oficial de la cuenta institucional verificada.</DialogDescription>
           </DialogHeader>
           <div className="p-8 flex gap-6">
-            <div className="shrink-0 pt-1">
-              <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
-                <CheckCircle2 className="h-7 w-7" />
-              </div>
-            </div>
-            <div className="flex-1 space-y-6">
+            <div className="shrink-0 pt-1"><CheckCircle2 className="h-10 w-10 text-emerald-500" /></div>
+            <div className="flex-1 space-y-4">
               <div className="space-y-1">
                 <p className="text-[#003366] font-bold text-sm">Registro Localizado</p>
                 <h3 className="text-2xl font-black text-emerald-600 truncate">{verifiedAccount?.email}</h3>
-                <Badge className="bg-emerald-500/20 text-emerald-700 hover:bg-emerald-500/30 border-none px-4 py-1 rounded-full text-[10px] font-bold mt-2">
-                  Cuenta activa
-                </Badge>
               </div>
-              
               <div className="space-y-2 pt-2">
-                <div className="flex gap-8">
-                  <span className="text-[#003366] font-bold text-sm w-24">Nombre:</span>
-                  <span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.userName}</span>
-                </div>
-                <div className="flex gap-8">
-                  <span className="text-[#003366] font-bold text-sm w-24">Área:</span>
-                  <span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.puesto || verifiedAccount?.departamento || 'S/D'}</span>
-                </div>
-                <div className="flex gap-8">
-                  <span className="text-slate-400 font-bold text-xs w-24">Fecha de alta:</span>
-                  <span className="text-slate-400 font-semibold text-xs">{verifiedAccount?.date}</span>
-                </div>
+                <div className="flex gap-4"><span className="text-[#003366] font-bold text-sm w-24">Nombre:</span><span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.userName}</span></div>
+                <div className="flex gap-4"><span className="text-[#003366] font-bold text-sm w-24">Área:</span><span className="text-slate-600 font-semibold text-sm uppercase">{verifiedAccount?.puesto || 'S/D'}</span></div>
               </div>
             </div>
           </div>
@@ -903,18 +771,21 @@ export default function ProgramsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
-             <DialogTitle className="font-black text-lg uppercase">Gestión Técnica: {activeTab}</DialogTitle>
+          <DialogHeader className="p-8 bg-primary text-white shrink-0 flex flex-row justify-between items-center pr-10">
+             <DialogTitle className="font-black text-2xl uppercase flex items-center gap-4">
+               <Settings className="h-8 w-8 text-accent" /> Gestión Técnica: {activeTab}
+             </DialogTitle>
              <button onClick={() => setIsDialogOpen(false)} className="h-10 w-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all"><X className="h-6 w-6" /></button>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
-              <div className="p-10 space-y-10 max-w-4xl mx-auto">
+              <div className="p-10 space-y-10 max-w-5xl mx-auto">
+                {/* 1. Identificación del Plantel */}
                 <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
-                  <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Buscador de Plantel (CCT)</Label>
+                  <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Paso 1: Identificación del Plantel (CCT)</Label>
                   <div className="relative">
-                    <input 
-                      placeholder="INGRESAR CCT..." 
+                    <Input 
+                      placeholder="INGRESAR CCT (MÍN. 3 CARACTERES)..." 
                       className="h-14 w-full rounded-2xl bg-white border border-primary/20 font-bold text-xl uppercase shadow-lg pl-6 focus:outline-none focus:ring-2 focus:ring-primary/20" 
                       value={dialogSearchTerm} 
                       onChange={(e) => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); setShowSearchResults(true); }} 
@@ -922,7 +793,7 @@ export default function ProgramsPage() {
                     {showSearchResults && dialogSearchTerm.length > 2 && (
                       <div className="absolute top-18 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-[100] divide-y">
                         {schoolSearchResults.map((s, sidx) => (
-                          <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" onClick={() => handleCctChange(s.cct)}>
+                          <div key={`${s.cct}-${s.turno}-${sidx}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => handleCctChange(s.cct)}>
                             <div className="flex flex-col">
                               <span className="text-sm font-bold uppercase truncate group-hover:text-primary transition-colors">{s.nombre}</span>
                               <span className="text-[10px] font-mono text-muted-foreground">{s.cct} • {s.municipio}</span>
@@ -932,24 +803,112 @@ export default function ProgramsPage() {
                         ))}
                         {schoolSearchResults.length === 0 && (
                           <div className="p-6 text-center">
-                            <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5">
-                              <Plus className="h-4 w-4 mr-2" /> Alta Rápida
+                            <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-8 rounded-xl text-[10px] font-black uppercase border-primary/20 text-primary">
+                              <Plus className="h-4 w-4 mr-2" /> Alta Rápida de CCT
                             </Button>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
+                  {formData.schoolName && (
+                    <div className="p-6 bg-white rounded-3xl border-2 border-emerald-100 flex items-center gap-4 animate-in slide-in-from-left">
+                       <div className="h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner"><School className="h-6 w-6" /></div>
+                       <div><h4 className="text-lg font-black text-slate-800 uppercase leading-none">{formData.schoolName}</h4><p className="text-[9px] font-mono font-bold text-emerald-700 uppercase mt-1">{formData.municipio} • {formData.valle}</p></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Formulario Específico del Rubro */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-8">
+                   <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Paso 2: Detalles Técnicos del Registro</Label>
+
+                   {activeTab === 'Cuentas Institucionales' && (
+                     <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Nombre del Responsable</Label><Input value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" placeholder="NOMBRE COMPLETO..." /></div>
+                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Puesto / Cargo</Label><Input value={formData.puesto} onChange={e => setFormData({...formData, puesto: e.target.value.toUpperCase()})} className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Usuario (sin @)</Label><Input value={userPart} onChange={e => setUserPart(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold lowercase" placeholder="maria.lopez" /></div>
+                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio</Label><Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{DOMINIOS.map(d => <SelectItem key={d} value={d} className="text-xs font-bold">{d}</SelectItem>)}</SelectContent></Select></div>
+                           <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Vista Previa Correo</Label><div className="h-12 flex items-center px-4 bg-primary/5 text-primary font-black rounded-xl border border-primary/10 truncate">{fullEmailPreview || '---'}</div></div>
+                        </div>
+                     </div>
+                   )}
+
+                   {activeTab === 'Biblioteca Digital' && (
+                     <div className="space-y-10">
+                        <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
+                           <h4 className="text-[11px] font-black text-primary uppercase flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Control de Fases del Proyecto</h4>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {BIBLIOTECA_FASES_LABELS.map(f => (
+                                <div key={f.id} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200">
+                                   <Checkbox checked={(formData.bibliotecaFases as any)?.[f.id]} onCheckedChange={(val) => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, [f.id]: !!val}})} id={`check-${f.id}`} />
+                                   <Label htmlFor={`check-${f.id}`} className="text-[9px] font-bold text-slate-600 uppercase cursor-pointer leading-tight">{f.label}</Label>
+                                </div>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="space-y-6">
+                           <div className="flex justify-between items-center"><h4 className="text-[11px] font-black text-primary uppercase flex items-center gap-2"><Users className="h-4 w-4" /> Personal Capacitado</h4><Button onClick={handleAddAssistant} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase"><Plus className="h-4 w-4 mr-2" /> Añadir Asistente</Button></div>
+                           <div className="border rounded-2xl overflow-hidden shadow-sm">
+                              <Table>
+                                 <TableHeader className="bg-slate-50"><TableRow><TableHead className="text-[9px] font-black">RFC</TableHead><TableHead className="text-[9px] font-black">NOMBRE COMPLETO</TableHead><TableHead className="text-[9px] font-black">FUNCIÓN</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
+                                 <TableBody>{asistentesLib.map((ast, idx) => (
+                                   <TableRow key={idx} className="h-12"><TableCell className="p-2"><Input value={ast.rfc} onChange={e => updateAssistant(idx, 'rfc', e.target.value)} className="h-8 font-mono text-[9px] uppercase" maxLength={13} /></TableCell><TableCell className="p-2"><Input value={ast.nombres} onChange={e => updateAssistant(idx, 'nombres', e.target.value)} className="h-8 text-[9px] uppercase font-bold" /></TableCell><TableCell className="p-2"><Select value={ast.funcion} onValueChange={v => updateAssistant(idx, 'funcion', v)}><SelectTrigger className="h-8 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger><SelectContent>{FUNCIONES.map(f => <SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>)}</SelectContent></Select></TableCell><TableCell className="p-2"><button onClick={() => handleRemoveAssistant(idx)} className="text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></TableCell></TableRow>
+                                 ))}</TableBody>
+                              </Table>
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4">
+                              {formData.reportPdf ? (<div className="flex flex-col items-center gap-2"><FileText className="h-10 w-10 text-emerald-600" /><p className="text-[10px] font-black text-emerald-700 uppercase">PDF LISTO</p><button onClick={() => setFormData({...formData, reportPdf: ''})} className="text-[8px] text-rose-500 font-bold uppercase hover:underline">Quitar</button></div>) : (<><Upload className="h-8 w-8 text-slate-300" /><p className="text-[10px] font-black text-slate-700 uppercase">Cargar Formato de Instalación (PDF)</p><Button variant="outline" size="sm" onClick={() => pdfInputRef.current?.click()}>Seleccionar</Button></>)}
+                              <input type="file" accept=".pdf" className="hidden" ref={pdfInputRef} onChange={e => handleFileChange(e, 'pdf')} />
+                           </div>
+                           <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                              <div className="flex flex-col items-center gap-4 mb-4"><ImageIcon className="h-8 w-8 text-slate-300" /><p className="text-[10px] font-black text-slate-700 uppercase">Galería de Evidencias (PNG)</p><Button variant="outline" size="sm" onClick={() => imageInputRef.current?.click()}>Añadir Foto</Button></div>
+                              <div className="grid grid-cols-4 gap-2">{(formData.evidencePhotos || []).map((img, i) => (<div key={i} className="relative aspect-square rounded-xl overflow-hidden group"><Image src={img} alt="Evidencia" fill className="object-cover" /><button onClick={() => removeImage(i)} className="absolute top-1 right-1 h-5 w-5 bg-rose-600 text-white rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center"><X className="h-3 w-3" /></button></div>))}</div>
+                              <input type="file" accept=".png" className="hidden" ref={imageInputRef} onChange={e => handleFileChange(e, 'image')} />
+                           </div>
+                        </div>
+                     </div>
+                   )}
+
+                   {activeTab === 'Geoposición' && (
+                     <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Latitud</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} className="h-12 bg-slate-50 border-none text-lg font-black" /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Longitud</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} className="h-12 bg-slate-50 border-none text-lg font-black" /></div>
+                     </div>
+                   )}
+
+                   <div className="space-y-2 pt-4">
+                      <Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Observaciones Operativas</Label>
+                      <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} className="min-h-[100px] bg-slate-50 border-none rounded-2xl p-6 font-bold uppercase shadow-inner" />
+                   </div>
                 </div>
               </div>
             </ScrollArea>
           </div>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button>
-            <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-12 text-xs gap-3 rounded-xl shadow-2xl">
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR
+            <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-16 text-xs gap-3 rounded-xl shadow-2xl">
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR REGISTRO
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0"><DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro Rápido de CCT</DialogTitle></DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" /></div></div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} /></div><div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div></div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
