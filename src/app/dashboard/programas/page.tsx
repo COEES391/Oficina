@@ -360,8 +360,8 @@ export default function ProgramsPage() {
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
-      valle: quickAddForm.valle.toUpperCase(),
-      region: quickAddForm.region.toUpperCase(),
+      valle: (quickAddForm.valle || 'MEXICO').toUpperCase(),
+      region: (quickAddForm.region || '').toUpperCase(),
       modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
@@ -400,7 +400,7 @@ export default function ProgramsPage() {
           <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Auditoría Institucional 2026</p>
         </div>
         <div className="flex gap-3">
-          {activeTab !== 'ATRES' && (
+          {activeTab !== 'ATRES' && activeTab !== 'Cuentas Institucionales' && (
             <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase text-white">
                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
             </Button>
@@ -697,7 +697,10 @@ export default function ProgramsPage() {
                        <Label className="text-[10px] font-black text-primary uppercase ml-1">Construcción del Correo Institucional</Label>
                        <div className="flex flex-col sm:flex-row gap-3">
                           <div className="flex-1 relative"><Input placeholder="usuario..." className="h-11 rounded-xl bg-white border-slate-200 text-xs font-bold" value={userPart} onChange={e => setUserPart(e.target.value.toLowerCase())} /><span className="absolute right-3 top-3.5 text-[10px] font-black text-slate-300">@</span></div>
-                          <Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-11 rounded-xl w-full sm:w-[180px] bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{DOMINIOS.map(d => (<SelectItem key={d} value={d} className="text-[10px] font-black">{d}</SelectItem>))}</SelectContent></Select>
+                          <Select value={domainPart} onValueChange={setDomainPart}>
+                            <SelectTrigger className="h-11 rounded-xl w-full sm:w-[180px] bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl">{DOMINIOS.map(d => (<SelectItem key={d} value={d} className="text-[10px] font-black">{d}</SelectItem>))}</SelectContent>
+                          </Select>
                        </div>
                        <div className="mt-4 p-4 bg-white rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2"><span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Vista previa del correo:</span><span className="text-sm font-black text-primary lowercase tracking-tight">{fullEmailPreview || 'esperando datos...'}</span></div>
                     </div>
@@ -780,15 +783,6 @@ export default function ProgramsPage() {
                               ))}
                            </div>
                         </div>
-                     </div>
-                   )}
-
-                   {activeTab === 'Cuentas Institucionales' && (
-                     <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Responsable</Label><Input value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Correo Base (Sin dominio)</Label><Input value={userPart} onChange={e => setUserPart(e.target.value.toLowerCase())} className="h-12 rounded-xl bg-slate-50 border-none font-bold" /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Dominio</Label><Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-12 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl">{DOMINIOS.map(d => (<SelectItem key={d} value={d} className="text-[10px] font-bold">{d}</SelectItem>))}</SelectContent></Select></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-400 pl-1 uppercase">Departamento</Label><Input value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" /></div>
                      </div>
                    )}
 
