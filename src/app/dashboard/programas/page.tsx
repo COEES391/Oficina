@@ -56,20 +56,9 @@ import {
   Upload,
   LocateFixed,
   Building2,
-  UserPlus
+  UserPlus,
+  Eye
 } from "lucide-react"
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 import { db } from '@/lib/firebase'
@@ -88,7 +77,7 @@ import {
   limit
 } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
 
 const PROGRAM_RUBROS = [
   'Cuentas Institucionales',
@@ -195,18 +184,6 @@ export default function ProgramsPage() {
     return () => unsubscribe()
   }, [selectedLibCct])
 
-  const filteredRecords = useMemo(() => {
-    const list = records.filter(r => r.name === activeTab);
-    if (!searchTerm) return list;
-    const term = searchTerm.toUpperCase();
-    return list.filter(r => 
-      (r.cct || '').toUpperCase().includes(term) ||
-      (r.schoolName || '').toUpperCase().includes(term) ||
-      (r.userName || '').toUpperCase().includes(term) ||
-      (r.email || '').toUpperCase().includes(term)
-    );
-  }, [records, searchTerm, activeTab]);
-
   const libData = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const concluidos = libRecs.filter(r => r.progress === 100).length;
@@ -218,7 +195,8 @@ export default function ProgramsPage() {
       { name: 'Pendientes', value: pendientes, color: '#6c757d' },
     ];
     const totalEvidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
-    return { libRecs, totalCct: libRecs.length, concluidos, chartData, totalEvidencias, tecnicos: 8 };
+    // Cambiamos tecnicos de 8 a 0 para que inicie limpio
+    return { libRecs, totalCct: libRecs.length, concluidos, chartData, totalEvidencias, tecnicos: 0 };
   }, [records]);
 
   const selectedLibRecord = useMemo(() => libData.libRecs.find(r => r.cct === selectedLibCct) || null, [libData.libRecs, selectedLibCct]);
@@ -396,8 +374,8 @@ export default function ProgramsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
              {[
                { label: 'CCT Registrados', value: libData.totalCct, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-               { label: 'Visitas Totales', value: 128, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Atenciones', value: 96, sub: 'En el periodo', icon: ClipboardCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
+               { label: 'Visitas Totales', value: 0, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+               { label: 'Atenciones', value: 0, sub: 'En el periodo', icon: ClipboardCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
                { label: 'Evidencias', value: libData.totalEvidencias || 0, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
                { label: 'Técnicos Activos', value: libData.tecnicos, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
                { label: 'Proyectos Concluidos', value: libData.concluidos, sub: 'Escuelas', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' },
