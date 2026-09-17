@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { 
   AreaChart, 
   Area, 
@@ -642,7 +641,7 @@ export default function ProgramsPage() {
                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={VISIT_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                          <defs>
-                            <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id="colorVisits" x1="0" x1={0} y1="0" x2="0" y2="1">
                                <stop offset="5%" stopColor="#0052cc" stopOpacity={0.1}/>
                                <stop offset="95%" stopColor="#0052cc" stopOpacity={0}/>
                             </linearGradient>
@@ -779,7 +778,7 @@ export default function ProgramsPage() {
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} GUARDAR UBICACIÓN
                      </Button>
                      <Button variant="outline" onClick={resetForm} className="h-11 px-6 rounded-xl border-slate-200 text-slate-500 font-black text-[10px] gap-2 uppercase hover:bg-slate-100 shadow-sm">
-                        <RotateCcw className="h-4 w-4" /> LIMPIAR
+                        <RefreshCw className="h-4 w-4" /> LIMPIAR
                      </Button>
                   </div>
                   <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3 shadow-inner">
@@ -951,16 +950,25 @@ export default function ProgramsPage() {
                     </div>
                     <div className="space-y-1.5">
                        <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Zona / Municipio:</Label>
-                       <Select defaultValue="all">
+                       <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
                           <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
-                          <SelectContent className="rounded-xl"><SelectItem value="all">Todos</SelectItem></SelectContent>
+                          <SelectContent className="rounded-xl">
+                             <SelectItem value="all">Todos</SelectItem>
+                             {Array.from(new Set(allSchools.map(s => s.municipio))).sort().map(m => (
+                               <SelectItem key={m} value={m}>{m}</SelectItem>
+                             ))}
+                          </SelectContent>
                        </Select>
                     </div>
                     <div className="space-y-1.5">
                        <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado:</Label>
-                       <Select defaultValue="all">
+                       <Select value={estatusFilter} onValueChange={setEstatusFilter}>
                           <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
-                          <SelectContent className="rounded-xl"><SelectItem value="all">Todos</SelectItem></SelectContent>
+                          <SelectContent className="rounded-xl">
+                             <SelectItem value="all">Todos</SelectItem>
+                             <SelectItem value="Concluido">Concluido</SelectItem>
+                             <SelectItem value="Proceso">En proceso</SelectItem>
+                          </SelectContent>
                        </Select>
                     </div>
                  </div>
@@ -1029,10 +1037,10 @@ export default function ProgramsPage() {
                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">Resumen general</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                        {[
-                         { label: 'Escuelas registradas', value: '1,248', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-                         { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                         { label: 'Municipios', value: '125', icon: MapPin, color: 'text-orange-500', bg: 'bg-orange-50' },
-                         { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                         { label: 'Escuelas registradas', value: '0', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                         { label: 'Directores / Responsables', value: '0', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                         { label: 'Municipios', value: '0', icon: MapPin, color: 'text-orange-500', bg: 'bg-orange-50' },
+                         { label: 'Datos actualizados', value: '0', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
                        ].map((kpi, i) => (
                          <Card key={i} className="rounded-2xl border-none shadow-md bg-white p-5 flex flex-col items-center text-center gap-3">
                             <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner", kpi.bg, kpi.color)}><kpi.icon className="h-6 w-6" /></div>
@@ -1093,7 +1101,11 @@ export default function ProgramsPage() {
                                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
                                 <Select value={formData.municipio} onValueChange={v => setFormData({...formData, municipio: v})}>
                                    <SelectTrigger className="h-10 pl-9 rounded-xl bg-slate-50 border-none text-[10px] font-bold uppercase"><SelectValue placeholder="Selecciona un municipio" /></SelectTrigger>
-                                   <SelectContent className="rounded-xl"><SelectItem value="Toluca">Toluca</SelectItem></SelectContent>
+                                   <SelectContent className="rounded-xl">
+                                      {Array.from(new Set(allSchools.map(s => s.municipio))).sort().map(m => (
+                                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                                      ))}
+                                   </SelectContent>
                                 </Select>
                              </div>
                           </div>
