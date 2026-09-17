@@ -827,113 +827,11 @@ export default function ProgramsPage() {
               </Card>
            </div>
         </div>
-      ) : activeTab === 'Cuentas Institucionales' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[600px]">
-           <div className="lg:col-span-5 space-y-6">
-              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-10 space-y-8 h-full flex flex-col shadow-primary/5">
-                <div className="flex items-start gap-5">
-                  <div className="h-14 w-14 rounded-3xl bg-primary text-white flex items-center justify-center shadow-2xl shadow-primary/30"><Mail className="h-8 w-8" /></div>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-black text-slate-800 leading-none uppercase tracking-tighter">Registro Técnico</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Creación y Restructuración de Cuentas</p>
-                  </div>
-                </div>
-                <div className="space-y-6 flex-1">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Servidor Público (Responsable) *</Label>
-                    <Input placeholder="NOMBRE COMPLETO..." className="h-12 rounded-xl bg-slate-50 border-slate-100 px-4 text-xs font-bold uppercase shadow-inner" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Departamento / Área *</Label>
-                    <Input placeholder="NOMBRE DE LA OFICINA O ÁREA..." className="h-12 rounded-xl bg-slate-50 border-slate-100 px-4 text-xs font-bold uppercase shadow-inner" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} />
-                  </div>
-                  <div className="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-inner">
-                    <Label className="text-[10px] font-black text-primary uppercase ml-1">Construcción del Correo Institucional</Label>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="flex-1 relative">
-                        <Input placeholder="usuario..." className="h-11 rounded-xl bg-white border-slate-200 text-xs font-bold" value={userPart} onChange={e => setUserPart(e.target.value.toLowerCase())} />
-                        <span className="absolute right-3 top-3.5 text-[10px] font-black text-slate-300">@</span>
-                      </div>
-                      <Select value={domainPart} onValueChange={setDomainPart}>
-                        <SelectTrigger className="h-11 rounded-xl w-full sm:w-[180px] bg-white border-slate-200 text-[10px] font-black uppercase"><SelectValue /></SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {DOMINIOS.map(d => (<SelectItem key={d} value={d} className="text-[10px] font-black">{d}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="mt-4 p-4 bg-white rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center gap-2">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Vista previa del correo:</span>
-                      <span className="text-sm font-black text-primary lowercase tracking-tight">{fullEmailPreview || 'esperando datos...'}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 shrink-0">
-                  <Button onClick={handleSave} disabled={isSaving || !userPart} className="btn-institutional h-14 rounded-2xl text-[11px] gap-3 shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button>
-                  <Button variant="outline" onClick={resetForm} className="h-14 rounded-2xl border-slate-200 text-slate-500 font-black text-[11px] gap-2 uppercase hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button>
-                </div>
-              </Card>
-           </div>
-           <div className="lg:col-span-7 flex flex-col space-y-8">
-              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-8 shrink-0 shadow-primary/5">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner"><ShieldCheck className="h-7 w-7" /></div>
-                  <div><h3 className="text-xl font-black text-slate-800 leading-none uppercase">Verificar existencia</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Validador Oficial de Correos en la Auditoría 2026</p></div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-4 h-5 w-5 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
-                    <Input placeholder="INGRESAR CORREO COMPLETO..." className="h-14 rounded-2xl bg-slate-50 border-none pl-12 text-sm font-bold shadow-inner focus:bg-white transition-all ring-1 ring-slate-100 focus:ring-emerald-500/20" value={verifyInput} onChange={e => setVerifyInput(e.target.value.toLowerCase())} onKeyDown={e => e.key === 'Enter' && handleVerifyAccount()} />
-                  </div>
-                  <Button onClick={handleVerifyAccount} disabled={isVerifying} className={cn("h-14 px-8 rounded-2xl font-black text-[11px] uppercase transition-all shadow-xl", isVerifying ? "bg-slate-200" : "bg-emerald-600 hover:bg-emerald-700 text-white")}>
-                    {isVerifying ? <Loader2 className="h-5 w-5 animate-spin" /> : "VALIDAR"}
-                  </Button>
-                </div>
-                {verifiedAccount && (
-                  <div className="bg-emerald-50 p-6 rounded-[2.5rem] border-2 border-emerald-100 flex items-center gap-6 animate-in zoom-in-95 duration-500 shadow-sm">
-                    <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-xl border border-emerald-100"><CheckCircle2 className="h-8 w-8" /></div>
-                    <div className="flex-1 space-y-1">
-                      <Badge className="bg-emerald-600 text-white border-none text-[8px] font-black uppercase mb-1">CUENTA ACTIVA</Badge>
-                      <h4 className="text-xl font-black text-emerald-900 uppercase leading-none">{verifiedAccount.userName}</h4>
-                      <p className="text-[10px] font-bold text-emerald-700/60 uppercase">{verifiedAccount.departamento} • Alta: {verifiedAccount.date}</p>
-                    </div>
-                  </div>
-                )}
-              </Card>
-              <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden shadow-primary/5">
-                <div className="p-8 border-b bg-slate-50/50 flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner"><ClipboardList className="h-6 w-6" /></div>
-                      <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Historial de registros</h4>
-                   </div>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
-                    <Table>
-                      <TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b">
-                        <TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable / Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo Registrado</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {records.filter(r => r.name === 'Cuentas Institucionales').map((rec, idx) => (
-                          <TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                            <TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[150px]">{rec.departamento}</span></div></TableCell>
-                            <TableCell className="font-mono text-[10px] font-bold text-primary">{rec.email}</TableCell>
-                            <TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-black px-3 h-5 rounded-full border-2 uppercase", rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100")}>{rec.status}</Badge></TableCell>
-                            <TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => { handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                </div>
-              </Card>
-           </div>
-        </div>
       ) : activeTab === 'Conoce mi Escuela' ? (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[800px]">
-           {/* Barra de Filtros Superior */}
            <Card className="rounded-[1.5rem] border-none shadow-lg bg-white p-4">
               <div className="flex flex-col lg:flex-row items-end gap-6">
-                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 w-full">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
                     <div className="space-y-1.5">
                        <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
                        <Select defaultValue="CCT">
@@ -948,29 +846,6 @@ export default function ProgramsPage() {
                           <Input placeholder="Ej. 15DES0001R" className="h-10 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                        </div>
                     </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Zona / Municipio:</Label>
-                       <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
-                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                             <SelectItem value="all">Todos</SelectItem>
-                             {Array.from(new Set(allSchools.map(s => s.municipio))).sort().map(m => (
-                               <SelectItem key={m} value={m}>{m}</SelectItem>
-                             ))}
-                          </SelectContent>
-                       </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado:</Label>
-                       <Select value={estatusFilter} onValueChange={setEstatusFilter}>
-                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                             <SelectItem value="all">Todos</SelectItem>
-                             <SelectItem value="Concluido">Concluido</SelectItem>
-                             <SelectItem value="Proceso">En proceso</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
                  </div>
                  <Button className="bg-[#0052cc] hover:bg-[#0047b3] text-white h-10 px-10 rounded-xl text-xs font-black uppercase shadow-lg gap-2 shrink-0">
                     <Search className="h-4 w-4" /> Buscar
@@ -979,7 +854,6 @@ export default function ProgramsPage() {
            </Card>
 
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Columna Izquierda: Mapa e Indicadores */}
               <div className="lg:col-span-8 space-y-6">
                  <Card className="rounded-[1.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col h-[550px]">
                     <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
@@ -994,8 +868,6 @@ export default function ProgramsPage() {
                     </div>
                     <div className="flex-1 relative bg-slate-100">
                        <Image src="https://picsum.photos/seed/toluca-conoce/1200/900" alt="Mapa Conoce mi Escuela" fill className="object-cover opacity-80" />
-                       
-                       {/* Marcador Simulado con Popup */}
                        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
                           <div className="bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 mb-2 min-w-[220px] animate-in zoom-in-95">
                              <div className="flex justify-between items-start mb-2">
@@ -1010,8 +882,6 @@ export default function ProgramsPage() {
                              <div className="h-3 w-3 bg-white rounded-full absolute top-1 left-2.5 z-20 border-2 border-emerald-500" />
                           </div>
                        </div>
-
-                       {/* Controles de Mapa */}
                        <div className="absolute top-4 left-4 bg-white p-1 rounded-xl shadow-xl border flex gap-1 z-30">
                           <Button variant="ghost" className="h-8 px-4 rounded-lg text-[9px] font-black uppercase bg-slate-50 text-slate-700">Mapa</Button>
                           <Button variant="ghost" className="h-8 px-4 rounded-lg text-[9px] font-black uppercase text-slate-400">Satélite</Button>
@@ -1032,7 +902,6 @@ export default function ProgramsPage() {
                     </div>
                  </Card>
 
-                 {/* Resumen General (KPIs Inferiores) */}
                  <div className="space-y-4">
                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">Resumen general</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1054,9 +923,7 @@ export default function ProgramsPage() {
                  </div>
               </div>
 
-              {/* Columna Derecha: Registro y Detalle */}
               <div className="lg:col-span-4 space-y-6">
-                 {/* Formulario de Registro */}
                  <Card className="rounded-[1.5rem] border-none shadow-xl bg-white p-8 space-y-6">
                     <div className="flex items-start gap-4">
                        <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner"><School className="h-7 w-7" /></div>
@@ -1083,7 +950,6 @@ export default function ProgramsPage() {
                              </div>
                           </div>
                        </div>
-
                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                              <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Zona *</Label>
@@ -1110,7 +976,6 @@ export default function ProgramsPage() {
                              </div>
                           </div>
                        </div>
-
                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                              <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Teléfono</Label>
@@ -1127,7 +992,6 @@ export default function ProgramsPage() {
                              </div>
                           </div>
                        </div>
-
                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                              <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Latitud *</Label>
@@ -1144,7 +1008,6 @@ export default function ProgramsPage() {
                              </div>
                           </div>
                        </div>
-
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                           <Button onClick={handleSave} className="bg-[#0052cc] hover:bg-[#0047b3] text-white h-11 rounded-xl text-xs font-black uppercase shadow-lg gap-2">
                              <Save className="h-4 w-4" /> Guardar escuela
@@ -1156,7 +1019,6 @@ export default function ProgramsPage() {
                     </div>
                  </Card>
 
-                 {/* Ficha de Detalles de la Escuela */}
                  <div className="space-y-4">
                     <div className="flex items-center gap-3 ml-1">
                        <Building2 className="h-5 w-5 text-accent" />
