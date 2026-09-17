@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { 
   AreaChart, 
   Area, 
@@ -77,10 +78,11 @@ import {
   Navigation,
   PieChart as PieChartIcon,
   ChevronLeft,
-  Circle
+  Circle,
+  Info,
+  Server
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 import { db } from '@/lib/firebase'
 import { 
   collection, 
@@ -640,8 +642,8 @@ export default function ProgramsPage() {
                             </linearGradient>
                          </defs>
                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
-                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeights: 700, fill: '#94a3b8' }} />
+                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeights: 700, fill: '#94a3b8' }} />
                          <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} />
                          <Area type="monotone" dataKey="visits" stroke="#0052cc" strokeWidth={3} fillOpacity={1} fill="url(#colorVisits)" dot={{ r: 4, fill: '#0052cc', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
                       </AreaChart>
@@ -649,12 +651,12 @@ export default function ProgramsPage() {
                 </div>
              </Card>
 
-             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
+             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 relative">
                 <div className="flex items-center gap-3">
                    <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner"><PieChartIcon className="h-6 w-6" /></div>
                    <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Estatus del Proyecto</h3>
                 </div>
-                <div className="h-[240px] w-full relative">
+                <div className="h-[240px] w-full">
                    <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                          <Pie data={statusPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
@@ -666,32 +668,21 @@ export default function ProgramsPage() {
                          <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '20px' }} />
                       </PieChart>
                    </ResponsiveContainer>
-                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-2xl font-black text-slate-800 leading-none">{libData.totalCct}</span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total CCT</span>
-                   </div>
                 </div>
              </Card>
 
              <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 shadow-inner"><ImageIcon className="h-6 w-6" /></div>
-                      <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Evidencias recientes</h3>
-                   </div>
+                <div className="flex items-center gap-3">
+                   <div className="h-10 w-10 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 shadow-inner"><ImageIcon className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Evidencias recientes</h3>
                 </div>
                 <div className="grid grid-cols-3 gap-3 flex-1">
                    {libData.libRecs.filter(r => r.evidencePhotos && r.evidencePhotos.length > 0).slice(0, 3).map((r, idx) => (
                      <div key={`recent-ev-${idx}`} className="space-y-2 group">
                         <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-slate-50 shadow-sm transition-all group-hover:scale-[1.05] group-hover:shadow-lg">
                            <Image src={r.evidencePhotos![0]} alt="Evidencia" fill className="object-cover" />
-                           <div className="absolute bottom-1 right-1 bg-white/90 p-1 rounded-lg shadow-md"><ImageIcon className="h-2.5 w-2.5 text-rose-500" /></div>
                         </div>
-                        <div className="px-1">
-                           <p className="text-[8px] font-black text-slate-700 uppercase leading-none truncate">{r.cct}</p>
-                           <p className="text-[7px] font-bold text-slate-400 uppercase truncate mt-1">{r.schoolName}</p>
-                           <p className="text-[7px] font-black text-rose-600 uppercase mt-1">{r.date}</p>
-                        </div>
+                        <p className="text-[8px] font-black text-slate-700 uppercase leading-none truncate">{r.schoolName}</p>
                      </div>
                    ))}
                 </div>
@@ -700,12 +691,9 @@ export default function ProgramsPage() {
         </div>
       ) : activeTab === 'Geoposición' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[700px]">
-           {/* Columna Izquierda: Mapa y Leyenda */}
            <div className="lg:col-span-7 flex flex-col space-y-4 h-full min-h-[600px]">
               <div className="flex-1 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden relative group bg-slate-100">
                  <Image src="https://picsum.photos/seed/toluca-map-2026/1200/900" alt="Mapa Institucional" fill className="object-cover opacity-80" />
-                 
-                 {/* Controles del Mapa */}
                  <div className="absolute top-6 left-6 flex flex-col gap-3 z-30">
                     <div className="bg-white p-1 rounded-2xl shadow-2xl border flex flex-col gap-1">
                        <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-slate-100 text-slate-700"><Plus className="h-5 w-5" /></Button>
@@ -714,13 +702,10 @@ export default function ProgramsPage() {
                     </div>
                     <Button size="icon" className="h-12 w-12 bg-white text-primary rounded-2xl shadow-2xl border-4 border-white hover:scale-110 transition-transform"><LocateFixed className="h-6 w-6" /></Button>
                  </div>
-
                  <div className="absolute top-6 left-20 bg-white p-1.5 rounded-2xl shadow-2xl border z-30 flex gap-1">
                     <Button variant="ghost" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase bg-primary text-white shadow-lg">Mapa</Button>
                     <Button variant="ghost" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:bg-slate-50">Satélite</Button>
                  </div>
-
-                 {/* Marcador Simulado con Popup */}
                  <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center group/marker">
                     <div className="bg-white px-4 py-2 rounded-2xl shadow-2xl border border-slate-100 mb-2 flex items-center gap-3 animate-bounce shadow-primary/20">
                        <div className="space-y-0.5">
@@ -734,13 +719,6 @@ export default function ProgramsPage() {
                        <MapPin className="h-10 w-10 text-emerald-500 fill-current drop-shadow-2xl relative z-10" />
                     </div>
                  </div>
-
-                 {/* Otros Marcadores */}
-                 <MapPin className="absolute top-[30%] left-[20%] h-8 w-8 text-rose-500 fill-current drop-shadow-lg z-20" />
-                 <MapPin className="absolute top-[60%] left-[30%] h-8 w-8 text-blue-500 fill-current drop-shadow-lg z-20" />
-                 <MapPin className="absolute top-[20%] left-[70%] h-8 w-8 text-slate-400 fill-current drop-shadow-lg z-20" />
-
-                 {/* Leyenda de Monitoreo */}
                  <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[1.8rem] shadow-2xl border z-30 flex flex-wrap gap-6 items-center">
                     {[
                       { label: 'En línea', color: 'bg-emerald-500' },
@@ -757,9 +735,7 @@ export default function ProgramsPage() {
               </div>
            </div>
 
-           {/* Columna Derecha: Registro e Historial */}
            <div className="lg:col-span-5 flex flex-col space-y-6">
-              {/* Card de Registro */}
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-6 shrink-0 border-t-4 border-t-primary">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner"><Navigation className="h-7 w-7" /></div>
@@ -768,7 +744,6 @@ export default function ProgramsPage() {
                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Ingresa el CCT y las coordenadas para registrar la ubicación de la escuela.</p>
                   </div>
                 </div>
-
                 <div className="space-y-5">
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">CCT *</Label>
@@ -777,7 +752,6 @@ export default function ProgramsPage() {
                        <Input placeholder="Ej. 15DES0001R" className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 font-mono font-black uppercase text-primary text-sm shadow-inner" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); }} />
                     </div>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                        <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Latitud *</Label>
@@ -794,7 +768,6 @@ export default function ProgramsPage() {
                        </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4 pt-2">
                      <Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional h-11 rounded-xl text-[10px] gap-2 shadow-xl bg-blue-600 hover:bg-blue-700">
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} GUARDAR UBICACIÓN
@@ -803,7 +776,6 @@ export default function ProgramsPage() {
                         <RotateCcw className="h-4 w-4" /> LIMPIAR
                      </Button>
                   </div>
-
                   <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3 shadow-inner">
                      <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg"><Info className="h-4 w-4" /></div>
                      <div className="space-y-0.5">
@@ -813,9 +785,7 @@ export default function ProgramsPage() {
                   </div>
                 </div>
               </Card>
-
-              {/* Card de Historial */}
-              <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden shadow-primary/5">
+              <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden">
                 <div className="p-6 border-b flex items-center gap-3">
                    <div className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shadow-inner"><History className="h-5 w-5" /></div>
                    <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Últimas ubicaciones registradas</h4>
@@ -827,52 +797,27 @@ export default function ProgramsPage() {
                         <TableRow className="h-10">
                           <TableHead className="pl-6 text-[9px] font-black uppercase text-slate-400">Fecha y hora</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-slate-400">CCT</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase text-slate-400">Latitud</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase text-slate-400">Longitud</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-slate-400">Estado</TableHead>
                           <TableHead className="text-right pr-8 text-[9px] font-black uppercase text-slate-400">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {records.filter(r => r.name === 'Geoposición').map((rec, idx) => {
-                          const states = [
-                            { label: 'En línea', color: 'bg-emerald-50 text-emerald-700' },
-                            { label: 'En movimiento', color: 'bg-blue-50 text-blue-700' },
-                            { label: 'Sin señal', color: 'bg-rose-50 text-rose-700' },
-                            { label: 'Desconectado', color: 'bg-slate-100 text-slate-500' }
-                          ];
-                          const state = states[idx % 4];
-                          return (
-                            <TableRow key={rec.id || idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors group">
-                              <TableCell className="pl-6 font-bold text-[10px] text-slate-500">{rec.date} 10:24</TableCell>
-                              <TableCell className="font-mono text-[10px] font-black text-slate-700">{rec.cct}</TableCell>
-                              <TableCell className="text-[10px] font-bold text-slate-500">{rec.latitud}</TableCell>
-                              <TableCell className="text-[10px] font-bold text-slate-500">{rec.longitud}</TableCell>
-                              <TableCell>
-                                <Badge className={cn("border-none text-[8px] font-black px-2 h-5 rounded-full uppercase", state.color)}>
-                                  {state.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <div className="flex justify-end gap-1">
-                                  <button onClick={() => handleEdit(rec)} className="h-7 w-7 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-all"><Eye className="h-4 w-4" /></button>
-                                  <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {records.filter(r => r.name === 'Geoposición').map((rec, idx) => (
+                          <TableRow key={rec.id || idx} className="h-14 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                            <TableCell className="pl-6 font-bold text-[10px] text-slate-500">{rec.date}</TableCell>
+                            <TableCell className="font-mono text-[10px] font-black text-slate-700">{rec.cct}</TableCell>
+                            <TableCell><Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-black px-2 h-5 rounded-full uppercase">En línea</Badge></TableCell>
+                            <TableCell className="text-right pr-6">
+                              <div className="flex justify-end gap-1">
+                                <button onClick={() => handleEdit(rec)} className="h-7 w-7 rounded-lg flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-all"><Eye className="h-4 w-4" /></button>
+                                <button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </ScrollArea>
-                </div>
-                <div className="p-4 border-t bg-slate-50/50 flex justify-between items-center shrink-0">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Mostrando 1 - 5 de {records.filter(r => r.name === 'Geoposición').length} registros</p>
-                   <div className="flex gap-1 pr-2">
-                      {[1, 2, 3, 4, 5].map(p => (
-                        <button key={p} className={cn("h-6 w-6 rounded-md text-[9px] font-black transition-all", p === 1 ? "bg-blue-600 text-white shadow-lg" : "bg-white text-slate-400 hover:bg-slate-100")}>{p}</button>
-                      ))}
-                   </div>
                 </div>
               </Card>
            </div>
@@ -988,7 +933,7 @@ export default function ProgramsPage() {
             <div className="relative w-64"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Buscar..." className="h-9 pl-9 text-xs" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
           </div>
           <div className="overflow-x-auto w-full">
-            <Table className="w-full">
+            <Table>
               <TableHeader className="bg-slate-50 border-b">
                 <TableRow className="h-12"><TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead><TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead><TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Nombre / Escuela</TableHead><TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead></TableRow>
               </TableHeader>
