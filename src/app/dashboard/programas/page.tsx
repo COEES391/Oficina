@@ -80,7 +80,11 @@ import {
   ChevronLeft,
   Circle,
   Info,
-  Server
+  Server,
+  RefreshCw,
+  Globe,
+  Map as MapIcon,
+  List as ListIcon
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -156,6 +160,7 @@ export default function ProgramsPage() {
   
   const [municipioFilter, setMunicipioFilter] = useState('all')
   const [estatusFilter, setEstatusFilter] = useState('all')
+  const [conoceView, setConoceView] = useState<'map' | 'list'>('map')
 
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -268,7 +273,8 @@ export default function ProgramsPage() {
         ...prev, 
         cct: match.cct, schoolName: match.nombre, municipio: match.municipio, 
         valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, 
-        sector: match.sector, modalidad: match.modalidad 
+        sector: match.sector, modalidad: match.modalidad,
+        telefono: match.telefono, email: match.email || ''
       }))
       setDialogSearchTerm(match.cct)
       setShowSearchResults(false)
@@ -417,7 +423,7 @@ export default function ProgramsPage() {
           <p className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Auditoría Institucional 2026</p>
         </div>
         <div className="flex gap-3">
-          {activeTab !== 'ATRES' && activeTab !== 'Cuentas Institucionales' && activeTab !== 'Geoposición' && (
+          {activeTab !== 'ATRES' && activeTab !== 'Cuentas Institucionales' && activeTab !== 'Geoposición' && activeTab !== 'Conoce mi Escuela' && (
             <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-10 px-6 rounded-xl text-[10px] font-bold shadow-lg uppercase text-white">
                <PlusCircle className="h-5 w-5 mr-2" /> Nuevo Registro
             </Button>
@@ -445,10 +451,10 @@ export default function ProgramsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
              {[
                { label: 'CCT Registrados', value: libData.totalCct, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-               { label: 'Visitas Totales', value: libData.visitasTotales, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Atenciones', value: libData.atenciones, sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
+               { label: 'Visitas Totales', value: 0, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+               { label: 'Atenciones', value: 0, sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
                { label: 'Evidencias', value: libData.evidencesCount, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
-               { label: 'Técnicos Activos', value: libData.tecnicosActivos, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+               { label: 'Técnicos Activos', value: 0, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
                { label: 'Proyectos Concluidos', value: libData.concluidos, sub: 'Escuelas', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' },
              ].map((kpi, idx) => (
                <Card key={idx} className="border-none shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow bg-white">
@@ -923,6 +929,248 @@ export default function ProgramsPage() {
               </Card>
            </div>
         </div>
+      ) : activeTab === 'Conoce mi Escuela' ? (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[800px]">
+           {/* Barra de Filtros Superior */}
+           <Card className="rounded-[1.5rem] border-none shadow-lg bg-white p-4">
+              <div className="flex flex-col lg:flex-row items-end gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 w-full">
+                    <div className="space-y-1.5">
+                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Buscar por:</Label>
+                       <Select defaultValue="CCT">
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="CCT">CCT</SelectItem><SelectItem value="Nombre">Nombre de la escuela</SelectItem></SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificador:</Label>
+                       <div className="relative">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Input placeholder="Ej. 15DES0001R" className="h-10 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                       </div>
+                    </div>
+                    <div className="space-y-1.5">
+                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Zona / Municipio:</Label>
+                       <Select defaultValue="all">
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="all">Todos</SelectItem></SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                       <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Estado:</Label>
+                       <Select defaultValue="all">
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold"><SelectValue placeholder="Todos" /></SelectTrigger>
+                          <SelectContent className="rounded-xl"><SelectItem value="all">Todos</SelectItem></SelectContent>
+                       </Select>
+                    </div>
+                 </div>
+                 <Button className="bg-[#0052cc] hover:bg-[#0047b3] text-white h-10 px-10 rounded-xl text-xs font-black uppercase shadow-lg gap-2 shrink-0">
+                    <Search className="h-4 w-4" /> Buscar
+                 </Button>
+              </div>
+           </Card>
+
+           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Columna Izquierda: Mapa e Indicadores */}
+              <div className="lg:col-span-8 space-y-6">
+                 <Card className="rounded-[1.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col h-[550px]">
+                    <div className="p-4 border-b bg-slate-50/50 flex items-center justify-between">
+                       <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+                          <Button variant="ghost" onClick={() => setConoceView('map')} className={cn("h-9 px-6 rounded-lg text-[10px] font-black uppercase", conoceView === 'map' ? "bg-white text-primary shadow-sm" : "text-slate-400")}>
+                             <MapIcon className="h-4 w-4 mr-2" /> Mapa
+                          </Button>
+                          <Button variant="ghost" onClick={() => setConoceView('list')} className={cn("h-9 px-6 rounded-lg text-[10px] font-black uppercase", conoceView === 'list' ? "bg-white text-primary shadow-sm" : "text-slate-400")}>
+                             <ListIcon className="h-4 w-4 mr-2" /> Lista
+                          </Button>
+                       </div>
+                    </div>
+                    <div className="flex-1 relative bg-slate-100">
+                       <Image src="https://picsum.photos/seed/toluca-conoce/1200/900" alt="Mapa Conoce mi Escuela" fill className="object-cover opacity-80" />
+                       
+                       {/* Marcador Simulado con Popup */}
+                       <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
+                          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 mb-2 min-w-[220px] animate-in zoom-in-95">
+                             <div className="flex justify-between items-start mb-2">
+                                <span className="text-[10px] font-black text-primary uppercase">CCT: 15DES0001R</span>
+                                <ChevronRight className="h-4 w-4 text-slate-300" />
+                             </div>
+                             <p className="text-[11px] font-bold text-slate-700 uppercase leading-none">Escuela Secundaria Técnica No. 15</p>
+                          </div>
+                          <div className="relative">
+                             <div className="h-8 w-8 rounded-full bg-blue-500/20 animate-ping absolute inset-0 -m-1" />
+                             <MapPin className="h-8 w-8 text-emerald-500 fill-current drop-shadow-2xl relative z-10" />
+                             <div className="h-3 w-3 bg-white rounded-full absolute top-1 left-2.5 z-20 border-2 border-emerald-500" />
+                          </div>
+                       </div>
+
+                       {/* Controles de Mapa */}
+                       <div className="absolute top-4 left-4 bg-white p-1 rounded-xl shadow-xl border flex gap-1 z-30">
+                          <Button variant="ghost" className="h-8 px-4 rounded-lg text-[9px] font-black uppercase bg-slate-50 text-slate-700">Mapa</Button>
+                          <Button variant="ghost" className="h-8 px-4 rounded-lg text-[9px] font-black uppercase text-slate-400">Satélite</Button>
+                       </div>
+                    </div>
+                    <div className="p-4 bg-white border-t flex items-center justify-center gap-8">
+                       {[
+                         { label: 'En línea', color: 'bg-emerald-500' },
+                         { label: 'En movimiento', color: 'bg-blue-500' },
+                         { label: 'Sin señal', color: 'bg-rose-500' },
+                         { label: 'Desconectado', color: 'bg-slate-400' },
+                       ].map(item => (
+                         <div key={item.label} className="flex items-center gap-2">
+                            <div className={cn("h-2.5 w-2.5 rounded-full", item.color)} />
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</span>
+                         </div>
+                       ))}
+                    </div>
+                 </Card>
+
+                 {/* Resumen General (KPIs Inferiores) */}
+                 <div className="space-y-4">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest ml-1">Resumen general</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       {[
+                         { label: 'Escuelas registradas', value: '1,248', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                         { label: 'Directores / Responsables', value: '856', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                         { label: 'Municipios', value: '125', icon: MapPin, color: 'text-orange-500', bg: 'bg-orange-50' },
+                         { label: 'Datos actualizados', value: '3,482', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                       ].map((kpi, i) => (
+                         <Card key={i} className="rounded-2xl border-none shadow-md bg-white p-5 flex flex-col items-center text-center gap-3">
+                            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner", kpi.bg, kpi.color)}><kpi.icon className="h-6 w-6" /></div>
+                            <div className="space-y-0.5">
+                               <h4 className="text-2xl font-black text-slate-800 leading-none">{kpi.value}</h4>
+                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight leading-tight">{kpi.label}</p>
+                            </div>
+                         </Card>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+
+              {/* Columna Derecha: Registro y Detalle */}
+              <div className="lg:col-span-4 space-y-6">
+                 {/* Formulario de Registro */}
+                 <Card className="rounded-[1.5rem] border-none shadow-xl bg-white p-8 space-y-6">
+                    <div className="flex items-start gap-4">
+                       <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner"><School className="h-7 w-7" /></div>
+                       <div className="space-y-0.5">
+                          <h3 className="text-xl font-black text-slate-800 leading-none uppercase">Registrar / Editar Escuela</h3>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase leading-relaxed">Ingresa la información de la escuela para registrarla en el sistema.</p>
+                       </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">CCT *</Label>
+                             <div className="relative group">
+                                <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                                <Input placeholder="Ej. 15DES0001R" className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 font-mono font-black uppercase text-xs" value={formData.cct} onChange={e => handleCctChange(e.target.value)} />
+                             </div>
+                          </div>
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Nombre de la escuela *</Label>
+                             <div className="relative group">
+                                <FileText className="absolute left-3 top-3 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                                <Input placeholder="Ej. Escuela Secundaria..." className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 text-[10px] font-bold uppercase" value={formData.schoolName} onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})} />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Zona *</Label>
+                             <div className="relative group">
+                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Select value={formData.zonaEscolar} onValueChange={v => setFormData({...formData, zonaEscolar: v})}>
+                                   <SelectTrigger className="h-10 pl-9 rounded-xl bg-slate-50 border-none text-[10px] font-bold uppercase"><SelectValue placeholder="Selecciona una zona" /></SelectTrigger>
+                                   <SelectContent className="rounded-xl"><SelectItem value="001">Zona 001</SelectItem></SelectContent>
+                                </Select>
+                             </div>
+                          </div>
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Municipio *</Label>
+                             <div className="relative group">
+                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Select value={formData.municipio} onValueChange={v => setFormData({...formData, municipio: v})}>
+                                   <SelectTrigger className="h-10 pl-9 rounded-xl bg-slate-50 border-none text-[10px] font-bold uppercase"><SelectValue placeholder="Selecciona un municipio" /></SelectTrigger>
+                                   <SelectContent className="rounded-xl"><SelectItem value="Toluca">Toluca</SelectItem></SelectContent>
+                                </Select>
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Teléfono</Label>
+                             <div className="relative group">
+                                <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Input placeholder="Ej. 722 123 4567" className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 text-xs font-bold" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+                             </div>
+                          </div>
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Correo electrónico</Label>
+                             <div className="relative group">
+                                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Input placeholder="Ej. escuela@edugem.gob.mx" className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 text-[10px] font-bold" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value.toLowerCase()})} />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Latitud *</Label>
+                             <div className="relative group">
+                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Input placeholder="Ej. 19.6289" className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 text-xs font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                             </div>
+                          </div>
+                          <div className="space-y-1.5">
+                             <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Longitud *</Label>
+                             <div className="relative group">
+                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                                <Input placeholder="Ej. -99.3128" className="h-10 pl-9 rounded-xl bg-slate-50 border-slate-100 text-xs font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                          <Button onClick={handleSave} className="bg-[#0052cc] hover:bg-[#0047b3] text-white h-11 rounded-xl text-xs font-black uppercase shadow-lg gap-2">
+                             <Save className="h-4 w-4" /> Guardar escuela
+                          </Button>
+                          <Button variant="outline" onClick={resetForm} className="h-11 rounded-xl border-slate-200 text-slate-500 font-black text-[10px] gap-2 uppercase hover:bg-slate-100 shadow-sm">
+                             <RefreshCw className="h-4 w-4" /> Limpiar
+                          </Button>
+                       </div>
+                    </div>
+                 </Card>
+
+                 {/* Ficha de Detalles de la Escuela */}
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3 ml-1">
+                       <Building2 className="h-5 w-5 text-accent" />
+                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Datos de la escuela</h3>
+                       <Badge className="bg-emerald-500 text-white border-none text-[8px] font-black px-2 h-5 rounded-full uppercase ml-auto">En línea</Badge>
+                    </div>
+                    <Card className="rounded-[1.5rem] border-none shadow-lg bg-[#eef4ff] p-5 flex flex-col md:flex-row gap-6 animate-in slide-in-from-right-4">
+                       <div className="w-full md:w-[140px] aspect-square relative rounded-2xl overflow-hidden border-4 border-white shadow-xl shrink-0">
+                          <Image src="https://picsum.photos/seed/school-facade/400/400" alt="Fachada de la escuela" fill className="object-cover" />
+                       </div>
+                       <div className="flex-1 grid grid-cols-1 gap-2.5">
+                          <div className="flex gap-4"><span className="text-[9px] font-black text-slate-400 uppercase w-20">CCT:</span><span className="text-[10px] font-black text-primary font-mono">15DES0001R</span></div>
+                          <div className="flex gap-4"><span className="text-[9px] font-black text-slate-400 uppercase w-20">Nombre:</span><span className="text-[10px] font-black text-slate-700 uppercase leading-none">Escuela Secundaria Técnica No. 15</span></div>
+                          <div className="flex gap-4"><span className="text-[9px] font-black text-slate-400 uppercase w-20">Zona:</span><span className="text-[10px] font-black text-slate-700">001</span></div>
+                          <div className="flex gap-4"><span className="text-[9px] font-black text-slate-400 uppercase w-20">Municipio:</span><span className="text-[10px] font-black text-slate-700">Toluca</span></div>
+                          <div className="flex gap-4"><span className="text-[9px] font-black text-slate-400 uppercase w-20">Dirección:</span><span className="text-[10px] font-bold text-slate-500 uppercase leading-tight">Av. Independencia No. 123, Col. Centro, Toluca, Estado de México. C.P. 50000</span></div>
+                          <div className="flex items-center gap-4 mt-2">
+                             <div className="flex items-center gap-2 text-primary"><Phone className="h-3 w-3" /><span className="text-[10px] font-black">722 123 4567</span></div>
+                             <div className="flex items-center gap-2 text-primary"><Mail className="h-3 w-3" /><span className="text-[10px] font-black lowercase">esc15@edugem.gob.mx</span></div>
+                          </div>
+                       </div>
+                    </Card>
+                 </div>
+              </div>
+           </div>
+        </div>
       ) : (
         <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
           <div className="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
@@ -980,7 +1228,7 @@ export default function ProgramsPage() {
               <ScrollArea className="h-full">
                 <div className="p-10 space-y-10 max-w-5xl mx-auto">
                   <TabsContent value="datos" className="m-0 space-y-10 focus-visible:outline-none">
-                    {activeTab !== 'Cuentas Institucionales' && (
+                    {activeTab !== 'Cuentas Institucionales' && activeTab !== 'Conoce mi Escuela' && (
                       <div className={cn("bg-slate-50 p-8 rounded-[2.5rem] border-2 transition-all space-y-6 shadow-inner", !formData.cct ? "border-rose-200" : "border-primary/10")}>
                         <Label className="text-[11px] font-black text-primary tracking-widest block pl-1 uppercase">Identificación del Plantel (CCT)</Label>
                         <div className="relative">
