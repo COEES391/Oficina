@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -13,6 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
@@ -57,7 +71,9 @@ import {
   LocateFixed,
   Building2,
   UserPlus,
-  Eye
+  Eye,
+  LayoutGrid,
+  History
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
@@ -94,19 +110,31 @@ const DOMINIOS = [
 ];
 
 const BIBLIOTECA_FASES_LABELS = [
-  { id: 'fase1', label: 'Fase 1. Solicitud de instalación', color: 'text-blue-600 bg-blue-50 border-blue-100', progress: 11 },
-  { id: 'fase2', label: 'Fase 2. Atención al CCT', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', progress: 22 },
-  { id: 'fase3', label: 'Fase 3. Diagnóstico de equipo', color: 'text-blue-600 bg-blue-50 border-blue-100', progress: 33 },
-  { id: 'fase4', label: 'Fase 4. Instalación contenidos', color: 'text-amber-600 bg-amber-50 border-amber-100', progress: 44 },
-  { id: 'fase5', label: 'Fase 5. Pruebas funcionalidad', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 56 },
-  { id: 'fase5_guia', label: 'Fase 6. Guía de uso', color: 'text-purple-600 bg-purple-50 border-purple-100', progress: 67 },
-  { id: 'fase6', label: 'Fase 7. Envío de formulario', color: 'text-cyan-600 bg-cyan-50 border-cyan-100', progress: 78 },
-  { id: 'fase7', label: 'Fase 8. Seguimiento técnico', color: 'text-orange-600 bg-orange-50 border-orange-100', progress: 89 },
-  { id: 'fase8', label: 'Fase 9. Entrega total', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 100 }
+  { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 11 },
+  { id: 'fase2', label: 'Fase 2. Atención al CCT', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 22 },
+  { id: 'fase3', label: 'Fase 3. Diagnóstico del equipo de cómputo existente', color: 'text-blue-600 bg-blue-50 border-blue-100', progress: 33 },
+  { id: 'fase4', label: 'Fase 4. Instalación total de los contenidos del proyecto', color: 'text-amber-600 bg-amber-50 border-amber-100', progress: 44 },
+  { id: 'fase5', label: 'Fase 5. Funcionalidad (pruebas de uso y manejo)', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 56 },
+  { id: 'fase6', label: 'Fase 6. Guía orientación de uso y manejo de la herramienta', color: 'text-purple-600 bg-purple-50 border-purple-100', progress: 67 },
+  { id: 'fase7', label: 'Fase 7. Seguimiento técnico al CCT', color: 'text-cyan-600 bg-cyan-50 border-cyan-100', progress: 78 },
+  { id: 'fase8', label: 'Fase 8. Total de personal capacitado', color: 'text-orange-600 bg-orange-50 border-orange-100', progress: 89 },
+  { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', progress: 100 }
 ];
 
 const FUNCIONES = ["PAAE", "DOCENTE", "DIRECTIVO", "JEFE DE ENSEÑANZA", "SUPERVISOR", "ASESOR TECNICO PEDAGOGICO"];
 const FILE_SIZE_LIMIT = 2 * 1024 * 1024;
+
+const CHART_COLORS = ['#0052cc', '#10b981', '#cbd5e1'];
+
+const VISIT_DATA = [
+  { name: '15 May', visits: 12 },
+  { name: '16 May', visits: 18 },
+  { name: '17 May', visits: 20 },
+  { name: '18 May', visits: 15 },
+  { name: '19 May', visits: 17 },
+  { name: '20 May', visits: 22 },
+  { name: '21 May', visits: 24 },
+];
 
 export default function ProgramsPage() {
   const { toast } = useToast()
@@ -115,12 +143,16 @@ export default function ProgramsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [activeTab, setActiveTab] = useState(PROGRAM_RUBROS[0])
+  const [activeTab, setActiveTab] = useState('Biblioteca Digital')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
+  
+  const [municipioFilter, setMunicipioFilter] = useState('all')
+  const [estatusFilter, setEstatusFilter] = useState('all')
+
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   
@@ -187,32 +219,41 @@ export default function ProgramsPage() {
   const libData = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const concluidos = libRecs.filter(r => r.progress === 100).length;
-    const totalEvidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
+    const evidencesCount = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
     
     return { 
       libRecs, 
       totalCct: libRecs.length, 
       concluidos, 
-      totalEvidencias, 
-      tecnicos: 0,
-      visitas: 0,
-      atenciones: 0 
+      evidencesCount,
+      visitasTotales: 0, 
+      atenciones: 0,
+      tecnicosActivos: 0
     };
   }, [records]);
 
   const filteredRecords = useMemo(() => {
     const base = records.filter(r => r.name === activeTab);
-    if (!searchTerm) return base;
-    const term = searchTerm.toUpperCase();
-    return base.filter(r => 
-      (r.cct || '').toUpperCase().includes(term) ||
-      (r.schoolName || '').toUpperCase().includes(term) ||
-      (r.userName || '').toUpperCase().includes(term) ||
-      (r.email || '').toUpperCase().includes(term)
-    );
-  }, [records, activeTab, searchTerm]);
+    return base.filter(r => {
+      const matchSearch = !searchTerm || (r.cct || '').toUpperCase().includes(searchTerm.toUpperCase()) || (r.schoolName || '').toUpperCase().includes(searchTerm.toUpperCase());
+      const matchMunicipio = municipioFilter === 'all' || r.municipio === municipioFilter;
+      const matchEstatus = estatusFilter === 'all' || (estatusFilter === 'Concluido' ? r.progress === 100 : r.progress < 100);
+      return matchSearch && matchMunicipio && matchEstatus;
+    });
+  }, [records, activeTab, searchTerm, municipioFilter, estatusFilter]);
 
   const selectedLibRecord = useMemo(() => libData.libRecs.find(r => r.cct === selectedLibCct) || null, [libData.libRecs, selectedLibCct]);
+
+  const statusPieData = useMemo(() => {
+    const total = libData.libRecs.length || 1;
+    const conc = libData.concluidos;
+    const proc = libData.libRecs.length - conc;
+    return [
+      { name: 'En proceso', value: proc, fill: '#0052cc' },
+      { name: 'Concluidos', value: conc, fill: '#10b981' },
+      { name: 'Pendientes', value: 0, fill: '#cbd5e1' },
+    ];
+  }, [libData]);
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase().trim()
@@ -281,18 +322,6 @@ export default function ProgramsPage() {
     }
     reader.readAsDataURL(file)
     e.target.value = ''
-  }
-
-  const handleAddAssistant = () => setAsistentes([...asistentes, { paterno: '', materno: '', nombres: '', rfc: '', funcion: '', cct: '', nombreCT: '' }])
-  const handleRemoveAssistant = (idx: number) => setAsistentes(asistentes.filter((_, i) => i !== idx))
-  const updateAssistant = (idx: number, field: string, val: string) => {
-    const list = [...asistentes];
-    list[idx][field] = val.toUpperCase();
-    if (field === 'cct' && val.length === 10) {
-      const school = allSchools.find(s => s.cct.toUpperCase() === val.toUpperCase());
-      if (school) list[idx].nombreCT = school.nombre;
-    }
-    setAsistentes(list);
   }
 
   const handleSave = async () => {
@@ -384,16 +413,17 @@ export default function ProgramsPage() {
 
       {activeTab === 'Biblioteca Digital' ? (
         <div className="space-y-6">
+          {/* Dashboard KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
              {[
                { label: 'CCT Registrados', value: libData.totalCct, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-               { label: 'Visitas Totales', value: libData.visitas, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Atenciones', value: libData.atenciones, sub: 'En el periodo', icon: ClipboardCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
-               { label: 'Evidencias', value: libData.totalEvidencias || 0, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
-               { label: 'Técnicos Activos', value: libData.tecnicos, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+               { label: 'Visitas Totales', value: libData.visitasTotales, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+               { label: 'Atenciones', value: libData.atenciones, sub: 'En el periodo', icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50' },
+               { label: 'Evidencias', value: libData.evidencesCount, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
+               { label: 'Técnicos Activos', value: libData.tecnicosActivos, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
                { label: 'Proyectos Concluidos', value: libData.concluidos, sub: 'Escuelas', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' },
              ].map((kpi, idx) => (
-               <Card key={idx} className="border-none shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+               <Card key={idx} className="border-none shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow bg-white">
                   <CardContent className="p-4 flex items-center gap-4">
                      <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner", kpi.bg, kpi.color)}><kpi.icon className="h-6 w-6" /></div>
                      <div className="min-w-0">
@@ -406,19 +436,55 @@ export default function ProgramsPage() {
              ))}
           </div>
 
+          {/* Filter Bar */}
           <Card className="border-none shadow-sm rounded-2xl p-4 bg-white/80 backdrop-blur-md">
              <div className="flex flex-col lg:flex-row gap-4 items-end">
-                <div className="flex-1 relative group w-full"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" /><Input placeholder="BUSCAR POR CCT O ESCUELA..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase focus:bg-white transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 w-full">
+                   <div className="space-y-1">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Municipio</Label>
+                      <Select value={municipioFilter} onValueChange={setMunicipioFilter}>
+                         <SelectTrigger className="h-9 rounded-xl bg-slate-50 border-none shadow-inner text-[10px] font-bold uppercase"><SelectValue placeholder="TODOS" /></SelectTrigger>
+                         <SelectContent className="rounded-xl">
+                            <SelectItem value="all">TODOS</SelectItem>
+                            {Array.from(new Set(allSchools.map(s => s.municipio))).sort().map(m => (
+                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
+                         </SelectContent>
+                      </Select>
+                   </div>
+                   <div className="space-y-1">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Estatus</Label>
+                      <Select value={estatusFilter} onValueChange={setEstatusFilter}>
+                         <SelectTrigger className="h-9 rounded-xl bg-slate-50 border-none shadow-inner text-[10px] font-bold uppercase"><SelectValue placeholder="TODOS" /></SelectTrigger>
+                         <SelectContent className="rounded-xl">
+                            <SelectItem value="all">TODOS</SelectItem>
+                            <SelectItem value="Concluido">CONCLUIDO</SelectItem>
+                            <SelectItem value="En proceso">EN PROCESO</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+                   <div className="space-y-1 relative group">
+                      <Label className="text-[9px] font-black uppercase text-slate-400 pl-1">Búsqueda rápida</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                        <Input placeholder="CCT O ESCUELA..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold uppercase focus:bg-white transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                      </div>
+                   </div>
+                </div>
                 <div className="flex gap-2">
+                   <Button className="h-9 px-6 bg-[#0b4135] hover:bg-[#082e26] text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Buscar</Button>
+                   <Button variant="ghost" className="h-9 px-6 rounded-xl text-[10px] font-black uppercase text-slate-400" onClick={() => { setSearchTerm(''); setMunicipioFilter('all'); setEstatusFilter('all'); }}>Limpiar</Button>
+                   <div className="h-8 w-px bg-slate-100 mx-2" />
                    <Button variant="outline" className="h-9 px-4 border-rose-200 text-rose-700 bg-rose-50/50 rounded-xl text-[9px] font-black uppercase gap-2 hover:bg-rose-50"><FileDown className="h-3.5 w-3.5" /> Exportar CSV</Button>
                    <Button variant="outline" className="h-9 px-4 border-slate-200 text-slate-700 bg-slate-50/50 rounded-xl text-[9px] font-black uppercase gap-2 hover:bg-slate-100"><Printer className="h-3.5 w-3.5" /> Imprimir Reporte</Button>
                 </div>
              </div>
           </Card>
 
+          {/* Main Table & Detail Panel */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
              <Card className="lg:col-span-8 border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
-                <div className="p-6 border-b flex items-center justify-between"><h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Fases del Proyecto por CCT</h3><Badge className="bg-primary/5 text-primary border-none font-black text-[9px] px-3">{libData.libRecs.length} Planteles</Badge></div>
+                <div className="p-6 border-b flex items-center justify-between"><h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Fases del Proyecto por CCT</h3><Badge className="bg-primary/5 text-primary border-none font-black text-[9px] px-3">{filteredRecords.length} Planteles Encontrados</Badge></div>
                 <div className="overflow-x-auto">
                    <Table>
                       <TableHeader className="bg-slate-50/50">
@@ -426,39 +492,348 @@ export default function ProgramsPage() {
                             <TableHead className="pl-8 text-[9px] font-black uppercase">CCT</TableHead>
                             <TableHead className="text-[9px] font-black uppercase">Escuela</TableHead>
                             <TableHead className="text-[9px] font-black uppercase">Municipio</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Fase Actual</TableHead>
                             <TableHead className="text-[9px] font-black uppercase">Avance</TableHead>
                             <TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead>
+                            <TableHead className="text-[9px] font-black uppercase">Técnico Responsable</TableHead>
                             <TableHead className="text-right pr-8 text-[9px] font-black uppercase">Acción</TableHead>
                          </TableRow>
                       </TableHeader>
                       <TableBody>
-                         {filteredRecords.map((rec, i) => (
-                             <TableRow key={rec.id || i} className={cn("h-16 border-b border-slate-50 hover:bg-slate-50/50 transition-all cursor-pointer", selectedLibCct === rec.cct && "bg-blue-50/30")} onClick={() => setSelectedLibCct(rec.cct)}>
-                                <TableCell className="pl-8 font-mono font-black text-[10px] text-primary">{rec.cct}</TableCell>
-                                <TableCell className="font-bold text-[11px] text-slate-700 uppercase truncate max-w-[150px]">{rec.schoolName}</TableCell>
-                                <TableCell className="text-[9px] font-black text-slate-400 uppercase">{rec.municipio}</TableCell>
-                                <TableCell><div className="flex items-center gap-3 min-w-[100px]"><Progress value={rec.progress} className={cn("h-1.5 flex-1", rec.progress === 100 ? "bg-emerald-100" : "bg-blue-100")} /><span className="text-[10px] font-black text-slate-600">{rec.progress}%</span></div></TableCell>
-                                <TableCell className="text-center"><Badge className={cn("text-[8px] font-black border-none uppercase px-3 h-5 rounded-full", rec.progress === 100 ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700")}>{rec.progress === 100 ? 'Concluido' : 'En proceso'}</Badge></TableCell>
-                                <TableCell className="text-right pr-6"><div className="flex justify-end gap-1"><button onClick={(e) => { e.stopPropagation(); handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5 transition-all"><Pencil className="h-4 w-4" /></button><button onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell>
-                             </TableRow>
-                           ))}
+                         {filteredRecords.map((rec, i) => {
+                            const currentFase = BIBLIOTECA_FASES_LABELS.find(f => f.progress >= rec.progress) || BIBLIOTECA_FASES_LABELS[0];
+                            return (
+                               <TableRow key={rec.id || i} className={cn("h-16 border-b border-slate-50 hover:bg-slate-50/50 transition-all cursor-pointer", selectedLibCct === rec.cct && "bg-blue-50/30")} onClick={() => setSelectedLibCct(rec.cct)}>
+                                  <TableCell className="pl-8 font-mono font-black text-[10px] text-primary">{rec.cct}</TableCell>
+                                  <TableCell className="font-bold text-[11px] text-slate-700 uppercase truncate max-w-[150px]">{rec.schoolName}</TableCell>
+                                  <TableCell className="text-[9px] font-black text-slate-400 uppercase">{rec.municipio}</TableCell>
+                                  <TableCell>
+                                     <div className={cn("px-3 py-1 rounded-lg border text-[8px] font-black uppercase w-fit leading-tight", currentFase.color)}>
+                                        {currentFase.label.split('.')[0]}<br/>
+                                        <span className="opacity-70 text-[7px]">{currentFase.label.split('.')[1]}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell>
+                                     <div className="flex items-center gap-3 min-w-[100px]">
+                                        <Progress value={rec.progress} className={cn("h-1.5 flex-1 rounded-full", rec.progress >= 100 ? "bg-emerald-100" : rec.progress >= 50 ? "bg-blue-100" : "bg-orange-100")} />
+                                        <span className="text-[10px] font-black text-slate-600">{rec.progress}%</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                     <Badge className={cn("text-[8px] font-black border-none uppercase px-3 h-5 rounded-full shadow-sm", rec.progress === 100 ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700")}>
+                                        {rec.progress === 100 ? 'Concluido' : 'En proceso'}
+                                     </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-[10px] font-bold text-slate-600 uppercase">{rec.userName || 'Por asignar'}</TableCell>
+                                  <TableCell className="text-right pr-6">
+                                     <div className="flex justify-end gap-1">
+                                        <button onClick={(e) => { e.stopPropagation(); handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary/5 transition-all"><Pencil className="h-4 w-4" /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
+                                     </div>
+                                  </TableCell>
+                               </TableRow>
+                            );
+                         })}
+                         {filteredRecords.length === 0 && (
+                            <TableRow><TableCell colSpan={8} className="text-center py-24 opacity-20"><Archive className="h-12 w-12 mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest">Sin registros que coincidan</p></TableCell></TableRow>
+                         )}
                       </TableBody>
                    </Table>
                 </div>
              </Card>
 
              <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white h-full flex flex-col overflow-hidden">
-                <div className="p-6 border-b space-y-4"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-2xl bg-primary/5 flex items-center justify-center text-primary"><ClipboardList className="h-6 w-6" /></div><div><h3 className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Detalle de Fases</h3><p className="text-[8px] font-bold text-slate-400 uppercase mt-1">(CCT: {selectedLibCct || 'NINGUNO'})</p></div></div></div>
-                <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><div className="p-8 space-y-6">{BIBLIOTECA_FASES_LABELS.map((fase, i) => { const isCompleted = selectedLibRecord ? (selectedLibRecord.progress >= fase.progress) : false; return (<div key={fase.id} className="flex gap-4 relative group">{i !== BIBLIOTECA_FASES_LABELS.length - 1 && (<div className={cn("absolute left-4 top-8 w-0.5 h-12 transition-colors", isCompleted ? "bg-emerald-500" : "bg-slate-100")} />)}<div className={cn("h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 z-10 transition-all", isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-white border-slate-200 text-slate-300")}>{isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-[10px] font-black">{i + 1}</span>}</div><div className="flex-1 p-3 rounded-2xl border transition-all"><p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-slate-700" : "text-slate-300")}>{fase.label}</p></div></div>); })}</div></ScrollArea></div>
+                <div className="p-6 border-b space-y-4">
+                   <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-inner"><ClipboardCheck className="h-6 w-6" /></div>
+                      <div>
+                         <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest leading-none">Detalle de Fases del Proyecto</h3>
+                         <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">(Por CCT seleccionado)</p>
+                      </div>
+                   </div>
+                   <div className="space-y-1.5">
+                      <Label className="text-[8px] font-black uppercase text-slate-400 pl-1">CCT:</Label>
+                      <Select value={selectedLibCct || ''} onValueChange={setSelectedLibCct}>
+                         <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-[10px] font-bold uppercase"><SelectValue placeholder="SELECCIONAR PLANTEL..." /></SelectTrigger>
+                         <SelectContent className="rounded-2xl max-h-[300px]">
+                            {libData.libRecs.map(r => (
+                              <SelectItem key={r.cct} value={r.cct} className="text-[10px] font-bold uppercase">{r.cct} - {r.schoolName}</SelectItem>
+                            ))}
+                         </SelectContent>
+                      </Select>
+                   </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                   <ScrollArea className="h-full">
+                      <div className="p-8 space-y-6">
+                         {BIBLIOTECA_FASES_LABELS.map((fase, i) => {
+                            const isCompleted = selectedLibRecord ? (selectedLibRecord.progress >= fase.progress) : false;
+                            const isActive = selectedLibRecord ? (selectedLibRecord.progress < fase.progress && (i === 0 || selectedLibRecord.progress >= BIBLIOTECA_FASES_LABELS[i-1].progress)) : false;
+                            
+                            return (
+                               <div key={fase.id} className="flex gap-4 relative group">
+                                  {i !== BIBLIOTECA_FASES_LABELS.length - 1 && (
+                                    <div className={cn("absolute left-4 top-8 w-0.5 h-12 transition-colors", isCompleted ? "bg-emerald-500" : "bg-slate-100")} />
+                                  )}
+                                  <div className={cn(
+                                    "h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 z-10 transition-all duration-500", 
+                                    isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-200" : 
+                                    isActive ? "bg-white border-primary text-primary shadow-lg shadow-primary/10 scale-110" :
+                                    "bg-white border-slate-200 text-slate-300"
+                                  )}>
+                                     {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-[10px] font-black">{i + 1}</span>}
+                                  </div>
+                                  <div className={cn(
+                                    "flex-1 p-3 rounded-2xl border transition-all duration-300",
+                                    isCompleted ? "bg-emerald-50/30 border-emerald-100" : 
+                                    isActive ? "bg-primary/5 border-primary/20 shadow-md" : 
+                                    "bg-white border-slate-100 opacity-50"
+                                  )}>
+                                     <p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isActive ? "text-primary" : "text-slate-400")}>{fase.label}</p>
+                                  </div>
+                               </div>
+                            );
+                         })}
+                      </div>
+                   </ScrollArea>
+                </div>
+             </Card>
+          </div>
+
+          {/* Bottom Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+             {/* Area Chart */}
+             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                   <div className="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner"><Activity className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Visitas por día <span className="text-slate-400 text-[10px] font-bold">(últimos 7 días)</span></h3>
+                </div>
+                <div className="h-[240px] w-full">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={VISIT_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                         <defs>
+                            <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                               <stop offset="5%" stopColor="#0052cc" stopOpacity={0.1}/>
+                               <stop offset="95%" stopColor="#0052cc" stopOpacity={0}/>
+                            </linearGradient>
+                         </defs>
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }} />
+                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} />
+                         <Area type="monotone" dataKey="visits" stroke="#0052cc" strokeWidth={3} fillOpacity={1} fill="url(#colorVisits)" dot={{ r: 4, fill: '#0052cc', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                      </AreaChart>
+                   </ResponsiveContainer>
+                </div>
+             </Card>
+
+             {/* Pie Chart */}
+             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                   <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner"><PieChart className="h-6 w-6" /></div>
+                   <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Estatus del Proyecto</h3>
+                </div>
+                <div className="h-[240px] w-full relative">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                         <Pie data={statusPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {statusPieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                         </Pie>
+                         <RechartsTooltip contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 'bold' }} />
+                         <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', paddingLeft: '20px' }} />
+                      </PieChart>
+                   </ResponsiveContainer>
+                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-2xl font-black text-slate-800 leading-none">{libData.totalCct}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total CCT</span>
+                   </div>
+                </div>
+             </Card>
+
+             {/* Gallery */}
+             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 shadow-inner"><ImageIcon className="h-6 w-6" /></div>
+                      <h3 className="text-sm font-black uppercase text-slate-800 tracking-widest">Evidencias recientes</h3>
+                   </div>
+                   <button className="text-[9px] font-black text-primary uppercase flex items-center gap-1 hover:underline">Ver todas <ChevronRight className="h-3 w-3" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-3 flex-1">
+                   {libData.libRecs.filter(r => r.evidencePhotos && r.evidencePhotos.length > 0).slice(0, 3).map((r, idx) => (
+                     <div key={`recent-ev-${idx}`} className="space-y-2 group">
+                        <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-slate-50 shadow-sm transition-all group-hover:scale-[1.05] group-hover:shadow-lg">
+                           <Image src={r.evidencePhotos![0]} alt="Evidencia" fill className="object-cover" />
+                           <div className="absolute bottom-1 right-1 bg-white/90 p-1 rounded-lg shadow-md"><ImageIcon className="h-2.5 w-2.5 text-rose-500" /></div>
+                        </div>
+                        <div className="px-1">
+                           <p className="text-[8px] font-black text-slate-700 uppercase leading-none truncate">{r.cct}</p>
+                           <p className="text-[7px] font-bold text-slate-400 uppercase truncate mt-1">{r.schoolName}</p>
+                           <p className="text-[7px] font-black text-rose-600 uppercase mt-1">{r.date}</p>
+                        </div>
+                     </div>
+                   ))}
+                   {libData.libRecs.filter(r => r.evidencePhotos && r.evidencePhotos.length > 0).length === 0 && (
+                     <div className="col-span-3 flex flex-col items-center justify-center opacity-10 h-full">
+                        <ImageIcon className="h-12 w-12" />
+                        <p className="text-[10px] font-black uppercase mt-2">Sin imágenes</p>
+                     </div>
+                   )}
+                </div>
              </Card>
           </div>
         </div>
       ) : activeTab === 'ATRES' ? (
         <div className="h-[calc(100vh-220px)] w-full overflow-hidden border border-slate-200 rounded-[3rem] shadow-2xl bg-white"><HelpDeskInterface /></div>
       ) : activeTab === 'Geoposición' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full h-[calc(100vh-220px)] min-h-[650px]">
-           <div className="lg:col-span-7 flex flex-col h-full space-y-4"><Card className="flex-1 rounded-[2.5rem] border-4 border-white shadow-2xl overflow-hidden relative group"><Image src="https://picsum.photos/seed/mapa-toluca-2026/1200/900" alt="Mapa Institucional" fill className="object-cover" /><div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-md p-4 rounded-[1.5rem] shadow-2xl border border-white z-10 flex gap-6"><div className="flex items-center gap-2"><div className="h-3 w-3 rounded-full bg-emerald-500" /><span className="text-[9px] font-black text-slate-600 uppercase">En línea</span></div></div></Card></div>
-           <div className="lg:col-span-5 flex flex-col h-full space-y-6"><Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-6 shrink-0"><div className="flex items-start gap-4"><div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><MapPin className="h-6 w-6" /></div><div><h3 className="text-xl font-black text-slate-800 uppercase leading-none">Registrar coordenadas</h3></div></div><div className="space-y-5"><div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-500 uppercase">CCT</Label><Input placeholder="15DES0000X" className="h-12 rounded-xl" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); }} /></div><div className="grid grid-cols-2 gap-6"><div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-500 uppercase">Latitud</Label><Input placeholder="19.6289" className="h-12 rounded-xl" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div><div className="space-y-1.5"><Label className="text-[10px] font-black text-slate-500 uppercase">Longitud</Label><Input placeholder="-99.3128" className="h-12 rounded-xl" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div></div><Button onClick={handleSave} disabled={isSaving} className="w-full btn-institutional">GUARDAR</Button></div></Card></div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[750px]">
+           {/* Columna Izquierda: Mapa Interactivo */}
+           <div className="lg:col-span-7 flex flex-col space-y-4">
+              <Card className="flex-1 rounded-[2.5rem] border-4 border-white shadow-2xl overflow-hidden relative group">
+                 <Image src="https://picsum.photos/seed/mapa-toluca-2026/1200/900" alt="Mapa Institucional" fill className="object-cover" />
+                 
+                 {/* Controles de Mapa */}
+                 <div className="absolute top-6 left-6 flex flex-col gap-3 z-10">
+                    <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-2xl shadow-2xl border border-white flex flex-col gap-1">
+                       <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-primary/5 text-primary"><Plus className="h-5 w-5" /></Button>
+                       <div className="h-px bg-slate-100 mx-2" />
+                       <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-primary/5 text-primary"><X className="h-3 w-3 rotate-45" /></Button>
+                    </div>
+                    <Button size="icon" className="h-12 w-12 bg-white text-primary rounded-2xl shadow-2xl border-4 border-white hover:scale-110 transition-transform"><LocateFixed className="h-6 w-6" /></Button>
+                 </div>
+
+                 <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-2xl border border-white z-10 flex gap-2">
+                    <Button variant="ghost" className="h-9 px-4 rounded-xl text-[9px] font-black uppercase bg-primary text-white shadow-lg">Mapa</Button>
+                    <Button variant="ghost" className="h-9 px-4 rounded-xl text-[9px] font-black uppercase text-slate-500 hover:bg-slate-100">Satélite</Button>
+                 </div>
+
+                 {/* Leyenda de Estados */}
+                 <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-5 rounded-[2rem] shadow-2xl border border-white z-10 w-[240px] space-y-4">
+                    <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-widest border-b pb-2">Leyenda de monitoreo</h5>
+                    <div className="grid grid-cols-1 gap-3">
+                       {[
+                         { label: 'En línea', color: 'bg-emerald-500', count: 124 },
+                         { label: 'En movimiento', color: 'bg-blue-500', count: 42 },
+                         { label: 'Sin señal', color: 'bg-amber-500', count: 18 },
+                         { label: 'Desconectado', color: 'bg-rose-500', count: 5 },
+                       ].map(item => (
+                         <div key={item.label} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                               <div className={cn("h-2.5 w-2.5 rounded-full shadow-sm animate-pulse", item.color)} />
+                               <span className="text-[9px] font-bold text-slate-600 uppercase">{item.label}</span>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-400">{item.count}</span>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+
+                 {/* Pin Flotante de Ejemplo */}
+                 <div className="absolute top-[40%] left-[35%] animate-bounce">
+                    <div className="relative group">
+                       <MapPin className="h-10 w-10 text-primary fill-primary/20 drop-shadow-2xl" />
+                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-xl shadow-2xl border border-primary/10 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p className="text-[8px] font-black text-primary leading-none">15DES0065B</p>
+                          <p className="text-[7px] font-bold text-slate-400 mt-1 uppercase">Sincronizado hace 2m</p>
+                       </div>
+                    </div>
+                 </div>
+              </Card>
+           </div>
+
+           {/* Columna Derecha: Registro e Historial */}
+           <div className="lg:col-span-5 flex flex-col space-y-6 h-full">
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-8 shrink-0 shadow-primary/5">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                    <Navigation className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-slate-800 leading-none uppercase">Registro de Coordenadas</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sincronización GPS de Planteles</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Centro de Trabajo (CCT)</Label>
+                    <Input placeholder="15DES0000X..." className="h-12 rounded-xl bg-slate-50 border-slate-100 font-mono font-black uppercase text-primary shadow-inner" value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value); handleCctChange(e.target.value); }} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Latitud</Label>
+                      <Input placeholder="19.6289..." className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-500 uppercase ml-1">Longitud</Label>
+                      <Input placeholder="-99.3128..." className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-start gap-4">
+                     <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                     <p className="text-[9px] font-bold text-slate-500 uppercase leading-relaxed">Asegúrese de ingresar las coordenadas en formato decimal (WGS84). La ubicación será auditada en la Auditoría 2026.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <Button onClick={handleSave} disabled={isSaving || !formData.cct} className="flex-1 btn-institutional h-14 rounded-2xl text-[11px] gap-3 shadow-2xl">
+                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <MapPin className="h-5 w-5" />} GUARDAR UBICACIÓN
+                  </Button>
+                  <Button variant="outline" onClick={resetForm} className="h-14 px-8 rounded-2xl border-slate-200 text-slate-400 font-black text-[11px] uppercase hover:bg-slate-50"><RotateCcw className="h-5 w-5" /></Button>
+                </div>
+              </Card>
+
+              <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden shadow-primary/5">
+                <div className="p-8 border-b bg-slate-50/50 flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><History className="h-5 w-5" /></div>
+                      <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Últimas ubicaciones registradas</h4>
+                   </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <Table>
+                      <TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b">
+                        <TableRow className="h-12">
+                           <TableHead className="pl-8 text-[9px] font-black uppercase">CCT / Plantel</TableHead>
+                           <TableHead className="text-[9px] font-black uppercase">Coordenadas</TableHead>
+                           <TableHead className="text-[9px] font-black uppercase text-center">Estado</TableHead>
+                           <TableHead className="text-right pr-10 text-[9px] font-black uppercase"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {records.filter(r => r.name === 'Geoposición').map((rec, idx) => (
+                          <TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                            <TableCell className="pl-8">
+                               <div className="flex flex-col">
+                                  <span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.cct}</span>
+                                  <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[120px]">{rec.schoolName}</span>
+                               </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-[9px] font-bold text-primary">
+                               {rec.latitud}, {rec.longitud}
+                            </TableCell>
+                            <TableCell className="text-center">
+                               <Badge className="bg-emerald-50 text-emerald-700 border-none text-[8px] font-black px-2 h-5 rounded-full uppercase">Sincronizado</Badge>
+                            </TableCell>
+                            <TableCell className="text-right pr-8">
+                               <div className="flex justify-end gap-1">
+                                  <button onClick={() => handleEdit(rec)} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button>
+                                  <button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              </Card>
+           </div>
         </div>
       ) : activeTab === 'Cuentas Institucionales' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[600px]">
@@ -533,20 +908,25 @@ export default function ProgramsPage() {
                 )}
               </Card>
               <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden shadow-primary/5">
-                <div className="p-8 border-b bg-slate-50/50"><h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Historial de registros</h4></div>
+                <div className="p-8 border-b bg-slate-50/50 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner"><ClipboardList className="h-6 w-6" /></div>
+                      <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Historial de registros</h4>
+                   </div>
+                </div>
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
                     <Table>
                       <TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b">
-                        <TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow>
+                        <TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable / Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo Registrado</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredRecords.map((rec, idx) => (
-                          <TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50">
-                            <TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase">{rec.departamento}</span></div></TableCell>
+                        {records.filter(r => r.name === 'Cuentas Institucionales').map((rec, idx) => (
+                          <TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                            <TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[150px]">{rec.departamento}</span></div></TableCell>
                             <TableCell className="font-mono text-[10px] font-bold text-primary">{rec.email}</TableCell>
                             <TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-black px-3 h-5 rounded-full border-2 uppercase", rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100")}>{rec.status}</Badge></TableCell>
-                            <TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => { handleEdit(rec); }} className="h-8 w-8 text-slate-400 hover:text-primary"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></div></TableCell>
+                            <TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => { handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
