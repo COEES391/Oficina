@@ -187,17 +187,30 @@ export default function ProgramsPage() {
   const libData = useMemo(() => {
     const libRecs = records.filter(r => r.name === 'Biblioteca Digital');
     const concluidos = libRecs.filter(r => r.progress === 100).length;
-    const enProceso = libRecs.filter(r => r.progress > 0 && r.progress < 100).length;
-    const pendientes = libRecs.filter(r => r.progress === 0).length;
-    const chartData = [
-      { name: 'En proceso', value: enProceso, color: '#007bff' },
-      { name: 'Concluidos', value: concluidos, color: '#28a745' },
-      { name: 'Pendientes', value: pendientes, color: '#6c757d' },
-    ];
     const totalEvidencias = libRecs.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0), 0);
-    // Cambiamos tecnicos de 8 a 0 para que inicie limpio
-    return { libRecs, totalCct: libRecs.length, concluidos, chartData, totalEvidencias, tecnicos: 0 };
+    
+    return { 
+      libRecs, 
+      totalCct: libRecs.length, 
+      concluidos, 
+      totalEvidencias, 
+      tecnicos: 0,
+      visitas: 0,
+      atenciones: 0 
+    };
   }, [records]);
+
+  const filteredRecords = useMemo(() => {
+    const base = records.filter(r => r.name === activeTab);
+    if (!searchTerm) return base;
+    const term = searchTerm.toUpperCase();
+    return base.filter(r => 
+      (r.cct || '').toUpperCase().includes(term) ||
+      (r.schoolName || '').toUpperCase().includes(term) ||
+      (r.userName || '').toUpperCase().includes(term) ||
+      (r.email || '').toUpperCase().includes(term)
+    );
+  }, [records, activeTab, searchTerm]);
 
   const selectedLibRecord = useMemo(() => libData.libRecs.find(r => r.cct === selectedLibCct) || null, [libData.libRecs, selectedLibCct]);
 
@@ -374,8 +387,8 @@ export default function ProgramsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
              {[
                { label: 'CCT Registrados', value: libData.totalCct, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-               { label: 'Visitas Totales', value: 0, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Atenciones', value: 0, sub: 'En el periodo', icon: ClipboardCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
+               { label: 'Visitas Totales', value: libData.visitas, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+               { label: 'Atenciones', value: libData.atenciones, sub: 'En el periodo', icon: ClipboardCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
                { label: 'Evidencias', value: libData.totalEvidencias || 0, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
                { label: 'Técnicos Activos', value: libData.tecnicos, sub: 'Asignados', icon: UserCheck, color: 'text-cyan-600', bg: 'bg-cyan-50' },
                { label: 'Proyectos Concluidos', value: libData.concluidos, sub: 'Escuelas', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' },
@@ -528,7 +541,7 @@ export default function ProgramsPage() {
                         <TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow>
                       </TableHeader>
                       <TableBody>
-                        {records.filter(r => r.name === 'Cuentas Institucionales').map((rec, idx) => (
+                        {filteredRecords.map((rec, idx) => (
                           <TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50">
                             <TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase">{rec.departamento}</span></div></TableCell>
                             <TableCell className="font-mono text-[10px] font-bold text-primary">{rec.email}</TableCell>
