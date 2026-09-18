@@ -325,7 +325,6 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
           <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-             {/* 6 KPIs Inferidos de la imagen */}
              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                 {[
                   { label: 'CCT REGISTRADOS', value: records.filter(r => r.name === 'Biblioteca Digital').length, icon: Building2, bg: 'bg-blue-50', color: 'text-blue-600' },
@@ -342,12 +341,10 @@ export default function ProgramsPage() {
                 ))}
              </div>
 
-             {/* Barra de Filtros */}
              <Card className="p-4 bg-white/80 border-none shadow-lg rounded-2xl">
                 <div className="flex gap-4"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="BUSCAR CCT..." className="h-9 pl-10 rounded-xl bg-slate-50 border-none text-[10px]" /></div><Select defaultValue="all"><SelectTrigger className="h-9 w-40 text-[10px] font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">TODOS</SelectItem></SelectContent></Select><Button onClick={() => setIsDialogOpen(true)} className="btn-institutional h-9 px-6 text-[9px] uppercase"><Plus /> NUEVO REGISTRO</Button></div>
              </Card>
 
-             {/* Grid Principal: Tabla vs Bitácora */}
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <Card className="lg:col-span-8 border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col min-h-[450px]">
                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3"><Monitor className="h-5 w-5 text-primary" /><h3 className="text-sm font-black uppercase text-slate-700">Fase del proyecto por CCT</h3></div>
@@ -384,7 +381,6 @@ export default function ProgramsPage() {
                 </Card>
              </div>
 
-             {/* Gráficas Inferiores */}
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-10">
                 <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
                    <h4 className="text-[10px] font-black uppercase text-primary">Resumen por Meta</h4>
@@ -446,7 +442,7 @@ export default function ProgramsPage() {
                           {atresView === 'remote' ? (
                             <div className="flex-1 p-6 relative"><div className="w-full h-full bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center"><Image src="https://picsum.photos/seed/desktop/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" /><div className="z-10 text-center space-y-4"><div className="h-16 w-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse"><Activity className="text-emerald-400 h-8 w-8" /></div><p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Stream seguro de video • 256-bit AES</p></div></div></div>
                           ) : (
-                            <><ScrollArea className="flex-1 p-8"><div className="max-w-3xl mx-auto space-y-4">{messages.map((m, i) => (<div key={i} className={cn("flex", m.role === 'tech' ? "justify-end" : "justify-start")}><div className={cn("max-w-[70%] p-4 rounded-2xl shadow-sm text-sm font-semibold", m.role === 'tech' ? "bg-emerald-100 text-slate-800" : "bg-white text-slate-800")}<p>{m.content}</p><p className="text-[8px] font-black uppercase opacity-30 mt-2 text-right">{m.timestamp?.seconds ? format(new Date(m.timestamp.seconds * 1000), 'HH:mm') : '...'}</p></div></div>))}<div ref={scrollRef}/></div></ScrollArea><footer className="p-4 bg-white border-t flex gap-3 shrink-0"><Input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} className="rounded-2xl bg-slate-50 border-none h-12 px-6 font-bold" placeholder="ESCRIBIR RESPUESTA..." /><Button onClick={handleSendMessage} className="bg-emerald-600 hover:bg-emerald-700 h-12 w-12 rounded-2xl p-0 shadow-xl"><Send className="h-5 w-5" /></Button></footer></>
+                            <><ScrollArea className="flex-1 p-8"><div className="max-w-3xl mx-auto space-y-4">{messages.map((m, i) => (<div key={i} className={cn("flex", m.role === 'tech' ? "justify-end" : "justify-start")}><div className={cn("max-w-[70%] p-4 rounded-2xl shadow-sm text-sm font-semibold", m.role === 'tech' ? "bg-emerald-100 text-slate-800" : "bg-white text-slate-800")}><p>{m.content}</p><p className="text-[8px] font-black uppercase opacity-30 mt-2 text-right">{m.timestamp?.seconds ? format(new Date(m.timestamp.seconds * 1000), 'HH:mm') : '...'}</p></div></div>))}<div ref={scrollRef}/></div></ScrollArea><footer className="p-4 bg-white border-t flex gap-3 shrink-0"><Input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} className="rounded-2xl bg-slate-50 border-none h-12 px-6 font-bold" placeholder="ESCRIBIR RESPUESTA..." /><Button onClick={handleSendMessage} className="bg-emerald-600 hover:bg-emerald-700 h-12 w-12 rounded-2xl p-0 shadow-xl"><Send className="h-5 w-5" /></Button></footer></>
                           )}
                        </div>
                        <aside className="w-80 bg-white border-l p-6 space-y-8 overflow-y-auto shrink-0 hidden xl:block"><div className="space-y-4"><h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><HardDrive className="h-4 w-4 text-primary" /> Info Dispositivo</h4><div className="space-y-3 bg-slate-50 p-4 rounded-2xl border"><div className="flex justify-between"><span className="text-[9px] font-bold text-slate-500 uppercase">OS</span><span className="text-[9px] font-black">Windows 11</span></div><div className="flex justify-between"><span className="text-[9px] font-bold text-slate-500 uppercase">RAM</span><span className="text-[9px] font-black">16 GB</span></div><div className="flex justify-between"><span className="text-[9px] font-bold text-slate-500 uppercase">IP</span><span className="text-[9px] font-black font-mono text-primary">192.168.1.104</span></div></div></div><div className="space-y-4 pt-6 border-t"><h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> Ubicación CCT</h4><div className="p-4 bg-slate-50 rounded-2xl space-y-2"><p className="text-[10px] font-black text-slate-700 uppercase leading-none">ESC. SEC. FED. 115</p><p className="text-[9px] font-bold text-slate-400 uppercase">TOLUCA, EDOMÉX</p><Badge className="bg-primary/5 text-primary border-none text-[8px] font-black mt-2">CCT: 15DES0001R</Badge></div></div></aside>
