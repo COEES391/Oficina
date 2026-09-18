@@ -447,10 +447,6 @@ export default function ProgramsPage() {
                       </div>
                    </div>
                 </div>
-                <div className="flex gap-2">
-                   <Button className="h-9 px-6 bg-[#0b4135] hover:bg-[#082e26] text-white rounded-xl text-[10px] font-black uppercase shadow-lg">Buscar</Button>
-                   <Button variant="ghost" className="h-9 px-6 rounded-xl text-[10px] font-black uppercase text-slate-400" onClick={() => { setSearchTerm(''); setMunicipioFilter('all'); setEstatusFilter('all'); }}>Limpiar</Button>
-                </div>
              </div>
           </Card>
 
@@ -811,10 +807,6 @@ export default function ProgramsPage() {
                          <Badge className="bg-emerald-600 text-white border-none text-[8px] font-black uppercase mb-1">CUENTA ACTIVA</Badge>
                          <h4 className="text-xl font-black text-emerald-900 uppercase leading-none">{verifiedAccount.userName}</h4>
                          <p className="text-[10px] font-bold text-emerald-700/60 uppercase">{verifiedAccount.departamento} • Alta: {verifiedAccount.date}</p>
-                      </div>
-                      <div className="hidden sm:block text-right px-4 border-l border-emerald-100">
-                         <span className="text-[10px] font-black text-emerald-800 uppercase block leading-none">Sistema Auditor</span>
-                         <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Edoméx 2026</span>
                       </div>
                    </div>
                  )}
