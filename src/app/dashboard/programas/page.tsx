@@ -14,16 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Cell
-} from 'recharts'
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
 import { 
@@ -47,9 +37,6 @@ import {
   Eye,
   History,
   Navigation,
-  PieChart as PieChartIcon,
-  ChevronLeft,
-  Info,
   RefreshCw,
   ImageIcon,
   Archive,
@@ -62,24 +49,14 @@ import {
   ClipboardList,
   Settings,
   RotateCcw,
-  RotateCw,
   LayoutGrid,
   Phone,
   MonitorCheck,
   Server,
   QrCode,
-  ExternalLink,
-  Headphones,
   MessageSquare,
   Clock,
-  Circle,
-  Terminal,
-  Power,
-  Lock,
-  MoreVertical,
-  Paperclip,
   HardDrive,
-  Network,
   FileUp,
   Laptop,
   Send,
@@ -133,6 +110,7 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   
   // Cuentas States
   const [userPart, setUserPart] = useState('')
@@ -162,6 +140,13 @@ export default function ProgramsPage() {
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
+  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
+    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
+    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
+    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
+    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
+    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -208,12 +193,53 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleQuickAddCct = () => {
+    if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
+      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); 
+      return;
+    }
+    const newSchool: SchoolInfo = { 
+      ...quickAddForm, 
+      cct: quickAddForm.cct.toUpperCase(), 
+      nombre: quickAddForm.nombre.toUpperCase(), 
+      municipio: quickAddForm.municipio.toUpperCase(),
+      valle: (quickAddForm.valle || 'MEXICO').toUpperCase(),
+      region: (quickAddForm.region || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+    };
+    const updated = [newSchool, ...allSchools];
+    setAllSchools(updated);
+    localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
+    handleCctChange(newSchool.cct);
+    setIsQuickAddOpen(false);
+    setDialogSearchTerm('');
+    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido a la Base Maestra." });
+  }
+
   const handleSave = () => {
     setIsSaving(true);
     const body: any = { 
-      ...formData, 
-      name: activeTab, 
+      name: activeTab,
+      userName: formData.userName || '',
+      departamento: formData.departamento || '',
+      cct: formData.cct || '',
+      schoolName: formData.schoolName || '',
+      municipio: formData.municipio || '',
+      valle: formData.valle || '',
+      region: formData.region || '',
+      zonaEscolar: formData.zonaEscolar || '',
+      sector: formData.sector || '',
+      modalidad: formData.modalidad || '',
+      progress: formData.progress || 0,
+      status: formData.status || 'activo',
+      date: formData.date || new Date().toISOString().split('T')[0],
       email: activeTab === 'Cuentas Institucionales' ? `${userPart.toLowerCase().trim()}${domainPart}` : formData.email || '',
+      latitud: formData.latitud || '',
+      longitud: formData.longitud || '',
+      observaciones: formData.observaciones || '',
+      bibliotecaFases: formData.bibliotecaFases || null,
       updatedAt: serverTimestamp() 
     };
 
@@ -249,6 +275,7 @@ export default function ProgramsPage() {
       setUserPart(rec.email?.split('@')[0] || ''); 
       setDomainPart('@' + (rec.email?.split('@')[1] || 'coees.edu.mx')); 
     } 
+    setIsDialogOpen(true);
   }
 
   const handleDelete = (id: string) => {
@@ -272,6 +299,12 @@ export default function ProgramsPage() {
     setChatInput('');
   };
 
+  const schoolSearchResults = useMemo(() => {
+    if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
+    const term = dialogSearchTerm.toUpperCase();
+    return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
+  }, [allSchools, dialogSearchTerm]);
+
   if (!mounted) return null;
 
   return (
@@ -282,11 +315,6 @@ export default function ProgramsPage() {
             <h2 className="text-3xl font-black text-primary leading-none uppercase">Módulos Técnicos COEES</h2>
             <p className="text-xs font-bold text-slate-800 uppercase tracking-widest mt-1">Auditoría Institucional 2026</p>
           </div>
-          {activeTab === 'Conoce mi Escuela' && (
-            <Button className="btn-institutional h-10 px-6 text-[9px] gap-2 rounded-xl shadow-lg">
-              <PlusCircle className="h-4 w-4" /> NUEVO REGISTRO
-            </Button>
-          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -558,7 +586,7 @@ export default function ProgramsPage() {
              <div className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
                 <div className="p-6 bg-white border-b space-y-4">
                    <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Sesiones</h2><Badge className="bg-emerald-50 text-emerald-600 border-none">{queue.length}</Badge></div>
-                   <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none text-[10px] font-bold uppercase" /></div>
+                   <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[10px] font-bold uppercase" /></div>
                 </div>
                 <ScrollArea className="flex-1">
                    <div className="p-2 space-y-1">
@@ -573,7 +601,7 @@ export default function ProgramsPage() {
                 <div className="p-6 border-t bg-white space-y-4">
                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><QrCode className="h-4 w-4" /> Compartir Acceso</h4>
                    <div className="p-6 bg-slate-50 rounded-[2rem] flex flex-col items-center gap-4 border-2 border-dashed border-slate-200">
-                      <div className="h-24 w-24 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg"><Image src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://6000-firebase-planeacin-1776866447103.cluster-gizzoza7hzhfyxzo5d76y3flkw.cloudworkstations.dev/helpdesk" alt="QR" width={80} height={80} /></div>
+                      <div className="h-24 w-24 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg"><Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/helpdesk')}`} alt="QR" width={80} height={80} /></div>
                       <div className="text-center"><p className="text-[8px] font-black text-slate-400 uppercase">URL de Atención:</p><p className="text-[8px] font-bold text-primary truncate max-w-[150px] mt-1">/helpdesk</p></div>
                    </div>
                 </div>
@@ -614,6 +642,23 @@ export default function ProgramsPage() {
                    <div className="relative">
                       <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
                       <Input value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value.toUpperCase()); handleCctChange(e.target.value); }} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl pl-12 font-black text-lg text-primary" placeholder="BUSCAR CCT..." />
+                      {dialogSearchTerm.length > 2 && (
+                        <div className="absolute top-14 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
+                          {schoolSearchResults.map(s => (
+                            <div key={`sede-res-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
+                              <div className="flex flex-col"><span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct}</span></div>
+                              <ChevronRight className="h-4 w-4 text-slate-300" />
+                            </div>
+                          ))}
+                          {schoolSearchResults.length === 0 && (
+                            <div className="p-6 text-center">
+                              <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
+                                <Plus className="h-4 w-4 mr-2" /> Alta Rápida de Plantel
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                    </div>
                 </div>
                 {formData.schoolName && (<div className="p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex items-center gap-5 shadow-sm animate-in zoom-in-95"><div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-8 w-8" /></div><div><p className="text-sm font-black uppercase text-slate-800 leading-none">{formData.schoolName}</p><p className="text-[10px] font-bold text-emerald-600 mt-1">{formData.municipio} • ZE: {formData.zonaEscolar} • Valle {formData.valle}</p></div></div>)}
@@ -627,6 +672,25 @@ export default function ProgramsPage() {
              </div>
           </ScrollArea>
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="uppercase text-xs font-black px-8">Cancelar</Button><Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional px-12 text-xs shadow-2xl h-14 rounded-2xl min-w-[200px]">{isSaving ? <Loader2 className="animate-spin" /> : <Save />} GUARDAR REGISTRO</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro Rápido de CCT</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" /></div>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div>
+             </div>
+          </div>
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
