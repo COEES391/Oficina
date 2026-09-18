@@ -47,7 +47,6 @@ import {
   ClipboardCheck,
   X,
   Building2,
-  UserPlus,
   Eye,
   History,
   Navigation,
@@ -84,8 +83,7 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  serverTimestamp,
-  where
+  serverTimestamp
 } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
@@ -632,18 +630,6 @@ export default function ProgramsPage() {
                  <div className="absolute top-6 left-6 flex flex-col gap-3 z-30">
                     <Button size="icon" className="h-12 w-12 bg-white text-primary rounded-2xl shadow-2xl border-4 border-white hover:scale-110 transition-transform"><LocateFixed className="h-6 w-6" /></Button>
                  </div>
-                 <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center group/marker">
-                    <div className="bg-white px-4 py-2 rounded-2xl shadow-2xl border border-slate-100 mb-2 flex items-center gap-3 animate-bounce shadow-primary/20">
-                       <div className="space-y-0.5">
-                          <p className="text-[10px] font-black text-slate-800 uppercase leading-none">Dispositivo: COEES-001</p>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase">Sincronizado hoy</p>
-                       </div>
-                    </div>
-                    <div className="relative">
-                       <div className="h-6 w-6 rounded-full bg-blue-500/20 animate-ping absolute inset-0" />
-                       <MapPin className="h-10 w-10 text-emerald-500 fill-current drop-shadow-2xl relative z-10" />
-                    </div>
-                 </div>
                  <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[1.8rem] shadow-2xl border z-30 flex flex-wrap gap-6 items-center">
                     {[ { label: 'En línea', color: 'bg-emerald-500' }, { label: 'En movimiento', color: 'bg-blue-500' }, { label: 'Sin señal', color: 'bg-rose-500' } ].map(item => (
                       <div key={item.label} className="flex items-center gap-2">
@@ -668,7 +654,7 @@ export default function ProgramsPage() {
                    </div>
                    <div className="grid grid-cols-2 gap-4 pt-2">
                       <Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional h-11 rounded-xl text-[10px] gap-2 shadow-xl bg-blue-600 hover:bg-blue-700">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} GUARDAR</Button>
-                      <Button variant="outline" onClick={resetForm} className="h-11 px-6 rounded-xl border-slate-200 text-slate-500 font-black text-[10px] gap-2 uppercase hover:bg-slate-100 shadow-sm"><RefreshCw className="h-4 w-4" /> LIMPIAR</Button>
+                      <Button variant="outline" onClick={resetForm} className="h-11 px-6 rounded-xl border-slate-200 text-slate-500 font-black text-[10px] gap-2 uppercase hover:bg-slate-100 shadow-sm"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button>
                    </div>
                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3 shadow-inner">
                       <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg"><Info className="h-4 w-4" /></div>
@@ -701,13 +687,6 @@ export default function ProgramsPage() {
                  <Card className="rounded-[1.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col h-[450px]">
                     <div className="flex-1 relative bg-slate-100">
                        <Image src="https://picsum.photos/seed/toluca-conoce/1200/900" alt="Mapa Conoce mi Escuela" fill className="object-cover opacity-80" />
-                       <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
-                          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 mb-2 min-w-[220px] animate-in zoom-in-95">
-                             <div className="flex justify-between items-start mb-2"><span className="text-[10px] font-black text-primary uppercase">CCT: 15DES0001R</span><ChevronRight className="h-4 w-4 text-slate-300" /></div>
-                             <p className="text-[11px] font-bold text-slate-700 uppercase leading-none">Escuela Secundaria Técnica No. 15</p>
-                          </div>
-                          <div className="relative"><div className="h-8 w-8 rounded-full bg-blue-500/20 animate-ping absolute inset-0 -m-1" /><MapPin className="h-8 w-8 text-emerald-500 fill-current drop-shadow-2xl relative z-10" /></div>
-                       </div>
                     </div>
                  </Card>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
