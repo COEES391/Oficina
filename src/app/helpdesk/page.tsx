@@ -1,3 +1,4 @@
+
 'use client'
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 import Image from 'next/image'
@@ -8,51 +9,42 @@ export default function ExternalHelpDeskPage() {
   const logoData = placeholderImages.find(img => img.id === 'desysa-logo') || placeholderImages[0]
 
   return (
-    <div className="h-screen w-full bg-[#ddc8a4] flex flex-col p-2 md:p-3 font-sans overflow-hidden relative">
-      {/* Fondo Decorativo Estático */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-10">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#9f2241] rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#B38E5D] rounded-full blur-[150px]" />
-      </div>
-
-      {/* Header Institucional Compacto */}
-      <header className="flex flex-row items-center justify-between gap-4 max-w-7xl mx-auto w-full bg-white/95 backdrop-blur-2xl px-6 py-2 rounded-full shadow-xl border border-white/50 relative z-30 shrink-0 mb-2 transition-all">
-        <div className="flex items-center gap-3">
-          <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-lg overflow-hidden shadow-md border border-slate-100 bg-white group">
-            <Image 
-              src={logoData.imageUrl} 
-              alt="COEES Logo" 
-              fill
-              className="object-cover"
-            />
+    <div className="h-screen w-full bg-[#f0f2f5] flex flex-col font-sans overflow-hidden relative">
+      {/* Header Institucional */}
+      <header className="h-16 bg-[#0b4135] flex items-center justify-between px-6 shrink-0 z-30 shadow-xl border-b border-white/5">
+        <div className="flex items-center gap-4">
+          <div className="relative h-10 w-10 bg-white/10 rounded-xl overflow-hidden shadow-inner border border-white/10 flex items-center justify-center">
+             <Image src={logoData.imageUrl} alt="Logo" fill className="object-cover opacity-80" />
           </div>
           <div className="space-y-0">
-            <h1 className="text-sm md:text-base font-black text-[#9f2241] uppercase leading-none tracking-tighter">Mesa de Ayuda ATRES</h1>
-            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.1em] mt-0.5">Departamento de Tecnología Educativa • Edoméx</p>
+            <h1 className="text-sm font-black text-white uppercase leading-none tracking-tighter">Mesa de Ayuda ATRES</h1>
+            <p className="text-[7px] font-bold text-white/40 uppercase tracking-[0.1em] mt-1">Edoméx 2026 • Soporte Técnico</p>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-             <ShieldCheck className="h-3 w-3 text-emerald-600" />
-             <span className="text-[8px] font-black text-primary uppercase tracking-widest">Atención Segura</span>
+        <div className="hidden sm:flex items-center gap-6">
+          <div className="flex items-center gap-2">
+             <ShieldCheck className="h-4 w-4 text-emerald-400" />
+             <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">Canal Oficial Seguro</span>
           </div>
-          <div className="flex items-center gap-2 bg-[#9f2241] text-white px-4 py-1 rounded-full shadow-lg">
-             <Activity className="h-2.5 w-2.5 animate-pulse" />
-             <span className="text-[8px] font-black uppercase tracking-widest">Ciclo 2025-2026</span>
+          <div className="bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/20">
+             <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Técnicos en Línea</span>
+             </div>
           </div>
         </div>
       </header>
 
-      {/* Contenedor Principal Adaptado */}
-      <main className="flex-1 max-w-7xl mx-auto w-full overflow-hidden flex flex-col relative z-20 animate-in fade-in duration-700">
+      {/* Main Interface */}
+      <main className="flex-1 overflow-hidden">
         <HelpDeskInterface isPublic />
       </main>
 
-      {/* Footer Minimalista */}
-      <footer className="text-center py-1 relative z-30 shrink-0">
-        <p className="text-[6px] font-black text-[#9f2241]/60 uppercase tracking-[0.3em] opacity-70">
-          DIRECCIÓN DE EDUCACIÓN SECUNDARIA • DEPARTAMENTO DE TECNOLOGÍA EDUCATIVA
+      {/* Minimalist Footer */}
+      <footer className="bg-white border-t py-1 text-center shrink-0 z-30">
+        <p className="text-[6px] font-black text-primary/40 uppercase tracking-[0.4em]">
+          Dirección de Educación Secundaria • Departamento de Tecnología Educativa
         </p>
       </footer>
     </div>
