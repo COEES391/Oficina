@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
 import { 
@@ -197,8 +198,7 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "CCT, Nombre y Municipio son obligatorios." }); 
-      return;
+      toast({ variant: "destructive", title: "Faltan datos" }); return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
@@ -217,7 +217,7 @@ export default function ProgramsPage() {
     handleCctChange(newSchool.cct);
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido a la Base Maestra." });
+    toast({ title: "Plantel Registrado" });
   }
 
   const handleSave = () => {
@@ -253,12 +253,12 @@ export default function ProgramsPage() {
 
     if (editingId) {
       updateDoc(doc(db, 'programs', editingId), body)
-        .then(() => { toast({ title: "Registro Actualizado" }); cleanup(); })
-        .catch(() => { setIsSaving(false); toast({ variant: "destructive", title: "Error al actualizar" }); });
+        .then(() => { toast({ title: "Registro Actualizado" }); })
+      cleanup();
     } else {
       addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() })
-        .then(() => { toast({ title: "Registro Guardado" }); cleanup(); })
-        .catch(() => { setIsSaving(false); toast({ variant: "destructive", title: "Error al guardar" }); });
+        .then(() => { toast({ title: "Registro Guardado" }); })
+      cleanup();
     }
   }
 
@@ -635,45 +635,111 @@ export default function ProgramsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] h-[85vh] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
-          <DialogHeader className="p-8 bg-primary text-white shrink-0"><DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Settings className="h-7 w-7 text-accent" /> Gestión Técnica: {activeTab}</DialogTitle><DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Auditoría y Seguimiento 2026</DialogDescription></DialogHeader>
-          <ScrollArea className="flex-1 p-8">
-             <div className="space-y-8">
-                <div className="space-y-2 relative">
-                   <Label className="text-xs font-black uppercase text-primary pl-2">Identificación CCT Plantel</Label>
-                   <div className="relative">
-                      <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
-                      <Input value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value.toUpperCase()); handleCctChange(e.target.value); }} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl pl-12 font-black text-lg text-primary" placeholder="BUSCAR CCT..." />
-                      {dialogSearchTerm.length > 2 && (
-                        <div className="absolute top-14 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-2xl shadow-2xl z-50 divide-y">
-                          {schoolSearchResults.map(s => (
-                            <div key={`sede-res-${s.cct}-${s.turno}`} className="p-4 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}>
-                              <div className="flex flex-col"><span className="text-xs font-black text-slate-800 uppercase">{s.nombre}</span><span className="text-[10px] font-mono text-muted-foreground">{s.cct}</span></div>
-                              <ChevronRight className="h-4 w-4 text-slate-300" />
-                            </div>
-                          ))}
-                          {schoolSearchResults.length === 0 && (
-                            <div className="p-6 text-center">
-                              <Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase border-primary/20 text-primary">
-                                <Plus className="h-4 w-4 mr-2" /> Alta Rápida de Plantel
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                   </div>
-                </div>
-                {formData.schoolName && (<div className="p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex items-center gap-5 shadow-sm animate-in zoom-in-95"><div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-8 w-8" /></div><div><p className="text-sm font-black uppercase text-slate-800 leading-none">{formData.schoolName}</p><p className="text-[10px] font-bold text-emerald-600 mt-1">{formData.municipio} • ZE: {formData.zonaEscolar} • Valle {formData.valle}</p></div></div>)}
-                {activeTab === 'Biblioteca Digital' && (
-                  <div className="space-y-6 pt-4 border-t">
-                     <div className="flex items-center gap-3 mb-4"><ClipboardCheck className="h-5 w-5 text-accent" /><h4 className="text-xs font-black uppercase text-accent tracking-widest">Protocolo de 9 Fases</h4></div>
-                     <div className="grid grid-cols-1 gap-3">{BIBLIOTECA_FASES_LABELS.map(f => (<div key={f.id} className={cn("flex items-center gap-4 p-4 rounded-2xl border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100")}><Checkbox checked={(formData.bibliotecaFases as any)?.[f.id]} onCheckedChange={(val) => { const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; const progress = Math.round((Object.values(updatedFases).filter(v => typeof v === 'boolean' && v === true).length / 9) * 100); setFormData({ ...formData, bibliotecaFases: updatedFases, progress }); }} id={`chk-${f.id}`} className="h-5 w-5 rounded-md border-primary" /><Label htmlFor={`chk-${f.id}`} className="text-[11px] font-black uppercase text-slate-700 cursor-pointer flex-1">{f.label}</Label><Badge variant="outline" className="text-[8px] font-black text-slate-400 bg-white">{f.progress}%</Badge></div>))}</div>
-                  </div>
-                )}
-                <div className="space-y-2 pt-4 border-t"><Label className="text-[10px] font-black uppercase text-primary">Observaciones de Auditoría</Label><Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} className="min-h-[120px] bg-slate-50 border-none rounded-[1.5rem] p-6 font-bold text-xs shadow-inner uppercase" placeholder="NOTAS TÉCNICAS..." /></div>
+        <DialogContent className="sm:max-w-[1000px] h-[85vh] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
+          <DialogHeader className="p-6 bg-[#9f2241] text-white shrink-0">
+             <DialogTitle className="uppercase font-black text-xl flex items-center gap-3"><Settings className="h-7 w-7 text-accent" /> GESTIÓN TÉCNICA: {activeTab.toUpperCase()}</DialogTitle>
+             <DialogDescription className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-1">Auditoría y Seguimiento 2026</DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="proyecto" className="flex-1 flex flex-col overflow-hidden">
+             <div className="px-8 border-b bg-slate-50/50">
+                <TabsList className="bg-transparent h-14 p-0 gap-8">
+                  <TabsTrigger value="proyecto" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. DATOS DEL PROYECTO</TabsTrigger>
+                  <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-[#9f2241] data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. LISTA DE ASISTENTES</TabsTrigger>
+                </TabsList>
              </div>
-          </ScrollArea>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="uppercase text-xs font-black px-8">Cancelar</Button><Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional px-12 text-xs shadow-2xl h-14 rounded-2xl min-w-[200px]">{isSaving ? <Loader2 className="animate-spin" /> : <Save />} GUARDAR REGISTRO</Button></DialogFooter>
+             
+             <div className="flex-1 overflow-hidden">
+                <TabsContent value="proyecto" className="h-full m-0 p-8">
+                   <ScrollArea className="h-full">
+                      <div className="space-y-10">
+                         {/* Bloque de Identificación según imagen */}
+                         <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm space-y-6">
+                            <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">IDENTIFICACIÓN CCT</h4>
+                            <div className="max-w-2xl mx-auto space-y-4">
+                               <div className="relative group">
+                                  <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
+                                  <Input 
+                                    value={dialogSearchTerm} 
+                                    onChange={e => { setDialogSearchTerm(e.target.value.toUpperCase()); handleCctChange(e.target.value); }} 
+                                    className="h-14 bg-white border-2 border-slate-100 rounded-2xl pl-12 font-black text-xl text-primary shadow-inner text-center" 
+                                    placeholder="INGRESAR CCT..." 
+                                  />
+                               </div>
+                               
+                               {/* Bloque CCT NO ENCONTRADO según imagen */}
+                               {dialogSearchTerm.length >= 5 && schoolSearchResults.length === 0 && !formData.schoolName && (
+                                 <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-300">
+                                    <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">CCT NO ENCONTRADO</p>
+                                    <Button 
+                                      onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm}); setIsQuickAddOpen(true); }} 
+                                      className="bg-[#EFE7DD] hover:bg-[#e5dbc9] text-[#B38E5D] border-2 border-[#B38E5D] rounded-xl h-10 px-8 font-black text-[10px] gap-2 shadow-md"
+                                    >
+                                       <Plus className="h-4 w-4" /> ALTA RÁPIDA DE PLANTEL
+                                    </Button>
+                                 </div>
+                               )}
+
+                               {formData.schoolName && (
+                                 <div className="p-5 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex items-center justify-center gap-4 shadow-sm animate-in fade-in">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                    <p className="text-xs font-black uppercase text-emerald-800">{formData.schoolName} - {formData.municipio}</p>
+                                 </div>
+                               )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                               <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-2">LATITUD</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-mono font-bold" /></div>
+                               <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-2">LONGITUD</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-mono font-bold" /></div>
+                            </div>
+                         </div>
+
+                         {/* Checklist de Fases según imagen */}
+                         <div className="space-y-6">
+                            <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-[#9f2241]" /><h4 className="text-xs font-black uppercase text-[#9f2241] tracking-widest">FASES DEL PROYECTO</h4></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               {BIBLIOTECA_FASES_LABELS.map(f => (
+                                 <div key={f.id} className={cn("flex items-center gap-4 p-4 rounded-2xl border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100 shadow-sm")}>
+                                    <Checkbox 
+                                      checked={(formData.bibliotecaFases as any)?.[f.id]} 
+                                      onCheckedChange={(val) => { 
+                                         const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
+                                         const progress = Math.round((Object.values(updatedFases).filter(v => typeof v === 'boolean' && v === true).length / 9) * 100); 
+                                         setFormData({ ...formData, bibliotecaFases: updatedFases, progress }); 
+                                      }} 
+                                      id={`chk-${f.id}`} className="h-5 w-5 rounded-md border-primary" 
+                                    />
+                                    <Label htmlFor={`chk-${f.id}`} className="text-[10px] font-black uppercase text-slate-600 cursor-pointer flex-1 leading-tight">{f.label}</Label>
+                                    <Badge variant="outline" className="text-[8px] font-black text-slate-400 bg-white">{f.progress}%</Badge>
+                                 </div>
+                               ))}
+                            </div>
+                         </div>
+
+                         <div className="space-y-2 pt-4 border-t">
+                            <Label className="text-[10px] font-black uppercase text-primary">Observaciones de Auditoría</Label>
+                            <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} className="min-h-[120px] bg-slate-50 border-none rounded-[1.5rem] p-6 font-bold text-xs shadow-inner uppercase" placeholder="NOTAS TÉCNICAS..." />
+                         </div>
+                      </div>
+                   </ScrollArea>
+                </TabsContent>
+                
+                <TabsContent value="asistentes" className="h-full m-0 p-8">
+                   <div className="flex flex-col h-full items-center justify-center opacity-30 text-center">
+                      <Users className="h-20 w-20 mb-4" />
+                      <h4 className="text-xl font-black uppercase">Módulo de Asistentes</h4>
+                      <p className="text-sm font-bold uppercase tracking-widest mt-2">Registre al personal capacitado en esta sección.</p>
+                   </div>
+                </TabsContent>
+             </div>
+          </Tabs>
+
+          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-4 shrink-0">
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="uppercase text-xs font-black px-8 h-12">CANCELAR</Button>
+             <Button onClick={handleSave} disabled={isSaving || !formData.cct} className="bg-[#9f2241] hover:bg-[#8a1d38] text-white px-12 text-xs shadow-2xl h-12 rounded-xl min-w-[200px] font-black gap-2">
+                {isSaving ? <Loader2 className="animate-spin h-4 w-4" /> : <Save className="h-4 w-4" />} GUARDAR REGISTRO
+             </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
