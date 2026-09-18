@@ -27,6 +27,7 @@ import {
   Save,
   Trash2,
   ChevronRight,
+  ChevronLeft,
   Mail,
   Loader2,
   ShieldCheck,
@@ -38,7 +39,7 @@ import {
   Eye,
   History,
   Navigation,
-  RefreshCw,
+  RotateCcw,
   ImageIcon,
   Archive,
   Upload,
@@ -49,9 +50,6 @@ import {
   Monitor,
   ClipboardList,
   Settings,
-  RotateCcw,
-  LayoutGrid,
-  Phone,
   MonitorCheck,
   Server,
   QrCode,
@@ -115,11 +113,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   
-  // Cuentas States
-  const [userPart, setUserPart] = useState('')
-  const [domainPart, setDomainPart] = useState(DOMINIOS[0])
-  const [verifyEmail, setVerifyEmail] = useState('')
-
   // ATRES State
   const [atresView, setAtresView] = useState<'chat' | 'remote' | 'files' | 'stats'>('chat')
   const [queue, setQueue] = useState<any[]>([])
@@ -198,7 +191,7 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos técnicos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
+      toast({ variant: "destructive", title: "Faltan datos técnicos" }); return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
@@ -240,7 +233,7 @@ export default function ProgramsPage() {
       progress: formData.progress || 0,
       status: formData.status || 'activo',
       date: formData.date || new Date().toISOString().split('T')[0],
-      email: activeTab === 'Cuentas Institucionales' ? `${userPart.toLowerCase().trim()}${domainPart}` : formData.email || '',
+      email: formData.email || '',
       latitud: formData.latitud || '',
       longitud: formData.longitud || '',
       observaciones: formData.observaciones || '',
@@ -268,18 +261,12 @@ export default function ProgramsPage() {
   const resetForm = () => { 
     setFormData(initialFormState); 
     setEditingId(null); 
-    setUserPart(''); 
-    setDomainPart(DOMINIOS[0]); 
     setDialogSearchTerm('');
   }
 
   const handleEdit = (rec: ProgramStatus) => { 
     setFormData({...rec}); 
     setEditingId(rec.id!); 
-    if (rec.name === 'Cuentas Institucionales') { 
-      setUserPart(rec.email?.split('@')[0] || ''); 
-      setDomainPart('@' + (rec.email?.split('@')[1] || 'coees.edu.mx')); 
-    } 
     setIsDialogOpen(true);
   }
 
@@ -340,26 +327,176 @@ export default function ProgramsPage() {
 
       <div className="flex-1 min-h-0">
         {activeTab === 'Cuentas Institucionales' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full animate-in slide-in-from-bottom-4 duration-500">
-            <Card className="border-none shadow-xl rounded-[2.5rem] bg-white p-10 flex flex-col space-y-8">
-               <div className="flex items-center gap-6">
-                  <div className="h-16 w-16 rounded-3xl bg-primary text-white flex items-center justify-center shadow-2xl"><Mail className="h-9 w-9" /></div>
-                  <div><h3 className="text-2xl font-black uppercase text-primary leading-none">Registro Técnico</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Creación y Restructuración de Cuentas</p></div>
-               </div>
-               <div className="space-y-6 flex-1">
-                  <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500 uppercase pl-1">Servidor Público *</Label><Input className="h-12 rounded-xl bg-slate-50 border-none shadow-inner uppercase font-bold" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value.toUpperCase()})} /></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500 uppercase pl-1">Departamento / Área *</Label><Input className="h-12 rounded-xl bg-slate-50 border-none shadow-inner uppercase font-bold" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} /></div>
-                  <div className="space-y-4">
-                     <Label className="text-[10px] font-black text-primary uppercase pl-1">Constructor de Correo</Label>
-                     <div className="flex gap-2"><Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold flex-1" value={userPart} onChange={e => setUserPart(e.target.value)} /><Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-11 rounded-xl w-48 bg-slate-50 border-none font-black text-xs"><SelectValue /></SelectTrigger><SelectContent className="z-[300]">{DOMINIOS.map(d => <SelectItem key={d} value={d} className="font-black text-[10px]">{d}</SelectItem>)}</SelectContent></Select></div>
-                     <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center"><p className="text-[8px] font-black text-slate-400 uppercase">Vista previa:</p><p className={cn("text-xs font-black uppercase", userPart ? "text-primary" : "text-rose-600")}>{userPart ? `${userPart.toLowerCase()}${domainPart}` : 'esperando datos...'}</p></div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500 pb-10">
+            {/* Columna Izquierda: Mapa de Ubicación */}
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              <Card className="flex-1 rounded-[2.5rem] overflow-hidden border-none shadow-2xl relative min-h-[500px] bg-slate-100 border-4 border-white group">
+                <div className="absolute top-6 left-6 z-20 flex gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-xl border">
+                  <Button variant="ghost" size="sm" className="h-9 px-6 text-[10px] font-black uppercase bg-slate-100 text-primary">Mapa</Button>
+                  <Button variant="ghost" size="sm" className="h-9 px-6 text-[10px] font-black uppercase text-slate-400 hover:text-primary">Satélite</Button>
+                </div>
+                <Image 
+                  src="https://picsum.photos/seed/location-map/1200/800" 
+                  alt="Visor Cartográfico" 
+                  fill 
+                  className="object-cover opacity-80 grayscale-[0.3]" 
+                />
+                
+                {/* Marcador Central Interactivo */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                   <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-primary/10 flex flex-col gap-1 mb-3 animate-in slide-in-from-bottom-2 duration-700 min-w-[200px]">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-black uppercase text-primary">Dispositivo: COEES-001</span>
+                        <ChevronRight className="h-3 w-3 text-slate-300" />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Última ubicación: 15/04/2025 10:24</span>
+                   </div>
+                   <div className="relative">
+                      <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center border-2 border-emerald-500 ring-8 ring-emerald-500/10 animate-pulse">
+                        <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+                      </div>
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-black/20 blur-sm rounded-full" />
+                   </div>
+                </div>
+
+                {/* Leyenda de Estados Táctica */}
+                <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-white flex flex-wrap justify-center gap-10 z-20">
+                   <div className="flex items-center gap-2.5">
+                     <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En línea</span>
+                   </div>
+                   <div className="flex items-center gap-2.5">
+                     <div className="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En movimiento</span>
+                   </div>
+                   <div className="flex items-center gap-2.5">
+                     <div className="h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Sin señal</span>
+                   </div>
+                   <div className="flex items-center gap-2.5">
+                     <div className="h-3 w-3 rounded-full bg-slate-400" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Desconectado</span>
+                   </div>
+                </div>
+
+                {/* Controles de Navegación Flotantes */}
+                <div className="absolute bottom-28 right-8 flex flex-col gap-3 z-20">
+                   <Button variant="secondary" size="icon" className="h-12 w-12 rounded-2xl shadow-2xl bg-white border-2 border-slate-50 font-black text-2xl hover:scale-110 transition-transform">+</Button>
+                   <Button variant="secondary" size="icon" className="h-12 w-12 rounded-2xl shadow-2xl bg-white border-2 border-slate-50 font-black text-2xl hover:scale-110 transition-transform">-</Button>
+                   <Button variant="secondary" size="icon" className="h-12 w-12 rounded-2xl shadow-2xl bg-white border-2 border-emerald-50 text-emerald-600 hover:scale-110 transition-transform"><LocateFixed className="h-6 w-6" /></Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Columna Derecha: Registro y Bitácora */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+               <Card className="p-8 rounded-[2.5rem] border-none shadow-2xl bg-white space-y-8 animate-in slide-in-from-right-4 duration-500">
+                  <div className="flex items-center gap-5 border-b border-slate-50 pb-5">
+                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><MapPin className="h-7 w-7" /></div>
+                     <div>
+                        <h3 className="text-xl font-black uppercase text-primary leading-none">Registrar coordenadas de ubicación</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Ingresa el CCT y las coordenadas para el censo escolar.</p>
+                     </div>
                   </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} disabled={isSaving || !userPart} className="btn-institutional h-14 rounded-2xl text-[11px] gap-3 shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button><Button variant="outline" onClick={resetForm} className="h-14 rounded-2xl border-slate-200 text-slate-500 font-black text-[11px] gap-2 uppercase hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button></div>
-            </Card>
-            <div className="flex flex-col gap-8 h-full">
-               <Card className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-4 shrink-0"><div className="flex items-center gap-4"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><h4 className="text-sm font-black uppercase text-slate-700">Verificar Existencia</h4></div></div><div className="flex gap-2"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input className="h-9 pl-9 rounded-xl bg-slate-50 text-[10px] font-bold" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} /></div><Button className="bg-emerald-600 h-9 px-6 rounded-xl text-[9px] uppercase font-black">Validar</Button></div></Card>
-               <Card className="border-none shadow-xl rounded-[2.5rem] bg-white flex flex-col flex-1 overflow-hidden"><div className="p-8 border-b bg-slate-50/50 flex items-center gap-3"><Archive className="h-5 w-5 text-primary" /><h4 className="text-sm font-black uppercase tracking-widest text-slate-700">Historial</h4></div><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0"><TableRow><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable</TableHead><TableHead className="text-[9px] font-black uppercase">Correo</TableHead><TableHead className="text-right pr-10"></TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Cuentas Institucionales').map(rec => (<TableRow key={rec.id} className="h-16 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"><TableCell className="pl-8 font-black text-xs uppercase">{rec.userName}</TableCell><TableCell className="font-mono text-[10px] text-primary">{rec.email}</TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => handleEdit(rec)} className="h-8 w-8 text-primary/40 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></Card>
+                  <div className="space-y-6">
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Identificador CCT *</Label>
+                        <div className="relative group">
+                           <Building2 className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                           <Input 
+                              placeholder="Ej. 15DES0001R" 
+                              className="h-12 pl-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black uppercase text-primary text-base" 
+                              value={formData.cct}
+                              onChange={e => handleCctChange(e.target.value)}
+                           />
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Latitud *</Label>
+                           <div className="relative group">
+                              <MapPin className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                              <Input placeholder="Ej. 19.6289" className="h-12 pl-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
+                           </div>
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Longitud *</Label>
+                           <div className="relative group">
+                              <Navigation className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                              <Input placeholder="Ej. -99.3128" className="h-12 pl-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} />
+                           </div>
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-5 pt-3">
+                        <Button onClick={handleSave} className="h-14 rounded-2xl font-black text-xs uppercase gap-3 shadow-2xl bg-blue-600 hover:bg-blue-700 text-white border-none transform transition-all active:scale-95"><Save className="h-5 w-5" /> Guardar ubicación</Button>
+                        <Button variant="outline" onClick={resetForm} className="h-14 rounded-2xl font-black text-xs uppercase gap-3 border-slate-200 text-slate-400 hover:bg-slate-50 transition-all"><RotateCcw className="h-5 w-5" /> Limpiar campos</Button>
+                     </div>
+                  </div>
+                  <div className="p-5 bg-blue-50 border-2 border-dashed border-blue-100 rounded-[1.8rem] flex gap-5 shadow-sm">
+                     <div className="h-10 w-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg"><Info className="h-5 w-5" /></div>
+                     <div className="space-y-1">
+                        <h5 className="text-[11px] font-black uppercase text-blue-900 leading-none">Protocolo de Registro</h5>
+                        <p className="text-[10px] font-bold text-blue-700/80 uppercase leading-relaxed mt-1">Asegúrate de ingresar las coordenadas en formato decimal (latitud y longitud) para una geolocalización precisa.</p>
+                     </div>
+                  </div>
+               </Card>
+
+               <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col flex-1 min-h-[420px] animate-in slide-in-from-bottom-4 duration-700">
+                  <div className="p-7 border-b bg-slate-50/50 flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner"><ClipboardList className="h-5 w-5" /></div>
+                        <h4 className="text-sm font-black uppercase text-slate-700 tracking-[0.1em]">Últimas ubicaciones registradas</h4>
+                     </div>
+                     <Badge variant="outline" className="bg-white border-primary/20 text-primary font-black px-3 h-6">25 REGISTROS</Badge>
+                  </div>
+                  <ScrollArea className="flex-1">
+                     <Table>
+                        <TableHeader className="bg-slate-50">
+                           <TableRow className="h-12">
+                              <TableHead className="pl-8 text-[9px] font-black uppercase">Fecha y hora</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">CCT</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Latitud</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase">Longitud</TableHead>
+                              <TableHead className="text-[9px] font-black uppercase text-center">Estado</TableHead>
+                              <TableHead className="text-right pr-8 text-[9px] font-black uppercase">Acciones</TableHead>
+                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                           {[
+                             { date: '15/04/2025 10:24', cct: '15DES0001R', lat: '19.6289', lng: '-99.3128', status: 'En línea', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                             { date: '14/04/2025 16:45', cct: '15DES0023A', lat: '19.6214', lng: '-99.6038', status: 'En movimiento', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                             { date: '14/04/2025 13:12', cct: '15DES0045B', lat: '19.6267', lng: '-99.5921', status: 'En línea', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                             { date: '13/04/2025 09:17', cct: '15DES0103Z', lat: '19.6301', lng: '-99.6002', status: 'Sin señal', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+                             { date: '12/04/2025 11:30', cct: '15DES0078X', lat: '19.6128', lng: '-99.5876', status: 'Desconectado', color: 'bg-slate-50 text-slate-500 border-slate-200' }
+                           ].map((u, i) => (
+                             <TableRow key={i} className="h-16 border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
+                                <TableCell className="pl-8 text-[10px] font-bold text-slate-400">{u.date}</TableCell>
+                                <TableCell className="font-mono text-[11px] font-black text-primary">{u.cct}</TableCell>
+                                <TableCell className="text-[10px] font-bold text-slate-600">{u.lat}</TableCell>
+                                <TableCell className="text-[10px] font-bold text-slate-600">{u.lng}</TableCell>
+                                <TableCell className="text-center">
+                                   <Badge variant="outline" className={cn("text-[8px] font-black uppercase px-3 h-5 rounded-full", u.color)}>{u.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right pr-8">
+                                   <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:bg-blue-100 rounded-xl"><Eye className="h-4 w-4" /></Button>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl"><Trash2 className="h-4 w-4" /></Button>
+                                   </div>
+                                </TableCell>
+                             </TableRow>
+                           ))}
+                        </TableBody>
+                     </Table>
+                  </ScrollArea>
+                  {/* Paginación Institucional */}
+                  <div className="p-6 border-t bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mostrando 1 - 5 de 25 registros</span>
+                     <div className="flex gap-1.5">
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 hover:bg-white transition-all"><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button size="icon" className="h-8 w-8 rounded-xl bg-blue-600 text-white font-black text-xs shadow-lg shadow-blue-600/20">1</Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 bg-white/50 hover:bg-white font-bold text-xs">2</Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 bg-white/50 hover:bg-white font-bold text-xs">3</Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 bg-white/50 hover:bg-white font-bold text-xs">4</Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 hover:bg-white transition-all"><ChevronRight className="h-4 w-4" /></Button>
+                     </div>
+                  </div>
+               </Card>
             </div>
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
@@ -419,21 +556,6 @@ export default function ProgramsPage() {
                    <div className="p-4 bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center text-center gap-2"><Info className="h-4 w-4 text-primary" /><p className="text-[8px] font-black text-primary uppercase">Inicie una captura para activar el checklist interactivo de auditoría.</p></div>
                 </Card>
              </div>
-
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-10">
-                <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Resumen por Meta</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><MonitorCheck className="h-10 w-10" /><p className="text-[8px] font-black">AUDITORÍA 2026</p></div>
-                </Card>
-                <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><PieChartIcon className="h-4 w-4" /> Estatus de Bibliotecas</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><Archive className="h-10 w-10" /><p className="text-[8px] font-black">CONTROL GLOBAL</p></div>
-                </Card>
-                <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><Activity className="h-4 w-4" /> Estadística de Atención</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><Settings className="h-10 w-10" /><p className="text-[8px] font-black">SOPORTE NIVEL 1</p></div>
-                </Card>
-             </div>
           </div>
         ) : activeTab === 'Geoposición' ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full animate-in slide-in-from-bottom-4 duration-500 min-h-[600px] pb-10">
@@ -481,7 +603,6 @@ export default function ProgramsPage() {
                             {records.filter(r => r.name === 'Geoposición').slice(0, 10).map(rec => (
                               <TableRow key={rec.id} className="h-12 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"><TableCell className="pl-6 text-[9px] font-bold text-slate-400">{rec.date}</TableCell><TableCell className="font-mono text-[10px] font-black text-primary">{rec.cct}</TableCell><TableCell><Badge variant="outline" className="text-[7px] font-black uppercase border-emerald-200 text-emerald-600 bg-emerald-50 px-1.5 h-4">POSICIÓN OK</Badge></TableCell><TableCell className="text-right pr-6"><button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button></TableCell></TableRow>
                             ))}
-                            {records.filter(r => r.name === 'Geoposición').length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-10 opacity-20 text-[10px] font-black uppercase">Sin registros</TableCell></TableRow>}
                          </TableBody>
                       </Table>
                    </ScrollArea>
@@ -652,7 +773,7 @@ export default function ProgramsPage() {
                 <TabsContent value="proyecto" className="h-full m-0 p-8">
                    <ScrollArea className="h-full">
                       <div className="space-y-10">
-                         {/* Bloque de Identificación según imagen */}
+                         {/* Bloque de Identificación */}
                          <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm space-y-6">
                             <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">IDENTIFICACIÓN CCT</h4>
                             <div className="max-w-2xl mx-auto space-y-4">
@@ -666,7 +787,7 @@ export default function ProgramsPage() {
                                   />
                                </div>
                                
-                               {/* Bloque CCT NO ENCONTRADO según imagen */}
+                               {/* Bloque CCT NO ENCONTRADO */}
                                {dialogSearchTerm.length >= 5 && schoolSearchResults.length === 0 && !formData.schoolName && (
                                  <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-300">
                                     <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">CCT NO ENCONTRADO</p>
@@ -688,7 +809,7 @@ export default function ProgramsPage() {
                             </div>
                          </div>
 
-                         {/* Checklist de Fases según imagen */}
+                         {/* Checklist de Fases */}
                          <div className="space-y-6">
                             <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-[#9f2241]" /><h4 className="text-xs font-black uppercase text-[#9f2241] tracking-widest">FASES DEL PROYECTO</h4></div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
