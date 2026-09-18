@@ -1,4 +1,3 @@
-
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
@@ -144,7 +143,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   useEffect(() => {
     if (!mounted || isPublic) return;
 
-    // Escuchamos la colección completa para el buzón
     const q = query(
       collection(db, 'support_queue'),
       orderBy('lastActivity', 'desc'),
@@ -182,7 +180,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         id: doc.id 
       })) as Message[];
       
-      // Ordenamos en el cliente para mayor velocidad y evitar requerir índices compuestos
       const sortedMsgs = msgs.sort((a, b) => {
         const timeA = a.timestamp?.seconds || 0;
         const timeB = b.timestamp?.seconds || 0;
@@ -209,7 +206,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     setIsSending(true);
     try {
-      // 1. Actualizar la cola para que el analista vea el nuevo mensaje arriba
       const queueRef = doc(db, 'support_queue', chatId);
       await setDoc(queueRef, { 
         lastActivity: serverTimestamp(), 
@@ -217,7 +213,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // 2. Registrar el mensaje
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -228,7 +223,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       if (!msgContent) setInput('');
 
-      // 3. IA Asistente (solo para usuario público)
       if (isPublic && !textToSend.includes("Solicitud de apoyo")) {
         setIsBotThinking(true);
         try {
@@ -279,7 +273,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // VISTA PÚBLICA (USUARIO)
   if (isPublic) {
     return (
       <div className="flex h-full w-full bg-[#f4f7f9] overflow-hidden">
@@ -359,10 +352,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // VISTA DEL ANALISTA (DASHBOARD)
   return (
     <div className="flex h-full w-full overflow-hidden bg-white">
-      {/* Columna 1: Navegación Táctica */}
       <div className="w-[280px] bg-[#0b4135] flex flex-col shrink-0 overflow-hidden shadow-2xl z-40">
         <div className="p-6 flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 mb-8"><div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 border border-white/5"><Bot className="h-7 w-7" /></div><div className="min-w-0"><h3 className="text-white font-black uppercase text-sm leading-none tracking-tighter">Mesa Operativa</h3><div className="flex items-center gap-1.5 mt-1.5"><div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /><span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">En Línea</span></div></div></div>
@@ -383,7 +374,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <div className="p-6 bg-black/20 flex items-center gap-4 border-t border-white/5"><Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-lg"><AvatarFallback className="bg-emerald-800 text-white font-black text-xs">AN</AvatarFallback></Avatar><div className="min-w-0"><p className="text-xs font-black text-white uppercase truncate">{techName}</p><p className="text-[9px] font-bold text-white/30 uppercase mt-1">Técnico Analista</p></div></div>
       </div>
 
-      {/* Columna 2: Lista de Conversaciones */}
       <div className="w-[340px] flex flex-col bg-slate-50 border-r border-slate-200 shrink-0 z-30">
         <div className="p-6 space-y-6 bg-white border-b flex items-center justify-between"><h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Conversaciones</h2><button onClick={() => window.location.reload()} className="h-8 w-8 rounded-lg bg-white border flex items-center justify-center text-slate-400 hover:text-primary transition-all"><RefreshCcw className="h-4 w-4" /></button></div>
         <ScrollArea className="flex-1">
@@ -399,7 +389,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
-      {/* Columna 3: Ventana de Chat Vivo */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#f0f2f5] z-20">
         {selectedRequest ? (
           <>
@@ -427,4 +416,3 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     </div>
   );
 }
-
