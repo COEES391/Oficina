@@ -198,7 +198,7 @@ export default function ProgramsPage() {
 
   const handleQuickAddCct = () => {
     if (!quickAddForm.cct || !quickAddForm.nombre || !quickAddForm.municipio) {
-      toast({ variant: "destructive", title: "Faltan datos" }); return;
+      toast({ variant: "destructive", title: "Faltan datos técnicos", description: "CCT, Nombre y Municipio son obligatorios." }); return;
     }
     const newSchool: SchoolInfo = { 
       ...quickAddForm, 
@@ -209,7 +209,10 @@ export default function ProgramsPage() {
       region: (quickAddForm.region || '').toUpperCase(),
       zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
       sector: (quickAddForm.sector || '').toUpperCase(),
-      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase(),
+      domicilio: (quickAddForm.domicilio || '').toUpperCase(),
+      localidad: (quickAddForm.localidad || '').toUpperCase(),
+      telefono: quickAddForm.telefono || 'S/D'
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -217,7 +220,7 @@ export default function ProgramsPage() {
     handleCctChange(newSchool.cct);
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "Plantel Registrado" });
+    toast({ title: "Plantel Registrado en Base Maestra" });
   }
 
   const handleSave = () => {
@@ -511,10 +514,6 @@ export default function ProgramsPage() {
                    <Card className="border-none shadow-xl rounded-[3rem] overflow-hidden relative min-h-[400px] bg-slate-100 group">
                       <Image src="https://picsum.photos/seed/school-front/1200/600" alt="Escuela" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute top-6 left-6 flex gap-2">
-                         <Badge className="bg-primary text-white border-none font-black text-[9px] h-6 px-3">NUEVO</Badge>
-                         <Badge className="bg-emerald-500 text-white border-none font-black text-[9px] h-6 px-3">ACTIVO</Badge>
-                      </div>
                       <div className="absolute bottom-10 left-10 right-10">
                          <div className="flex justify-between items-end">
                             <div className="text-white space-y-2">
@@ -687,11 +686,6 @@ export default function ProgramsPage() {
                                  </div>
                                )}
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                               <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-2">LATITUD</Label><Input value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-mono font-bold" /></div>
-                               <div className="space-y-1.5"><Label className="text-[9px] font-black uppercase text-slate-400 pl-2">LONGITUD</Label><Input value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} className="h-10 rounded-xl bg-slate-50 border-none shadow-inner text-center font-mono font-bold" /></div>
-                            </div>
                          </div>
 
                          {/* Checklist de Fases según imagen */}
@@ -744,21 +738,96 @@ export default function ProgramsPage() {
       </Dialog>
 
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-        <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-6 bg-[#B38E5D] text-white">
-            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro Rápido de CCT</DialogTitle>
+        <DialogContent className="sm:max-w-[850px] rounded-[1.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0">
+            <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> REGISTRO DE NUEVO CCT</DialogTitle>
+            <DialogDescription className="text-white/80 text-[9px] font-bold uppercase mt-1 tracking-widest">SUME UN NUEVO PLANTEL A LA BASE MAESTRA DEL SISTEMA.</DialogDescription>
           </DialogHeader>
-          <div className="p-8 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">CCT</Label><Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black" /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label><Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black" /></div>
+          <div className="p-10 space-y-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">CCT (10 DÍGITOS)</Label>
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="h-11 font-mono font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">NOMBRE DEL PLANTEL</Label>
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
+                </div>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Municipio</Label><Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} /></div>
-                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-primary">Valle</Label><Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select></div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">DOMICILIO (CALLE Y NÚMERO)</Label>
+                  <Input value={quickAddForm.domicilio} onChange={e => setQuickAddForm({...quickAddForm, domicilio: e.target.value.toUpperCase()})} className="h-11 font-bold border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">TELÉFONO</Label>
+                  <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="h-11 font-mono font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner" placeholder="S/D" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">LOCALIDAD</Label>
+                  <Input value={quickAddForm.localidad} onChange={e => setQuickAddForm({...quickAddForm, localidad: e.target.value.toUpperCase()})} className="h-11 font-bold border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">MUNICIPIO</Label>
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">SECTOR</Label>
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">ZONA ESCOLAR</Label>
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">MODALIDAD</Label>
+                  <Select value={quickAddForm.modalidad} onValueChange={v => setQuickAddForm({...quickAddForm, modalidad: v})}>
+                    <SelectTrigger className="h-11 font-black uppercase border-none bg-[#EFE7DD] rounded-xl shadow-inner text-[10px]"><SelectValue placeholder="MODALIDAD..." /></SelectTrigger>
+                    <SelectContent className="rounded-xl z-[400]">
+                      <SelectItem value="DES" className="text-[10px] font-black">DES (GENERAL)</SelectItem>
+                      <SelectItem value="DST" className="text-[10px] font-black">DST (TÉCNICA)</SelectItem>
+                      <SelectItem value="DTV" className="text-[10px] font-black">DTV (TELESECUNDARIA)</SelectItem>
+                      <SelectItem value="ADG" className="text-[10px] font-black">ADG (DEPARTAMENTO)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">TURNO</Label>
+                  <Select value={quickAddForm.turno} onValueChange={v => setQuickAddForm({...quickAddForm, turno: v})}>
+                    <SelectTrigger className="h-11 font-black uppercase border-none bg-[#EFE7DD] rounded-xl shadow-inner text-[10px]"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl z-[400]">
+                      <SelectItem value="MATUTINO" className="text-[10px] font-black">MATUTINO</SelectItem>
+                      <SelectItem value="VESPERTINO" className="text-[10px] font-black">VESPERTINO</SelectItem>
+                      <SelectItem value="MIXTO" className="text-[10px] font-black">MIXTO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary pl-1">VALLE</Label>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}>
+                    <SelectTrigger className="h-11 font-black uppercase border-none bg-[#EFE7DD] rounded-xl shadow-inner text-[10px]"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl z-[400]">
+                      <SelectItem value="MEXICO" className="text-[10px] font-black">MÉXICO</SelectItem>
+                      <SelectItem value="TOLUCA" className="text-[10px] font-black">TOLUCA</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
              </div>
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t flex justify-end gap-3"><Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-8 text-[10px] font-black uppercase">Cancelar</Button><Button onClick={handleQuickAddCct} className="bg-primary text-white h-12 px-12 rounded-xl text-[10px] font-black uppercase shadow-lg">Registrar</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-6 shrink-0">
+            <Button variant="ghost" onClick={() => setIsQuickAddOpen(false)} className="h-12 px-10 text-[11px] font-black uppercase tracking-widest text-slate-400">CANCELAR</Button>
+            <Button onClick={handleQuickAddCct} className="bg-[#9f2241] hover:bg-[#8a1d38] text-white h-12 px-14 rounded-xl text-[11px] font-black uppercase shadow-2xl">REGISTRAR Y SUMAR</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
