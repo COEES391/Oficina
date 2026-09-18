@@ -69,7 +69,9 @@ import {
   LayoutGrid,
   Phone,
   MonitorCheck,
-  Server
+  Server,
+  QrCode,
+  ExternalLink
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -724,8 +726,44 @@ export default function ProgramsPage() {
            </div>
         </div>
       ) : activeTab === 'ATRES' ? (
-        <div className="flex-1 overflow-hidden bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col">
-          <HelpDeskInterface />
+        <div className="flex-1 overflow-hidden flex flex-col gap-6 animate-in slide-in-from-bottom-4">
+          <div className="flex-1 overflow-hidden bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col">
+            <HelpDeskInterface />
+          </div>
+          
+          <Card className="executive-card p-6 bg-[#0b4135] text-white shrink-0 border-none">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center p-1 shadow-2xl">
+                   <Image 
+                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/helpdesk')}`} 
+                     alt="QR Acceso" 
+                     width={60} 
+                     height={60}
+                   />
+                </div>
+                <div className="space-y-1">
+                   <h4 className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
+                     <QrCode className="h-5 w-5 text-emerald-400" /> Compartir Acceso a Usuarios
+                   </h4>
+                   <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Docentes y coordinadores pueden escanear el código para iniciar chat vivo</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                 <div className="bg-black/20 px-6 py-3 rounded-xl border border-white/10 flex items-center gap-4 flex-1">
+                    <span className="text-[10px] font-black text-emerald-400 font-mono">LIGA:</span>
+                    <span className="text-[11px] font-bold text-white/80 select-all truncate max-w-[200px]">{window.location.origin}/helpdesk</span>
+                 </div>
+                 <Button 
+                   onClick={() => window.open('/helpdesk', '_blank')}
+                   className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-xl gap-2 shrink-0"
+                 >
+                   <ExternalLink className="h-4 w-4" /> Probar portal público
+                 </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[600px]">
