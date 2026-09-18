@@ -165,13 +165,12 @@ export default function ProgramsPage() {
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   
-  // Cuentas
+  // Cuentas logic
   const [verifyInput, setVerifyInput] = useState('')
   const [verifiedAccount, setVerifiedAccount] = useState<ProgramStatus | null>(null)
   const [userPart, setUserPart] = useState('')
   const [domainPart, setDomainPart] = useState(DOMINIOS[0])
   
-  // Biblioteca Detail Selection
   const [selectedLibCct, setSelectedLibCct] = useState<string | null>(null)
 
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
@@ -599,7 +598,7 @@ export default function ProgramsPage() {
                             return (
                                <div key={fase.id} className="flex gap-4 relative group">
                                   {i !== BIBLIOTECA_FASES_LABELS.length - 1 && (
-                                    <div className={cn("absolute left-4 top-8 w-0.5 h-12 transition-colors", isCompleted ? "bg-emerald-500" : "bg-slate-100")} />
+                                    <div className={cn("absolute left-4 top-8 w-0.5 h-12 transition-colors", isCompleted ? "bg-emerald-50" : "bg-slate-100")} />
                                   )}
                                   <div className={cn(
                                     "h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 z-10 transition-all duration-500", 
@@ -769,14 +768,17 @@ export default function ProgramsPage() {
                   </div>
                   <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3 shadow-inner">
                      <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg"><Info className="h-4 w-4" /></div>
-                     <p className="text-[9px] font-bold text-slate-500 uppercase leading-relaxed">Asegúrate de ingresar el CCT y las coordenadas en formato decimal.</p>
+                     <div className="space-y-0.5">
+                        <h5 className="text-[10px] font-black text-blue-800 uppercase">Información</h5>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase leading-relaxed">Asegúrate de ingresar el CCT y las coordenadas en formato decimal (latitud y longitud) para registrar correctamente la ubicación de la escuela.</p>
+                     </div>
                   </div>
                 </div>
               </Card>
               <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden">
                 <div className="p-6 border-b flex items-center gap-3 bg-slate-50/50">
                    <History className="h-5 w-5 text-slate-600" />
-                   <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Últimas ubicaciones</h4>
+                   <h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Últimas ubicaciones registradas</h4>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
@@ -785,7 +787,7 @@ export default function ProgramsPage() {
                         <TableRow className="h-10">
                           <TableHead className="pl-6 text-[9px] font-black uppercase text-slate-400">Fecha</TableHead>
                           <TableHead className="text-[9px] font-black uppercase text-slate-400">CCT</TableHead>
-                          <TableHead className="text-[9px] font-black uppercase text-slate-400">Estado</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase text-slate-400">Estatus</TableHead>
                           <TableHead className="text-right pr-8 text-[9px] font-black uppercase text-slate-400">Acción</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -975,7 +977,7 @@ export default function ProgramsPage() {
         <div className="flex-1 overflow-hidden bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col">
           <HelpDeskInterface />
         </div>
-      ) : activeTab === 'Cuentas Institucionales' ? (
+      ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[600px]">
            <div className="lg:col-span-5 space-y-6">
               <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-10 space-y-8 h-full flex flex-col shadow-primary/5">
@@ -1026,42 +1028,12 @@ export default function ProgramsPage() {
               </Card>
               <Card className="flex-1 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-col overflow-hidden shadow-primary/5">
                  <div className="p-8 border-b flex items-center justify-between bg-slate-50/50"><div className="flex items-center gap-4"><div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-inner"><ClipboardList className="h-6 w-6" /></div><h4 className="text-sm font-black text-slate-700 uppercase tracking-widest">Historial de registros</h4></div></div>
-                 <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><Table><TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b"><TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable / Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo Registrado</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Cuentas Institucionales').map((rec, idx) => (<TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors"><TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[150px]">{rec.departamento}</span></div></TableCell><TableCell className="font-mono text-[10px] font-bold text-primary">{rec.email}</TableCell><TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-black px-3 h-5 rounded-full border-2 uppercase", rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100")}>{rec.status}</Badge></TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => { handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div></Card></div>
-              </Card>
+                 <div className="flex-1 overflow-hidden"><ScrollArea className="h-full"><Table><TableHeader className="bg-slate-50/50 sticky top-0 z-10 border-b"><TableRow className="h-12"><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable / Servidor</TableHead><TableHead className="text-[9px] font-black uppercase">Correo Registrado</TableHead><TableHead className="text-[9px] font-black uppercase text-center">Estatus</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase">Acciones</TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Cuentas Institucionales').map((rec, idx) => (<TableRow key={rec.id || idx} className="h-16 border-b border-slate-50 hover:bg-slate-50 transition-colors"><TableCell className="pl-8"><div className="flex flex-col"><span className="text-[11px] font-black text-slate-700 uppercase leading-none">{rec.userName}</span><span className="text-[8px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[150px]">{rec.departamento}</span></div></TableCell><TableCell className="font-mono text-[10px] font-bold text-primary">{rec.email}</TableCell><TableCell className="text-center"><Badge variant="outline" className={cn("text-[8px] font-black px-3 h-5 rounded-full border-2 uppercase", rec.status === 'activo' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100")}>{rec.status}</Badge></TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => { handleEdit(rec); }} className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg flex items-center justify-center text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></div></Card>
            </div>
         </div>
-      ) : (
-        <Card className="executive-card p-0 shadow-2xl border-none overflow-hidden bg-white animate-in slide-in-from-bottom-4 duration-500 w-full min-h-[400px]">
-          <div className="px-8 py-6 border-b flex justify-between items-center bg-slate-50/50">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Briefcase className="h-5 w-5" /></div>
-              <div><h3 className="text-sm font-black uppercase text-slate-800">{activeTab}</h3></div>
-            </div>
-            <div className="relative w-64"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Buscar..." className="h-9 pl-9 text-xs" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
-          </div>
-          <div className="overflow-x-auto w-full">
-            <Table>
-              <TableHeader className="bg-slate-50 border-b">
-                <TableRow className="h-12"><TableHead className="w-12 text-[10px] font-bold pl-8 uppercase">#</TableHead><TableHead className="text-[10px] font-bold text-primary w-[110px] uppercase">CCT</TableHead><TableHead className="text-[10px] font-bold text-primary min-w-[200px] uppercase">Nombre / Escuela</TableHead><TableHead className="text-right text-[10px] font-bold pr-10 w-24 uppercase">Acción</TableHead></TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (<TableRow><TableCell colSpan={4} className="text-center py-20 opacity-30"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></TableCell></TableRow>) : 
-                filteredRecords.map((rec, idx) => (
-                  <TableRow key={rec.id || idx} className="hover:bg-slate-50 border-b border-slate-50 h-14">
-                    <TableCell className="pl-8 font-bold text-[10px] text-slate-300">{idx + 1}</TableCell>
-                    <TableCell className="font-mono font-bold text-[11px] text-primary">{rec.cct}</TableCell>
-                    <TableCell className="uppercase text-[12px] font-bold text-slate-700 truncate">{rec.schoolName || rec.userName}</TableCell>
-                    <TableCell className="text-right pr-10"><div className="flex justify-end gap-1"><button onClick={() => handleEdit(rec)} className="h-8 w-8 text-slate-400 hover:text-primary"><Pencil className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></div></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
       )}
       </div>
 
-      {/* Main Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSaving) { setIsDialogOpen(open); if(!open) resetForm(); } }}>
         <DialogContent className="w-[98vw] lg:max-w-[1200px] h-[92vh] rounded-[2.5rem] p-0 overflow-hidden bg-white flex flex-col border-none shadow-2xl">
           <DialogHeader className="p-8 bg-primary text-white shrink-0">
@@ -1205,7 +1177,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Quick Add CCT Dialog */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0"><DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro Rápido de CCT</DialogTitle></DialogHeader>
