@@ -271,6 +271,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return queue.filter(q => q.status !== 'closed');
   }, [queue, currentFilter, isPublic]);
 
+  const pendingCount = useMemo(() => queue.filter(q => q.status === 'pending').length, [queue]);
+
   if (!mounted) return null;
 
   if (isPublic) {
@@ -359,14 +361,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           <div className="flex items-center gap-4 mb-8"><div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 border border-white/5"><Bot className="h-7 w-7" /></div><div className="min-w-0"><h3 className="text-white font-black uppercase text-sm leading-none tracking-tighter">Mesa Operativa</h3><div className="flex items-center gap-1.5 mt-1.5"><div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /><span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">En Línea</span></div></div></div>
           <nav className="space-y-1">
             {[ 
-              { id: 'conversaciones', label: 'Buzón Soporte', icon: MessageSquare, badge: queue.filter(q => q.status === 'pending').length }, 
+              { id: 'conversaciones', label: 'Buzón Soporte', icon: MessageSquare, badge: pendingCount }, 
               { id: 'mias', label: 'Mis casos', icon: User, badge: null }, 
-              { id: 'no-asignadas', label: 'No asignadas', icon: UserPlus, badge: queue.filter(q => q.status === 'pending').length }, 
+              { id: 'no-asignadas', label: 'No asignadas', icon: UserPlus, badge: pendingCount }, 
               { id: 'cerradas', label: 'Historial', icon: Archive, badge: null } 
             ].map(item => (
               <button key={item.id} onClick={() => setCurrentFilter(item.id as any)} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all group", currentFilter === item.id ? "bg-[#128c7e] text-white shadow-xl scale-[1.02]" : "text-white/60 hover:bg-white/5")}>
                 <div className="flex items-center gap-3"><item.icon className="h-4 w-4" /><span className="text-xs font-black uppercase tracking-wider">{item.label}</span></div>
-                {item.badge !== null && item.badge > 0 && <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full">{item.badge}</Badge>}
+                {item.badge !== null && item.badge > 0 && <Badge className="h-5 min-w-5 bg-emerald-400 text-[#0b4135] border-none text-[9px] font-black rounded-full shadow-lg ring-1 ring-white/20 animate-in zoom-in">{item.badge}</Badge>}
               </button>
             ))}
           </nav>
@@ -379,9 +381,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <ScrollArea className="flex-1">
            <div className="px-3 py-6 space-y-2">
              {filteredQueue.map((chat) => (
-               <button key={chat.id} onClick={() => setSelectedRequest(chat)} className={cn("w-full p-4 rounded-[2rem] text-left transition-all duration-300 flex items-center gap-4 border-2", selectedRequest?.id === chat.id ? "bg-emerald-50 border-emerald-200 shadow-lg scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}>
-                  <div className="relative shrink-0"><Avatar className="h-12 w-12 shadow-md border-2 border-white"><AvatarFallback className="bg-primary text-white font-black text-sm uppercase">{chat.userName?.slice(0, 2) || 'U'}</AvatarFallback></Avatar><div className={cn("absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm", chat.status === 'pending' ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500')} /></div>
+               <button key={chat.id} onClick={() => setSelectedRequest(chat)} className={cn("w-full p-4 rounded-[2rem] text-left transition-all duration-300 flex items-center gap-4 border-2 group relative", selectedRequest?.id === chat.id ? "bg-emerald-50 border-emerald-200 shadow-lg scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80 shadow-sm")}>
+                  <div className="relative shrink-0"><Avatar className="h-12 w-12 shadow-md border-2 border-white"><AvatarFallback className="bg-primary text-white font-black text-sm uppercase">{chat.userName?.slice(0, 2) || 'U'}</AvatarFallback></Avatar><div className={cn("absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm transition-all", chat.status === 'pending' ? 'bg-rose-500 animate-pulse scale-110' : 'bg-emerald-500')} /></div>
                   <div className="flex-1 min-w-0"><div className="flex justify-between items-center mb-1"><span className="text-[12px] font-black text-slate-800 uppercase truncate">{chat.userName}</span><span className="text-[8px] font-black text-slate-400 font-mono">#{chat.id.split('-').at(-1)}</span></div><p className="text-[10px] font-semibold text-slate-400 truncate uppercase mt-1">{chat.lastMessage || 'Nueva solicitud...'}</p></div>
+                  {chat.status === 'pending' && <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />}
                </button>
              ))}
              {filteredQueue.length === 0 && <div className="text-center py-20 opacity-20"><MessageSquare className="h-12 w-12 mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest">Sin chats activos</p></div>}
