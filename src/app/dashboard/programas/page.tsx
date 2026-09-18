@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -301,29 +302,111 @@ export default function ProgramsPage() {
 
   const handleSave = async () => {
     const currentCct = (formData.cct || dialogSearchTerm || '').toUpperCase().trim();
+    
     if (!currentCct && activeTab !== 'Cuentas Institucionales') {
-      toast({ variant: "destructive", title: "CCT Requerido" }); return;
+      toast({ variant: "destructive", title: "CCT Requerido", description: "Debe identificar un plantel para guardar el registro." });
+      return;
     }
+
+    if (activeTab === 'Cuentas Institucionales' && !userPart) {
+      toast({ variant: "destructive", title: "Usuario Requerido", description: "Debe ingresar el nombre de usuario de la cuenta." });
+      return;
+    }
+
     setIsSaving(true);
+    
     try {
-      let currentProgress = formData.progress;
+      // 1. Calcular progreso si es Biblioteca Digital
+      let currentProgress = formData.progress || 0;
       if (activeTab === 'Biblioteca Digital') {
-        currentProgress = BIBLIOTECA_FASES_LABELS.filter(f => (formData.bibliotecaFases as any)?.[f.id]).reduce((max, f) => Math.max(max, f.progress), 0);
+        const checkedFases = BIBLIOTECA_FASES_LABELS.filter(f => (formData.bibliotecaFases as any)?.[f.id]);
+        currentProgress = checkedFases.length > 0 ? checkedFases.reduce((max, f) => Math.max(max, f.progress), 0) : 0;
       }
-      const finalData: Record<string, any> = {
-        ...formData,
+
+      // 2. Limpiar y estructurar los datos finales (evitando undefined y duplicados de metadatos)
+      const cleanAsistentes = activeTab === 'Biblioteca Digital' 
+        ? asistentes.filter(a => a.rfc && a.nombres).map(a => ({
+            paterno: a.paterno || '',
+            materno: a.materno || '',
+            nombres: a.nombres || '',
+            rfc: a.rfc || '',
+            funcion: a.funcion || '',
+            cct: a.cct || '',
+            nombreCT: a.nombreCT || ''
+          }))
+        : [];
+
+      // Construcción explícita del cuerpo del documento para evitar enviar campos redundantes como "id"
+      const docBody: any = {
         name: String(activeTab),
         cct: String(currentCct),
-        progress: currentProgress,
-        email: activeTab === 'Cuentas Institucionales' ? `${userPart.toLowerCase()}${domainPart}` : formData.email,
-        asistentes: activeTab === 'Biblioteca Digital' ? asistentes.filter(a => a.rfc && a.nombres) : (formData.asistentes || []),
-        updatedAt: serverTimestamp()
+        schoolName: formData.schoolName || '',
+        municipio: formData.municipio || '',
+        valle: formData.valle || '',
+        region: formData.region || '',
+        zonaEscolar: formData.zonaEscolar || '',
+        sector: formData.sector || '',
+        modalidad: formData.modalidad || '',
+        progress: Number(currentProgress),
+        status: formData.status || 'activo',
+        observaciones: formData.observaciones || '',
+        updatedAt: serverTimestamp(),
       };
-      if (editingId) { await updateDoc(doc(db, 'programs', editingId), finalData); }
-      else { await addDoc(collection(db, 'programs'), { ...finalData, createdAt: serverTimestamp() }); }
-      setIsDialogOpen(false); resetForm(); toast({ title: "Registro Guardado" });
-    } catch (e: any) { toast({ variant: "destructive", title: "Error", description: e.message }); }
-    finally { setIsSaving(false); }
+
+      // Campos específicos por rubro
+      if (activeTab === 'Cuentas Institucionales') {
+        docBody.userName = formData.userName || '';
+        docBody.departamento = formData.departamento || '';
+        docBody.email = `${userPart.toLowerCase().trim()}${domainPart}`;
+      } else if (activeTab === 'Biblioteca Digital') {
+        docBody.bibliotecaFases = {
+          fase1: !!formData.bibliotecaFases?.fase1,
+          fase2: !!formData.bibliotecaFases?.fase2,
+          fase3: !!formData.bibliotecaFases?.fase3,
+          fase4: !!formData.bibliotecaFases?.fase4,
+          fase5: !!formData.bibliotecaFases?.fase5,
+          fase6: !!formData.bibliotecaFases?.fase6,
+          fase7: !!formData.bibliotecaFases?.fase7,
+          fase8: !!formData.bibliotecaFases?.fase8,
+          fase9: !!formData.bibliotecaFases?.fase9,
+          personalCapacitado: Number(formData.bibliotecaFases?.personalCapacitado || 0),
+          equiposHabilitados: Number(formData.bibliotecaFases?.equiposHabilitados || 0),
+        };
+        docBody.asistentes = cleanAsistentes;
+        docBody.reportPdf = formData.reportPdf || '';
+        docBody.evidencePhotos = formData.evidencePhotos || [];
+      } else if (activeTab === 'Geoposición') {
+        docBody.latitud = formData.latitud || '';
+        docBody.longitud = formData.longitud || '';
+      }
+
+      // 3. Ejecutar persistencia
+      if (editingId) {
+        await updateDoc(doc(db, 'programs', editingId), docBody);
+        toast({ title: "Registro Actualizado" });
+      } else {
+        docBody.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'programs'), docBody);
+        toast({ title: "Registro Guardado en la Nube" });
+      }
+
+      // 4. Finalizar
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Firestore Save Error:", error);
+      let errorMsg = "No se pudo conectar con la base de datos.";
+      if (error.message?.includes('exceeds its maximum size')) {
+        errorMsg = "El archivo PDF o las fotos son demasiado grandes. El límite total es de 1MB por registro.";
+      }
+      toast({ 
+        variant: "destructive", 
+        title: "Error al guardar", 
+        description: errorMsg
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const resetForm = () => {
@@ -635,20 +718,6 @@ export default function ProgramsPage() {
                        <button className="p-3 hover:bg-slate-100 text-slate-400 font-bold text-[10px] uppercase">Satélite</button>
                     </div>
                  </div>
-                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 group">
-                    <div className="relative">
-                       <div className="h-4 w-4 bg-primary rounded-full animate-ping absolute inset-0" />
-                       <div className="h-4 w-4 bg-primary rounded-full relative z-10 border-2 border-white shadow-lg" />
-                       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-white rounded-2xl shadow-2xl p-4 border animate-in slide-in-from-bottom-2 hidden group-hover:block">
-                          <div className="flex items-center gap-3 mb-2 pb-2 border-b">
-                             <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary"><Monitor className="h-4 w-4" /></div>
-                             <div className="min-w-0"><p className="text-[10px] font-black text-slate-800 uppercase leading-none">COEES-001</p><p className="text-[8px] font-bold text-emerald-500 mt-1 uppercase">Sincronizado</p></div>
-                          </div>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase">Última conexión:</p>
-                          <p className="text-[9px] font-black text-slate-700">{format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
-                       </div>
-                    </div>
-                 </div>
                  <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-[1.8rem] shadow-2xl border z-30 flex flex-wrap gap-6 items-center">
                     {[ 
                       { label: 'En línea', color: 'bg-emerald-500' }, 
@@ -737,13 +806,6 @@ export default function ProgramsPage() {
                     </div>
                     <div className="flex-1 relative bg-slate-100">
                        <Image src="https://picsum.photos/seed/toluca-conoce/1200/900" alt="Mapa Conoce mi Escuela" fill className="object-cover opacity-80" />
-                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
-                          <div className="h-8 w-8 bg-rose-500 rounded-full border-2 border-white shadow-2xl animate-pulse" />
-                          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white p-3 rounded-2xl shadow-2xl border w-40 animate-in slide-in-from-bottom-2 hidden group-hover:block z-40">
-                             <p className="text-[10px] font-black text-slate-800 uppercase leading-none mb-1">CCT: 15DES0001R</p>
-                             <p className="text-[8px] font-bold text-slate-400 uppercase">Toluca, Edo. Méx.</p>
-                          </div>
-                       </div>
                     </div>
                  </Card>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
@@ -797,7 +859,7 @@ export default function ProgramsPage() {
               <div className="flex items-center gap-6">
                 <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center p-1 shadow-2xl">
                    <Image 
-                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/helpdesk')}`} 
+                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin + '/helpdesk' : '')}`} 
                      alt="QR Acceso" 
                      width={60} 
                      height={60}
@@ -814,7 +876,7 @@ export default function ProgramsPage() {
               <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                  <div className="bg-black/20 px-6 py-3 rounded-xl border border-white/10 flex items-center gap-4 flex-1">
                     <span className="text-[10px] font-black text-emerald-400 font-mono">LIGA:</span>
-                    <span className="text-[11px] font-bold text-white/80 select-all truncate max-w-[200px]">{window.location.origin}/helpdesk</span>
+                    <span className="text-[11px] font-bold text-white/80 select-all truncate max-w-[200px]">{typeof window !== 'undefined' ? window.location.origin : ''}/helpdesk</span>
                  </div>
                  <Button 
                    onClick={() => window.open('/helpdesk', '_blank')}
@@ -1023,7 +1085,12 @@ export default function ProgramsPage() {
               </ScrollArea>
             </div>
           </Tabs>
-          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0 shadow-inner"><Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-16 text-xs gap-3 rounded-xl shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button></DialogFooter>
+          <DialogFooter className="p-8 bg-slate-50 border-t flex justify-end gap-4 shrink-0 shadow-inner">
+             <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 rounded-xl font-bold text-xs uppercase">Cancelar</Button>
+             <Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 px-16 text-xs gap-3 rounded-xl shadow-2xl">
+               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR
+             </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
