@@ -1,3 +1,4 @@
+
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES de Alta Fidelidad.
@@ -100,7 +101,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return `USER-${dateStr}-${random}`;
   }, []);
 
-  // Inicializar sesión y heartbeat (Vista de Usuario)
   useEffect(() => {
     setMounted(true);
     if (!isPublic) return;
@@ -112,90 +112,48 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     setSessionKey(sKey);
 
-    const initSupportSession = async () => {
-      try {
-        const queueRef = doc(db, 'support_queue', sKey);
-        await setDoc(queueRef, {
-          id: sKey,
-          ticketNumber: sKey,
-          timestamp: serverTimestamp(),
-          status: 'pending',
-          userName: `Usuario ${sKey.split('-').at(-1)}`,
-          lastActivity: serverTimestamp(),
-          lastMessage: 'Conectado a la Mesa de Ayuda'
-        }, { merge: true });
-      } catch (e) {
-        console.error("Error al registrar sesión de ayuda:", e);
-      }
-    };
-
-    initSupportSession();
+    const queueRef = doc(db, 'support_queue', sKey);
+    setDoc(queueRef, {
+      id: sKey,
+      ticketNumber: sKey,
+      timestamp: serverTimestamp(),
+      status: 'pending',
+      userName: `Usuario ${sKey.split('-').at(-1)}`,
+      lastActivity: serverTimestamp(),
+      lastMessage: 'Conectado a la Mesa de Ayuda'
+    }, { merge: true });
   }, [isPublic, generateTurnSessionId]);
 
-  // Obtener nombre del técnico (Vista Analista)
   useEffect(() => {
     if (!isPublic) {
       setTechName(localStorage.getItem('userRfc') || 'ANALISTA COEES');
     }
   }, [isPublic]);
 
-  // Escuchar la cola de solicitudes en tiempo real (Vista Analista)
   useEffect(() => {
     if (!mounted || isPublic) return;
-
-    const q = query(
-      collection(db, 'support_queue'),
-      orderBy('lastActivity', 'desc'),
-      limit(50)
-    );
-
+    const q = query(collection(db, 'support_queue'), orderBy('lastActivity', 'desc'), limit(50));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const updatedQueue = snapshot.docs.map(doc => ({ 
-        ...doc.data(), 
-        id: doc.id 
-      })) as SupportRequest[];
-      setQueue(updatedQueue);
-    }, (err) => {
-      console.error("Error en listener de cola:", err);
+      setQueue(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportRequest[]);
     });
-
     return () => unsubscribe();
   }, [mounted, isPublic]);
 
-  // Escuchar mensajes del chat activo en tiempo real (Ambas Vistas)
   useEffect(() => {
     if (!mounted || !activeChatId) {
       setMessages([]);
       return;
     }
-
-    const q = query(
-      collection(db, 'chat_messages'), 
-      where('chatId', '==', activeChatId)
-    );
-
+    const q = query(collection(db, 'chat_messages'), where('chatId', '==', activeChatId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ 
-        ...doc.data(), 
-        id: doc.id 
-      })) as Message[];
-      
-      const sortedMsgs = msgs.sort((a, b) => {
-        const timeA = a.timestamp?.seconds || 0;
-        const timeB = b.timestamp?.seconds || 0;
-        return timeA - timeB;
-      });
-      setMessages(sortedMsgs);
+      const msgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Message[];
+      setMessages(msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)));
     });
-
     return () => unsubscribe();
   }, [mounted, activeChatId]);
 
-  // Auto-scroll al fondo
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSendMessage = async (msgContent?: string) => {
@@ -205,62 +163,58 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (!chatId) return;
 
     setIsSending(true);
-    try {
-      const queueRef = doc(db, 'support_queue', chatId);
-      await setDoc(queueRef, { 
-        lastActivity: serverTimestamp(), 
-        lastMessage: textToSend.substring(0, 80),
-        status: isPublic ? 'pending' : 'attending'
-      }, { merge: true });
+    
+    // Iniciar escrituras en segundo plano (SIN AWAIT para respuesta instantánea)
+    const queueRef = doc(db, 'support_queue', chatId);
+    setDoc(queueRef, { 
+      lastActivity: serverTimestamp(), 
+      lastMessage: textToSend.substring(0, 80),
+      status: isPublic ? 'pending' : 'attending'
+    }, { merge: true }).catch(e => console.error("Update Queue Error:", e));
 
-      await addDoc(collection(db, 'chat_messages'), {
-        chatId,
-        role: isPublic ? 'user' : 'tech',
-        content: textToSend,
-        timestamp: serverTimestamp(),
-        senderName: !isPublic ? techName : 'Usuario'
-      });
+    addDoc(collection(db, 'chat_messages'), {
+      chatId,
+      role: isPublic ? 'user' : 'tech',
+      content: textToSend,
+      timestamp: serverTimestamp(),
+      senderName: !isPublic ? techName : 'Usuario'
+    }).catch(e => console.error("Add Message Error:", e));
 
-      if (!msgContent) setInput('');
+    if (!msgContent) setInput('');
+    setIsSending(false);
 
-      if (isPublic && !textToSend.includes("Solicitud de apoyo")) {
-        setIsBotThinking(true);
-        try {
-          const aiRes = await chatWithHelpDesk({ message: textToSend });
-          if (aiRes?.response) {
-            await addDoc(collection(db, 'chat_messages'), {
-              chatId,
-              role: 'bot',
-              content: aiRes.response,
-              timestamp: serverTimestamp()
-            });
-          }
-        } catch (e) {
-          console.error("AI Error:", e);
-        } finally {
-          setIsBotThinking(false);
+    // Solo esperamos la respuesta de la IA si es público
+    if (isPublic && !textToSend.includes("Solicitud de apoyo")) {
+      setIsBotThinking(true);
+      try {
+        const aiRes = await chatWithHelpDesk({ message: textToSend });
+        if (aiRes?.response) {
+          addDoc(collection(db, 'chat_messages'), {
+            chatId,
+            role: 'bot',
+            content: aiRes.response,
+            timestamp: serverTimestamp()
+          });
         }
+      } catch (e) {
+        console.error("AI Error:", e);
+      } finally {
+        setIsBotThinking(false);
       }
-    } catch (e: any) {
-      console.error("Error al enviar mensaje:", e);
-      toast({ variant: "destructive", title: "Falla de red", description: "No se pudo enviar el mensaje." });
-    } finally {
-      setIsSending(false);
     }
   };
 
-  const handleCloseChat = async () => {
+  const handleCloseChat = () => {
     if (!selectedRequest) return;
-    try {
-      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-        status: 'closed', 
-        lastActivity: serverTimestamp() 
-      }, { merge: true });
-      setSelectedRequest(null);
-      toast({ title: "Atención finalizada" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Error al cerrar chat" });
-    }
+    setDoc(doc(db, 'support_queue', selectedRequest.id), { 
+      status: 'closed', 
+      lastActivity: serverTimestamp() 
+    }, { merge: true })
+      .then(() => {
+        setSelectedRequest(null);
+        toast({ title: "Atención finalizada" });
+      })
+      .catch(() => toast({ variant: "destructive", title: "Falla al cerrar" }));
   };
 
   const filteredQueue = useMemo(() => {

@@ -300,7 +300,7 @@ export default function ProgramsPage() {
     setAsistentes(newAsistentes);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const currentCct = (formData.cct || dialogSearchTerm || '').toUpperCase().trim();
     
     if (!currentCct && activeTab !== 'Cuentas Institucionales') {
@@ -316,14 +316,12 @@ export default function ProgramsPage() {
     setIsSaving(true);
     
     try {
-      // 1. Calcular progreso si es Biblioteca Digital
       let currentProgress = formData.progress || 0;
       if (activeTab === 'Biblioteca Digital') {
         const checkedFases = BIBLIOTECA_FASES_LABELS.filter(f => (formData.bibliotecaFases as any)?.[f.id]);
         currentProgress = checkedFases.length > 0 ? checkedFases.reduce((max, f) => Math.max(max, f.progress), 0) : 0;
       }
 
-      // 2. Limpiar y estructurar los datos finales (evitando undefined y duplicados de metadatos)
       const cleanAsistentes = activeTab === 'Biblioteca Digital' 
         ? asistentes.filter(a => a.rfc && a.nombres).map(a => ({
             paterno: a.paterno || '',
@@ -336,7 +334,6 @@ export default function ProgramsPage() {
           }))
         : [];
 
-      // Construcción explícita del cuerpo del documento para evitar enviar campos redundantes como "id"
       const docBody: any = {
         name: String(activeTab),
         cct: String(currentCct),
@@ -353,7 +350,6 @@ export default function ProgramsPage() {
         updatedAt: serverTimestamp(),
       };
 
-      // Campos específicos por rubro
       if (activeTab === 'Cuentas Institucionales') {
         docBody.userName = formData.userName || '';
         docBody.departamento = formData.departamento || '';
@@ -380,30 +376,22 @@ export default function ProgramsPage() {
         docBody.longitud = formData.longitud || '';
       }
 
-      // 3. Ejecutar persistencia
       if (editingId) {
-        await updateDoc(doc(db, 'programs', editingId), docBody);
-        toast({ title: "Registro Actualizado" });
+        updateDoc(doc(db, 'programs', editingId), docBody)
+          .then(() => toast({ title: "Registro Actualizado" }))
+          .catch((e) => toast({ variant: "destructive", title: "Error de Guardado", description: e.message?.includes('size') ? "El archivo es demasiado grande (Máx 1MB total)." : "Falla al conectar." }));
       } else {
         docBody.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'programs'), docBody);
-        toast({ title: "Registro Guardado en la Nube" });
+        addDoc(collection(db, 'programs'), docBody)
+          .then(() => toast({ title: "Registro Guardado en la Nube" }))
+          .catch((e) => toast({ variant: "destructive", title: "Error de Guardado", description: e.message?.includes('size') ? "El archivo es demasiado grande (Máx 1MB total)." : "Falla al conectar." }));
       }
 
-      // 4. Finalizar
       setIsDialogOpen(false);
       resetForm();
     } catch (error: any) {
-      console.error("Firestore Save Error:", error);
-      let errorMsg = "No se pudo conectar con la base de datos.";
-      if (error.message?.includes('exceeds its maximum size')) {
-        errorMsg = "El archivo PDF o las fotos son demasiado grandes. El límite total es de 1MB por registro.";
-      }
-      toast({ 
-        variant: "destructive", 
-        title: "Error al guardar", 
-        description: errorMsg
-      });
+      console.error("Save Error:", error);
+      toast({ variant: "destructive", title: "Error al preparar datos" });
     } finally {
       setIsSaving(false);
     }
@@ -416,7 +404,7 @@ export default function ProgramsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Eliminar registro?")) return;
-    await deleteDoc(doc(db, 'programs', id));
+    deleteDoc(doc(db, 'programs', id));
     toast({ title: "Registro Removido" });
   }
 
