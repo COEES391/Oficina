@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -65,7 +64,10 @@ import {
   BarChart3,
   Globe,
   Info,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  LayoutGrid,
+  Phone,
+  Settings2
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -86,8 +88,6 @@ import {
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { format } from 'date-fns'
-
-const DOMINIOS = ['@coees.edu.mx', '@desysa.edu.mx', '@edomex.gob.mx'];
 
 const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', progress: 11 },
@@ -328,7 +328,6 @@ export default function ProgramsPage() {
       <div className="flex-1 min-h-0">
         {activeTab === 'Cuentas Institucionales' ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500 pb-10">
-            {/* Columna Izquierda: Mapa de Ubicación */}
             <div className="lg:col-span-7 flex flex-col gap-4">
               <Card className="flex-1 rounded-[2.5rem] overflow-hidden border-none shadow-2xl relative min-h-[500px] bg-slate-100 border-4 border-white group">
                 <div className="absolute top-6 left-6 z-20 flex gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-xl border">
@@ -340,9 +339,8 @@ export default function ProgramsPage() {
                   alt="Visor Cartográfico" 
                   fill 
                   className="object-cover opacity-80 grayscale-[0.3]" 
+                  data-ai-hint="digital map"
                 />
-                
-                {/* Marcador Central Interactivo */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
                    <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-primary/10 flex flex-col gap-1 mb-3 animate-in slide-in-from-bottom-2 duration-700 min-w-[200px]">
                       <div className="flex justify-between items-center mb-1">
@@ -358,8 +356,6 @@ export default function ProgramsPage() {
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-black/20 blur-sm rounded-full" />
                    </div>
                 </div>
-
-                {/* Leyenda de Estados Táctica */}
                 <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-white flex flex-wrap justify-center gap-10 z-20">
                    <div className="flex items-center gap-2.5">
                      <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">En línea</span>
@@ -374,8 +370,6 @@ export default function ProgramsPage() {
                      <div className="h-3 w-3 rounded-full bg-slate-400" /><span className="text-[10px] font-black uppercase text-slate-600 tracking-wider">Desconectado</span>
                    </div>
                 </div>
-
-                {/* Controles de Navegación Flotantes */}
                 <div className="absolute bottom-28 right-8 flex flex-col gap-3 z-20">
                    <Button variant="secondary" size="icon" className="h-12 w-12 rounded-2xl shadow-2xl bg-white border-2 border-slate-50 font-black text-2xl hover:scale-110 transition-transform">+</Button>
                    <Button variant="secondary" size="icon" className="h-12 w-12 rounded-2xl shadow-2xl bg-white border-2 border-slate-50 font-black text-2xl hover:scale-110 transition-transform">-</Button>
@@ -383,8 +377,6 @@ export default function ProgramsPage() {
                 </div>
               </Card>
             </div>
-
-            {/* Columna Derecha: Registro y Bitácora */}
             <div className="lg:col-span-5 flex flex-col gap-6">
                <Card className="p-8 rounded-[2.5rem] border-none shadow-2xl bg-white space-y-8 animate-in slide-in-from-right-4 duration-500">
                   <div className="flex items-center gap-5 border-b border-slate-50 pb-5">
@@ -411,7 +403,7 @@ export default function ProgramsPage() {
                         <div className="space-y-2">
                            <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Latitud *</Label>
                            <div className="relative group">
-                              <MapPin className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+                              <Navigation className="absolute left-4 top-3.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
                               <Input placeholder="Ej. 19.6289" className="h-12 pl-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} />
                            </div>
                         </div>
@@ -436,7 +428,6 @@ export default function ProgramsPage() {
                      </div>
                   </div>
                </Card>
-
                <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white overflow-hidden flex flex-col flex-1 min-h-[420px] animate-in slide-in-from-bottom-4 duration-700">
                   <div className="p-7 border-b bg-slate-50/50 flex items-center justify-between">
                      <div className="flex items-center gap-3">
@@ -484,7 +475,6 @@ export default function ProgramsPage() {
                         </TableBody>
                      </Table>
                   </ScrollArea>
-                  {/* Paginación Institucional */}
                   <div className="p-6 border-t bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mostrando 1 - 5 de 25 registros</span>
                      <div className="flex gap-1.5">
@@ -561,7 +551,7 @@ export default function ProgramsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full animate-in slide-in-from-bottom-4 duration-500 min-h-[600px] pb-10">
              <div className="lg:col-span-8 bg-slate-100 rounded-[2.5rem] overflow-hidden relative border-4 border-white shadow-2xl flex flex-col">
                 <div className="flex-1 relative">
-                   <Image src="https://picsum.photos/seed/geosat/1200/800" alt="Map" fill className="object-cover opacity-60 grayscale" />
+                   <Image src="https://picsum.photos/seed/geosat/1200/800" alt="Map" fill className="object-cover opacity-60 grayscale" data-ai-hint="satellite map" />
                    <div className="absolute top-6 left-6 flex flex-col gap-2">
                       <div className="bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-xl flex flex-col border">
                          <button className="h-10 px-6 text-[9px] font-black uppercase hover:bg-slate-50 border-b">MAPA</button>
@@ -579,7 +569,6 @@ export default function ProgramsPage() {
                    <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-slate-400" /><span className="text-[9px] font-black uppercase text-slate-600">DESCONECTADO</span></div>
                 </div>
              </div>
-             
              <div className="lg:col-span-4 flex flex-col gap-6">
                 <Card className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
                    <div className="flex items-center gap-4 border-b pb-4"><Navigation className="h-6 w-6 text-accent" /><h3 className="text-lg font-black uppercase text-primary">CAPTURAR UBICACIÓN</h3></div>
@@ -593,7 +582,6 @@ export default function ProgramsPage() {
                    </div>
                    <div className="p-5 bg-blue-50/50 rounded-2xl border-2 border-dashed border-blue-100 flex gap-4"><Info className="h-6 w-6 text-blue-600 shrink-0" /><p className="text-[9px] font-bold text-blue-800 uppercase leading-relaxed">Asegúrate de ingresar el CCT y las coordenadas en formato decimal (Latitud y Longitud) para registrar correctamente la ubicación de la escuela.</p></div>
                 </Card>
-
                 <Card className="border-none shadow-xl rounded-[2.5rem] bg-white flex flex-col flex-1 overflow-hidden min-h-[300px]">
                    <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3"><History className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase tracking-widest text-slate-700">ÚLTIMAS UBICACIONES</h4></div>
                    <ScrollArea className="flex-1">
@@ -633,7 +621,7 @@ export default function ProgramsPage() {
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-8 space-y-8">
                    <Card className="border-none shadow-xl rounded-[3rem] overflow-hidden relative min-h-[400px] bg-slate-100 group">
-                      <Image src="https://picsum.photos/seed/school-front/1200/600" alt="Escuela" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000" />
+                      <Image src="https://picsum.photos/seed/school-front/1200/600" alt="Escuela" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000" data-ai-hint="school entrance" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className="absolute bottom-10 left-10 right-10">
                          <div className="flex justify-between items-end">
@@ -677,7 +665,7 @@ export default function ProgramsPage() {
                    <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col p-6 space-y-6">
                       <div className="flex items-center gap-4 border-b pb-4"><LayoutGrid className="h-6 w-6 text-accent" /><h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Vista previa de identidad</h4></div>
                       <div className="flex gap-6">
-                         <div className="h-24 w-24 rounded-2xl bg-slate-100 overflow-hidden relative shadow-md shrink-0"><Image src="https://picsum.photos/seed/school-thumb/200/200" alt="Thumb" fill className="object-cover" /></div>
+                         <div className="h-24 w-24 rounded-2xl bg-slate-100 overflow-hidden relative shadow-md shrink-0"><Image src="https://picsum.photos/seed/school-thumb/200/200" alt="Thumb" fill className="object-cover" data-ai-hint="school building" /></div>
                          <div className="flex-1 space-y-4">
                             <div className="flex flex-col"><Badge className="bg-rose-500 text-white border-none text-[8px] font-black w-fit mb-1">CCT: {formData.cct || '15DESXXXXX'}</Badge><h5 className="text-sm font-black text-slate-800 uppercase leading-tight">{formData.schoolName || 'NOMBRE DEL PLANTEL'}</h5></div>
                             <div className="space-y-1.5 border-t pt-3">
@@ -714,7 +702,7 @@ export default function ProgramsPage() {
                    <div className="p-2 space-y-1">
                      {queue.map(req => (
                        <button key={req.id} onClick={() => setSelectedRequest(req)} className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl" : "bg-transparent border-transparent hover:bg-white/80")}>
-                          <Avatar className="h-12 w-12"><AvatarFallback>{req.userName?.slice(0,2) || 'U'}</AvatarFallback></Avatar>
+                          <Avatar className="h-12 w-12"><AvatarFallback className="bg-slate-200 text-slate-500 font-bold">{req.userName?.slice(0,2).toUpperCase() || 'U'}</AvatarFallback></Avatar>
                           <div className="flex-1 min-w-0"><div className="flex justify-between items-center mb-0.5"><span className="text-[12px] font-black text-slate-700 uppercase truncate">{req.userName}</span>{req.status === 'pending' && <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />}</div><p className="text-[10px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud de soporte...'}</p></div>
                        </button>
                      ))}
@@ -723,7 +711,7 @@ export default function ProgramsPage() {
                 <div className="p-6 border-t bg-white space-y-4">
                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><QrCode className="h-4 w-4" /> Compartir Acceso</h4>
                    <div className="p-6 bg-slate-50 rounded-[2rem] flex flex-col items-center gap-4 border-2 border-dashed border-slate-200">
-                      <div className="h-24 w-24 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg"><Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/helpdesk')}`} alt="QR" width={80} height={80} /></div>
+                      <div className="h-24 w-24 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg"><Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin + '/helpdesk' : '')}`} alt="QR" width={80} height={80} /></div>
                       <div className="text-center"><p className="text-[8px] font-black text-slate-400 uppercase">URL de Atención:</p><p className="text-[8px] font-bold text-primary truncate max-w-[150px] mt-1">/helpdesk</p></div>
                    </div>
                 </div>
@@ -738,7 +726,7 @@ export default function ProgramsPage() {
                     <div className="flex-1 overflow-hidden flex">
                        <div className="flex-1 flex flex-col overflow-hidden">
                           {atresView === 'remote' ? (
-                            <div className="flex-1 p-6 relative"><div className="w-full h-full bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center"><Image src="https://picsum.photos/seed/desktop/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" /><div className="z-10 text-center space-y-4"><div className="h-16 w-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse"><Activity className="text-emerald-400 h-8 w-8" /></div><p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Stream seguro de video • 256-bit AES</p></div></div></div>
+                            <div className="flex-1 p-6 relative"><div className="w-full h-full bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center"><Image src="https://picsum.photos/seed/desktop/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" data-ai-hint="remote desktop" /><div className="z-10 text-center space-y-4"><div className="h-16 w-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse"><Activity className="text-emerald-400 h-8 w-8" /></div><p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Stream seguro de video • 256-bit AES</p></div></div></div>
                           ) : (
                             <><ScrollArea className="flex-1 p-8"><div className="max-w-4xl mx-auto space-y-4 flex flex-col">{messages.map((m, i) => (<div key={i} className={cn("flex w-full", m.role === 'tech' ? "justify-end" : "justify-start")}><div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-emerald-100 border border-emerald-100 rounded-tr-none text-slate-800" : "bg-white border border-slate-200 rounded-tl-none text-slate-800")}><p>{m.content}</p><div className="text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1"><Clock className="h-2.5 w-2.5" />{m.timestamp?.seconds ? format(new Date(m.timestamp.seconds * 1000), 'HH:mm') : '...'}</div></div></div>))}<div ref={scrollRef}/></div></ScrollArea><footer className="p-4 bg-white border-t flex gap-3 shrink-0"><Input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} className="rounded-2xl bg-slate-50 border-none h-12 px-6 font-bold" placeholder="ESCRIBIR RESPUESTA..." /><Button onClick={handleSendMessage} className="bg-emerald-600 hover:bg-emerald-700 h-12 w-12 rounded-2xl p-0 shadow-xl"><Send className="h-5 w-5" /></Button></footer></>
                           )}
@@ -773,7 +761,6 @@ export default function ProgramsPage() {
                 <TabsContent value="proyecto" className="h-full m-0 p-8">
                    <ScrollArea className="h-full">
                       <div className="space-y-10">
-                         {/* Bloque de Identificación */}
                          <div className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm space-y-6">
                             <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">IDENTIFICACIÓN CCT</h4>
                             <div className="max-w-2xl mx-auto space-y-4">
@@ -786,8 +773,6 @@ export default function ProgramsPage() {
                                     placeholder="INGRESAR CCT..." 
                                   />
                                </div>
-                               
-                               {/* Bloque CCT NO ENCONTRADO */}
                                {dialogSearchTerm.length >= 5 && schoolSearchResults.length === 0 && !formData.schoolName && (
                                  <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-300">
                                     <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">CCT NO ENCONTRADO</p>
@@ -799,7 +784,6 @@ export default function ProgramsPage() {
                                     </Button>
                                  </div>
                                )}
-
                                {formData.schoolName && (
                                  <div className="p-5 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex items-center justify-center gap-4 shadow-sm animate-in fade-in">
                                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -808,8 +792,6 @@ export default function ProgramsPage() {
                                )}
                             </div>
                          </div>
-
-                         {/* Checklist de Fases */}
                          <div className="space-y-6">
                             <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-[#9f2241]" /><h4 className="text-xs font-black uppercase text-[#9f2241] tracking-widest">FASES DEL PROYECTO</h4></div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -830,7 +812,6 @@ export default function ProgramsPage() {
                                ))}
                             </div>
                          </div>
-
                          <div className="space-y-2 pt-4 border-t">
                             <Label className="text-[10px] font-black uppercase text-primary">Observaciones de Auditoría</Label>
                             <Textarea value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value.toUpperCase()})} className="min-h-[120px] bg-slate-50 border-none rounded-[1.5rem] p-6 font-bold text-xs shadow-inner uppercase" placeholder="NOTAS TÉCNICAS..." />
@@ -838,7 +819,6 @@ export default function ProgramsPage() {
                       </div>
                    </ScrollArea>
                 </TabsContent>
-                
                 <TabsContent value="asistentes" className="h-full m-0 p-8">
                    <div className="flex flex-col h-full items-center justify-center opacity-30 text-center">
                       <Users className="h-20 w-20 mb-4" />
@@ -875,7 +855,6 @@ export default function ProgramsPage() {
                   <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary pl-1">DOMICILIO (CALLE Y NÚMERO)</Label>
@@ -886,7 +865,6 @@ export default function ProgramsPage() {
                   <Input value={quickAddForm.telefono} onChange={e => setQuickAddForm({...quickAddForm, telefono: e.target.value})} className="h-11 font-mono font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner" placeholder="S/D" />
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary pl-1">LOCALIDAD</Label>
@@ -897,7 +875,6 @@ export default function ProgramsPage() {
                   <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="h-11 font-black border-none bg-[#EFE7DD] rounded-xl shadow-inner uppercase" />
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary pl-1">SECTOR</Label>
@@ -920,7 +897,6 @@ export default function ProgramsPage() {
                   </Select>
                 </div>
              </div>
-
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary pl-1">TURNO</Label>
