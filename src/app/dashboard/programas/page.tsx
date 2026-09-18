@@ -220,18 +220,20 @@ export default function ProgramsPage() {
       updatedAt: serverTimestamp() 
     };
 
+    const cleanup = () => {
+      setIsSaving(false);
+      resetForm();
+      setIsDialogOpen(false);
+    }
+
     if (editingId) {
-      updateDoc(doc(db, 'programs', editingId), body).finally(() => { 
-        setIsSaving(false); 
-        resetForm(); 
-        toast({ title: "Registro Actualizado" }); 
-      });
+      updateDoc(doc(db, 'programs', editingId), body)
+        .then(() => { toast({ title: "Registro Actualizado" }); cleanup(); })
+        .catch(() => { setIsSaving(false); toast({ variant: "destructive", title: "Error al actualizar" }); });
     } else {
-      addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() }).finally(() => { 
-        setIsSaving(false); 
-        resetForm(); 
-        toast({ title: "Registro Guardado" }); 
-      });
+      addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() })
+        .then(() => { toast({ title: "Registro Guardado" }); cleanup(); })
+        .catch(() => { setIsSaving(false); toast({ variant: "destructive", title: "Error al guardar" }); });
     }
   }
 
@@ -312,15 +314,15 @@ export default function ProgramsPage() {
                   <div className="space-y-2"><Label className="text-[10px] font-black text-slate-500 uppercase pl-1">Departamento / Área *</Label><Input className="h-12 rounded-xl bg-slate-50 border-none shadow-inner uppercase font-bold" value={formData.departamento} onChange={e => setFormData({...formData, departamento: e.target.value.toUpperCase()})} /></div>
                   <div className="space-y-4">
                      <Label className="text-[10px] font-black text-primary uppercase pl-1">Constructor de Correo</Label>
-                     <div className="flex gap-2"><Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold flex-1" value={userPart} onChange={e => setUserPart(e.target.value)} /><Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-11 rounded-xl w-48 bg-slate-50 border-none font-black text-xs"><SelectValue /></SelectTrigger><SelectContent>{DOMINIOS.map(d => <SelectItem key={d} value={d} className="font-black text-[10px]">{d}</SelectItem>)}</SelectContent></Select></div>
+                     <div className="flex gap-2"><Input className="h-11 rounded-xl bg-slate-50 border-none shadow-inner text-xs font-bold flex-1" value={userPart} onChange={e => setUserPart(e.target.value)} /><Select value={domainPart} onValueChange={setDomainPart}><SelectTrigger className="h-11 rounded-xl w-48 bg-slate-50 border-none font-black text-xs"><SelectValue /></SelectTrigger><SelectContent className="z-[300]">{DOMINIOS.map(d => <SelectItem key={d} value={d} className="font-black text-[10px]">{d}</SelectItem>)}</SelectContent></Select></div>
                      <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center"><p className="text-[8px] font-black text-slate-400 uppercase">Vista previa:</p><p className={cn("text-xs font-black uppercase", userPart ? "text-primary" : "text-rose-600")}>{userPart ? `${userPart.toLowerCase()}${domainPart}` : 'esperando datos...'}</p></div>
                   </div>
                </div>
-               <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} disabled={isSaving || !userPart} className="btn-institutional h-14 rounded-2xl text-[11px]">{isSaving ? <Loader2 className="animate-spin" /> : <Save />} GUARDAR</Button><Button variant="outline" onClick={resetForm} className="h-14 rounded-2xl text-[11px]"><RotateCcw /> LIMPIAR</Button></div>
+               <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} disabled={isSaving || !userPart} className="btn-institutional h-14 rounded-2xl text-[11px] gap-3 shadow-2xl">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-5 w-5" />} GUARDAR</Button><Button variant="outline" onClick={resetForm} className="h-14 rounded-2xl border-slate-200 text-slate-500 font-black text-[11px] gap-2 uppercase hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button></div>
             </Card>
             <div className="flex flex-col gap-8 h-full">
                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-4 shrink-0"><div className="flex items-center gap-4"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><h4 className="text-sm font-black uppercase text-slate-700">Verificar Existencia</h4></div></div><div className="flex gap-2"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input className="h-9 pl-9 rounded-xl bg-slate-50 text-[10px] font-bold" value={verifyEmail} onChange={e => setVerifyEmail(e.target.value)} /></div><Button className="bg-emerald-600 h-9 px-6 rounded-xl text-[9px] uppercase font-black">Validar</Button></div></Card>
-               <Card className="border-none shadow-xl rounded-[2.5rem] bg-white flex flex-col flex-1 overflow-hidden"><div className="p-8 border-b bg-slate-50/50 flex items-center gap-3"><Archive className="h-5 w-5 text-primary" /><h4 className="text-sm font-black uppercase tracking-widest text-slate-700">Historial</h4></div><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0"><TableRow><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable</TableHead><TableHead className="text-[9px] font-black uppercase">Correo</TableHead><TableHead className="text-right pr-10"></TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Cuentas Institucionales').map(rec => (<TableRow key={rec.id} className="h-16"><TableCell className="pl-8 font-black text-xs uppercase">{rec.userName}</TableCell><TableCell className="font-mono text-[10px] text-primary">{rec.email}</TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => handleEdit(rec)} className="h-8 w-8 text-slate-400"><Eye /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 text-rose-300"><Trash2 /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></Card>
+               <Card className="border-none shadow-xl rounded-[2.5rem] bg-white flex flex-col flex-1 overflow-hidden"><div className="p-8 border-b bg-slate-50/50 flex items-center gap-3"><Archive className="h-5 w-5 text-primary" /><h4 className="text-sm font-black uppercase tracking-widest text-slate-700">Historial</h4></div><ScrollArea className="flex-1"><Table><TableHeader className="bg-slate-50 sticky top-0"><TableRow><TableHead className="pl-8 text-[9px] font-black uppercase">Responsable</TableHead><TableHead className="text-[9px] font-black uppercase">Correo</TableHead><TableHead className="text-right pr-10"></TableHead></TableRow></TableHeader><TableBody>{records.filter(r => r.name === 'Cuentas Institucionales').map(rec => (<TableRow key={rec.id} className="h-16 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"><TableCell className="pl-8 font-black text-xs uppercase">{rec.userName}</TableCell><TableCell className="font-mono text-[10px] text-primary">{rec.email}</TableCell><TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><button onClick={() => handleEdit(rec)} className="h-8 w-8 text-primary/40 hover:text-primary transition-all"><Eye className="h-4 w-4" /></button><button onClick={() => handleDelete(rec.id!)} className="h-8 w-8 text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-4 w-4" /></button></div></TableCell></TableRow>))}</TableBody></Table></ScrollArea></Card>
             </div>
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
@@ -342,7 +344,7 @@ export default function ProgramsPage() {
              </div>
 
              <Card className="p-4 bg-white/80 border-none shadow-lg rounded-2xl">
-                <div className="flex gap-4"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="BUSCAR CCT..." className="h-9 pl-10 rounded-xl bg-slate-50 border-none text-[10px]" /></div><Select defaultValue="all"><SelectTrigger className="h-9 w-40 text-[10px] font-bold"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">TODOS</SelectItem></SelectContent></Select><Button onClick={() => setIsDialogOpen(true)} className="btn-institutional h-9 px-6 text-[9px] uppercase"><Plus /> NUEVO REGISTRO</Button></div>
+                <div className="flex gap-4"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="BUSCAR CCT..." className="h-9 pl-10 rounded-xl bg-slate-50 border-none text-[10px]" /></div><Select defaultValue="all"><SelectTrigger className="h-9 w-40 text-[10px] font-bold"><SelectValue /></SelectTrigger><SelectContent className="rounded-xl"><SelectItem value="all">TODOS</SelectItem></SelectContent></Select><Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="btn-institutional h-9 px-6 text-[9px] uppercase shadow-lg"><Plus className="h-3 w-3 mr-2" /> NUEVO REGISTRO</Button></div>
              </Card>
 
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -353,11 +355,11 @@ export default function ProgramsPage() {
                          <TableHeader className="bg-slate-50"><TableRow><TableHead className="pl-8 text-[9px] font-black">CCT / PLANTEL</TableHead><TableHead className="text-[9px] font-black">PROGRESO</TableHead><TableHead className="text-[9px] font-black">ESTATUS</TableHead><TableHead className="text-right pr-10"></TableHead></TableRow></TableHeader>
                          <TableBody>
                             {records.filter(r => r.name === 'Biblioteca Digital').map(rec => (
-                              <TableRow key={rec.id} className="h-16">
+                              <TableRow key={rec.id} className="h-16 hover:bg-slate-50 transition-colors">
                                  <TableCell className="pl-8"><div className="flex flex-col"><span className="text-xs font-black uppercase">{rec.schoolName}</span><span className="text-[9px] font-mono text-primary">{rec.cct}</span></div></TableCell>
                                  <TableCell className="w-48"><div className="space-y-1"><div className="flex justify-between text-[8px] font-black"><span>{rec.progress}%</span></div><Progress value={rec.progress} className="h-1" /></div></TableCell>
-                                 <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase">{rec.status}</Badge></TableCell>
-                                 <TableCell className="text-right pr-8"><Button variant="ghost" size="icon" onClick={() => handleEdit(rec)}><Pencil className="h-4 w-4" /></Button></TableCell>
+                                 <TableCell><Badge variant="outline" className="text-[8px] font-black uppercase h-5 px-2 border-primary/20 text-primary">{rec.status}</Badge></TableCell>
+                                 <TableCell className="text-right pr-8"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" onClick={() => handleEdit(rec)} className="h-8 w-8 rounded-lg text-primary/40 hover:text-primary"><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => handleDelete(rec.id!)} className="h-8 w-8 rounded-lg text-rose-300 hover:text-rose-600"><Trash2 className="h-4 w-4" /></Button></div></TableCell>
                               </TableRow>
                             ))}
                          </TableBody>
@@ -370,29 +372,29 @@ export default function ProgramsPage() {
                    <ScrollArea className="flex-1">
                       <div className="space-y-4">
                          {BIBLIOTECA_FASES_LABELS.map(f => (
-                           <div key={f.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                              <Checkbox id={`bit-${f.id}`} className="h-5 w-5" checked={formData.name === 'Biblioteca Digital' && (formData.bibliotecaFases as any)?.[f.id]} />
-                              <Label htmlFor={`bit-${f.id}`} className="text-[10px] font-bold uppercase text-slate-600 leading-tight">{f.label}</Label>
+                           <div key={f.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-md">
+                              <Checkbox id={`bit-${f.id}`} className="h-5 w-5 rounded-md" checked={formData.name === 'Biblioteca Digital' && (formData.bibliotecaFases as any)?.[f.id]} />
+                              <div className="flex-1"><Label htmlFor={`bit-${f.id}`} className="text-[10px] font-black uppercase text-slate-600 leading-tight block">{f.label}</Label><span className="text-[8px] font-bold text-slate-400">Impacto: {f.progress}%</span></div>
                            </div>
                          ))}
                       </div>
                    </ScrollArea>
-                   <div className="p-4 bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 flex items-center justify-center text-center"><p className="text-[9px] font-black text-primary uppercase">Inicie una captura para activar la bitácora interactiva</p></div>
+                   <div className="p-4 bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 flex flex-col items-center justify-center text-center gap-2"><Info className="h-4 w-4 text-primary" /><p className="text-[8px] font-black text-primary uppercase">Inicie una captura para activar el checklist interactivo de auditoría.</p></div>
                 </Card>
              </div>
 
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-10">
                 <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary">Resumen por Meta</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex items-center justify-center opacity-30"><BarChart3 className="h-12 w-12" /></div>
+                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Resumen por Meta</h4>
+                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><MonitorCheck className="h-10 w-10" /><p className="text-[8px] font-black">AUDITORÍA 2026</p></div>
                 </Card>
                 <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary">Estatus de Bibliotecas</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex items-center justify-center opacity-30"><PieChartIcon className="h-12 w-12" /></div>
+                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><PieChartIcon className="h-4 w-4" /> Estatus de Bibliotecas</h4>
+                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><Archive className="h-10 w-10" /><p className="text-[8px] font-black">CONTROL GLOBAL</p></div>
                 </Card>
                 <Card className="p-6 border-none shadow-xl rounded-[2.5rem] bg-white space-y-4">
-                   <h4 className="text-[10px] font-black uppercase text-primary">Estadística de Atención</h4>
-                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex items-center justify-center opacity-30"><Activity className="h-12 w-12" /></div>
+                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><Activity className="h-4 w-4" /> Estadística de Atención</h4>
+                   <div className="h-48 w-full bg-slate-50 rounded-2xl flex flex-col items-center justify-center opacity-30 gap-3"><Settings className="h-10 w-10" /><p className="text-[8px] font-black">SOPORTE NIVEL 1</p></div>
                 </Card>
              </div>
           </div>
@@ -454,9 +456,57 @@ export default function ProgramsPage() {
              </div>
           </div>
         ) : activeTab === 'Geoposición' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[600px] animate-in slide-in-from-bottom-4 duration-500">
-             <div className="lg:col-span-8 bg-slate-100 rounded-[2.5rem] overflow-hidden relative border-4 border-white shadow-2xl"><Image src="https://picsum.photos/seed/geosat/1200/800" alt="Map" fill className="object-cover opacity-50 grayscale" /><div className="absolute top-6 left-6 p-4 bg-white/95 rounded-2xl shadow-xl border flex items-center gap-3"><div className="h-3 w-3 rounded-full bg-emerald-500 animate-ping" /><h4 className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">Monitor Global COEES 2026</h4></div></div>
-             <Card className="lg:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8 flex flex-col"><div className="flex items-center gap-4 mb-8 border-b pb-4"><Navigation className="h-7 w-7 text-accent" /><h3 className="text-lg font-black uppercase text-primary">Captura UTM</h3></div><div className="flex-1 flex flex-col items-center justify-center opacity-30 text-center space-y-4"><LocateFixed className="h-16 w-16 text-primary" /><p className="text-xs font-black uppercase text-slate-800">Inicie un "Nuevo Registro" para vincular coordenadas UTM al CCT auditado</p></div><Button onClick={() => setIsDialogOpen(true)} className="btn-institutional w-full h-14 rounded-2xl text-[11px] gap-3 shadow-2xl mt-8"><PlusCircle className="h-5 w-5" /> REGISTRAR COORDENADAS</Button></Card>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full animate-in slide-in-from-bottom-4 duration-500 min-h-[600px] pb-10">
+             <div className="lg:col-span-8 bg-slate-100 rounded-[2.5rem] overflow-hidden relative border-4 border-white shadow-2xl flex flex-col">
+                <div className="flex-1 relative">
+                   <Image src="https://picsum.photos/seed/geosat/1200/800" alt="Map" fill className="object-cover opacity-60 grayscale" />
+                   <div className="absolute top-6 left-6 flex flex-col gap-2">
+                      <div className="bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-xl flex flex-col border">
+                         <button className="h-10 px-6 text-[9px] font-black uppercase hover:bg-slate-50 border-b">MAPA</button>
+                         <button className="h-10 px-6 text-[9px] font-black uppercase hover:bg-slate-50">SATELITE</button>
+                      </div>
+                      <div className="h-10 w-10 bg-white/95 backdrop-blur-md rounded-xl shadow-xl flex items-center justify-center border text-primary">
+                         <LocateFixed className="h-5 w-5" />
+                      </div>
+                   </div>
+                </div>
+                <div className="bg-white/90 backdrop-blur-md p-6 flex flex-wrap items-center justify-center gap-8 border-t">
+                   <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" /><span className="text-[9px] font-black uppercase text-slate-600">EN LÍNEA</span></div>
+                   <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" /><span className="text-[9px] font-black uppercase text-slate-600">EN MOVIMIENTO</span></div>
+                   <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" /><span className="text-[9px] font-black uppercase text-slate-600">SIN SEÑAL</span></div>
+                   <div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-slate-400" /><span className="text-[9px] font-black uppercase text-slate-600">DESCONECTADO</span></div>
+                </div>
+             </div>
+             
+             <div className="lg:col-span-4 flex flex-col gap-6">
+                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white p-8 space-y-6">
+                   <div className="flex items-center gap-4 border-b pb-4"><Navigation className="h-6 w-6 text-accent" /><h3 className="text-lg font-black uppercase text-primary">CAPTURAR UBICACIÓN</h3></div>
+                   <div className="space-y-4">
+                      <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">CCT *</Label><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Ej. 15DES0001R" className="h-10 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black uppercase text-primary" value={formData.cct} onChange={e => handleCctChange(e.target.value)} /></div></div>
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">LATITUD *</Label><div className="relative"><Navigation className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Ej. 19.4284" className="h-10 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div></div>
+                         <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-400">LONGITUD *</Label><div className="relative"><MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" /><Input placeholder="Ej. -99.1276" className="h-10 pl-10 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2"><Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional h-12 rounded-xl text-[10px] gap-2 shadow-xl">{isSaving ? <Loader2 className="animate-spin" /> : <Save className="h-4 w-4" />} GUARDAR</Button><Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-200 text-slate-400 font-black uppercase text-[10px] gap-2 hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> LIMPIAR</Button></div>
+                   </div>
+                   <div className="p-5 bg-blue-50/50 rounded-2xl border-2 border-dashed border-blue-100 flex gap-4"><Info className="h-6 w-6 text-blue-600 shrink-0" /><p className="text-[9px] font-bold text-blue-800 uppercase leading-relaxed">Asegúrate de ingresar el CCT y las coordenadas en formato decimal (Latitud y Longitud) para registrar correctamente la ubicación de la escuela.</p></div>
+                </Card>
+
+                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white flex flex-col flex-1 overflow-hidden min-h-[300px]">
+                   <div className="p-6 border-b bg-slate-50/50 flex items-center gap-3"><History className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase tracking-widest text-slate-700">ÚLTIMAS UBICACIONES</h4></div>
+                   <ScrollArea className="flex-1">
+                      <Table>
+                         <TableHeader className="bg-slate-50"><TableRow><TableHead className="pl-6 text-[8px] font-black uppercase">FECHA</TableHead><TableHead className="text-[8px] font-black uppercase">CCT</TableHead><TableHead className="text-[8px] font-black uppercase">ESTATUS</TableHead><TableHead className="text-right pr-6"></TableHead></TableRow></TableHeader>
+                         <TableBody>
+                            {records.filter(r => r.name === 'Geoposición').slice(0, 10).map(rec => (
+                              <TableRow key={rec.id} className="h-12 border-b border-slate-50 hover:bg-slate-50/50 transition-colors"><TableCell className="pl-6 text-[9px] font-bold text-slate-400">{rec.date}</TableCell><TableCell className="font-mono text-[10px] font-black text-primary">{rec.cct}</TableCell><TableCell><Badge variant="outline" className="text-[7px] font-black uppercase border-emerald-200 text-emerald-600 bg-emerald-50 px-1.5 h-4">POSICIÓN OK</Badge></TableCell><TableCell className="text-right pr-6"><button onClick={() => handleDelete(rec.id!)} className="h-7 w-7 text-rose-300 hover:text-rose-600 transition-all"><Trash2 className="h-3.5 w-3.5" /></button></TableCell></TableRow>
+                            ))}
+                            {records.filter(r => r.name === 'Geoposición').length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-10 opacity-20 text-[10px] font-black uppercase">Sin registros</TableCell></TableRow>}
+                         </TableBody>
+                      </Table>
+                   </ScrollArea>
+                </Card>
+             </div>
           </div>
         ) : (
           <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
@@ -479,7 +529,7 @@ export default function ProgramsPage() {
                       <Input value={dialogSearchTerm} onChange={e => { setDialogSearchTerm(e.target.value.toUpperCase()); handleCctChange(e.target.value); }} className="h-12 bg-slate-50 border-none shadow-inner rounded-xl pl-12 font-black text-lg text-primary" placeholder="BUSCAR CCT..." />
                    </div>
                    {dialogSearchTerm.length > 2 && allSchools.filter(s => s.cct.includes(dialogSearchTerm) || s.nombre.includes(dialogSearchTerm)).length === 0 && (
-                      <div className="p-4 bg-rose-50 rounded-xl border border-rose-100 flex flex-col items-center gap-3 mt-4"><p className="text-[10px] font-black text-rose-700 uppercase">CCT no localizado</p><Button variant="outline" size="sm" className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 hover:bg-rose-100">Registrar Plantel</Button></div>
+                      <div className="p-4 bg-rose-50 rounded-xl border border-rose-100 flex flex-col items-center gap-3 mt-4"><p className="text-[10px] font-black text-rose-700 uppercase">CCT no localizado</p><Button variant="outline" size="sm" className="h-9 px-6 rounded-xl text-[9px] font-black uppercase border-rose-200 text-rose-600 hover:bg-rose-100">Alta Rápida de Plantel</Button></div>
                    )}
                 </div>
                 {formData.schoolName && (<div className="p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex items-center gap-5 shadow-sm animate-in zoom-in-95"><div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600"><School className="h-8 w-8" /></div><div><p className="text-sm font-black uppercase text-slate-800 leading-none">{formData.schoolName}</p><p className="text-[10px] font-bold text-emerald-600 mt-1">{formData.municipio} • ZE: {formData.zonaEscolar} • Valle {formData.valle}</p></div></div>)}
