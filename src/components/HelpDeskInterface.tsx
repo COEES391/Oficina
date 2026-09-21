@@ -109,7 +109,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // Initialize Audio & Mounting
   useEffect(() => {
     setMounted(true);
-    // Sonido institucional de campana
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.load();
     audioRef.current = audio;
@@ -121,7 +120,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Escuchamos la cola completa
     const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -136,7 +134,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       
       setQueue(activeQueue);
 
-      // ALERTA DE ALTA PRIORIDAD
       snap.docChanges().forEach((change) => {
         const data = change.doc.data() as SupportRequest;
         const id = change.doc.id;
@@ -145,7 +142,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           if (!alertedIds.current.has(id)) {
             alertedIds.current.add(id);
             
-            // Notificación Visual con Botón de Atención
             toast({
               title: "⚠️ ALERTA DE SOPORTE ATRES",
               description: `DOCENTE: ${data.userName} | CCT: ${data.cct}`,
@@ -161,16 +157,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               )
             });
 
-            // Notificación Sonora
             if (audioRef.current && soundEnabled) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(e => console.log("Habilite sonido interactivo"));
+              audioRef.current.play().catch(() => console.log("Sonido bloqueado por el navegador"));
             }
           }
         }
       });
-    }, (error) => {
-      console.error("Error en cola soporte:", error);
     });
 
     return () => unsubscribe();
@@ -227,10 +220,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     };
     
     try {
-      // 1. Registro Instantáneo
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       
-      // 2. Mensaje de bienvenida
       await addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
@@ -241,7 +232,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
       setHasJoined(true);
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de servidor", description: "Verifique su conexión a internet." });
+      toast({ variant: "destructive", title: "Error de servidor" });
     } finally {
       setIsJoining(false);
     }
@@ -253,14 +244,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
-      // Actualizamos estado de la cola
       setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: input.substring(0, 40) + (input.length > 40 ? '...' : ''),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // Guardamos mensaje
       await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -280,8 +269,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   if (isPublic) {
     if (!hasJoined) {
       return (
-        <div className="h-full w-full bg-[#f0f2f5] flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-          <Card className="w-full max-w-[500px] rounded-[3rem] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+        <div className="h-full w-full bg-[#f0f2f5] flex items-center justify-center p-6">
+          <Card className="w-full max-w-[500px] rounded-[3rem] border-none shadow-2xl overflow-hidden">
              <div className="p-10 bg-[#9f2241] text-white text-center space-y-4">
                 <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-white/10">
                    <Monitor className="h-10 w-10 text-white" />
@@ -321,7 +310,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
 
     return (
-      <div className="flex h-full w-full bg-white overflow-hidden animate-in fade-in duration-700">
+      <div className="flex h-full w-full bg-white overflow-hidden">
         <aside className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
            <div className="p-6 bg-white border-b flex items-center justify-between">
               <div>
@@ -349,7 +338,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            </ScrollArea>
         </aside>
 
-        <div className="flex-1 flex flex-col bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] overflow-hidden">
+        <div className="flex-1 flex flex-col bg-[#efe7dd] overflow-hidden">
            <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm">
               <div className="flex items-center gap-4">
                  <Avatar className="h-10 w-10 border-2 border-emerald-500">
@@ -396,7 +385,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }
 
   return (
-    <div className="flex h-full w-full bg-white overflow-hidden animate-in fade-in duration-700">
+    <div className="flex h-full w-full bg-white overflow-hidden">
       <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 shadow-2xl">
         <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400"><ShieldCheck className="h-6 w-6" /></div>
         <div className="flex-1 flex flex-col gap-4">
@@ -465,7 +454,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
             {activeView === 'chat' ? (
               <>
-                <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
+                <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] shadow-inner">
                    <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
                       {messages.map((m, i) => (
                         <div key={i} className={cn("flex w-full animate-in fade-in", m.role === 'tech' ? "justify-end" : "justify-start")}>
@@ -492,7 +481,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 </footer>
               </>
             ) : (
-              <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
+              <div className="flex-1 p-6 relative">
                 <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
                   <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
                   <div className="z-10 text-center space-y-6">
@@ -506,7 +495,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             )}
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white animate-in fade-in duration-1000">
+          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-6xl w-full">
                 <div className="space-y-10">
                    <div className="h-20 w-20 rounded-[1.8rem] bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241] shadow-inner border border-primary/5">
@@ -542,7 +531,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <Label className="text-[9px] font-black text-emerald-400 uppercase">Enlace Directo:</Label>
                          <p className="text-[9px] font-mono text-white/80 font-bold truncate">{supportUrl}</p>
                       </div>
-                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado", className: "bg-emerald-600 text-white" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
+                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
                          <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
                       </Button>
                    </div>
