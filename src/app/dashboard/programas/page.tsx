@@ -70,7 +70,8 @@ import {
   TrendingDown,
   LayoutDashboard,
   CheckCircle,
-  XCircle
+  XCircle,
+  Laptop
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -114,7 +115,6 @@ export default function ProgramsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [dialogSearchTerm, setDialogSearchTerm] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
   // Account Form State
@@ -168,8 +168,7 @@ export default function ProgramsPage() {
     const concluidos = bibliotecaRecords.filter(r => r.progress === 100).length;
     const proceso = total - concluidos;
     
-    // Métricas dinámicas basadas en los registros reales
-    const visitas = bibliotecaRecords.length; // Cada auditoría es una visita
+    const visitas = total; 
     const atenciones = bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0);
     const evidencias = bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
     const tecnicos = new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size;
@@ -211,6 +210,8 @@ export default function ProgramsPage() {
         valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, 
         sector: match.sector, modalidad: match.modalidad 
       }))
+    } else {
+      setFormData(prev => ({ ...prev, schoolName: 'NOMBRE DEL PLANTEL' }))
     }
   }
 
@@ -358,7 +359,7 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
           <div className="space-y-8 pb-10">
-            {/* Upper Metric Cards - Dinámicas */}
+            {/* Upper Metric Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
                 { label: 'CCT Registrados', value: stats.total, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -380,7 +381,6 @@ export default function ProgramsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Left Column: Fases del Proyecto por CCT Table */}
               <Card className="lg:col-span-8 border-none shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col">
                 <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
                    <h3 className="text-lg font-black uppercase text-slate-700">Fases del Proyecto por CCT</h3>
@@ -431,7 +431,6 @@ export default function ProgramsPage() {
                 </ScrollArea>
               </Card>
 
-              {/* Right Column: Detalle de Fases Checklist */}
               <Card className="lg:col-span-4 border-none shadow-2xl rounded-[2.5rem] bg-white p-8 flex flex-col gap-6">
                  <div>
                    <h3 className="text-sm font-black uppercase text-slate-800">Detalle de Fases del Proyecto</h3>
@@ -475,14 +474,27 @@ export default function ProgramsPage() {
                        })}
                     </div>
                  </ScrollArea>
+                 
+                 {selectedRecord && (
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                       <div className="bg-slate-50 p-4 rounded-2xl border flex flex-col items-center gap-2">
+                          <Laptop className="h-5 w-5 text-primary" />
+                          <span className="text-xl font-black text-slate-800">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase">Equipos</span>
+                       </div>
+                       <div className="bg-slate-50 p-4 rounded-2xl border flex flex-col items-center gap-2">
+                          <Users className="h-5 w-5 text-emerald-600" />
+                          <span className="text-xl font-black text-slate-800">{selectedRecord.bibliotecaFases?.personalCapacitado || 0}</span>
+                          <span className="text-[8px] font-black text-slate-400 uppercase">Capacitados</span>
+                       </div>
+                    </div>
+                 )}
               </Card>
             </div>
 
-            {/* Bottom Analysis Section */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-               {/* Gráfico de Avance - Solo visible si hay datos */}
                <Card className="md:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8">
-                  <h3 className="text-sm font-black uppercase text-slate-800 mb-8">Actividad Reciente <span className="text-[9px] font-bold text-slate-400 ml-2">(Sesiones activas)</span></h3>
+                  <h3 className="text-sm font-black uppercase text-slate-800 mb-8">Actividad Reciente</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={bibliotecaRecords.slice(0, 7).reverse().map(r => ({ name: r.cct, progress: r.progress }))}>
@@ -498,7 +510,6 @@ export default function ProgramsPage() {
                   </div>
                </Card>
 
-               {/* Status Donut Chart */}
                <Card className="md:col-span-3 border-none shadow-xl rounded-[2.5rem] bg-white p-8 flex flex-col items-center">
                   <h3 className="text-sm font-black uppercase text-slate-800 w-full mb-6">Estatus del Proyecto</h3>
                   <div className="h-[220px] w-full relative">
@@ -525,7 +536,6 @@ export default function ProgramsPage() {
                   </div>
                </Card>
 
-               {/* Evidencias Recientes - Dinámica: Solo aparece si hay evidencias reales */}
                {recentEvidences.length > 0 && (
                  <Card className="md:col-span-5 border-none shadow-xl rounded-[2.5rem] bg-white p-8 overflow-hidden animate-in slide-in-from-right duration-500">
                     <div className="flex justify-between items-center mb-6">
@@ -574,14 +584,14 @@ export default function ProgramsPage() {
                    {/* Step 1: Identification */}
                    <div className="space-y-6">
                       <div className="flex items-center gap-3 border-b pb-2"><Search className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Localización del Centro de Trabajo</h4></div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                          <div className="space-y-2 relative">
                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT (10 Dígitos)</Label>
                             <Input 
-                              value={dialogSearchTerm} 
-                              onChange={e => { setDialogSearchTerm(e.target.value.toUpperCase()); handleCctChange(e.target.value); }} 
+                              value={formData.cct} 
+                              onChange={e => handleCctChange(e.target.value)} 
                               className="h-12 bg-slate-50 border-none rounded-xl font-black text-primary uppercase shadow-inner" 
-                              placeholder="BUSCAR CCT..." 
+                              placeholder="15DESXXXXX" 
                             />
                             {dialogSearchTerm.length > 2 && schoolSearchResults.length > 0 && (
                               <div className="absolute top-20 left-0 right-0 max-h-48 overflow-auto bg-white border rounded-xl shadow-2xl z-50 divide-y">
@@ -594,34 +604,71 @@ export default function ProgramsPage() {
                               </div>
                             )}
                          </div>
-                         <div className="md:col-span-2 space-y-2">
+                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Plantel</Label>
-                            <div className="h-12 bg-slate-50 rounded-xl flex items-center px-4 font-black uppercase text-slate-600 text-xs shadow-inner truncate">{formData.schoolName || 'S/D'}</div>
+                            <Input 
+                               value={formData.schoolName}
+                               onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})}
+                               className="h-12 bg-slate-50 border-none rounded-xl font-black uppercase text-slate-700 text-xs shadow-inner" 
+                               placeholder="NOMBRE DEL PLANTEL"
+                            />
                          </div>
                       </div>
                    </div>
 
-                   {/* Step 2: Phase Tracking */}
+                   {/* Step 2: Phase Tracking and Impact Stats */}
                    {activeTab === 'Biblioteca Digital' && (
-                     <div className="space-y-6">
-                        <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Seguimiento de Fases Técnicas</h4></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           {BIBLIOTECA_FASES.map(f => (
-                             <div key={f.id} className={cn("flex items-center gap-4 p-5 rounded-[1.8rem] border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-inner")}>
-                                <Checkbox 
-                                  checked={(formData.bibliotecaFases as any)?.[f.id]} 
-                                  onCheckedChange={(val) => { 
-                                     const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
-                                     const totalWeight = BIBLIOTECA_FASES.length;
-                                     const completedCount = BIBLIOTECA_FASES.filter(ph => (updatedFases as any)[ph.id]).length;
-                                     const progress = Math.round((completedCount / totalWeight) * 100); 
-                                     setFormData({ ...formData, bibliotecaFases: updatedFases as any, progress }); 
-                                  }} 
-                                  className="h-6 w-6 rounded-lg border-2 border-primary" 
-                                />
-                                <Label className="text-[11px] font-black uppercase text-slate-600 cursor-pointer flex-1 leading-tight">{f.label}</Label>
-                             </div>
-                           ))}
+                     <div className="space-y-10">
+                        <div className="space-y-6">
+                           <div className="flex items-center gap-3 border-b pb-2"><Settings2 className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Estadística de Impacto</h4></div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                              <div className="space-y-2">
+                                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Equipos Habilitados</Label>
+                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
+                                    <Laptop className="h-6 w-6 text-primary" />
+                                    <Input 
+                                       type="number" 
+                                       value={formData.bibliotecaFases?.equiposHabilitados || 0}
+                                       onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})}
+                                       className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
+                                    />
+                                 </div>
+                              </div>
+                              <div className="space-y-2">
+                                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Personas Capacitadas</Label>
+                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
+                                    <Users className="h-6 w-6 text-emerald-600" />
+                                    <Input 
+                                       type="number" 
+                                       value={formData.bibliotecaFases?.personalCapacitado || 0}
+                                       onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})}
+                                       className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
+                                    />
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="space-y-6">
+                           <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Seguimiento de Fases Técnicas</h4></div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {BIBLIOTECA_FASES.map(f => (
+                                <div key={f.id} className={cn("flex items-center gap-4 p-5 rounded-[1.8rem] border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-inner")}>
+                                   <Checkbox 
+                                     checked={(formData.bibliotecaFases as any)?.[f.id]} 
+                                     onCheckedChange={(val) => { 
+                                        const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
+                                        const totalWeight = BIBLIOTECA_FASES.length;
+                                        const completedCount = BIBLIOTECA_FASES.filter(ph => (updatedFases as any)[ph.id]).length;
+                                        const progress = Math.round((completedCount / totalWeight) * 100); 
+                                        setFormData({ ...formData, bibliotecaFases: updatedFases as any, progress }); 
+                                     }} 
+                                     className="h-6 w-6 rounded-lg border-2 border-primary" 
+                                   />
+                                   <Label className="text-[11px] font-black uppercase text-slate-600 cursor-pointer flex-1 leading-tight">{f.label}</Label>
+                                </div>
+                              ))}
+                           </div>
                         </div>
                      </div>
                    )}
