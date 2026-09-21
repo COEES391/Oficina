@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -124,6 +125,10 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
+  // States for the searchable select in sidebar
+  const [sidebarSearchTerm, setSidebarSearchTerm] = useState('')
+  const [isSidebarResultsOpen, setIsSidebarResultsOpen] = useState(false)
+
   const [verifyInput, setVerifyInput] = useState('')
   const [verificationResult, setVerificationResult] = useState<ProgramStatus | null>(null)
 
@@ -173,7 +178,11 @@ export default function ProgramsPage() {
       const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[];
       setRecords(data)
       if (data.length > 0 && !selectedCctId) {
-        setSelectedCctId(data[0].id!);
+        const firstBD = data.find(r => r.name === 'Biblioteca Digital');
+        if (firstBD) {
+          setSelectedCctId(firstBD.id!);
+          setSidebarSearchTerm(firstBD.cct);
+        }
       }
     })
     
@@ -200,19 +209,19 @@ export default function ProgramsPage() {
   [records]);
 
   const selectedRecord = useMemo(() => 
-    bibliotecaRecords.find(r => r.id === selectedCctId) || bibliotecaRecords[0],
+    bibliotecaRecords.find(r => r.id === selectedCctId),
   [bibliotecaRecords, selectedCctId]);
 
   const stats = useMemo(() => {
-    const total = bibliotecaRecords.length;
+    const totalBD = bibliotecaRecords.length;
     const concluidos = bibliotecaRecords.filter(r => r.progress === 100).length;
-    const proceso = total - concluidos;
+    const proceso = totalBD - concluidos;
     
-    const atenciones = total > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0) : 0;
-    const evidencias = total > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0) : 0;
-    const tecnicos = total > 0 ? new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size : 0;
+    const atenciones = totalBD > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0) : 0;
+    const evidencias = totalBD > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0) : 0;
+    const tecnicos = totalBD > 0 ? new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size : 0;
 
-    return { total, concluidos, proceso, visitas: total, atenciones, evidencias, tecnicos };
+    return { total: totalBD, concluidos, proceso, visitas: totalBD, atenciones, evidencias, tecnicos };
   }, [bibliotecaRecords]);
 
   const handleCctChange = (value: string) => {
@@ -449,7 +458,7 @@ export default function ProgramsPage() {
         {activeTab === 'Cuentas Institucionales' ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-4">
-              <Card className="rounded-[2rem] border-none shadow-2xl bg-white p-8 space-y-6 overflow-hidden relative">
+              <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8 space-y-6 overflow-hidden relative">
                  <div className="absolute top-0 left-0 w-full h-2 bg-blue-600" />
                  <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><Mail className="h-6 w-6" /></div>
@@ -633,7 +642,7 @@ export default function ProgramsPage() {
                       {bibliotecaRecords.map((rec) => {
                         const faseActual = getFaseActual(rec.bibliotecaFases);
                         return (
-                          <TableRow key={rec.id} onClick={() => setSelectedCctId(rec.id!)} className={cn("h-16 hover:bg-slate-50 transition-colors cursor-pointer", selectedCctId === rec.id && "bg-primary/5")}>
+                          <TableRow key={rec.id} onClick={() => { setSelectedCctId(rec.id!); setSidebarSearchTerm(rec.cct); }} className={cn("h-16 hover:bg-slate-50 transition-colors cursor-pointer", selectedCctId === rec.id && "bg-primary/5")}>
                             <TableCell className="pl-10 font-mono text-[10px] font-black text-primary">{rec.cct}</TableCell>
                             <TableCell className="text-[11px] font-bold text-slate-700 uppercase">{rec.schoolName}</TableCell>
                             <TableCell className="text-[10px] font-bold text-slate-400 uppercase">{rec.municipio}</TableCell>
@@ -666,49 +675,102 @@ export default function ProgramsPage() {
               <Card className="lg:col-span-4 border-none shadow-2xl rounded-[2.5rem] bg-white p-8 flex flex-col gap-6">
                  <div>
                    <h3 className="text-sm font-black uppercase text-slate-800">Detalle de Fases del Proyecto</h3>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">(Por CCT seleccionado)</p>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">(Buscador de auditoría)</p>
                  </div>
                  
-                 <div className="space-y-2">
+                 <div className="space-y-2 relative">
                     <Label className="text-[9px] font-black uppercase text-primary">CCT Seleccionado:</Label>
-                    <Select value={selectedCctId || ''} onValueChange={setSelectedCctId}>
-                       <SelectTrigger className="h-12 rounded-xl border-slate-200 font-black text-[10px] uppercase">
-                          <SelectValue placeholder="SELECCIONAR PLANTEL..." />
-                       </SelectTrigger>
-                       <SelectContent className="z-[300]">
-                          {bibliotecaRecords.map(r => <SelectItem key={r.id} value={r.id!} className="text-[10px] font-black uppercase">{r.cct} - {r.schoolName}</SelectItem>)}
-                       </SelectContent>
-                    </Select>
+                    <div className="relative group">
+                       <Input 
+                          placeholder="ESCRIBIR CCT O NOMBRE..." 
+                          className="h-12 rounded-xl border-slate-200 font-black text-[10px] uppercase pl-10 pr-10 shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                          value={sidebarSearchTerm}
+                          onChange={(e) => {
+                             setSidebarSearchTerm(e.target.value.toUpperCase());
+                             setIsSidebarResultsOpen(true);
+                          }}
+                          onFocus={() => setIsSidebarResultsOpen(true)}
+                       />
+                       <Search className="absolute left-3 top-3.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                       {sidebarSearchTerm && (
+                          <button 
+                             onClick={() => { setSelectedCctId(null); setSidebarSearchTerm(''); }}
+                             className="absolute right-3 top-3.5 h-5 w-5 text-slate-300 hover:text-rose-500 transition-colors"
+                          >
+                             <X className="h-4 w-4" />
+                          </button>
+                       )}
+                       
+                       {isSidebarResultsOpen && sidebarSearchTerm.length > 0 && (
+                          <div className="absolute top-14 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-xl shadow-2xl z-[400] divide-y animate-in fade-in zoom-in-95">
+                             {bibliotecaRecords
+                                .filter(r => 
+                                   (r.cct || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase()) || 
+                                   (r.schoolName || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase())
+                                )
+                                .map(r => (
+                                   <div 
+                                      key={r.id} 
+                                      className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" 
+                                      onClick={() => { 
+                                         setSelectedCctId(r.id!); 
+                                         setSidebarSearchTerm(r.cct); 
+                                         setIsSidebarResultsOpen(false); 
+                                      }}
+                                   >
+                                      <div className="flex flex-col min-w-0">
+                                         <span className="text-[10px] font-black uppercase truncate group-hover:text-primary transition-colors">{r.schoolName}</span>
+                                         <span className="text-[8px] font-bold text-slate-400 uppercase">{r.cct} • {r.municipio}</span>
+                                      </div>
+                                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-all" />
+                                   </div>
+                                ))
+                             }
+                             {bibliotecaRecords.filter(r => (r.cct || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase()) || (r.schoolName || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase())).length === 0 && (
+                               <div className="p-4 text-center">
+                                 <p className="text-[8px] font-bold text-slate-400 uppercase">Sin auditorías registradas para esta búsqueda</p>
+                               </div>
+                             )}
+                          </div>
+                       )}
+                    </div>
                  </div>
 
                  <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-4">
-                       {BIBLIOTECA_FASES.map((f, i) => {
-                         const isCompleted = selectedRecord?.bibliotecaFases?.[f.id as keyof typeof selectedRecord.bibliotecaFases];
-                         const isCurrent = getFaseActual(selectedRecord?.bibliotecaFases).id === f.id;
-                         
-                         return (
-                           <div key={f.id} className={cn(
-                             "flex items-start gap-4 p-4 rounded-2xl border transition-all",
-                             isCompleted ? "bg-emerald-50/50 border-emerald-100" : isCurrent ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100" : "bg-white border-slate-100"
-                           )}>
-                              <div className={cn(
-                                "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 border-2",
-                                isCompleted ? "bg-emerald-500 border-emerald-500 text-white" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
-                              )}>
-                                 {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                 <p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
-                              </div>
-                           </div>
-                         )
-                       })}
-                    </div>
+                    {selectedRecord ? (
+                      <div className="space-y-4">
+                         {BIBLIOTECA_FASES.map((f, i) => {
+                           const isCompleted = selectedRecord?.bibliotecaFases?.[f.id as keyof typeof selectedRecord.bibliotecaFases];
+                           const isCurrent = getFaseActual(selectedRecord?.bibliotecaFases).id === f.id;
+                           
+                           return (
+                             <div key={f.id} className={cn(
+                               "flex items-start gap-4 p-4 rounded-2xl border transition-all",
+                               isCompleted ? "bg-emerald-50/50 border-emerald-100" : isCurrent ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100" : "bg-white border-slate-100"
+                             )}>
+                                <div className={cn(
+                                  "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 border-2",
+                                  isCompleted ? "bg-emerald-500 border-emerald-500 text-white" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
+                                )}>
+                                   {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                   <p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
+                                </div>
+                             </div>
+                           )
+                         })}
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center opacity-20 text-center gap-4 py-20">
+                         <SearchCode className="h-16 w-16" />
+                         <p className="text-[10px] font-black uppercase tracking-widest">Busque o seleccione un plantel para ver el detalle de fases</p>
+                      </div>
+                    )}
                  </ScrollArea>
                  
                  {selectedRecord && (
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 animate-in slide-in-from-bottom-2 duration-500">
                        <div className="bg-slate-50 p-4 rounded-2xl border flex flex-col items-center gap-2">
                           <Laptop className="h-5 w-5 text-primary" />
                           <span className="text-xl font-black text-slate-800">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
