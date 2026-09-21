@@ -37,7 +37,8 @@ import {
   Info,
   QrCode,
   Globe,
-  Bell
+  Bell,
+  Volume2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -84,6 +85,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [mounted, setMounted] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   
   // User Registration State
   const [userData, setUserData] = useState({ name: '', cct: '', anydeskId: '' });
@@ -91,7 +93,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isInitialLoad = useRef(true);
   const alertedIds = useRef(new Set<string>());
   
   const supportUrl = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '';
@@ -104,19 +105,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     audioRef.current = audio;
   }, []);
 
-  // ANALYST: Listen for new support requests and trigger alerts
+  // ANALYST: Listen for all support requests
   useEffect(() => {
     if (!mounted || isPublic) return;
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Simple query to avoid index errors
     const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const allDocs = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequest));
       
-      // Local Filter & Sort
       const activeQueue = allDocs
         .filter(req => req.status !== 'closed')
         .sort((a, b) => {
@@ -127,39 +126,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       
       setQueue(activeQueue);
 
-      // ALERT LOGIC for truly new requests
-      if (!isInitialLoad.current) {
-        snap.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const newReq = change.doc.data() as SupportRequest;
-            if (newReq.status === 'pending' && !alertedIds.current.has(change.doc.id)) {
-              alertedIds.current.add(change.doc.id);
-              
-              // 1. Visual Alert
-              toast({
-                title: "⚠️ NUEVA SOLICITUD DE SOPORTE",
-                description: `El Prof. ${newReq.userName} del CCT ${newReq.cct} requiere atención inmediata.`,
-                className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl p-6",
-                duration: 10000
-              });
+      // ALERT LOGIC
+      snap.docChanges().forEach((change) => {
+        if (change.type === "added" || (change.type === "modified" && change.doc.data().status === 'pending')) {
+          const newReq = change.doc.data() as SupportRequest;
+          if (newReq.status === 'pending' && !alertedIds.current.has(change.doc.id)) {
+            alertedIds.current.add(change.doc.id);
+            
+            // Notification Visual
+            toast({
+              title: "⚠️ ALERTA DE ATENCIÓN",
+              description: `Solicitud de: ${newReq.userName} (CCT: ${newReq.cct})`,
+              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl p-6 ring-4 ring-white/20 animate-bounce",
+              duration: 15000
+            });
 
-              // 2. Audio Alert
-              if (audioRef.current) {
-                audioRef.current.currentTime = 0;
-                audioRef.current.play().catch(() => console.warn("Browser blocked sound. User interaction needed."));
-              }
+            // Audio Alert
+            if (audioRef.current && soundEnabled) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
             }
           }
-        });
-      }
-      
-      isInitialLoad.current = false;
+        }
+      });
     });
 
     return () => unsubscribe();
-  }, [isPublic, toast, mounted]);
+  }, [isPublic, toast, mounted, soundEnabled]);
 
-  // CHAT: Listen for messages in selected session
+  // CHAT: Listen for messages
   useEffect(() => {
     if (!mounted || !selectedRequest) {
       setMessages([]);
@@ -188,48 +183,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleJoinSupport = () => {
+  const handleJoinSupport = async () => {
     if (!userData.name || !userData.cct) {
-      toast({ variant: "destructive", title: "Campos incompletos", description: "Ingrese su nombre y CCT." });
+      toast({ variant: "destructive", title: "Campos técnicos obligatorios", description: "Ingrese nombre y CCT oficial." });
       return;
     }
     
     setIsJoining(true);
     const ticketNum = `TK-${Date.now().toString().slice(-6)}`;
+    const requestId = `REQ-${Date.now()}`;
+    
     const requestData = {
       userName: userData.name.toUpperCase(),
       cct: userData.cct.toUpperCase(),
       status: 'pending',
       lastActivity: serverTimestamp(),
-      lastMessage: 'Docente conectado...',
+      lastMessage: 'Conectado a mesa de ayuda...',
       ticketNumber: ticketNum
     };
     
-    // 1. Create Session Reference
-    const queueRef = doc(collection(db, 'support_queue'));
-    
-    // 2. Perform Writes (Non-blocking)
-    setDoc(queueRef, requestData).catch(e => console.error("Write error:", e));
-    
-    // Initial Message
-    const msgRef = doc(collection(db, 'chat_messages'));
-    setDoc(msgRef, {
-      chatId: queueRef.id,
-      role: 'bot',
-      content: `Hola ${userData.name.toUpperCase()}, un analista técnico ha sido notificado con una alerta sonora y visual. Su folio de atención es: ${ticketNum}. Por favor, no cierre esta ventana.`,
-      timestamp: serverTimestamp()
-    }).catch(e => console.error("Msg error:", e));
+    try {
+      // 1. Create Session
+      await setDoc(doc(db, 'support_queue', requestId), requestData);
+      
+      // 2. Initial Bot Message
+      await setDoc(doc(collection(db, 'chat_messages')), {
+        chatId: requestId,
+        role: 'bot',
+        content: `Hola ${userData.name.toUpperCase()}, hemos notificado a la central de soporte con una alerta sonora y visual. Su folio es: ${ticketNum}. Mantenga esta ventana abierta.`,
+        timestamp: serverTimestamp()
+      });
 
-    // 3. OPTIMISTIC TRANSITION (Instant UI change)
-    setSelectedRequest({ ...requestData, id: queueRef.id, lastActivity: new Date() } as any);
-    setHasJoined(true);
-    setIsJoining(false);
-    
-    toast({ 
-      title: "Conectado a Mesa de Ayuda", 
-      description: "El técnico está recibiendo su alerta ahora mismo.",
-      className: "bg-emerald-600 text-white border-none"
-    });
+      setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
+      setHasJoined(true);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Falla de conexión" });
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -238,16 +229,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
-      // Update queue metadata (Non-blocking)
       setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
-        lastMessage: input.substring(0, 50),
+        lastMessage: input.substring(0, 40) + (input.length > 40 ? '...' : ''),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // Add message (Non-blocking)
-      const msgRef = doc(collection(db, 'chat_messages'));
-      setDoc(msgRef, {
+      setDoc(doc(collection(db, 'chat_messages')), {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: input,
@@ -257,7 +245,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       setInput('');
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al enviar mensaje" });
+      toast({ variant: "destructive", title: "Mensaje no enviado" });
     } finally {
       setIsSending(false);
     }
@@ -265,26 +253,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // --- PUBLIC INTERFACE (DOCENT) ---
+  // --- PUBLIC INTERFACE ---
   if (isPublic) {
     if (!hasJoined) {
       return (
         <div className="h-full w-full bg-[#f0f2f5] flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-          <Card className="w-full max-w-[500px] rounded-[2.5rem] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+          <Card className="w-full max-w-[500px] rounded-[3rem] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 ring-1 ring-black/5">
              <div className="p-10 bg-[#9f2241] text-white text-center space-y-4">
-                <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+                <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-white/10">
                    <Monitor className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">INICIAR SOPORTE</h2>
-                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2">Mesa de Ayuda ATRES • Estado de México</p>
+                   <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">MESA DE AYUDA</h2>
+                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mt-2">Soporte Técnico ATRES • Edoméx 2026</p>
                 </div>
              </div>
              <div className="p-10 bg-white space-y-6">
                 <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
+                   <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificación del Solicitante</Label>
                    <Input 
-                      placeholder="EJ. PROF. JUAN PÉREZ" 
+                      placeholder="NOMBRE COMPLETO..." 
                       className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-slate-700" 
                       value={userData.name}
                       onChange={e => setUserData({...userData, name: e.target.value})}
@@ -293,7 +281,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
                    <Input 
-                      placeholder="EJ. 15DES0001R" 
+                      placeholder="15DESXXXXX" 
                       className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-mono font-black uppercase text-primary" 
                       value={userData.cct}
                       onChange={e => setUserData({...userData, cct: e.target.value})}
@@ -301,12 +289,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    />
                 </div>
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
-                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON TÉCNICO"}
+                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON ANALISTA"}
                 </Button>
              </div>
-             <div className="p-6 bg-slate-50 border-t flex items-center justify-center gap-2">
+             <div className="p-6 bg-slate-50 border-t flex items-center justify-center gap-3">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Canal Seguro Encriptado</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Canal Oficial Seguro • Dirección de Secundaria</span>
              </div>
           </Card>
         </div>
@@ -316,39 +304,30 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return (
       <div className="flex h-full w-full bg-white overflow-hidden animate-in fade-in duration-700">
         <aside className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
-           <div className="p-6 bg-white border-b">
-              <h3 className="text-lg font-black text-[#9f2241] uppercase tracking-tighter">Apoyo Remoto</h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Protocolo ATRES</p>
+           <div className="p-6 bg-white border-b flex items-center justify-between">
+              <div>
+                 <h3 className="text-lg font-black text-[#9f2241] uppercase tracking-tighter">Apoyo Remoto</h3>
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Soporte Técnico en Vivo</p>
+              </div>
+              <Badge className="bg-[#9f2241] text-white border-none">{selectedRequest?.ticketNumber}</Badge>
            </div>
            <ScrollArea className="flex-1">
               <div className="p-6 space-y-8">
                  <div className="space-y-4">
                     {[
-                      { step: 1, text: 'Descargue e instale AnyDesk.', icon: Download },
-                      { step: 2, text: 'Copie su ID de 9 dígitos.', icon: Info },
-                      { step: 3, text: 'Envíe el ID por este chat.', icon: Paperclip },
+                      { step: 1, text: 'Instale AnyDesk en su equipo.' },
+                      { step: 2, text: 'Localice su ID de 9 dígitos.' },
+                      { step: 3, text: 'Escríbalo en el chat inferior.' },
                     ].map(s => (
-                      <div key={s.step} className="flex gap-4 items-start">
+                      <div key={s.step} className="flex gap-4 items-start bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                          <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-lg">{s.step}</div>
-                         <p className="text-[11px] font-semibold text-slate-600 leading-tight pt-1">{s.text}</p>
+                         <p className="text-[11px] font-semibold text-slate-600 leading-tight pt-0.5">{s.text}</p>
                       </div>
                     ))}
                  </div>
-
-                 <div className="p-6 bg-[#EFE7DD] rounded-[2rem] border-2 border-[#B38E5D]/30 space-y-4 shadow-inner">
-                    <Label className="text-[9px] font-black uppercase text-[#B38E5D] text-center block">ID DE CONEXIÓN</Label>
-                    <Input 
-                      placeholder="000 000 000" 
-                      className="h-12 bg-white rounded-xl border-none shadow-xl text-center font-mono font-black text-xl text-primary" 
-                      value={userData.anydeskId}
-                      onChange={e => setUserData({...userData, anydeskId: e.target.value})}
-                    />
-                    <Button className="w-full bg-[#B38E5D] hover:bg-[#a08252] text-white h-11 rounded-xl text-[10px] font-black shadow-lg" onClick={() => { if(userData.anydeskId) { setInput(`Mi ID de conexión AnyDesk es: ${userData.anydeskId}`); handleSendMessage(); } }}>ENVIAR ID A TÉCNICO</Button>
-                 </div>
-
-                 <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3">
+                 <div className="p-5 bg-blue-50 border-2 border-dashed border-blue-100 rounded-[1.8rem] flex gap-3 shadow-inner">
                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista recibirá una alerta visual y sonora inmediata. Por favor mantenga abierta esta ventana.</p>
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista técnico está recibiendo una alerta visual y sonora ahora mismo. Espere su respuesta.</p>
                  </div>
               </div>
            </ScrollArea>
@@ -361,20 +340,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     <AvatarFallback className="bg-slate-100 text-slate-400"><Bot /></AvatarFallback>
                  </Avatar>
                  <div>
-                    <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Analista Técnico</h4>
+                    <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Asistente Virtual</h4>
                     <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Canal Seguro Activo
+                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronización Activa
                     </p>
                  </div>
               </div>
-              <Badge variant="outline" className="font-mono font-black border-primary/20 text-primary">{selectedRequest?.ticketNumber}</Badge>
            </header>
 
            <ScrollArea className="flex-1 px-8 py-8 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
               <div className="max-w-4xl mx-auto space-y-4">
                  {messages.map((m, i) => (
                    <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-[80%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'user' ? "bg-[#e7ffdb] rounded-tr-none border border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border border-slate-200")}>
+                      <div className={cn("max-w-[80%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'user' ? "bg-[#e7ffdb] rounded-tr-none border border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border border-slate-200 shadow-xl")}>
                          <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                          <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
                             <Clock className="h-2.5 w-2.5" />
@@ -393,7 +371,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    value={input} 
                    onChange={e => setInput(e.target.value)} 
                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                   placeholder="DESCRIBA SU DUDA TÉCNICA AQUÍ..." 
+                   placeholder="DESCRIBA SU DUDA O PEGE SU ID DE ANYDESK..." 
                    className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase focus:ring-2 focus:ring-emerald-500/20"
                  />
                  <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] shadow-xl p-0 shrink-0 transition-transform active:scale-90">
@@ -429,20 +407,26 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </button>
            ))}
         </div>
-        <button onClick={() => audioRef.current?.play().catch(() => {})} className="h-11 w-11 rounded-2xl flex items-center justify-center text-white/30 hover:text-emerald-400 transition-colors"><Bell className="h-5 w-5" /></button>
+        <button 
+           onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) audioRef.current?.play(); }} 
+           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white shadow-lg" : "text-white/30 bg-white/5")}
+           title={soundEnabled ? "Silenciar Alertas" : "Activar Alertas Sonoras"}
+        >
+          {soundEnabled ? <Volume2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
+        </button>
       </aside>
 
       <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
         <div className="p-6 bg-white border-b space-y-4 shadow-sm">
            <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">SESIONES ACTIVAS</h2>
-              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full shadow-sm">
-                 {queue.length} ACTIVAS
+              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full">
+                 {queue.length}
               </Badge>
            </div>
            <div className="relative group">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
-              <Input placeholder="FILTRAR SESIONES..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[9px] font-bold uppercase focus:bg-white" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
+              <Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[9px] font-bold uppercase" />
            </div>
         </div>
         <ScrollArea className="flex-1">
@@ -494,14 +478,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Soporte Técnico en Vivo</span>
+                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Atención en Tiempo Real</span>
                   </div>
                </div>
                <div className="flex items-center gap-4">
-                  <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><Monitor className="h-4 w-4" /> REMOTO</Button>
-                  <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><MessageSquare className="h-4 w-4" /> CHAT</Button>
+                  <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><Monitor className="h-4 w-4" /> REMOTO</Button>
+                  <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><MessageSquare className="h-4 w-4" /> CHAT</Button>
                   <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Desea finalizar esta sesión?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Finalizar sesión técnica?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
                </div>
             </header>
 
@@ -509,16 +493,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <div className="flex-1 flex flex-col overflow-hidden">
                   {activeView === 'remote' ? (
                     <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
-                       <div className="w-full h-full bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
-                          <Image src="https://picsum.photos/seed/desktop/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
+                       <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
+                          <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
                           <div className="z-10 text-center space-y-6">
                              <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
                                 <Activity className="text-emerald-400 h-10 w-10" />
                              </div>
-                             <div className="space-y-2">
-                                <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] leading-none">Canal de Monitoreo Activo</p>
-                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest">Protocolo de Encriptación Institucional</p>
-                             </div>
+                             <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em]">Monitoreo de Dispositivo Activo</p>
                           </div>
                        </div>
                     </div>
@@ -528,7 +509,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
                             {messages.map((m, i) => (
                               <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                                <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white border border-slate-200 rounded-tl-none text-slate-800")}>
+                                <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white border border-slate-200 rounded-tl-none text-slate-800 shadow-xl")}>
                                    <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
                                    <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
                                       <Clock className="h-2.5 w-2.5" />
@@ -542,12 +523,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       </ScrollArea>
                       <footer className="p-6 bg-white border-t flex gap-4 shrink-0 shadow-2xl z-30">
                          <div className="max-w-4xl mx-auto flex w-full items-center gap-4">
-                            <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100 hover:text-primary transition-all"><Paperclip className="h-5 w-5" /></button>
+                            <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100 transition-all"><Paperclip className="h-5 w-5" /></button>
                             <Input 
                                value={input} 
                                onChange={e => setInput(e.target.value)} 
                                onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                               className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase shadow-inner focus:ring-2 focus:ring-primary/10" 
+                               className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase shadow-inner" 
                                placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
                             />
                             <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0 transition-transform active:scale-95">
@@ -558,46 +539,25 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </>
                   )}
                </div>
-               
-               <aside className="w-80 bg-white border-l p-6 space-y-8 overflow-y-auto shrink-0 hidden xl:block z-20 shadow-sm">
-                  <div className="space-y-6">
-                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><HardDrive className="h-4 w-4 text-primary" /> EXPEDIENTE HARDWARE</h4>
-                     <div className="space-y-4 bg-slate-50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner">
-                        <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">OS</span><span className="text-[10px] font-black text-slate-700">WINDOWS 11 PRO</span></div>
-                        <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">CPU</span><span className="text-[10px] font-black text-slate-700">INTEL I7 12TH</span></div>
-                        <div className="flex justify-between items-center pt-2 border-t"><span className="text-[10px] font-bold text-slate-500 uppercase">IP</span><span className="text-[10px] font-black font-mono text-primary">192.168.1.104</span></div>
-                     </div>
-                  </div>
-                  <div className="space-y-6 pt-6 border-t">
-                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> ORIGEN DE SOLICITUD</h4>
-                     <div className="p-6 bg-slate-50 rounded-[2.5rem] space-y-4 border border-slate-100 shadow-inner">
-                        <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><Monitor className="h-6 w-6" /></div>
-                        <div>
-                           <p className="text-xs font-black text-slate-700 uppercase leading-none">{selectedRequest.cct}</p>
-                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">IDENTIDAD VERIFICADA</p>
-                        </div>
-                     </div>
-                  </div>
-               </aside>
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white animate-in fade-in duration-1000">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-6xl w-full">
                 <div className="space-y-10">
-                   <div className="h-20 w-20 rounded-[1.8rem] bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241] shadow-inner">
+                   <div className="h-20 w-20 rounded-[1.8rem] bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241] shadow-inner border border-primary/5">
                       <Laptop className="h-10 w-10" />
                    </div>
                    <div className="space-y-3">
                       <h3 className="text-5xl font-black uppercase text-slate-800 tracking-tighter leading-none">CENTRAL DE SOPORTE ATRES</h3>
-                      <p className="text-lg font-bold uppercase tracking-[0.3em] text-[#B38E5D]">Monitorización de Sesiones</p>
+                      <p className="text-lg font-bold uppercase tracking-[0.3em] text-[#B38E5D]">Monitorización de Sesiones en Vivo</p>
                    </div>
                    <div className="p-8 bg-slate-50 rounded-[3rem] border-2 border-slate-100 flex gap-6 shadow-sm">
                       <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-500 shrink-0">
                          <Bell className="h-8 w-8" />
                       </div>
                       <p className="text-xs font-bold text-slate-600 uppercase leading-relaxed mt-1">
-                         El sistema le notificará automáticamente con alertas visuales y sonoras cuando un docente inicie una nueva solicitud de soporte técnico en la nube.
+                         Para recibir alertas sonoras, asegúrese de haber hecho clic en el botón de campana de la barra lateral izquierda.
                       </p>
                    </div>
                 </div>
@@ -607,28 +567,20 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <QrCode className="h-64 w-64" />
                    </div>
                    <div className="space-y-2 relative z-10">
-                      <h4 className="text-2xl font-black uppercase tracking-tighter">LIGA DE SOPORTE PARA DOCENTES</h4>
+                      <h4 className="text-2xl font-black uppercase tracking-tighter">ACCESO DOCENTES</h4>
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">CANAL OFICIAL DE ATENCIÓN REMOTA</p>
                    </div>
-                   <div className="p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm space-y-3 relative z-10 shadow-inner">
-                      <Label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Enlace Directo:</Label>
-                      <div className="flex items-center gap-3">
-                         <Globe className="h-5 w-5 text-white/40" />
-                         <span className="text-[11px] font-mono text-white/80 font-bold truncate">{supportUrl}</span>
-                      </div>
+                   <div className="p-4 bg-white rounded-[2.5rem] shadow-2xl transform group-hover:rotate-3 transition-transform duration-500 w-fit mx-auto relative z-10">
+                      <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(supportUrl)}`} alt="QR" width={140} height={140} className="rounded-xl" />
                    </div>
-                   <div className="flex items-center gap-8 relative z-10">
-                      <div className="p-4 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform group-hover:rotate-3 transition-transform duration-500">
-                         <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(supportUrl)}`} alt="QR" width={110} height={110} className="rounded-xl" />
+                   <div className="space-y-6 relative z-10">
+                      <div className="p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm space-y-2">
+                         <Label className="text-[9px] font-black text-emerald-400 uppercase">Enlace Directo:</Label>
+                         <p className="text-[10px] font-mono text-white/80 font-bold truncate">{supportUrl}</p>
                       </div>
-                      <div className="space-y-6 flex-1">
-                         <p className="text-[11px] font-semibold text-white/60 leading-relaxed">
-                            Proporcione este código QR o la liga directa al personal para iniciar la monitorización técnica 2026.
-                         </p>
-                         <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado al Portapapeles", className: "bg-emerald-600 text-white border-none" }); }} className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all hover:scale-105 active:scale-95 border-none">
-                            <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
-                         </Button>
-                      </div>
+                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Copiado", className: "bg-emerald-600 text-white" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
+                         <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
+                      </Button>
                    </div>
                 </Card>
              </div>
