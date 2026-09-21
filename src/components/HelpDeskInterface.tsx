@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { 
   Send, 
   Bot, 
@@ -281,7 +283,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <div>
                     <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Asistente Técnico</h4>
                     <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Conectado • Listo para ayudar
+                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Conectado • Listo para ayudar
                     </p>
                  </div>
               </div>
@@ -394,7 +396,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <div className="flex flex-col">
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
-                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                     <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                      <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">En línea • Soporte en progreso</span>
                   </div>
                </div>
