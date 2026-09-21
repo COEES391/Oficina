@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -225,10 +226,23 @@ export default function SupportPage() {
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctChange(newSchool.cct);
+    
+    // Población automática del formulario de soporte con los nuevos datos
+    setFormData(prev => ({ 
+      ...prev, 
+      cct: newSchool.cct,
+      schoolName: newSchool.nombre,
+      ze: newSchool.zonaEscolar,
+      sector: newSchool.sector,
+      modalidad: newSchool.modalidad,
+      municipio: newSchool.municipio,
+      region: newSchool.region,
+      valle: newSchool.valle
+    }));
+
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido a la Base Maestra." });
+    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido y cargado en el reporte." });
   }
 
   const handleSave = () => {
@@ -1026,37 +1040,37 @@ export default function SupportPage() {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">CCT (10 Dígitos)</Label>
-                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200" />
+                  <Input value={quickAddForm.cct} onChange={e => setQuickAddForm({...quickAddForm, cct: e.target.value.toUpperCase()})} maxLength={10} className="font-mono font-black border-slate-200 h-12 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Nombre del Plantel</Label>
-                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.nombre} onChange={e => setQuickAddForm({...quickAddForm, nombre: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 rounded-xl" />
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Municipio</Label>
-                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200" />
+                  <Input value={quickAddForm.municipio} onChange={e => setQuickAddForm({...quickAddForm, municipio: e.target.value.toUpperCase()})} className="font-bold uppercase border-slate-200 h-12 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Región</Label>
-                  <Input value={quickAddForm.region} onChange={e => setQuickAddForm({...quickAddForm, region: e.target.value.toUpperCase()})} className="font-bold border-slate-200" />
+                  <Input value={quickAddForm.region} onChange={e => setQuickAddForm({...quickAddForm, region: e.target.value.toUpperCase()})} className="font-bold border-slate-200 h-12 rounded-xl" />
                 </div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Valle</Label>
-                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
+                  <Select value={quickAddForm.valle} onValueChange={v => setQuickAddForm({...quickAddForm, valle: v})}><SelectTrigger className="font-bold border-slate-200 h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent className="z-[400]"><SelectItem value="MEXICO">MÉXICO</SelectItem><SelectItem value="TOLUCA">TOLUCA</SelectItem></SelectContent></Select>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Sector</Label>
-                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.sector} onChange={e => setQuickAddForm({...quickAddForm, sector: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-primary">Zona Escolar</Label>
-                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value.toUpperCase()})} className="font-black border-slate-200" />
+                  <Input value={quickAddForm.zonaEscolar} onChange={e => setQuickAddForm({...quickAddForm, zonaEscolar: e.target.value.toUpperCase()})} className="font-black border-slate-200 h-12 rounded-xl" />
                 </div>
              </div>
           </div>

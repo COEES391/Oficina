@@ -244,10 +244,23 @@ export default function ProgramsPage() {
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctChange(newSchool.cct);
+    
+    // Población automática del formulario de auditoría con los nuevos datos
+    setFormData(prev => ({ 
+      ...prev, 
+      cct: newSchool.cct, 
+      schoolName: newSchool.nombre, 
+      municipio: newSchool.municipio, 
+      valle: newSchool.valle, 
+      region: newSchool.region, 
+      zonaEscolar: newSchool.zonaEscolar, 
+      sector: newSchool.sector, 
+      modalidad: newSchool.modalidad 
+    }))
+
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido a la Base Maestra." });
+    toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido y cargado en el formulario." });
   }
 
   const handleSave = () => {

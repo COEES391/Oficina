@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -239,15 +240,21 @@ export default function TrainingPage() {
       localidad: (quickAddForm.localidad || '').toUpperCase(),
       sector: (quickAddForm.sector || '').toUpperCase(),
       zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
-      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase(),
+      valle: (quickAddForm.valle || 'MEXICO').toUpperCase(),
+      region: (quickAddForm.region || '').toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
-    handleCctSedeChange(newSchool.cct);
+    
+    // Población automática del formulario de capacitación
+    setSelectedSedeInfo(newSchool);
+    setCourseData(prev => ({ ...prev, cctSede: newSchool.cct }));
+
     setIsQuickAddOpen(false);
     setDialogSearchTerm('');
-    toast({ title: "CCT Registrado" });
+    toast({ title: "CCT Registrado y Cargado" });
   }
 
   const handleAddRow = () => {
@@ -477,7 +484,7 @@ export default function TrainingPage() {
                                     <ChevronRight className="h-4 w-4 text-slate-300" />
                                   </div>
                                 ))}
-                                {schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: ''}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}
+                                {schoolSearchResults.length === 0 && (<div className="p-6 text-center"><Button onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} variant="outline" className="h-10 px-6 rounded-xl text-[9px] font-black uppercase"><Plus className="h-4 w-4 mr-2" /> Alta Rápida</Button></div>)}
                               </div>
                             )}
                           </div>
@@ -625,8 +632,7 @@ export default function TrainingPage() {
                         <GraduationCap className="h-16 w-16 text-slate-300" />
                         <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Sin registros operativos</p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </TableRow>
                 )}
               </TableBody>
             </Table>
