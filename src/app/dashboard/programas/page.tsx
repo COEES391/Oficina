@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   LineChart, 
   Line, 
@@ -143,6 +144,13 @@ export default function ProgramsPage() {
       fase1: false, fase2: false, fase3: false, fase4: false, fase5: false,
       fase6: false, fase7: false, fase8: false, fase9: false,
       personalCapacitado: 0, equiposHabilitados: 0
+    },
+    mantenimientoFicha: {
+      equipoTecnologico: { hdt: false, equipoComputo: false, otro: '' },
+      equiposList: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
+      fallaIdentificada: '',
+      servicioRealizado: '',
+      observaciones: ''
     }
   }
 
@@ -245,7 +253,6 @@ export default function ProgramsPage() {
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
     
-    // Población automática del formulario de auditoría con los nuevos datos
     setFormData(prev => ({ 
       ...prev, 
       cct: newSchool.cct, 
@@ -282,7 +289,8 @@ export default function ProgramsPage() {
       date: formData.date || new Date().toISOString().split('T')[0],
       email: formData.email || (accountForm.username ? `${accountForm.username}${accountForm.domain}` : ''),
       updatedAt: serverTimestamp(),
-      bibliotecaFases: formData.bibliotecaFases || null
+      bibliotecaFases: formData.bibliotecaFases || null,
+      mantenimientoFicha: formData.mantenimientoFicha || null
     };
 
     if (editingId) {
@@ -329,11 +337,20 @@ export default function ProgramsPage() {
     return allSchools.filter(s => s.cct.includes(term) || s.nombre.includes(term)).slice(0, 5);
   }, [allSchools, dialogSearchTerm]);
 
+  const updateMantenimientoEquipo = (index: number, field: string, value: string) => {
+    if (!formData.mantenimientoFicha) return;
+    const list = [...formData.mantenimientoFicha.equiposList];
+    (list[index] as any)[field] = value.toUpperCase();
+    setFormData({
+      ...formData,
+      mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
+    });
+  }
+
   if (!mounted) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 w-full min-h-screen bg-[#f8fafc] p-2 md:p-4 rounded-[2rem]">
-      {/* Header Tabs Navigation */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex flex-wrap gap-2 p-1.5 bg-white rounded-2xl shadow-sm border">
           {['Cuentas Institucionales', 'Biblioteca Digital', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(tab => (
@@ -407,7 +424,6 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
           <div className="space-y-8 pb-10">
-            {/* Upper Metric Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
                 { label: 'CCT Registrados', value: stats.total, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -616,9 +632,8 @@ export default function ProgramsPage() {
         ) : null}
       </div>
 
-      {/* Dialog for New Audit / Edit */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[1000px] h-[85vh] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
+        <DialogContent className="sm:max-w-[1000px] h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
              <DialogTitle className="uppercase font-black text-xl flex items-center gap-3">
                <Settings className="h-7 w-7 text-accent" /> 
@@ -626,131 +641,213 @@ export default function ProgramsPage() {
              </DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden flex flex-col">
-             <ScrollArea className="flex-1 p-10">
-                <div className="space-y-12">
-                   {/* Step 1: Identification */}
-                   <div className="space-y-6">
-                      <div className="flex items-center gap-3 border-b pb-2"><Search className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Localización del Centro de Trabajo</h4></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="space-y-2 relative">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT (10 Dígitos)</Label>
-                            <div className="relative group">
-                              <Input 
-                                value={formData.cct} 
-                                onChange={e => {
-                                  const val = e.target.value.toUpperCase();
-                                  setFormData({...formData, cct: val});
-                                  setDialogSearchTerm(val);
-                                  handleCctChange(val);
-                                }} 
-                                className="h-12 bg-slate-50 border-none rounded-xl font-black text-primary uppercase shadow-inner pl-12" 
-                                placeholder="15DESXXXXX" 
-                              />
-                              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
-                              
-                              {dialogSearchTerm.length > 2 && (
-                                <div className="absolute top-14 left-0 right-0 max-h-48 overflow-auto bg-white border rounded-xl shadow-2xl z-50 divide-y animate-in fade-in zoom-in-95">
-                                  {schoolSearchResults.map(s => (
-                                    <div 
-                                      key={`${s.cct}-${s.turno}`} 
-                                      className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" 
-                                      onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase group-hover:text-primary transition-colors">{s.nombre}</span>
-                                        <span className="text-[8px] font-bold text-slate-400">{s.cct} • {s.municipio}</span>
-                                      </div>
-                                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-all" />
-                                    </div>
-                                  ))}
-                                  {schoolSearchResults.length === 0 && (
-                                    <div className="p-4 text-center">
-                                      <p className="text-[8px] font-bold text-slate-400 uppercase mb-3">No encontrado en la Base Maestra</p>
-                                      <Button 
-                                        onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} 
-                                        variant="outline" 
-                                        className="h-8 px-4 rounded-lg text-[8px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
-                                      </Button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+          <Tabs defaultValue="auditoria" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-8 border-b bg-slate-50/50">
+              <TabsList className="bg-transparent h-14 p-0 gap-8">
+                <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Auditoría Técnica</TabsTrigger>
+                {formData.bibliotecaFases?.equiposHabilitados && formData.bibliotecaFases.equiposHabilitados > 1 && (
+                  <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="auditoria" className="h-full m-0 p-0 overflow-hidden">
+                <ScrollArea className="h-full p-10">
+                   <div className="space-y-12">
+                      <div className="space-y-6">
+                         <div className="flex items-center gap-3 border-b pb-2"><Search className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Localización del Centro de Trabajo</h4></div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2 relative">
+                               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT (10 Dígitos)</Label>
+                               <div className="relative group">
+                                 <Input 
+                                   value={formData.cct} 
+                                   onChange={e => {
+                                     const val = e.target.value.toUpperCase();
+                                     setFormData({...formData, cct: val});
+                                     setDialogSearchTerm(val);
+                                     handleCctChange(val);
+                                   }} 
+                                   className="h-12 bg-slate-50 border-none rounded-xl font-black text-primary uppercase shadow-inner pl-12" 
+                                   placeholder="15DESXXXXX" 
+                                 />
+                                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
+                                 
+                                 {dialogSearchTerm.length > 2 && (
+                                   <div className="absolute top-14 left-0 right-0 max-h-48 overflow-auto bg-white border rounded-xl shadow-2xl z-50 divide-y animate-in fade-in zoom-in-95">
+                                     {schoolSearchResults.map(s => (
+                                       <div 
+                                         key={`${s.cct}-${s.turno}`} 
+                                         className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group" 
+                                         onClick={() => { handleCctChange(s.cct); setDialogSearchTerm(''); }}
+                                       >
+                                         <div className="flex flex-col">
+                                           <span className="text-[10px] font-black uppercase group-hover:text-primary transition-colors">{s.nombre}</span>
+                                           <span className="text-[8px] font-bold text-slate-400">{s.cct} • {s.municipio}</span>
+                                         </div>
+                                         <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-all" />
+                                       </div>
+                                     ))}
+                                     {schoolSearchResults.length === 0 && (
+                                       <div className="p-4 text-center">
+                                         <p className="text-[8px] font-bold text-slate-400 uppercase mb-3">No encontrado en la Base Maestra</p>
+                                         <Button 
+                                           onClick={() => { setQuickAddForm({...quickAddForm, cct: dialogSearchTerm.toUpperCase()}); setIsQuickAddOpen(true); }} 
+                                           variant="outline" 
+                                           className="h-8 px-4 rounded-lg text-[8px] font-black uppercase border-primary/20 text-primary hover:bg-primary/5"
+                                         >
+                                           <Plus className="h-3 w-3 mr-1" /> Alta Rápida de Plantel
+                                         </Button>
+                                       </div>
+                                     )}
+                                   </div>
+                                 )}
+                               </div>
+                            </div>
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Plantel</Label>
+                               <Input 
+                                  value={formData.schoolName}
+                                  onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})}
+                                  className="h-12 bg-slate-50 border-none rounded-xl font-black uppercase text-slate-700 text-xs shadow-inner" 
+                                  placeholder="NOMBRE DEL PLANTEL"
+                               />
                             </div>
                          </div>
-                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre del Plantel</Label>
-                            <Input 
-                               value={formData.schoolName}
-                               onChange={e => setFormData({...formData, schoolName: e.target.value.toUpperCase()})}
-                               className="h-12 bg-slate-50 border-none rounded-xl font-black uppercase text-slate-700 text-xs shadow-inner" 
-                               placeholder="NOMBRE DEL PLANTEL"
-                            />
+                      </div>
+
+                      <div className="space-y-10">
+                         <div className="space-y-6">
+                            <div className="flex items-center gap-3 border-b pb-2"><Settings2 className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Estadística de Impacto</h4></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Equipos Habilitados</Label>
+                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
+                                     <Laptop className="h-6 w-6 text-primary" />
+                                     <Input 
+                                        type="number" 
+                                        value={formData.bibliotecaFases?.equiposHabilitados || 0}
+                                        onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})}
+                                        className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
+                                     />
+                                  </div>
+                               </div>
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Personas Capacitadas</Label>
+                                  <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
+                                     <Users className="h-6 w-6 text-emerald-600" />
+                                     <Input 
+                                        type="number" 
+                                        value={formData.bibliotecaFases?.personalCapacitado || 0}
+                                        onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})}
+                                        className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
+                                     />
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+
+                         <div className="space-y-6">
+                            <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Seguimiento de Fases Técnicas</h4></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               {BIBLIOTECA_FASES.map(f => (
+                                 <div key={f.id} className={cn("flex items-center gap-4 p-5 rounded-[1.8rem] border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-inner")}>
+                                    <Checkbox 
+                                      checked={(formData.bibliotecaFases as any)?.[f.id]} 
+                                      onCheckedChange={(val) => { 
+                                         const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
+                                         const totalWeight = BIBLIOTECA_FASES.length;
+                                         const completedCount = BIBLIOTECA_FASES.filter(ph => (updatedFases as any)[ph.id]).length;
+                                         const progress = Math.round((completedCount / totalWeight) * 100); 
+                                         setFormData({ ...formData, bibliotecaFases: updatedFases as any, progress }); 
+                                      }} 
+                                      className="h-6 w-6 rounded-lg border-2 border-primary" 
+                                    />
+                                    <Label className="text-[11px] font-black uppercase text-slate-600 cursor-pointer flex-1 leading-tight">{f.label}</Label>
+                                 </div>
+                               ))}
+                            </div>
                          </div>
                       </div>
                    </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="mantenimiento" className="h-full m-0 p-0 overflow-hidden">
+                 <ScrollArea className="h-full p-10">
+                    <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                       <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
+                          <MonitorCheck className="h-6 w-6 text-primary" />
+                          <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención Mantenimiento</h4>
+                       </div>
 
-                   {/* Step 2: Phase Tracking and Impact Stats */}
-                   {activeTab === 'Biblioteca Digital' && (
-                     <div className="space-y-10">
-                        <div className="space-y-6">
-                           <div className="flex items-center gap-3 border-b pb-2"><Settings2 className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Estadística de Impacto</h4></div>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              <div className="space-y-2">
-                                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Equipos Habilitados</Label>
-                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
-                                    <Laptop className="h-6 w-6 text-primary" />
-                                    <Input 
-                                       type="number" 
-                                       value={formData.bibliotecaFases?.equiposHabilitados || 0}
-                                       onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, equiposHabilitados: parseInt(e.target.value) || 0}})}
-                                       className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
-                                    />
-                                 </div>
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Personas Capacitadas</Label>
-                                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border shadow-inner">
-                                    <Users className="h-6 w-6 text-emerald-600" />
-                                    <Input 
-                                       type="number" 
-                                       value={formData.bibliotecaFases?.personalCapacitado || 0}
-                                       onChange={e => setFormData({...formData, bibliotecaFases: {...formData.bibliotecaFases!, personalCapacitado: parseInt(e.target.value) || 0}})}
-                                       className="h-10 bg-white border-none rounded-xl font-black text-lg text-center"
-                                    />
-                                 </div>
-                              </div>
-                           </div>
-                        </div>
-
-                        <div className="space-y-6">
-                           <div className="flex items-center gap-3 border-b pb-2"><ClipboardCheck className="h-5 w-5 text-primary" /><h4 className="text-xs font-black uppercase text-primary tracking-widest">Seguimiento de Fases Técnicas</h4></div>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {BIBLIOTECA_FASES.map(f => (
-                                <div key={f.id} className={cn("flex items-center gap-4 p-5 rounded-[1.8rem] border transition-all", (formData.bibliotecaFases as any)?.[f.id] ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100 shadow-inner")}>
-                                   <Checkbox 
-                                     checked={(formData.bibliotecaFases as any)?.[f.id]} 
-                                     onCheckedChange={(val) => { 
-                                        const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
-                                        const totalWeight = BIBLIOTECA_FASES.length;
-                                        const completedCount = BIBLIOTECA_FASES.filter(ph => (updatedFases as any)[ph.id]).length;
-                                        const progress = Math.round((completedCount / totalWeight) * 100); 
-                                        setFormData({ ...formData, bibliotecaFases: updatedFases as any, progress }); 
-                                     }} 
-                                     className="h-6 w-6 rounded-lg border-2 border-primary" 
-                                   />
-                                   <Label className="text-[11px] font-black uppercase text-slate-600 cursor-pointer flex-1 leading-tight">{f.label}</Label>
+                       <div className="bg-slate-50 p-6 rounded-[2.5rem] border shadow-inner space-y-6">
+                          <div className="flex flex-wrap items-center gap-8 border-b border-primary/10 pb-4">
+                             <Label className="text-[10px] font-black uppercase text-primary">Equipo tecnológico:</Label>
+                             <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                   <Checkbox id="hdt-check" checked={formData.mantenimientoFicha?.equipoTecnologico.hdt} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, hdt: !!val}}})} />
+                                   <Label htmlFor="hdt-check" className="text-[10px] font-bold cursor-pointer">HDT</Label>
                                 </div>
-                              ))}
-                           </div>
-                        </div>
-                     </div>
-                   )}
-                </div>
-             </ScrollArea>
-          </div>
+                                <div className="flex items-center gap-2">
+                                   <Checkbox id="comp-check" checked={formData.mantenimientoFicha?.equipoTecnologico.equipoComputo} onCheckedChange={(val) => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, equipoComputo: !!val}}})} />
+                                   <Label htmlFor="comp-check" className="text-[10px] font-bold cursor-pointer">EQUIPO DE CÓMPUTO</Label>
+                                </div>
+                                <div className="flex items-center gap-2 ml-4">
+                                   <span className="text-[10px] font-bold uppercase text-slate-400">OTRO:</span>
+                                   <Input className="h-8 w-40 bg-white text-[10px] font-bold border-primary/10" value={formData.mantenimientoFicha?.equipoTecnologico.otro} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, equipoTecnologico: {...formData.mantenimientoFicha!.equipoTecnologico, otro: e.target.value.toUpperCase()}}})} />
+                                </div>
+                             </div>
+                          </div>
+
+                          <div className="bg-white rounded-[2rem] border shadow-sm overflow-hidden">
+                             <Table>
+                                <TableHeader className="bg-slate-100">
+                                   <TableRow className="h-10">
+                                      <TableHead className="w-12 text-[9px] font-black text-center pl-4">N.P.</TableHead>
+                                      <TableHead className="text-[9px] font-black">EQUIPO</TableHead>
+                                      <TableHead className="text-[9px] font-black">MARCA</TableHead>
+                                      <TableHead className="text-[9px] font-black">NO. SERIE</TableHead>
+                                      <TableHead className="text-[9px] font-black">NO. CENSAL</TableHead>
+                                   </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                   {formData.mantenimientoFicha?.equiposList.map((eq, idx) => (
+                                     <TableRow key={idx} className="h-10">
+                                        <TableCell className="text-center font-bold text-slate-400 pl-4">{idx + 1}</TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold" value={eq.equipo} onChange={e => updateMantenimientoEquipo(idx, 'equipo', e.target.value)} /></TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold" value={eq.marca} onChange={e => updateMantenimientoEquipo(idx, 'marca', e.target.value)} /></TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold font-mono" value={eq.serie} onChange={e => updateMantenimientoEquipo(idx, 'serie', e.target.value)} /></TableCell>
+                                        <TableCell className="p-1"><Input className="h-8 bg-slate-50/50 border-none text-[10px] font-bold font-mono" value={eq.censal} onChange={e => updateMantenimientoEquipo(idx, 'censal', e.target.value)} /></TableCell>
+                                     </TableRow>
+                                   ))}
+                                </TableBody>
+                             </Table>
+                          </div>
+
+                          <div className="space-y-6 pt-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black text-primary pl-1">Falla identificada:</Label>
+                                  <Input className="h-11 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.fallaIdentificada} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, fallaIdentificada: e.target.value.toUpperCase()}})} />
+                               </div>
+                               <div className="space-y-2">
+                                  <Label className="text-[10px] font-black text-primary pl-1">Servicio realizado:</Label>
+                                  <Input className="h-11 bg-white border-primary/10 font-bold text-xs uppercase" value={formData.mantenimientoFicha?.servicioRealizado} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, servicioRealizado: e.target.value.toUpperCase()}})} />
+                               </div>
+                             </div>
+                             <div className="space-y-2">
+                                <Label className="text-[10px] font-black text-primary pl-1 uppercase tracking-widest text-center block bg-slate-200 py-1 rounded-t-xl">Observaciones</Label>
+                                <Textarea className="min-h-[120px] rounded-b-[1.5rem] rounded-t-none border-primary/10 p-4 text-[11px] font-medium bg-white uppercase shadow-inner" value={formData.mantenimientoFicha?.observaciones} onChange={e => setFormData({...formData, mantenimientoFicha: {...formData.mantenimientoFicha!, observaciones: e.target.value.toUpperCase()}})} />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </ScrollArea>
+              </TabsContent>
+            </div>
+          </Tabs>
 
           <DialogFooter className="p-8 bg-slate-50 border-t flex justify-between items-center shrink-0">
              <div className="flex items-center gap-3">
@@ -768,7 +865,6 @@ export default function ProgramsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Quick Add CCT Dialog */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0">
