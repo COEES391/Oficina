@@ -2,7 +2,7 @@
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES con Sincronización Real y Alertas Críticas.
  * - Analista: Monitorización agresiva con alertas visuales (Toasts) y sonoras.
- * - Usuario: Conexión optimista e instantánea tras clic en botón.
+ * - Usuario: Conexión instantánea y chat bidireccional.
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -43,7 +43,8 @@ import {
   MonitorCheck,
   Server,
   Terminal,
-  Cpu
+  Cpu,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -58,7 +59,9 @@ import {
   serverTimestamp,
   Timestamp,
   where,
-  addDoc
+  addDoc,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import Image from 'next/image';
 
@@ -106,6 +109,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // Initialize Audio & Mounting
   useEffect(() => {
     setMounted(true);
+    // Sonido institucional de campana
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.load();
     audioRef.current = audio;
@@ -117,7 +121,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Escuchamos la cola completa para reaccionar a cambios de estado
+    // Escuchamos la cola completa
     const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -132,7 +136,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       
       setQueue(activeQueue);
 
-      // LÓGICA DE ALERTA AGRESIVA: Se dispara por cada documento nuevo en estado pending
+      // ALERTA DE ALTA PRIORIDAD
       snap.docChanges().forEach((change) => {
         const data = change.doc.data() as SupportRequest;
         const id = change.doc.id;
@@ -141,22 +145,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           if (!alertedIds.current.has(id)) {
             alertedIds.current.add(id);
             
-            // Notificación Visual (Toast)
+            // Notificación Visual con Botón de Atención
             toast({
-              title: "⚠️ SOLICITUD DE ATENCIÓN ENTRANTE",
-              description: `USUARIO: ${data.userName} | CCT: ${data.cct}`,
-              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-3xl p-6 animate-bounce",
-              duration: 15000
+              title: "⚠️ ALERTA DE SOPORTE ATRES",
+              description: `DOCENTE: ${data.userName} | CCT: ${data.cct}`,
+              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-3xl p-6",
+              duration: 20000,
+              action: (
+                <Button 
+                  onClick={() => setSelectedRequest({ ...data, id } as any)} 
+                  className="bg-white text-[#9f2241] hover:bg-slate-100 font-black uppercase text-[10px]"
+                >
+                  ATENDER AHORA
+                </Button>
+              )
             });
 
             // Notificación Sonora
             if (audioRef.current && soundEnabled) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(() => console.log("Audio interactivo requerido"));
+              audioRef.current.play().catch(e => console.log("Habilite sonido interactivo"));
             }
           }
         }
       });
+    }, (error) => {
+      console.error("Error en cola soporte:", error);
     });
 
     return () => unsubscribe();
@@ -182,6 +196,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         return tA - tB;
       });
       setMessages(sortedMsgs);
+    }, (error) => {
+      console.error("Error en chat:", error);
     });
 
     return () => unsubscribe();
@@ -191,10 +207,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // UNIÓN OPTIMISTA: No espera al servidor para cambiar la vista del usuario
   const handleJoinSupport = async () => {
     if (!userData.name || !userData.cct) {
-      toast({ variant: "destructive", title: "Datos Faltantes", description: "Nombre y CCT son requeridos." });
+      toast({ variant: "destructive", title: "Datos incompletos" });
       return;
     }
     
@@ -207,27 +222,29 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       cct: userData.cct.toUpperCase(),
       status: 'pending',
       lastActivity: serverTimestamp(),
-      lastMessage: 'Conectando con un técnico...',
+      lastMessage: 'Sincronizando con Central ATRES...',
       ticketNumber: ticketNum
     };
     
-    // 1. Registro asíncrono (no bloquea el UI)
-    setDoc(doc(db, 'support_queue', requestId), requestData).catch(() => {
-      toast({ variant: "destructive", title: "Error de Conexión" });
-    });
+    try {
+      // 1. Registro Instantáneo
+      await setDoc(doc(db, 'support_queue', requestId), requestData);
+      
+      // 2. Mensaje de bienvenida
+      await addDoc(collection(db, 'chat_messages'), {
+        chatId: requestId,
+        role: 'bot',
+        content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda ATRES. Se ha enviado una ALERTA CRÍTICA a la Central de Soporte. Su Folio es: ${ticketNum}. Mantenga esta ventana abierta, un técnico se conectará en breve.`,
+        timestamp: serverTimestamp()
+      });
 
-    // 2. Mensaje inicial asíncrono
-    addDoc(collection(db, 'chat_messages'), {
-      chatId: requestId,
-      role: 'bot',
-      content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda ATRES. Se ha enviado una ALERTA SONORA Y VISUAL a la Central de Soporte. Folio: ${ticketNum}. Mantenga esta ventana abierta.`,
-      timestamp: serverTimestamp()
-    });
-
-    // 3. Transición instantánea (Elimina el spinner infinito)
-    setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
-    setHasJoined(true);
-    setIsJoining(false);
+      setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
+      setHasJoined(true);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error de servidor", description: "Verifique su conexión a internet." });
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -236,13 +253,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
+      // Actualizamos estado de la cola
       setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: input.substring(0, 40) + (input.length > 40 ? '...' : ''),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      addDoc(collection(db, 'chat_messages'), {
+      // Guardamos mensaje
+      await addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: input,
@@ -296,10 +315,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON TÉCNICO"}
                 </Button>
              </div>
-             <div className="p-6 bg-slate-50 border-t flex items-center justify-center gap-3">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Canal Oficial Seguro • Dirección de Secundaria</span>
-             </div>
           </Card>
         </div>
       );
@@ -311,7 +326,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            <div className="p-6 bg-white border-b flex items-center justify-between">
               <div>
                  <h3 className="text-lg font-black text-[#9f2241] uppercase tracking-tighter">Apoyo Remoto</h3>
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Instrucciones de Conexión</p>
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Conexión Segura</p>
               </div>
            </div>
            <ScrollArea className="flex-1">
@@ -319,7 +334,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  {[
                    { step: 1, text: 'Descargue AnyDesk en su equipo.' },
                    { step: 2, text: 'Localice su ID de 9 dígitos.' },
-                   { step: 3, text: 'Envíe su ID por el chat.' },
+                   { step: 3, text: 'Envíe su ID por este chat.' },
                  ].map(s => (
                    <div key={s.step} className="flex gap-4 items-start bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                       <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-lg">{s.step}</div>
@@ -327,38 +342,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    </div>
                  ))}
                  <div className="p-5 bg-blue-50 border-2 border-dashed border-blue-100 rounded-[1.8rem] flex gap-3 shadow-inner">
-                    <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista técnico está recibiendo su alerta ahora mismo. Manténgase en línea.</p>
+                    <Info className="h-5 w-5 text-blue-600 shrink-0" />
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">Un técnico está analizando su caso. La sincronización es en tiempo real.</p>
                  </div>
               </div>
            </ScrollArea>
         </aside>
 
-        <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
-           <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
+        <div className="flex-1 flex flex-col bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] overflow-hidden">
+           <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm">
               <div className="flex items-center gap-4">
-                 <Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-md">
+                 <Avatar className="h-10 w-10 border-2 border-emerald-500">
                     <AvatarFallback className="bg-slate-100 text-slate-400"><Bot /></AvatarFallback>
                  </Avatar>
                  <div>
                     <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Asistente Virtual</h4>
-                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronización Activa
-                    </p>
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mt-1 flex items-center gap-1">
+                       <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" /> Sincronizado con Central
+                    </span>
                  </div>
               </div>
            </header>
 
-           <ScrollArea className="flex-1 px-8 py-8 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
+           <ScrollArea className="flex-1 px-8 py-8">
               <div className="max-w-4xl mx-auto space-y-4">
                  {messages.map((m, i) => (
                    <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-[80%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'user' ? "bg-[#e7ffdb] rounded-tr-none border border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border border-slate-200 shadow-xl")}>
+                      <div className={cn("max-w-[80%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'user' ? "bg-[#e7ffdb] rounded-tr-none border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border-slate-200")}>
                          <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                         <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
-                            <Clock className="h-2.5 w-2.5" />
-                            {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : 'Sync...'}
-                         </div>
+                         <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2">{m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}</div>
                       </div>
                    </div>
                  ))}
@@ -366,72 +378,51 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </div>
            </ScrollArea>
 
-           <footer className="p-6 bg-white border-t shrink-0 shadow-2xl">
-              <div className="max-w-4xl mx-auto flex items-center gap-4">
-                 <Input 
-                   value={input} 
-                   onChange={e => setInput(e.target.value)} 
-                   onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                   placeholder="ESCRIBIR MENSAJE O PEGAR ID ANYDESK..." 
-                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase"
-                 />
-                 <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] shadow-xl p-0 shrink-0 transition-transform active:scale-90">
-                    {isSending ? <Loader2 className="animate-spin h-6 w-6 text-white" /> : <Send className="h-6 w-6 text-white" />}
-                 </Button>
-              </div>
+           <footer className="p-6 bg-white border-t flex gap-4">
+              <Input 
+                value={input} 
+                onChange={e => setInput(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                placeholder="ESCRIBIR MENSAJE O PEGAR ID ANYDESK..." 
+                className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase flex-1"
+              />
+              <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] shadow-xl p-0">
+                 {isSending ? <Loader2 className="animate-spin" /> : <Send className="h-6 w-6 text-white" />}
+              </Button>
            </footer>
         </div>
       </div>
     );
   }
 
-  // --- INTERFAZ ANALISTA (TÉCNICO) ---
   return (
     <div className="flex h-full w-full bg-white overflow-hidden animate-in fade-in duration-700">
-      {/* Barra Lateral Táctica */}
-      <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 border-r border-white/5 shadow-2xl">
-        <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400 shadow-inner">
-          <ShieldCheck className="h-6 w-6" />
-        </div>
+      <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 shadow-2xl">
+        <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400"><ShieldCheck className="h-6 w-6" /></div>
         <div className="flex-1 flex flex-col gap-4">
-           {[ 
-             { id: 'chat', icon: MessageSquare }, 
-             { id: 'remote', icon: Monitor }, 
-             { id: 'files', icon: FileUp },
-             { id: 'stats', icon: Activity }
-           ].map(item => (
+           {[ { id: 'chat', icon: MessageSquare }, { id: 'remote', icon: Monitor } ].map(item => (
              <button 
                key={item.id} 
                onClick={() => setActiveView(item.id as any)}
-               className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", activeView === item.id ? "bg-emerald-500 text-white shadow-lg" : "text-white/30 hover:bg-white/5")}
+               className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", activeView === item.id ? "bg-emerald-500 text-white" : "text-white/30 hover:bg-white/5")}
              >
                <item.icon className="h-5 w-5" />
              </button>
            ))}
         </div>
-        {/* Botón de Sonido (Desbloqueo de Audio) */}
         <button 
            onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) audioRef.current?.play(); }} 
-           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white animate-pulse shadow-lg" : "text-white/30 bg-white/5")}
-           title={soundEnabled ? "Alertas Activas" : "Habilitar Alertas"}
+           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white shadow-lg animate-pulse" : "text-white/20 bg-white/5")}
+           title="Alertas Sonoras"
         >
           {soundEnabled ? <Volume2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
         </button>
       </aside>
 
-      {/* Lista de Sesiones */}
-      <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
-        <div className="p-6 bg-white border-b space-y-4 shadow-sm">
-           <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">Mesa de Ayuda</h2>
-              <Badge className="bg-[#9f2241] text-white border-none font-black text-[10px] px-3 h-6 rounded-full shadow-lg">
-                 {queue.length} ACTIVAS
-              </Badge>
-           </div>
-           <div className="relative group">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
-              <Input placeholder="FILTRAR SESIONES..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[9px] font-bold uppercase" />
-           </div>
+      <div className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
+        <div className="p-6 bg-white border-b flex items-center justify-between">
+           <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Sesiones Activas</h2>
+           <Badge className="bg-[#9f2241] text-white text-[10px] px-2 h-6 rounded-full">{queue.length}</Badge>
         </div>
         <ScrollArea className="flex-1">
            <div className="p-2 space-y-1">
@@ -439,106 +430,80 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <button 
                  key={req.id} 
                  onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
+                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl" : "border-transparent hover:bg-white/50")}
                >
-                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm shrink-0">
+                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                     <AvatarFallback className={cn("text-white font-black text-xs", req.status === 'pending' ? "bg-rose-500 animate-pulse" : "bg-slate-400")}>
                        {req.userName?.slice(0, 2) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                     <div className="flex justify-between items-center mb-0.5">
-                        <span className="text-[11px] font-black text-slate-700 uppercase truncate">{req.userName}</span>
-                        {req.status === 'pending' && (
-                          <Badge className="bg-rose-500 text-white border-none text-[6px] h-3 px-1 animate-pulse">ATENCIÓN</Badge>
-                        )}
-                     </div>
-                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud entrante...'}</p>
-                     <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1.5 bg-slate-50">{req.cct}</Badge>
-                     </div>
+                     <div className="flex justify-between items-center"><span className="text-[11px] font-black text-slate-700 uppercase truncate">{req.userName}</span>{req.status === 'pending' && <Badge className="bg-rose-500 text-white text-[6px] h-3 px-1 animate-pulse">ALERTA</Badge>}</div>
+                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase mt-0.5">{req.lastMessage || '...'}</p>
+                     <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1.5 mt-2">{req.cct}</Badge>
                   </div>
                </button>
              ))}
-             {queue.length === 0 && (
-               <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
-                  <MessageSquare className="h-14 w-14" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Esperando solicitudes...</p>
-               </div>
-             )}
            </div>
         </ScrollArea>
       </div>
 
-      {/* Panel de Operación Técnica */}
       <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
         {selectedRequest ? (
           <>
-            <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
+            <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm">
                <div className="flex flex-col">
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                     <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">En Línea • Sincronización Nube</span>
-                  </div>
+                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conectado en Tiempo Real</span>
                </div>
                <div className="flex items-center gap-4">
-                  <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><Monitor className="h-4 w-4" /> REMOTO</Button>
-                  <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><MessageSquare className="h-4 w-4" /> CHAT</Button>
-                  <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Finalizar sesión técnica?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
+                  <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black"><Monitor className="h-4 w-4 mr-2" /> REMOTO</Button>
+                  <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black"><MessageSquare className="h-4 w-4 mr-2" /> CHAT</Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500" onClick={() => { if(confirm("¿Finalizar?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
                </div>
             </header>
 
-            <div className="flex-1 flex overflow-hidden">
-               {activeView === 'remote' ? (
-                 <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
-                    <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
-                       <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
-                       <div className="z-10 text-center space-y-6">
-                          <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                             <Activity className="text-emerald-400 h-10 w-10" />
-                          </div>
-                          <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em]">Monitoreo de Dispositivo Activo</p>
-                       </div>
+            {activeView === 'chat' ? (
+              <>
+                <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
+                   <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
+                      {messages.map((m, i) => (
+                        <div key={i} className={cn("flex w-full animate-in fade-in", m.role === 'tech' ? "justify-end" : "justify-start")}>
+                           <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border-emerald-100 rounded-tr-none" : "bg-white border-slate-200 rounded-tl-none")}>
+                              <p className="whitespace-pre-wrap">{m.content}</p>
+                              <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2">{m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}</div>
+                           </div>
+                        </div>
+                      ))}
+                      <div ref={scrollRef}/>
+                   </div>
+                </ScrollArea>
+                <footer className="p-6 bg-white border-t flex gap-4 shadow-2xl">
+                   <Input 
+                      value={input} 
+                      onChange={e => setInput(e.target.value)} 
+                      onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+                      className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase flex-1 shadow-inner" 
+                      placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
+                   />
+                   <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl">
+                      {isSending ? <Loader2 className="animate-spin" /> : <Send className="h-5 w-5 text-white" />}
+                   </Button>
+                </footer>
+              </>
+            ) : (
+              <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
+                <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
+                  <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
+                  <div className="z-10 text-center space-y-6">
+                    <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                      <Activity className="text-emerald-400 h-10 w-10" />
                     </div>
-                 </div>
-               ) : (
-                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
-                       <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
-                          {messages.map((m, i) => (
-                            <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                              <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white border border-slate-200 rounded-tl-none text-slate-800 shadow-xl")}>
-                                 <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                                 <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
-                                    <Clock className="h-2.5 w-2.5" />
-                                    {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : 'Sync...'}
-                                 </div>
-                              </div>
-                            </div>
-                          ))}
-                          <div ref={scrollRef}/>
-                       </div>
-                    </ScrollArea>
-                    <footer className="p-6 bg-white border-t flex gap-4 shrink-0 shadow-2xl z-30">
-                       <div className="max-w-4xl mx-auto flex w-full items-center gap-4">
-                          <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100 transition-all"><Paperclip className="h-5 w-5" /></button>
-                          <Input 
-                             value={input} 
-                             onChange={e => setInput(e.target.value)} 
-                             onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                             className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase" 
-                             placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
-                          />
-                          <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0 transition-transform active:scale-95">
-                             {isSending ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Send className="h-5 w-5 text-white" />}
-                          </Button>
-                       </div>
-                    </footer>
-                 </div>
-               )}
-            </div>
+                    <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em]">Visualización de Escritorio Activa</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white animate-in fade-in duration-1000">
@@ -556,7 +521,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <Bell className="h-8 w-8" />
                       </div>
                       <p className="text-xs font-bold text-slate-600 uppercase leading-relaxed mt-1">
-                         Active las alertas sonoras en la barra lateral para recibir notificaciones inmediatas cuando un docente inicie una nueva solicitud.
+                         El sistema le notificará automáticamente con alertas visuales y sonoras cuando un docente inicie una nueva solicitud de soporte técnico en la nube.
                       </p>
                    </div>
                 </div>
@@ -565,7 +530,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-700">
                       <QrCode className="h-64 w-64" />
                    </div>
-                   <div className="space-y-2 relative z-10">
+                   <div className="space-y-2 relative z-10 text-center">
                       <h4 className="text-2xl font-black uppercase tracking-tighter">LIGA DE SOPORTE</h4>
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">CANAL OFICIAL DE ATENCIÓN REMOTA</p>
                    </div>
