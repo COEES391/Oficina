@@ -1,8 +1,8 @@
 'use client';
 /**
  * @fileOverview Interfaz dual de Mesa de Ayuda ATRES.
- * - Modo Analista: Gestión de múltiples sesiones y control remoto.
- * - Modo Público: Chat interactivo para docentes y captura de ID AnyDesk.
+ * - Modo Analista: Gestión de sesiones, alertas de atención y liga de soporte.
+ * - Modo Público: Chat interactivo y captura de ID AnyDesk.
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -22,9 +22,7 @@ import {
   Monitor,
   Laptop,
   Power,
-  Lock,
   FileUp,
-  History,
   Activity,
   User,
   Settings,
@@ -36,7 +34,10 @@ import {
   ShieldCheck,
   AlertCircle,
   Download,
-  Info
+  Info,
+  QrCode,
+  Globe,
+  Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -80,7 +81,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [input, setInput] = useState('');
   const [queue, setQueue] = useState<SupportRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
-  const [activeView, setActiveView] = useState<'chat' | 'remote' | 'files'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'remote' | 'files' | 'stats'>('chat');
   const [techName, setTechName] = useState('');
   const [mounted, setMounted] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -91,19 +92,44 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [hasJoined, setHasJoined] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const supportUrl = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '';
 
   useEffect(() => {
     setMounted(true);
     if (!isPublic) {
       setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
-      const q = query(collection(db, 'support_queue'), where('status', '!=', 'closed'), orderBy('lastActivity', 'desc'), limit(20));
+      
+      const q = query(
+        collection(db, 'support_queue'), 
+        where('status', '!=', 'closed'), 
+        orderBy('lastActivity', 'desc'), 
+        limit(20)
+      );
+
+      let isFirstLoad = true;
       return onSnapshot(q, (snap) => {
-        setQueue(snap.docs.map(d => ({ ...d.data(), id: d.id })) as SupportRequest[]);
+        const newQueue = snap.docs.map(d => ({ ...d.data(), id: d.id })) as SupportRequest[];
+        
+        // Alerta sonora/visual para nuevas solicitudes pendientes
+        if (!isFirstLoad) {
+          const newPending = newQueue.find(req => req.status === 'pending');
+          if (newPending) {
+            toast({
+              title: "NUEVA SOLICITUD DE SOPORTE",
+              description: `El usuario ${newPending.userName} está esperando atención.`,
+              variant: "default",
+            });
+            // Intento de sonido opcional (requiere interacción previa)
+            try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e) {}
+          }
+        }
+        
+        setQueue(newQueue);
+        isFirstLoad = false;
       });
     }
-  }, [isPublic]);
+  }, [isPublic, toast]);
 
-  // Load messages for selected request (analyst or joined user)
   useEffect(() => {
     if (!mounted || !selectedRequest) {
       setMessages([]);
@@ -127,29 +153,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     }
     setIsJoining(true);
     try {
+      const ticketNum = `TK-${Date.now().toString().slice(-6)}`;
       const newRequest = {
         userName: userData.name.toUpperCase(),
         cct: userData.cct.toUpperCase(),
         status: 'pending',
         lastActivity: serverTimestamp(),
         lastMessage: 'Sesión iniciada por el usuario',
-        ticketNumber: `TK-${Date.now().toString().slice(-6)}`
+        ticketNumber: ticketNum
       };
+      
       const docRef = await addDoc(collection(db, 'support_queue'), newRequest);
       
-      // Update local state without waiting for serverTimestamp to resolve
-      setSelectedRequest({ ...newRequest, id: docRef.id, lastActivity: { seconds: Date.now() / 1000 } } as SupportRequest);
-      setHasJoined(true);
-      
-      // Send welcome message
+      // Enviar mensaje de bienvenida del bot
       await addDoc(collection(db, 'chat_messages'), {
         chatId: docRef.id,
         role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda COEES. Un analista se conectará pronto para atender su solicitud.`,
+        content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda COEES. Su número de reporte es ${ticketNum}. Un analista se conectará pronto para atender su solicitud.`,
         timestamp: serverTimestamp()
       });
+
+      // Pasar a la interfaz de chat inmediatamente
+      setSelectedRequest({ ...newRequest, id: docRef.id } as any);
+      setHasJoined(true);
     } catch (e) {
-      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo iniciar la sesión de soporte." });
+      console.error(e);
+      toast({ variant: "destructive", title: "Error de conexión", description: "No se pudo iniciar la sesión. Reintente." });
     } finally {
       setIsJoining(false);
     }
@@ -221,7 +250,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    />
                 </div>
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
-                   {isJoining ? <Loader2 className="animate-spin" /> : "CONECTAR CON UN TÉCNICO"}
+                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON UN TÉCNICO"}
                 </Button>
              </div>
              <div className="p-6 bg-slate-50 border-t flex items-center justify-center gap-2">
@@ -235,7 +264,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     return (
       <div className="flex h-full w-full bg-white overflow-hidden">
-        {/* Columna Izquierda: Apoyo Remoto */}
         <aside className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
            <div className="p-6 bg-white border-b">
               <h3 className="text-lg font-black text-[#9f2241] uppercase tracking-tighter">Apoyo Remoto</h3>
@@ -275,7 +303,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            </ScrollArea>
         </aside>
 
-        {/* Columna Derecha: Chat de Soporte */}
         <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
            <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
               <div className="flex items-center gap-4">
@@ -331,7 +358,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   // --- VISTA ANALISTA (CENTRAL DE SOPORTE) ---
   return (
     <div className="flex h-full w-full bg-white overflow-hidden font-sans">
-      {/* 1. Sidebar Táctico */}
       <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 border-r border-white/5">
         <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400 shadow-inner">
           <ShieldCheck className="h-6 w-6" />
@@ -355,7 +381,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <button className="h-11 w-11 rounded-2xl flex items-center justify-center text-white/30 hover:text-white"><Settings className="h-5 w-5" /></button>
       </aside>
 
-      {/* 2. Lista de Sesiones */}
       <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
         <div className="p-6 bg-white border-b space-y-4">
            <div className="flex items-center justify-between">
@@ -402,7 +427,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
-      {/* 3. Panel de Atención */}
       <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
         {selectedRequest ? (
           <>
@@ -480,7 +504,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="space-y-6 pt-6 border-t">
                      <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> UBICACIÓN CCT</h4>
                      <div className="p-5 bg-slate-50 rounded-[2rem] space-y-3 border border-slate-100 shadow-inner">
-                        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><School className="h-5 w-5" /></div>
+                        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Monitor className="h-5 w-5" /></div>
                         <p className="text-[11px] font-black text-slate-700 uppercase leading-none">{selectedRequest.cct}</p>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">SOPORTE REMOTO ACTIVO</p>
                      </div>
@@ -489,12 +513,56 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 opacity-30 text-center">
-             <div className="h-40 w-40 rounded-full bg-slate-100 border-4 border-white flex items-center justify-center mb-10 shadow-inner">
-                <Laptop className="h-20 w-20 text-slate-300" />
+          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white animate-in fade-in duration-700">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl w-full">
+                <div className="space-y-8">
+                   <div className="h-16 w-16 rounded-2xl bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241]">
+                      <Laptop className="h-10 w-10" />
+                   </div>
+                   <div className="space-y-2">
+                      <h3 className="text-4xl font-black uppercase text-slate-800 tracking-tighter leading-none">CENTRAL DE SOPORTE ATRES</h3>
+                      <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#B38E5D]">Monitorización de Sesiones en Tiempo Real</p>
+                   </div>
+                   <div className="p-6 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 flex gap-5">
+                      <div className="h-12 w-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-500 shrink-0">
+                         <Bell className="h-6 w-6" />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-600 uppercase leading-relaxed mt-1">
+                         El sistema le notificará automáticamente con alertas visuales y sonoras cuando un docente inicie una nueva solicitud de soporte técnico.
+                      </p>
+                   </div>
+                </div>
+
+                <Card className="rounded-[3rem] border-none shadow-2xl p-10 bg-slate-900 text-white relative overflow-hidden flex flex-col justify-center gap-6">
+                   <div className="absolute top-0 right-0 p-8 opacity-10">
+                      <QrCode className="h-40 w-40" />
+                   </div>
+                   <div className="space-y-1 relative z-10">
+                      <h4 className="text-xl font-black uppercase tracking-tighter">LIGA DE SOPORTE PARA DOCENTES</h4>
+                      <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Canal Único de Atención Externa</p>
+                   </div>
+                   <div className="p-5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm space-y-2 relative z-10">
+                      <Label className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Enlace de Conexión:</Label>
+                      <div className="flex items-center gap-3">
+                         <Globe className="h-4 w-4 text-white/40" />
+                         <span className="text-[10px] font-mono text-white/80 font-bold truncate">{supportUrl}</span>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-6 relative z-10">
+                      <div className="p-3 bg-white rounded-2xl shadow-2xl">
+                         <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(supportUrl)}`} alt="QR" width={100} height={100} className="rounded-lg" />
+                      </div>
+                      <div className="space-y-4">
+                         <p className="text-[10px] font-semibold text-white/60 leading-relaxed">
+                            Proporcione este QR o el enlace directo al docente para iniciar la comunicación segura encriptada.
+                         </p>
+                         <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado" }); }} className="h-9 px-6 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-xl gap-2 shadow-xl border-none">
+                            COPIAR ENLACE
+                         </Button>
+                      </div>
+                   </div>
+                </Card>
              </div>
-             <h3 className="text-3xl font-black uppercase text-slate-800 tracking-tighter">CENTRAL DE SOPORTE ATRES</h3>
-             <p className="text-sm font-bold uppercase tracking-[0.4em] text-slate-500 mt-6 border-y border-slate-300 py-4 px-12">Seleccione una sesión activa para iniciar el soporte técnico</p>
           </div>
         )}
       </div>
