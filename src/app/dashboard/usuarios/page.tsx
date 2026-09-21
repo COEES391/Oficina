@@ -17,6 +17,7 @@ import { type AppUser } from '@/lib/planning-data'
 import { cn } from "@/lib/utils"
 
 const SECTIONS = [
+  { id: 'atres', name: 'ATRES Live' },
   { id: 'bitacora-atres', name: 'Bitácora Atres' },
   { id: 'planeacion', name: 'Planeación' },
   { id: 'soporte', name: 'Soporte técnico' },

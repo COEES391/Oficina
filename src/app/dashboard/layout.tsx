@@ -23,12 +23,12 @@ import {
   Users,
   FileText,
   Wrench,
-  ChevronRight,
   Home,
   BarChart3,
   Briefcase,
   FileStack,
-  GraduationCap
+  GraduationCap,
+  MessageSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type AppUser } from '@/lib/planning-data'
@@ -62,7 +62,7 @@ export default function DashboardLayout({
           name: 'Administrador Maestro',
           password: '',
           role: 'admin',
-          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios']
+          privileges: ['planeacion', 'soporte', 'capacitacion', 'programas', 'base-cct', 'base-participantes', 'usuarios', 'atres']
         })
         return
       }
@@ -108,6 +108,7 @@ export default function DashboardLayout({
     { privilege: 'capacitacion', name: 'Capacitación', path: '/dashboard/capacitacion', icon: <GraduationCap className="h-4 w-4" />, group: 'oficinas', color: 'bg-emerald-600' },
     { privilege: 'soporte', name: 'Soporte técnico', path: '/dashboard/soporte', icon: <Wrench className="h-4 w-4" />, group: 'oficinas', color: 'bg-orange-500' },
     
+    { privilege: 'atres', name: 'ATRES Live', path: '/dashboard/atres', icon: <MessageSquare className="h-4 w-4" />, group: 'admin', color: 'bg-[#9f2241]' },
     { privilege: 'base-cct', name: 'Base CCT', path: '/dashboard/base-cct', icon: <Database className="h-4 w-4" />, group: 'admin' },
     { privilege: 'base-participantes', name: 'Base participantes', path: '/dashboard/base-participantes', icon: <Users className="h-4 w-4" />, group: 'admin' },
     { privilege: 'usuarios', name: 'Usuarios', path: '/dashboard/usuarios', icon: <ShieldCheck className="h-4 w-4" />, group: 'admin' },
@@ -225,13 +226,14 @@ export default function DashboardLayout({
                         isActive={pathname === item.path}
                         className={cn(
                           "h-11 rounded-xl font-bold text-[10px] tracking-wide px-4 transition-all duration-300",
-                          pathname === item.path ? 'bg-white text-primary shadow-lg' : 'text-white/60 hover:bg-white/10 hover:text-white'
+                          pathname === item.path ? (item.color ? 'bg-white/20 text-white shadow-lg' : 'bg-white text-primary shadow-lg') : 'text-white/60 hover:bg-white/10 hover:text-white'
                         )}
                       >
                         <div className="flex items-center gap-3 w-full">
                           <div className={cn(
                             "h-7 w-7 rounded-lg flex items-center justify-center shrink-0",
-                            pathname === item.path ? 'bg-primary/5 text-primary' : 'bg-white/5 text-white/30'
+                            item.color && !pathname.includes(item.path) ? item.color : 
+                            pathname === item.path ? 'text-primary' : 'bg-white/5 text-white/30'
                           )}>
                             {item.icon}
                           </div>

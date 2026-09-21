@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -14,19 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as ChartTooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from 'recharts'
 import { cn } from "@/lib/utils"
 import Image from 'next/image'
 import { 
@@ -41,7 +27,6 @@ import {
   ChevronRight,
   Mail,
   Loader2,
-  ShieldCheck,
   Building2,
   Eye,
   ImageIcon,
@@ -57,7 +42,6 @@ import {
   Users,
   Laptop,
   X,
-  FileDown,
   RotateCcw,
   SearchCode,
   MapPin,
@@ -84,11 +68,9 @@ import {
   onSnapshot, 
   serverTimestamp,
   Timestamp,
-  where
 } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
-import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 import { format } from 'date-fns'
 
 type AssistantEntry = {
@@ -130,8 +112,6 @@ const BIBLIOTECA_FASES = [
   { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', progress: 100, color: 'bg-emerald-600 text-white' }
 ];
 
-const statusColors = ['#621132', '#B38E5D', '#94a3b8'];
-
 export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
@@ -144,7 +124,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
-  // Verification State
   const [verifyInput, setVerifyInput] = useState('')
   const [verificationResult, setVerificationResult] = useState<ProgramStatus | null>(null)
 
@@ -235,29 +214,6 @@ export default function ProgramsPage() {
 
     return { total, concluidos, proceso, visitas: total, atenciones, evidencias, tecnicos };
   }, [bibliotecaRecords]);
-
-  const recentEvidences = useMemo(() => {
-    const evs: { id: string, school: string, date: string, img: string }[] = [];
-    bibliotecaRecords.forEach(r => {
-      if (r.evidencePhotos && r.evidencePhotos.length > 0) {
-        r.evidencePhotos.slice(0, 2).forEach((img, idx) => {
-          evs.push({
-            id: `${r.id}-${idx}`,
-            school: r.schoolName || 'S/D',
-            date: r.date,
-            img: img
-          });
-        });
-      }
-    });
-    return evs;
-  }, [bibliotecaRecords]);
-
-  const pieData = [
-    { name: 'En proceso', value: stats.proceso },
-    { name: 'Concluidos', value: stats.concluidos },
-    { name: 'Pendientes', value: 0 },
-  ];
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase().trim()
@@ -467,7 +423,7 @@ export default function ProgramsPage() {
     <div className="space-y-6 animate-in fade-in duration-700 w-full min-h-screen bg-[#f8fafc] p-2 md:p-4 rounded-[2rem]">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex flex-wrap gap-2 p-1.5 bg-white rounded-2xl shadow-sm border">
-          {['Cuentas Institucionales', 'Biblioteca Digital', 'Geoposición', 'Conoce mi Escuela', 'ATRES'].map(tab => (
+          {['Cuentas Institucionales', 'Biblioteca Digital', 'Geoposición', 'Conoce mi Escuela'].map(tab => (
             <button 
               key={tab} 
               onClick={() => { setActiveTab(tab); resetForm(); }}
@@ -481,7 +437,7 @@ export default function ProgramsPage() {
           ))}
         </div>
         <div className="flex items-center gap-4">
-           {activeTab !== 'Cuentas Institucionales' && activeTab !== 'ATRES' && activeTab !== 'Geoposición' && activeTab !== 'Conoce mi Escuela' && (
+           {activeTab !== 'Cuentas Institucionales' && activeTab !== 'Geoposición' && activeTab !== 'Conoce mi Escuela' && (
              <Button onClick={() => setIsDialogOpen(true)} className="btn-institutional h-11 px-8 rounded-xl shadow-xl">
                <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
              </Button>
@@ -990,10 +946,6 @@ export default function ProgramsPage() {
                </div>
             </div>
           </div>
-        ) : activeTab === 'ATRES' ? (
-           <div className="flex-1 h-full min-h-[600px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-slate-50">
-             <HelpDeskInterface />
-           </div>
         ) : null}
       </div>
 
