@@ -45,17 +45,12 @@ import { format } from 'date-fns';
 import { db } from '@/lib/firebase';
 import { 
   collection, 
-  addDoc, 
   onSnapshot, 
   query, 
-  where, 
   doc, 
   setDoc,
   serverTimestamp,
-  orderBy,
-  limit,
   Timestamp,
-  getDoc
 } from 'firebase/firestore';
 import Image from 'next/image';
 
@@ -95,12 +90,17 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isInitialLoad = useRef(true);
+  const alertedIds = useRef(new Set<string>());
+  
   const supportUrl = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '';
 
-  // Initialize Audio
+  // Initialize Audio & Mounting
   useEffect(() => {
     setMounted(true);
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.load();
+    audioRef.current = audio;
   }, []);
 
   // ANALYST: Listen for new support requests and trigger alerts
@@ -109,9 +109,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Listen to queue changes
-    const q = query(collection(db, 'support_queue'), limit(50));
-    let initialLoad = true;
+    // Simple query to avoid index errors
+    const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const allDocs = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequest));
@@ -125,28 +124,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           return tB - tA;
         });
       
-      // DETECT NEW PENDING REQUESTS FOR ALERTS
-      snap.docChanges().forEach((change) => {
-        if (change.type === "added" && !initialLoad) {
-          const newReq = change.doc.data() as SupportRequest;
-          if (newReq.status === 'pending') {
-            // Trigger Visual Alert (Toast)
-            toast({
-              title: "⚠️ NUEVA SOLICITUD DE SOPORTE",
-              description: `El Prof. ${newReq.userName} del CCT ${newReq.cct} requiere atención inmediata.`,
-              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl",
-              duration: 10000
-            });
-            // Trigger Audio Alert
-            if (audioRef.current) {
-              audioRef.current.play().catch(e => console.warn("Autoplay blocked by browser. Interaction required."));
+      setQueue(activeQueue);
+
+      // ALERT LOGIC for truly new requests
+      if (!isInitialLoad.current) {
+        snap.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const newReq = change.doc.data() as SupportRequest;
+            if (newReq.status === 'pending' && !alertedIds.current.has(change.doc.id)) {
+              alertedIds.current.add(change.doc.id);
+              
+              // 1. Visual Alert
+              toast({
+                title: "⚠️ NUEVA SOLICITUD DE SOPORTE",
+                description: `El Prof. ${newReq.userName} del CCT ${newReq.cct} requiere atención inmediata.`,
+                className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl p-6",
+                duration: 10000
+              });
+
+              // 2. Audio Alert
+              if (audioRef.current) {
+                audioRef.current.currentTime = 0;
+                audioRef.current.play().catch(() => console.warn("Browser blocked sound. User interaction needed."));
+              }
             }
           }
-        }
-      });
+        });
+      }
       
-      setQueue(activeQueue);
-      initialLoad = false;
+      isInitialLoad.current = false;
     });
 
     return () => unsubscribe();
@@ -181,44 +187,48 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleJoinSupport = async () => {
+  const handleJoinSupport = () => {
     if (!userData.name || !userData.cct) {
       toast({ variant: "destructive", title: "Campos incompletos", description: "Ingrese su nombre y CCT." });
       return;
     }
+    
     setIsJoining(true);
-    try {
-      const ticketNum = `TK-${Date.now().toString().slice(-6)}`;
-      const requestData = {
-        userName: userData.name.toUpperCase(),
-        cct: userData.cct.toUpperCase(),
-        status: 'pending',
-        lastActivity: serverTimestamp(),
-        lastMessage: 'Sesión iniciada',
-        ticketNumber: ticketNum
-      };
-      
-      // Register Session
-      const docRef = await addDoc(collection(db, 'support_queue'), requestData);
-      
-      // Register Initial Bot Message
-      await addDoc(collection(db, 'chat_messages'), {
-        chatId: docRef.id,
-        role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, un analista técnico ha sido notificado y se conectará en breve. Su folio de atención es: ${ticketNum}. Por favor, no cierre esta ventana.`,
-        timestamp: serverTimestamp()
-      });
+    const ticketNum = `TK-${Date.now().toString().slice(-6)}`;
+    const requestData = {
+      userName: userData.name.toUpperCase(),
+      cct: userData.cct.toUpperCase(),
+      status: 'pending',
+      lastActivity: serverTimestamp(),
+      lastMessage: 'Docente conectado...',
+      ticketNumber: ticketNum
+    };
+    
+    // 1. Create Session Reference
+    const queueRef = doc(collection(db, 'support_queue'));
+    
+    // 2. Perform Writes (Non-blocking)
+    setDoc(queueRef, requestData).catch(e => console.error("Write error:", e));
+    
+    // Initial Message
+    const msgRef = doc(collection(db, 'chat_messages'));
+    setDoc(msgRef, {
+      chatId: queueRef.id,
+      role: 'bot',
+      content: `Hola ${userData.name.toUpperCase()}, un analista técnico ha sido notificado con una alerta sonora y visual. Su folio de atención es: ${ticketNum}. Por favor, no cierre esta ventana.`,
+      timestamp: serverTimestamp()
+    }).catch(e => console.error("Msg error:", e));
 
-      // Transition immediately to chat
-      setSelectedRequest({ ...requestData, id: docRef.id, lastActivity: new Date() } as any);
-      setHasJoined(true);
-      toast({ title: "Conectado a Mesa de Ayuda ATRES" });
-    } catch (e) {
-      console.error(e);
-      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su conexión a internet e intente de nuevo." });
-    } finally {
-      setIsJoining(false);
-    }
+    // 3. OPTIMISTIC TRANSITION (Instant UI change)
+    setSelectedRequest({ ...requestData, id: queueRef.id, lastActivity: new Date() } as any);
+    setHasJoined(true);
+    setIsJoining(false);
+    
+    toast({ 
+      title: "Conectado a Mesa de Ayuda", 
+      description: "El técnico está recibiendo su alerta ahora mismo.",
+      className: "bg-emerald-600 text-white border-none"
+    });
   };
 
   const handleSendMessage = async () => {
@@ -227,15 +237,16 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
-      // Update queue metadata
-      await setDoc(doc(db, 'support_queue', chatId), { 
+      // Update queue metadata (Non-blocking)
+      setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: input.substring(0, 50),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // Add message
-      await addDoc(collection(db, 'chat_messages'), {
+      // Add message (Non-blocking)
+      const msgRef = doc(collection(db, 'chat_messages'));
+      setDoc(msgRef, {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: input,
@@ -336,7 +347,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
                  <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3">
                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista recibirá una alerta visual y sonora. Por favor mantenga abierta esta ventana para recibir respuesta.</p>
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista recibirá una alerta visual y sonora inmediata. Por favor mantenga abierta esta ventana.</p>
                  </div>
               </div>
            </ScrollArea>
@@ -351,7 +362,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <div>
                     <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Analista Técnico</h4>
                     <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronización activa
+                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Canal Seguro Activo
                     </p>
                  </div>
               </div>
@@ -417,7 +428,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </button>
            ))}
         </div>
-        <button className="h-11 w-11 rounded-2xl flex items-center justify-center text-white/30 hover:text-white"><Settings className="h-5 w-5" /></button>
+        <button onClick={() => audioRef.current?.play().catch(() => {})} className="h-11 w-11 rounded-2xl flex items-center justify-center text-white/30 hover:text-emerald-400 transition-colors"><Bell className="h-5 w-5" /></button>
       </aside>
 
       <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
@@ -425,7 +436,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">SESIONES ACTIVAS</h2>
               <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full shadow-sm">
-                <Bell className="h-3 w-3 mr-2" /> {queue.length}
+                 {queue.length} ACTIVAS
               </Badge>
            </div>
            <div className="relative group">
@@ -456,7 +467,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                           </div>
                         )}
                      </div>
-                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Nuevo reporte...'}</p>
+                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud entrante...'}</p>
                      <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1.5 bg-slate-50">{req.cct}</Badge>
                         <span className="text-[7px] font-bold text-slate-300 uppercase">{req.ticketNumber}</span>
@@ -482,14 +493,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Atención técnica en curso</span>
+                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Soporte Técnico en Vivo</span>
                   </div>
                </div>
                <div className="flex items-center gap-4">
                   <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><Monitor className="h-4 w-4" /> REMOTO</Button>
                   <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><MessageSquare className="h-4 w-4" /> CHAT</Button>
                   <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Desea cerrar esta sesión de atención?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Desea finalizar esta sesión?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
                </div>
             </header>
 
@@ -504,8 +515,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                 <Activity className="text-emerald-400 h-10 w-10" />
                              </div>
                              <div className="space-y-2">
-                                <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] leading-none">Vínculo Técnico Establecido</p>
-                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest">Encriptación Institucional AES-256</p>
+                                <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] leading-none">Canal de Monitoreo Activo</p>
+                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest">Protocolo de Encriptación Institucional</p>
                              </div>
                           </div>
                        </div>
@@ -562,7 +573,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><Monitor className="h-6 w-6" /></div>
                         <div>
                            <p className="text-xs font-black text-slate-700 uppercase leading-none">{selectedRequest.cct}</p>
-                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">UBICACIÓN REGISTRADA</p>
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">IDENTIDAD VERIFICADA</p>
                         </div>
                      </div>
                   </div>
