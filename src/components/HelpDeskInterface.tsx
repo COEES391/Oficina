@@ -51,6 +51,7 @@ import {
   setDoc,
   serverTimestamp,
   Timestamp,
+  where,
 } from 'firebase/firestore';
 import Image from 'next/image';
 
