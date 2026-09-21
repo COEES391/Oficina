@@ -75,6 +75,33 @@ import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 
+type AssistantEntry = {
+  paterno: string;
+  materno: string;
+  nombres: string;
+  rfc: string;
+  genero: 'MASCULINO' | 'FEMENINO' | '';
+  funcion: string;
+  email: string;
+  cct: string;
+  nombreCT: string;
+  ze: string;
+  sector: string;
+  modalidad: string;
+  municipio: string;
+  region: string;
+  valle: string;
+}
+
+const FUNCIONES = [
+  "PAAE",
+  "DOCENTE",
+  "DIRECTIVO",
+  "JEFE DE ENSEÑANZA",
+  "SUPERVISOR",
+  "ASESOR TECNICO PEDAGOGICO"
+]
+
 const BIBLIOTECA_FASES = [
   { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', progress: 11, color: 'bg-blue-100 text-blue-700' },
   { id: 'fase2', label: 'Fase 2. Atención al CCT', progress: 22, color: 'bg-emerald-100 text-emerald-700' },
@@ -135,6 +162,9 @@ export default function ProgramsPage() {
   }
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
+  const [assistants, setAssistants] = useState<AssistantEntry[]>([
+    { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }
+  ])
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
 
   useEffect(() => {
@@ -252,6 +282,7 @@ export default function ProgramsPage() {
 
   const handleSave = () => {
     setIsSaving(true);
+    const validAssistants = assistants.filter(a => a.rfc && a.nombres);
     const body: any = { 
       name: activeTab,
       userName: formData.userName || accountForm.name || '',
@@ -270,7 +301,8 @@ export default function ProgramsPage() {
       email: formData.email || (accountForm.username ? `${accountForm.username}${accountForm.domain}` : ''),
       updatedAt: serverTimestamp(),
       bibliotecaFases: formData.bibliotecaFases || null,
-      mantenimientoFicha: formData.mantenimientoFicha || null
+      mantenimientoFicha: formData.mantenimientoFicha || null,
+      asistentes: validAssistants
     };
 
     if (editingId) {
@@ -288,6 +320,7 @@ export default function ProgramsPage() {
 
   const resetForm = () => { 
     setFormData(initialFormState); 
+    setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]);
     setAccountForm({ name: '', username: '', domain: '@coees.edu.mx', area: '', notes: '' });
     setEditingId(null); 
     setDialogSearchTerm('');
@@ -295,6 +328,11 @@ export default function ProgramsPage() {
 
   const handleEdit = (rec: ProgramStatus) => { 
     setFormData({...rec}); 
+    if (rec.asistentes && rec.asistentes.length > 0) {
+      setAssistants(rec.asistentes);
+    } else {
+      setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]);
+    }
     setEditingId(rec.id!); 
     setIsDialogOpen(true);
   }
@@ -325,6 +363,41 @@ export default function ProgramsPage() {
       ...formData,
       mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
     });
+  }
+
+  const handleAddAssistantRow = () => {
+    setAssistants([...assistants, { paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }])
+  }
+
+  const handleRemoveAssistantRow = (index: number) => {
+    if (assistants.length === 1) return
+    setAssistants(assistants.filter((_, i) => i !== index))
+  }
+
+  const updateAssistantField = (index: number, field: keyof AssistantEntry, value: string) => {
+    const newAssistants = [...assistants]
+    newAssistants[index] = { ...newAssistants[index], [field]: value.toUpperCase() }
+
+    if (field === 'cct') {
+      const cleanValue = value.trim().toUpperCase()
+      if (cleanValue.length === 10) {
+        const school = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
+        if (school) {
+          newAssistants[index] = {
+            ...newAssistants[index],
+            cct: school.cct,
+            nombreCT: school.nombre,
+            ze: school.zonaEscolar,
+            sector: school.sector,
+            modalidad: school.modalidad,
+            municipio: school.municipio,
+            region: school.region,
+            valle: school.valle
+          }
+        }
+      }
+    }
+    setAssistants(newAssistants)
   }
 
   if (!mounted) return null;
@@ -613,7 +686,7 @@ export default function ProgramsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[1000px] h-[90vh] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
+        <DialogContent className="sm:max-w-[1300px] h-[95vh] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
              <DialogTitle className="uppercase font-black text-xl flex items-center gap-3">
                <Settings className="h-7 w-7 text-accent" /> 
@@ -626,7 +699,10 @@ export default function ProgramsPage() {
               <TabsList className="bg-transparent h-14 p-0 gap-8">
                 <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Auditoría Técnica</TabsTrigger>
                 {(formData.bibliotecaFases?.equiposHabilitados ?? 0) > 0 && (
-                  <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
+                  <>
+                    <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
+                    <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">3. Lista de Asistentes</TabsTrigger>
+                  </>
                 )}
               </TabsList>
             </div>
@@ -825,6 +901,74 @@ export default function ProgramsPage() {
                        </div>
                     </div>
                  </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="asistentes" className="h-full m-0 p-8 flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 shadow-sm">
+                      <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                      <p className="text-[10px] font-black text-blue-800 uppercase leading-relaxed">Sincronización Maestra: El sistema jala automáticamente el Nombre C.T., ZE y Sector desde la base actualizada.</p>
+                   </div>
+                   <Button onClick={handleAddAssistantRow} className="gap-2 font-black uppercase text-[11px] h-12 px-8 shadow-md">
+                      <Plus className="h-5 w-5" /> Añadir Servidor Público
+                   </Button>
+                </div>
+                <div className="flex-1 overflow-hidden border-2 border-slate-100 rounded-[2rem] shadow-2xl bg-white">
+                  <ScrollArea className="h-full">
+                    <div className="w-full overflow-x-auto">
+                      <Table className="min-w-[1300px]">
+                        <TableHeader className="bg-slate-50 sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="w-12 text-[10px] font-black uppercase text-center">#</TableHead>
+                            <TableHead className="w-[280px] text-[10px] font-black uppercase">Apellidos y Nombre(s)</TableHead>
+                            <TableHead className="w-[140px] text-[10px] font-black uppercase">RFC Oficial</TableHead>
+                            <TableHead className="w-[180px] text-[10px] font-black uppercase">Función</TableHead>
+                            <TableHead className="w-[130px] text-[10px] font-black uppercase">CCT Adscripción</TableHead>
+                            <TableHead className="w-[250px] text-[10px] font-black uppercase">Plantel (Auto)</TableHead>
+                            <TableHead className="w-[80px] text-[10px] font-black uppercase text-center">ZE</TableHead>
+                            <TableHead className="w-[80px] text-[10px] font-black uppercase text-center">Sector</TableHead>
+                            <TableHead className="w-16 sticky right-0 bg-slate-50"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {assistants.map((ast, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                              <TableCell className="text-center font-black text-xs text-muted-foreground">{idx + 1}</TableCell>
+                              <TableCell className="p-2">
+                                <div className="grid grid-cols-1 gap-1">
+                                  <Input placeholder="PATERNO" className="h-8 text-[9px] uppercase" value={ast.paterno} onChange={e => updateAssistantField(idx, 'paterno', e.target.value)} />
+                                  <Input placeholder="MATERNO" className="h-8 text-[9px] uppercase" value={ast.materno} onChange={e => updateAssistantField(idx, 'materno', e.target.value)} />
+                                  <Input placeholder="NOMBRE(S)" className="h-8 text-[10px] uppercase font-black text-primary border-primary/20 bg-primary/5" value={ast.nombres} onChange={e => updateAssistantField(idx, 'nombres', e.target.value)} />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2"><Input placeholder="13 DÍGITOS" className="h-9 text-[11px] font-mono uppercase font-black" value={ast.rfc} onChange={e => updateAssistantField(idx, 'rfc', e.target.value)} maxLength={13} /></TableCell>
+                              <TableCell className="p-2">
+                                <Select value={ast.funcion} onValueChange={(val: any) => updateAssistantField(idx, 'funcion', val)}>
+                                  <SelectTrigger className="h-9 text-[9px] font-bold uppercase"><SelectValue placeholder="FUNCIÓN..." /></SelectTrigger>
+                                  <SelectContent className="z-[500]">{FUNCIONES.map(f => (<SelectItem key={f} value={f} className="text-[10px] font-bold uppercase">{f}</SelectItem>))}</SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="p-2"><Input placeholder="15DES0000X" className="h-9 text-[11px] font-mono font-black uppercase border-primary/30" value={ast.cct} onChange={e => updateAssistantField(idx, 'cct', e.target.value)} maxLength={10} /></TableCell>
+                              <TableCell className="p-2">
+                                <div className="space-y-1">
+                                  <Input value={ast.nombreCT} readOnly className="h-8 text-[10px] bg-slate-100 border-none font-black uppercase text-slate-600" />
+                                  <Input value={ast.municipio} readOnly className="h-6 text-[8px] bg-slate-100 border-none font-bold uppercase text-muted-foreground" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="p-2"><Input value={ast.ze} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
+                              <TableCell className="p-2"><Input value={ast.sector} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
+                              <TableCell className="p-2 sticky right-0 bg-white shadow-l">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
+                                   <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </ScrollArea>
+                </div>
               </TabsContent>
             </div>
           </Tabs>
