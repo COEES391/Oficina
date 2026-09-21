@@ -699,10 +699,10 @@ export default function ProgramsPage() {
               <TabsList className="bg-transparent h-14 p-0 gap-8">
                 <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Auditoría Técnica</TabsTrigger>
                 {(formData.bibliotecaFases?.equiposHabilitados ?? 0) > 0 && (
-                  <>
-                    <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
-                    <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">3. Lista de Asistentes</TabsTrigger>
-                  </>
+                  <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
+                )}
+                {(formData.bibliotecaFases?.personalCapacitado ?? 0) > 0 && (
+                  <TabsTrigger value="asistentes" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">3. Lista de Asistentes</TabsTrigger>
                 )}
               </TabsList>
             </div>
@@ -958,7 +958,7 @@ export default function ProgramsPage() {
                               <TableCell className="p-2"><Input value={ast.ze} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
                               <TableCell className="p-2"><Input value={ast.sector} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
                               <TableCell className="p-2 sticky right-0 bg-white shadow-l">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleRemoveAssistantRow(index)} disabled={assistants.length === 1}>
                                    <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TableCell>
