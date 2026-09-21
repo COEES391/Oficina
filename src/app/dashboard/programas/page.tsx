@@ -56,7 +56,9 @@ import {
   Users,
   Laptop,
   X,
-  FileDown
+  FileDown,
+  RotateCcw,
+  SearchCode
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -69,11 +71,13 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { HelpDeskInterface } from '@/components/HelpDeskInterface'
+import { format } from 'date-fns'
 
 type AssistantEntry = {
   paterno: string;
@@ -120,7 +124,7 @@ export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
-  const [activeTab, setActiveTab] = useState('Biblioteca Digital')
+  const [activeTab, setActiveTab] = useState('Cuentas Institucionales')
   const [isSaving, setIsSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -128,6 +132,10 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
+  // Verification State
+  const [verifyInput, setVerifyInput] = useState('')
+  const [verificationResult, setVerificationResult] = useState<ProgramStatus | null>(null)
+
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
     region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
@@ -183,6 +191,14 @@ export default function ProgramsPage() {
     
     return () => unsubscribe();
   }, [selectedCctId])
+
+  const accountsRecords = useMemo(() => 
+    records.filter(r => r.name === 'Cuentas Institucionales').sort((a, b) => {
+      const dateA = a.updatedAt instanceof Timestamp ? a.updatedAt.toMillis() : 0;
+      const dateB = b.updatedAt instanceof Timestamp ? b.updatedAt.toMillis() : 0;
+      return dateB - dateA;
+    }), 
+  [records]);
 
   const bibliotecaRecords = useMemo(() => 
     records.filter(r => r.name === 'Biblioteca Digital'), 
@@ -282,23 +298,26 @@ export default function ProgramsPage() {
 
   const handleSave = () => {
     setIsSaving(true);
+    const isAccounts = activeTab === 'Cuentas Institucionales';
     const validAssistants = assistants.filter(a => a.rfc && a.nombres);
+    
     const body: any = { 
       name: activeTab,
-      userName: formData.userName || accountForm.name || '',
-      departamento: formData.departamento || accountForm.area || '',
-      cct: formData.cct || '',
-      schoolName: formData.schoolName || '',
-      municipio: formData.municipio || '',
-      valle: formData.valle || '',
-      region: formData.region || '',
-      zonaEscolar: formData.zonaEscolar || '',
-      sector: formData.sector || '',
-      modalidad: formData.modalidad || '',
-      progress: formData.progress || 0,
+      userName: isAccounts ? accountForm.name.toUpperCase() : (formData.userName || ''),
+      departamento: isAccounts ? accountForm.area.toUpperCase() : (formData.departamento || ''),
+      cct: isAccounts ? '' : (formData.cct || ''),
+      schoolName: isAccounts ? '' : (formData.schoolName || ''),
+      municipio: isAccounts ? '' : (formData.municipio || ''),
+      valle: isAccounts ? '' : (formData.valle || ''),
+      region: isAccounts ? '' : (formData.region || ''),
+      zonaEscolar: isAccounts ? '' : (formData.zonaEscolar || ''),
+      sector: isAccounts ? '' : (formData.sector || ''),
+      modalidad: isAccounts ? '' : (formData.modalidad || ''),
+      progress: isAccounts ? 100 : (formData.progress || 0),
       status: formData.status || 'activo',
-      date: formData.date || new Date().toISOString().split('T')[0],
-      email: formData.email || (accountForm.username ? `${accountForm.username}${accountForm.domain}` : ''),
+      date: isAccounts ? format(new Date(), 'dd/MM/yyyy') : (formData.date || new Date().toISOString().split('T')[0]),
+      email: isAccounts ? `${accountForm.username.toLowerCase()}${accountForm.domain}` : (formData.email || ''),
+      observaciones: isAccounts ? accountForm.notes.toUpperCase() : (formData.observaciones || ''),
       updatedAt: serverTimestamp(),
       bibliotecaFases: formData.bibliotecaFases || null,
       mantenimientoFicha: formData.mantenimientoFicha || null,
@@ -318,20 +337,42 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleVerifyEmail = () => {
+    if (!verifyInput.trim()) return;
+    const found = accountsRecords.find(r => r.email?.toLowerCase() === verifyInput.toLowerCase());
+    if (found) {
+      setVerificationResult(found);
+      toast({ title: "Correo Encontrado" });
+    } else {
+      setVerificationResult(null);
+      toast({ variant: "destructive", title: "Sin resultados", description: "El correo no existe en la base de datos." });
+    }
+  }
+
   const resetForm = () => { 
     setFormData(initialFormState); 
     setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]);
     setAccountForm({ name: '', username: '', domain: '@coees.edu.mx', area: '', notes: '' });
     setEditingId(null); 
     setDialogSearchTerm('');
+    setVerifyInput('');
+    setVerificationResult(null);
   }
 
   const handleEdit = (rec: ProgramStatus) => { 
     setFormData({...rec}); 
+    if (rec.name === 'Cuentas Institucionales') {
+      const emailParts = (rec.email || '').split('@');
+      setAccountForm({
+        name: rec.userName || '',
+        username: emailParts[0] || '',
+        domain: `@${emailParts[1]}` || '@coees.edu.mx',
+        area: rec.departamento || '',
+        notes: rec.observaciones || ''
+      });
+    }
     if (rec.asistentes && rec.asistentes.length > 0) {
       setAssistants(rec.asistentes);
-    } else {
-      setAssistants([{ paterno: '', materno: '', nombres: '', rfc: '', genero: '', funcion: '', email: '', cct: '', nombreCT: '', ze: '', sector: '', modalidad: '', municipio: '', region: '', valle: '' }]);
     }
     setEditingId(rec.id!); 
     setIsDialogOpen(true);
@@ -420,55 +461,158 @@ export default function ProgramsPage() {
           ))}
         </div>
         <div className="flex items-center gap-4">
-           <Button onClick={() => setIsDialogOpen(true)} className="btn-institutional h-11 px-8 rounded-xl shadow-xl">
-             <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
-           </Button>
+           {activeTab !== 'Cuentas Institucionales' && activeTab !== 'ATRES' && (
+             <Button onClick={() => setIsDialogOpen(true)} className="btn-institutional h-11 px-8 rounded-xl shadow-xl">
+               <PlusCircle className="h-4 w-4 mr-2" /> Nuevo Registro
+             </Button>
+           )}
         </div>
       </div>
 
       <div className="flex-1">
         {activeTab === 'Cuentas Institucionales' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Formulario de Registro */}
             <div className="lg:col-span-4">
-              <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8">
-                 <h3 className="text-xl font-black text-primary uppercase mb-6 flex items-center gap-3">
-                   <Mail className="h-6 w-6" /> Registro de Correo
-                 </h3>
-                 <div className="space-y-4">
-                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label><Input className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={accountForm.name} onChange={e => setAccountForm({...accountForm, name: e.target.value})} /></div>
-                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Usuario</Label><Input className="h-11 rounded-xl bg-slate-50 border-none font-mono" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value.toLowerCase()})} /></div>
-                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Dominio</Label>
-                      <Select value={accountForm.domain} onValueChange={v => setAccountForm({...accountForm, domain: v})}>
-                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold"><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="@coees.edu.mx">@coees.edu.mx</SelectItem><SelectItem value="@desysa.edu.mx">@desysa.edu.mx</SelectItem></SelectContent>
-                      </Select>
+              <Card className="rounded-[2rem] border-none shadow-2xl bg-white p-8 space-y-6 overflow-hidden relative">
+                 <div className="absolute top-0 left-0 w-full h-2 bg-blue-600" />
+                 <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><Mail className="h-6 w-6" /></div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Registrar correo institucional</h3>
+                 </div>
+                 <p className="text-[11px] font-medium text-slate-400 leading-relaxed">Complete el formulario para dar de alta un nuevo correo institucional en el sistema.</p>
+                 
+                 <div className="space-y-5">
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Nombre completo *</Label>
+                       <div className="relative">
+                          <User className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Input placeholder="Ej. María López García" className="h-11 pl-10 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold" value={accountForm.name} onChange={e => setAccountForm({...accountForm, name: e.target.value})} />
+                       </div>
                     </div>
-                    <Button onClick={handleSave} className="w-full btn-institutional h-12 mt-4"><Save className="h-5 w-5 mr-2" /> Guardar Cuenta</Button>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Usuario (sin dominio) *</Label>
+                       <div className="relative">
+                          <User className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Input placeholder="Ej. maria.lopez" className="h-11 pl-10 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-mono" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value.toLowerCase()})} />
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Dominio *</Label>
+                       <Select value={accountForm.domain} onValueChange={v => setAccountForm({...accountForm, domain: v})}>
+                         <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold"><SelectValue /></SelectTrigger>
+                         <SelectContent className="rounded-xl"><SelectItem value="@coees.edu.mx">@coees.edu.mx</SelectItem><SelectItem value="@desysa.edu.mx">@desysa.edu.mx</SelectItem></SelectContent>
+                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Correo institucional completo</Label>
+                       <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Input readOnly className="h-11 pl-10 rounded-xl border-slate-100 bg-slate-100 font-mono text-slate-400" value={`${accountForm.username}${accountForm.domain}`} />
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Área / Departamento</Label>
+                       <div className="relative">
+                          <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Input placeholder="Ej. Capacitación" className="h-11 pl-10 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold" value={accountForm.area} onChange={e => setAccountForm({...accountForm, area: e.target.value})} />
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600">Observaciones (opcional)</Label>
+                       <div className="relative">
+                          <FileText className="absolute left-3 top-3 h-4 w-4 text-slate-300" />
+                          <Textarea placeholder="Agregar alguna observación..." className="min-h-[100px] pl-10 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all text-xs font-bold uppercase" value={accountForm.notes} onChange={e => setAccountForm({...accountForm, notes: e.target.value})} />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4">
+                       <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white font-black h-12 rounded-xl shadow-xl transition-all active:scale-95 flex items-center gap-2"><Save className="h-5 w-5" /> Guardar</Button>
+                       <Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-100 text-slate-600 font-black flex items-center gap-2 hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> Limpiar</Button>
+                    </div>
                  </div>
               </Card>
             </div>
-            <div className="lg:col-span-8">
-              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col min-h-[600px]">
+
+            {/* Verificación e Historial */}
+            <div className="lg:col-span-8 space-y-8">
+              {/* Sección de Verificación */}
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-10 overflow-hidden relative">
+                 <div className="flex items-center gap-4 mb-4">
+                    <Search className="h-6 w-6 text-blue-600" />
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">Verificar existencia de correo</h3>
+                 </div>
+                 <p className="text-[11px] font-medium text-slate-400 mb-8 uppercase tracking-wider">Ingrese el correo institucional que desea verificar. El sistema comprobará si existe en la base de datos y mostrará su estado.</p>
+                 
+                 <div className="space-y-6">
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-slate-600 pl-1">Correo institucional *</Label>
+                       <div className="flex gap-4">
+                          <div className="relative flex-1">
+                             <Mail className="absolute left-3 top-4 h-5 w-5 text-slate-300" />
+                             <Input placeholder="ej. usuario@coees.edu.mx" className="h-14 pl-12 rounded-2xl border-slate-100 bg-slate-50 font-mono text-lg focus:bg-white" value={verifyInput} onChange={e => setVerifyInput(e.target.value.toLowerCase())} onKeyDown={e => e.key === 'Enter' && handleVerifyEmail()} />
+                          </div>
+                          <Button onClick={handleVerifyEmail} className="h-14 px-8 bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-xl font-black uppercase flex items-center gap-3"><Search className="h-5 w-5" /> Verificar</Button>
+                       </div>
+                    </div>
+
+                    {verificationResult ? (
+                      <div className="p-8 bg-blue-50/50 border-2 border-blue-100 rounded-[2.5rem] flex items-center gap-8 animate-in zoom-in-95 duration-500 shadow-sm">
+                         <div className="h-16 w-16 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-xl"><CheckCircle2 className="h-10 w-10" /></div>
+                         <div className="space-y-3 flex-1">
+                            <h4 className="text-[9px] font-black text-blue-800 uppercase tracking-[0.2em]">Resultado de la verificación</h4>
+                            <div className="flex items-center gap-3">
+                               <span className="text-2xl font-black text-slate-800 font-mono">{verificationResult.email}</span>
+                               <Badge className="bg-emerald-500 text-white font-black text-[8px] px-3 h-5 rounded-full border-none">Cuenta activa</Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase">Nombre:</span><span className="text-[10px] font-black text-slate-700 uppercase">{verificationResult.userName}</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase">Área:</span><span className="text-[10px] font-black text-slate-700 uppercase">{verificationResult.departamento}</span></div>
+                               <div className="flex gap-2"><span className="text-[10px] font-black text-slate-400 uppercase">Fecha de alta:</span><span className="text-[10px] font-black text-slate-700 uppercase">{verificationResult.date}</span></div>
+                            </div>
+                         </div>
+                      </div>
+                    ) : verifyInput && (
+                      <div className="p-10 border-2 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 opacity-50">
+                         <SearchCode className="h-12 w-12 text-slate-300" />
+                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Esperando verificación...</p>
+                      </div>
+                    )}
+                 </div>
+              </Card>
+
+              {/* Historial de Registros */}
+              <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col min-h-[400px]">
                 <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
-                   <h3 className="text-lg font-black uppercase text-slate-700">Correos Registrados</h3>
-                   <div className="relative w-64"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><Input placeholder="BUSCAR CORREO..." className="h-9 pl-9 rounded-xl border-slate-200 text-[10px] font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                   <div className="flex items-center gap-3">
+                      <Archive className="h-6 w-6 text-slate-700" />
+                      <h3 className="text-lg font-black uppercase text-slate-700 tracking-tighter">Historial de registros</h3>
+                   </div>
+                   <div className="relative w-64 group">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                      <Input placeholder="FILTRAR REGISTROS..." className="h-9 pl-10 rounded-xl border-slate-100 text-[10px] font-black bg-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                   </div>
                 </div>
                 <ScrollArea className="flex-1">
                   <Table>
-                    <TableHeader className="bg-slate-50"><TableRow><TableHead className="pl-8 text-[9px] font-black uppercase">Fecha</TableHead><TableHead className="text-[9px] font-black uppercase">Correo Institucional</TableHead><TableHead className="text-right pr-8"></TableHead></TableRow></TableHeader>
+                    <TableHeader className="bg-slate-50"><TableRow className="h-12"><TableHead className="pl-10 text-[9px] font-black uppercase">Fecha de registro</TableHead><TableHead className="text-[9px] font-black uppercase">Correo institucional</TableHead><TableHead className="text-center text-[9px] font-black uppercase w-32">Estado</TableHead><TableHead className="text-right pr-10 text-[9px] font-black uppercase w-32">Acciones</TableHead></TableRow></TableHeader>
                     <TableBody>
-                      {records.filter(r => r.name === 'Cuentas Institucionales').map((rec) => (
+                      {accountsRecords.filter(r => !searchTerm || r.email?.toLowerCase().includes(searchTerm.toLowerCase())).map((rec) => (
                         <TableRow key={rec.id} className="h-16 hover:bg-slate-50 border-b border-slate-50 transition-colors group">
-                           <TableCell className="pl-8 text-[11px] font-bold text-slate-400">{rec.date}</TableCell>
-                           <TableCell className="font-black text-sm text-slate-700">{rec.email}</TableCell>
-                           <TableCell className="text-right pr-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <TableCell className="pl-10 text-[11px] font-bold text-slate-400">{rec.date}</TableCell>
+                           <TableCell className="font-black text-sm text-slate-700 font-mono">{rec.email}</TableCell>
+                           <TableCell className="text-center">
+                              <Badge className="bg-emerald-100 text-emerald-700 font-black text-[8px] px-3 h-5 rounded-full border-none">Activo</Badge>
+                           </TableCell>
+                           <TableCell className="text-right pr-10">
                               <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-500 rounded-xl" onClick={() => handleEdit(rec)}><Eye className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 rounded-xl" onClick={() => handleDelete(rec.id!)}><Trash2 className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-500 rounded-xl hover:bg-blue-50" onClick={() => handleEdit(rec)}><Eye className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-300 hover:text-rose-600 rounded-xl hover:bg-rose-50" onClick={() => handleDelete(rec.id!)}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                            </TableCell>
                         </TableRow>
                       ))}
+                      {accountsRecords.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-20 opacity-30 text-[10px] font-black uppercase tracking-widest">Sin registros históricos</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </ScrollArea>
@@ -958,7 +1102,7 @@ export default function ProgramsPage() {
                               <TableCell className="p-2"><Input value={ast.ze} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
                               <TableCell className="p-2"><Input value={ast.sector} readOnly className="h-9 text-center text-[10px] bg-slate-100 border-none font-black" /></TableCell>
                               <TableCell className="p-2 sticky right-0 bg-white shadow-l">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleRemoveAssistantRow(index)} disabled={assistants.length === 1}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleRemoveAssistantRow(idx)} disabled={assistants.length === 1}>
                                    <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TableCell>
