@@ -117,13 +117,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Simplificamos la consulta para evitar problemas de índices y asegurar que suene siempre
+    // Escuchamos la cola completa para reaccionar a cambios de estado
     const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
-      const allDocs = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequest));
-      
-      const activeQueue = allDocs
+      const activeQueue = snap.docs
+        .map(d => ({ ...d.data(), id: d.id } as SupportRequest))
         .filter(req => req.status !== 'closed')
         .sort((a, b) => {
           const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : Date.now();
@@ -133,7 +132,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       
       setQueue(activeQueue);
 
-      // LÓGICA DE ALERTA AGRESIVA
+      // LÓGICA DE ALERTA AGRESIVA: Se dispara por cada documento nuevo en estado pending
       snap.docChanges().forEach((change) => {
         const data = change.doc.data() as SupportRequest;
         const id = change.doc.id;
@@ -142,20 +141,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           if (!alertedIds.current.has(id)) {
             alertedIds.current.add(id);
             
-            // 1. Notificación Visual Institucional (Toast)
+            // Notificación Visual (Toast)
             toast({
               title: "⚠️ SOLICITUD DE ATENCIÓN ENTRANTE",
-              description: `DOCENTE: ${data.userName} | CCT: ${data.cct}`,
-              className: "bg-[#9f2241] text-white border-none shadow-[0_20px_50px_rgba(159,34,65,0.4)] font-black rounded-3xl p-8 ring-4 ring-white/20 animate-in slide-in-from-right duration-500",
-              duration: 20000 // Duración extendida para que el técnico lo vea
+              description: `USUARIO: ${data.userName} | CCT: ${data.cct}`,
+              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-3xl p-6 animate-bounce",
+              duration: 15000
             });
 
-            // 2. Notificación Sonora
+            // Notificación Sonora
             if (audioRef.current && soundEnabled) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(e => {
-                console.warn("Audio play blocked by browser policies", e);
-              });
+              audioRef.current.play().catch(() => console.log("Audio interactivo requerido"));
             }
           }
         }
@@ -194,9 +191,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // UNIÓN OPTIMISTA: No espera al servidor para cambiar la vista del usuario
   const handleJoinSupport = async () => {
     if (!userData.name || !userData.cct) {
-      toast({ variant: "destructive", title: "Campos Técnicos Obligatorios", description: "Ingrese nombre y CCT oficial." });
+      toast({ variant: "destructive", title: "Datos Faltantes", description: "Nombre y CCT son requeridos." });
       return;
     }
     
@@ -213,27 +211,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       ticketNumber: ticketNum
     };
     
-    try {
-      // Registro optimista: pasamos al chat de inmediato tras la escritura
-      await setDoc(doc(db, 'support_queue', requestId), requestData);
-      
-      // Enviamos el mensaje inicial del bot de forma asíncrona (no bloqueante)
-      addDoc(collection(db, 'chat_messages'), {
-        chatId: requestId,
-        role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda ATRES. Se ha enviado una ALERTA SONORA Y VISUAL a la Central de Soporte. Su folio es: ${ticketNum}. Mantenga esta ventana abierta.`,
-        timestamp: serverTimestamp()
-      });
+    // 1. Registro asíncrono (no bloquea el UI)
+    setDoc(doc(db, 'support_queue', requestId), requestData).catch(() => {
+      toast({ variant: "destructive", title: "Error de Conexión" });
+    });
 
-      setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
-      setHasJoined(true);
-      toast({ title: "Central Notificada", description: "Un analista ha recibido su alerta sonora." });
-    } catch (e) {
-      console.error("Error connecting to support:", e);
-      toast({ variant: "destructive", title: "Falla de Conexión en la Nube" });
-    } finally {
-      setIsJoining(false);
-    }
+    // 2. Mensaje inicial asíncrono
+    addDoc(collection(db, 'chat_messages'), {
+      chatId: requestId,
+      role: 'bot',
+      content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda ATRES. Se ha enviado una ALERTA SONORA Y VISUAL a la Central de Soporte. Folio: ${ticketNum}. Mantenga esta ventana abierta.`,
+      timestamp: serverTimestamp()
+    });
+
+    // 3. Transición instantánea (Elimina el spinner infinito)
+    setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
+    setHasJoined(true);
+    setIsJoining(false);
   };
 
   const handleSendMessage = async () => {
@@ -242,14 +236,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
-      // Actualizamos estatus y última actividad
       setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: input.substring(0, 40) + (input.length > 40 ? '...' : ''),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      // Registramos el mensaje
       addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
@@ -259,8 +251,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       });
 
       setInput('');
-    } catch (e) {
-      toast({ variant: "destructive", title: "Mensaje No Enviado" });
     } finally {
       setIsSending(false);
     }
@@ -268,12 +258,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // --- INTERFAZ PÚBLICA (DOCENTE) ---
   if (isPublic) {
     if (!hasJoined) {
       return (
         <div className="h-full w-full bg-[#f0f2f5] flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-          <Card className="w-full max-w-[500px] rounded-[3rem] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 ring-1 ring-black/5">
+          <Card className="w-full max-w-[500px] rounded-[3rem] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
              <div className="p-10 bg-[#9f2241] text-white text-center space-y-4">
                 <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-white/10">
                    <Monitor className="h-10 w-10 text-white" />
@@ -288,7 +277,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Identificación del Solicitante</Label>
                    <Input 
                       placeholder="NOMBRE COMPLETO..." 
-                      className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase text-slate-700" 
+                      className="h-12 rounded-xl bg-slate-50 border-none shadow-inner font-bold uppercase" 
                       value={userData.name}
                       onChange={e => setUserData({...userData, name: e.target.value})}
                    />
@@ -322,27 +311,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            <div className="p-6 bg-white border-b flex items-center justify-between">
               <div>
                  <h3 className="text-lg font-black text-[#9f2241] uppercase tracking-tighter">Apoyo Remoto</h3>
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Soporte Técnico en Vivo</p>
+                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Instrucciones de Conexión</p>
               </div>
-              <Badge className="bg-[#9f2241] text-white border-none">{selectedRequest?.ticketNumber}</Badge>
            </div>
            <ScrollArea className="flex-1">
-              <div className="p-6 space-y-8">
-                 <div className="space-y-4">
-                    {[
-                      { step: 1, text: 'Instale AnyDesk en su equipo.' },
-                      { step: 2, text: 'Localice su ID de 9 dígitos.' },
-                      { step: 3, text: 'Envíe el ID por este chat.' },
-                    ].map(s => (
-                      <div key={s.step} className="flex gap-4 items-start bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                         <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-lg">{s.step}</div>
-                         <p className="text-[11px] font-semibold text-slate-600 leading-tight pt-0.5">{s.text}</p>
-                      </div>
-                    ))}
-                 </div>
+              <div className="p-6 space-y-6">
+                 {[
+                   { step: 1, text: 'Descargue AnyDesk en su equipo.' },
+                   { step: 2, text: 'Localice su ID de 9 dígitos.' },
+                   { step: 3, text: 'Envíe su ID por el chat.' },
+                 ].map(s => (
+                   <div key={s.step} className="flex gap-4 items-start bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                      <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-lg">{s.step}</div>
+                      <p className="text-[11px] font-semibold text-slate-600 leading-tight pt-0.5">{s.text}</p>
+                   </div>
+                 ))}
                  <div className="p-5 bg-blue-50 border-2 border-dashed border-blue-100 rounded-[1.8rem] flex gap-3 shadow-inner">
                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">Un analista técnico está recibiendo una ALERTA SONORA en la central ahora mismo. Espere respuesta.</p>
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista técnico está recibiendo su alerta ahora mismo. Manténgase en línea.</p>
                  </div>
               </div>
            </ScrollArea>
@@ -386,8 +372,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    value={input} 
                    onChange={e => setInput(e.target.value)} 
                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                   placeholder="DESCRIBA SU DUDA O PEGE SU ID DE ANYDESK..." 
-                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase focus:ring-2 focus:ring-emerald-500/20"
+                   placeholder="ESCRIBIR MENSAJE O PEGAR ID ANYDESK..." 
+                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase"
                  />
                  <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] shadow-xl p-0 shrink-0 transition-transform active:scale-90">
                     {isSending ? <Loader2 className="animate-spin h-6 w-6 text-white" /> : <Send className="h-6 w-6 text-white" />}
@@ -401,7 +387,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   // --- INTERFAZ ANALISTA (TÉCNICO) ---
   return (
-    <div className="flex h-full w-full bg-white overflow-hidden font-sans animate-in fade-in duration-700">
+    <div className="flex h-full w-full bg-white overflow-hidden animate-in fade-in duration-700">
       {/* Barra Lateral Táctica */}
       <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 border-r border-white/5 shadow-2xl">
         <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400 shadow-inner">
@@ -423,11 +409,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </button>
            ))}
         </div>
-        {/* Botón Maestro de Alertas Sonoras (Crucial para Autoplay) */}
+        {/* Botón de Sonido (Desbloqueo de Audio) */}
         <button 
-           onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) { audioRef.current?.play(); toast({title: "Alertas Sonoras Activas", className: "bg-emerald-600 text-white"}); } }} 
-           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all animate-pulse", soundEnabled ? "bg-amber-500 text-white shadow-lg" : "text-white/30 bg-white/5")}
-           title={soundEnabled ? "Alertas Activas" : "Habilitar Alertas Sonoras"}
+           onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) audioRef.current?.play(); }} 
+           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white animate-pulse shadow-lg" : "text-white/30 bg-white/5")}
+           title={soundEnabled ? "Alertas Activas" : "Habilitar Alertas"}
         >
           {soundEnabled ? <Volume2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
         </button>
@@ -439,7 +425,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">Mesa de Ayuda</h2>
               <Badge className="bg-[#9f2241] text-white border-none font-black text-[10px] px-3 h-6 rounded-full shadow-lg">
-                 {queue.length}
+                 {queue.length} ACTIVAS
               </Badge>
            </div>
            <div className="relative group">
@@ -453,7 +439,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <button 
                  key={req.id} 
                  onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative group", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
+                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
                >
                   <Avatar className="h-12 w-12 border-2 border-white shadow-sm shrink-0">
                     <AvatarFallback className={cn("text-white font-black text-xs", req.status === 'pending' ? "bg-rose-500 animate-pulse" : "bg-slate-400")}>
@@ -464,16 +450,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      <div className="flex justify-between items-center mb-0.5">
                         <span className="text-[11px] font-black text-slate-700 uppercase truncate">{req.userName}</span>
                         {req.status === 'pending' && (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[7px] font-black text-rose-500 uppercase animate-pulse">ALERTA</span>
-                            <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
-                          </div>
+                          <Badge className="bg-rose-500 text-white border-none text-[6px] h-3 px-1 animate-pulse">ATENCIÓN</Badge>
                         )}
                      </div>
-                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase leading-none">{req.lastMessage || 'Solicitud entrante...'}</p>
+                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud entrante...'}</p>
                      <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1.5 bg-slate-50">{req.cct}</Badge>
-                        <span className="text-[7px] font-bold text-slate-300 uppercase">{req.ticketNumber}</span>
                      </div>
                   </div>
                </button>
@@ -481,7 +463,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              {queue.length === 0 && (
                <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
                   <MessageSquare className="h-14 w-14" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">Esperando solicitudes...</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Esperando solicitudes...</p>
                </div>
              )}
            </div>
@@ -509,55 +491,53 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-               <div className="flex-1 flex flex-col overflow-hidden">
-                  {activeView === 'remote' ? (
-                    <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
-                       <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
-                          <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
-                          <div className="z-10 text-center space-y-6">
-                             <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                                <Activity className="text-emerald-400 h-10 w-10" />
-                             </div>
-                             <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em]">Monitoreo de Dispositivo Activo</p>
+               {activeView === 'remote' ? (
+                 <div className="flex-1 p-6 relative animate-in zoom-in-95 duration-500">
+                    <div className="w-full h-full bg-slate-900 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
+                       <Image src="https://picsum.photos/seed/desk/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
+                       <div className="z-10 text-center space-y-6">
+                          <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                             <Activity className="text-emerald-400 h-10 w-10" />
                           </div>
+                          <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em]">Monitoreo de Dispositivo Activo</p>
                        </div>
                     </div>
-                  ) : (
-                    <>
-                      <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
-                         <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
-                            {messages.map((m, i) => (
-                              <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                                <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white border border-slate-200 rounded-tl-none text-slate-800 shadow-xl")}>
-                                   <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                                   <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
-                                      <Clock className="h-2.5 w-2.5" />
-                                      {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : 'Sync...'}
-                                   </div>
-                                </div>
+                 </div>
+               ) : (
+                 <div className="flex-1 flex flex-col overflow-hidden">
+                    <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] shadow-inner">
+                       <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
+                          {messages.map((m, i) => (
+                            <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
+                              <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white border border-slate-200 rounded-tl-none text-slate-800 shadow-xl")}>
+                                 <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                                 <div className={cn("text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1", m.role === 'bot' ? "text-white/40" : "")}>
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : 'Sync...'}
+                                 </div>
                               </div>
-                            ))}
-                            <div ref={scrollRef}/>
-                         </div>
-                      </ScrollArea>
-                      <footer className="p-6 bg-white border-t flex gap-4 shrink-0 shadow-2xl z-30">
-                         <div className="max-w-4xl mx-auto flex w-full items-center gap-4">
-                            <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100 transition-all"><Paperclip className="h-5 w-5" /></button>
-                            <Input 
-                               value={input} 
-                               onChange={e => setInput(e.target.value)} 
-                               onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                               className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase shadow-inner" 
-                               placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
-                            />
-                            <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0 transition-transform active:scale-95">
-                               {isSending ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Send className="h-5 w-5 text-white" />}
-                            </Button>
-                         </div>
-                      </footer>
-                    </>
-                  )}
-               </div>
+                            </div>
+                          ))}
+                          <div ref={scrollRef}/>
+                       </div>
+                    </ScrollArea>
+                    <footer className="p-6 bg-white border-t flex gap-4 shrink-0 shadow-2xl z-30">
+                       <div className="max-w-4xl mx-auto flex w-full items-center gap-4">
+                          <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100 transition-all"><Paperclip className="h-5 w-5" /></button>
+                          <Input 
+                             value={input} 
+                             onChange={e => setInput(e.target.value)} 
+                             onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
+                             className="rounded-2xl bg-slate-50 border-none h-12 px-8 font-bold text-sm uppercase" 
+                             placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
+                          />
+                          <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0 transition-transform active:scale-95">
+                             {isSending ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Send className="h-5 w-5 text-white" />}
+                          </Button>
+                       </div>
+                    </footer>
+                 </div>
+               )}
             </div>
           </>
         ) : (
@@ -576,7 +556,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <Bell className="h-8 w-8" />
                       </div>
                       <p className="text-xs font-bold text-slate-600 uppercase leading-relaxed mt-1">
-                         Para recibir alertas sonoras inmediatas, haga clic en el botón de campana de la barra lateral izquierda. El sistema le notificará automáticamente cuando un docente inicie una solicitud.
+                         Active las alertas sonoras en la barra lateral para recibir notificaciones inmediatas cuando un docente inicie una nueva solicitud.
                       </p>
                    </div>
                 </div>
@@ -586,18 +566,18 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <QrCode className="h-64 w-64" />
                    </div>
                    <div className="space-y-2 relative z-10">
-                      <h4 className="text-2xl font-black uppercase tracking-tighter">ACCESO DOCENTES</h4>
+                      <h4 className="text-2xl font-black uppercase tracking-tighter">LIGA DE SOPORTE</h4>
                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">CANAL OFICIAL DE ATENCIÓN REMOTA</p>
                    </div>
                    <div className="p-4 bg-white rounded-[2.5rem] shadow-2xl transform group-hover:rotate-3 transition-transform duration-500 w-fit mx-auto relative z-10">
                       <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(supportUrl)}`} alt="QR" width={140} height={140} className="rounded-xl" />
                    </div>
                    <div className="space-y-6 relative z-10">
-                      <div className="p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm space-y-2">
+                      <div className="p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm space-y-2 text-center">
                          <Label className="text-[9px] font-black text-emerald-400 uppercase">Enlace Directo:</Label>
-                         <p className="text-[10px] font-mono text-white/80 font-bold truncate">{supportUrl}</p>
+                         <p className="text-[9px] font-mono text-white/80 font-bold truncate">{supportUrl}</p>
                       </div>
-                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Copiado al Portapapeles", className: "bg-emerald-600 text-white rounded-2xl" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
+                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado", className: "bg-emerald-600 text-white" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
                          <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
                       </Button>
                    </div>
