@@ -1,7 +1,6 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,34 +43,17 @@ import {
   ShieldCheck,
   Building2,
   Eye,
-  History,
-  Navigation,
-  RotateCcw,
   ImageIcon,
   Archive,
   Upload,
   FileText,
   TrendingUp,
-  Monitor,
-  ClipboardCheck,
   Settings,
   MonitorCheck,
-  Server,
-  QrCode,
-  Globe,
-  Info,
-  LayoutGrid,
+  ClipboardCheck,
   User,
   Settings2,
   Users,
-  GraduationCap,
-  AlertCircle,
-  Clock,
-  FileDown,
-  TrendingDown,
-  LayoutDashboard,
-  CheckCircle,
-  XCircle,
   Laptop,
   X
 } from "lucide-react"
@@ -86,8 +68,7 @@ import {
   query, 
   orderBy, 
   onSnapshot, 
-  serverTimestamp,
-  where
+  serverTimestamp
 } from 'firebase/firestore'
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
@@ -119,7 +100,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
-  // Quick Add State
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
     region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
@@ -129,7 +109,6 @@ export default function ProgramsPage() {
     aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
   })
 
-  // Account Form State
   const [accountForm, setAccountForm] = useState({
     name: '', username: '', domain: '@coees.edu.mx', area: '', notes: ''
   })
@@ -208,7 +187,7 @@ export default function ProgramsPage() {
         });
       }
     });
-    return evs.slice(0, 3);
+    return evs;
   }, [bibliotecaRecords]);
 
   const pieData = [
@@ -645,7 +624,7 @@ export default function ProgramsPage() {
             <div className="px-8 border-b bg-slate-50/50">
               <TabsList className="bg-transparent h-14 p-0 gap-8">
                 <TabsTrigger value="auditoria" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">1. Auditoría Técnica</TabsTrigger>
-                {formData.bibliotecaFases?.equiposHabilitados && formData.bibliotecaFases.equiposHabilitados > 1 && (
+                {(formData.bibliotecaFases?.equiposHabilitados ?? 0) > 0 && (
                   <TabsTrigger value="mantenimiento" className="rounded-none border-b-4 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-4 text-[11px] font-black uppercase tracking-wider transition-all">2. Mantenimiento (F4)</TabsTrigger>
                 )}
               </TabsList>

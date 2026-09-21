@@ -80,6 +80,13 @@ export type ProgramStatus = {
     personalCapacitado: number;
     equiposHabilitados: number;
   };
+  mantenimientoFicha?: {
+    equipoTecnologico: { hdt: boolean; equipoComputo: boolean; otro: string };
+    equiposList: { equipo: string; marca: string; serie: string; censal: string }[];
+    fallaIdentificada: string;
+    servicioRealizado: string;
+    observaciones: string;
+  };
 };
 
 export const programsData: any[] = [];
