@@ -69,6 +69,7 @@ type SupportRequest = {
   ticketNumber: string;
   status: 'pending' | 'attending' | 'closed';
   userName?: string;
+  cct?: string;
   lastMessage?: string;
   lastActivity: any;
 };
@@ -135,8 +136,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         ticketNumber: `TK-${Date.now().toString().slice(-6)}`
       };
       const docRef = await addDoc(collection(db, 'support_queue'), newRequest);
-      const reqWithId = { ...newRequest, id: docRef.id } as SupportRequest;
-      setSelectedRequest(reqWithId);
+      
+      // Update local state without waiting for serverTimestamp to resolve
+      setSelectedRequest({ ...newRequest, id: docRef.id, lastActivity: { seconds: Date.now() / 1000 } } as SupportRequest);
       setHasJoined(true);
       
       // Send welcome message
@@ -183,7 +185,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // --- VISTA PÚBLICA (USUARIO) ---
+  // --- VISTA PÚBLICA (USUARIO / DOCENTE) ---
   if (isPublic) {
     if (!hasJoined) {
       return (
@@ -262,7 +264,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       value={userData.anydeskId}
                       onChange={e => setUserData({...userData, anydeskId: e.target.value})}
                     />
-                    <Button className="w-full bg-[#B38E5D] hover:bg-[#a08252] text-white h-11 rounded-xl text-[10px] font-black shadow-lg">SOLICITAR SOPORTE</Button>
+                    <Button className="w-full bg-[#B38E5D] hover:bg-[#a08252] text-white h-11 rounded-xl text-[10px] font-black shadow-lg" onClick={() => handleSendMessage()}>SOLICITAR SOPORTE</Button>
                  </div>
 
                  <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3">
@@ -287,6 +289,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     </p>
                  </div>
               </div>
+              <Badge variant="outline" className="font-mono font-black border-primary/20 text-primary">{selectedRequest?.ticketNumber}</Badge>
            </header>
 
            <ScrollArea className="flex-1 px-8 py-8 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
@@ -325,7 +328,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // --- VISTA ANALISTA (CALL CENTER) ---
+  // --- VISTA ANALISTA (CENTRAL DE SOPORTE) ---
   return (
     <div className="flex h-full w-full bg-white overflow-hidden font-sans">
       {/* 1. Sidebar Táctico */}
@@ -356,7 +359,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
         <div className="p-6 bg-white border-b space-y-4">
            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Sesiones Activas</h2>
+              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">SESIONES ACTIVAS</h2>
               <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px] px-2 h-5">{queue.length}</Badge>
            </div>
            <div className="relative">
@@ -370,7 +373,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <button 
                  key={req.id} 
                  onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl" : "bg-transparent border-transparent hover:bg-white/80")}
+                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl" : "bg-transparent border-transparent hover:bg-white/80")}
                >
                   <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                     <AvatarFallback className="bg-slate-200 text-slate-500 font-black text-xs">{req.userName?.slice(0, 2) || 'U'}</AvatarFallback>
@@ -378,12 +381,23 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <div className="flex-1 min-w-0">
                      <div className="flex justify-between items-center mb-0.5">
                         <span className="text-[12px] font-black text-slate-700 uppercase truncate">{req.userName}</span>
-                        {req.status === 'pending' && <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />}
+                        {req.status === 'pending' && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[7px] font-black text-rose-500 uppercase animate-pulse">ATENCIÓN</span>
+                            <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                          </div>
+                        )}
                      </div>
                      <p className="text-[10px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud entrante...'}</p>
+                     <div className="flex items-center gap-1 mt-1">
+                        <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1">{req.cct}</Badge>
+                     </div>
                   </div>
                </button>
              ))}
+             {queue.length === 0 && (
+               <div className="py-10 text-center opacity-20"><MessageSquare className="h-10 w-10 mx-auto mb-2" /><p className="text-[10px] font-black uppercase">Sin sesiones</p></div>
+             )}
            </div>
         </ScrollArea>
       </div>
@@ -404,7 +418,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><Monitor className="h-4 w-4" /> REMOTO</Button>
                   <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2"><MessageSquare className="h-4 w-4" /> CHAT</Button>
                   <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50"><Power className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => setSelectedRequest(null)}><Power className="h-4 w-4" /></Button>
                </div>
             </header>
 
@@ -447,7 +461,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                className="rounded-2xl bg-slate-50 border-none h-12 px-6 font-bold text-sm uppercase shadow-inner" 
                                placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
                             />
-                            <Button onClick={handleSendMessage} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0"><Send className="h-5 w-5" /></Button>
+                            <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl shadow-xl p-0 shrink-0"><Send className="h-5 w-5" /></Button>
                          </div>
                       </footer>
                     </>
@@ -456,7 +470,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                
                <aside className="w-80 bg-white border-l p-6 space-y-8 overflow-y-auto shrink-0 hidden xl:block">
                   <div className="space-y-6">
-                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><HardDrive className="h-4 w-4 text-primary" /> Info Dispositivo</h4>
+                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><HardDrive className="h-4 w-4 text-primary" /> INFO DISPOSITIVO</h4>
                      <div className="space-y-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
                         <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">OS</span><span className="text-[10px] font-black text-slate-700">WINDOWS 11 PRO</span></div>
                         <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">RAM</span><span className="text-[10px] font-black text-slate-700">16 GB DDR4</span></div>
@@ -464,11 +478,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                      </div>
                   </div>
                   <div className="space-y-6 pt-6 border-t">
-                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> Ubicación CCT</h4>
+                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"><Navigation className="h-4 w-4 text-primary" /> UBICACIÓN CCT</h4>
                      <div className="p-5 bg-slate-50 rounded-[2rem] space-y-3 border border-slate-100 shadow-inner">
-                        <p className="text-[11px] font-black text-slate-700 uppercase leading-none">ESC. SEC. FED. 115</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">TOLUCA, EDOMÉX</p>
-                        <Badge className="bg-primary/5 text-primary border-none text-[8px] font-black px-3 h-5 rounded-full mt-2">CCT: 15DES0001R</Badge>
+                        <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><School className="h-5 w-5" /></div>
+                        <p className="text-[11px] font-black text-slate-700 uppercase leading-none">{selectedRequest.cct}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">SOPORTE REMOTO ACTIVO</p>
                      </div>
                   </div>
                </aside>

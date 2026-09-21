@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
@@ -95,6 +94,7 @@ import {
 import { type ProgramStatus } from '@/lib/planning-data'
 import { schoolsDirectory, type SchoolInfo } from "@/lib/schools-directory"
 import { format } from 'date-fns'
+import { HelpDeskInterface } from '@/components/HelpDeskInterface'
 
 const BIBLIOTECA_FASES_LABELS = [
   { id: 'fase1', label: 'Fase 1. Solicitud de instalación de biblioteca digital', progress: 11 },
@@ -131,14 +131,6 @@ export default function ProgramsPage() {
   const [verifyEmail, setVerifyEmail] = useState('')
   const [verifyResult, setVerifyResult] = useState<any>(null)
 
-  // ATRES State
-  const [atresView, setAtresView] = useState<'chat' | 'remote' | 'files' | 'stats'>('chat')
-  const [queue, setQueue] = useState<any[]>([])
-  const [selectedRequest, setSelectedRequest] = useState<any>(null)
-  const [messages, setMessages] = useState<any[]>([])
-  const [chatInput, setChatInput] = useState('')
-  const scrollRef = useRef<HTMLDivElement>(null)
-
   const initialFormState: ProgramStatus = {
     name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
     cct: '', schoolName: '', userName: '', rfc: '', puesto: '', departamento: '',
@@ -169,29 +161,11 @@ export default function ProgramsPage() {
       setRecords(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as ProgramStatus[])
     })
     
-    const qAtres = query(collection(db, 'support_queue'), orderBy('lastActivity', 'desc'), limit(20));
-    const unsubscribeAtres = onSnapshot(qAtres, (snap) => {
-      setQueue(snap.docs.map(d => ({ ...d.data(), id: d.id })));
-    });
-
     const storedSchools = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]');
     setAllSchools(storedSchools.length > 0 ? storedSchools : schoolsDirectory);
     
-    return () => { unsubscribe(); unsubscribeAtres(); }
+    return () => { unsubscribe(); }
   }, [])
-
-  useEffect(() => {
-    if (!selectedRequest) { setMessages([]); return; }
-    const q = query(collection(db, 'chat_messages'), where('chatId', '==', selectedRequest.id));
-    return onSnapshot(q, (snap) => {
-      const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-      setMessages(msgs.sort((a: any, b: any) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)));
-    });
-  }, [selectedRequest]);
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase().trim()
@@ -313,23 +287,6 @@ export default function ProgramsPage() {
       toast({ variant: "destructive", title: "Cuenta no encontrada", description: "No hay registros con ese correo." });
     }
   }
-
-  const handleSendMessage = () => {
-    if (!chatInput.trim() || !selectedRequest) return;
-    setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-      lastActivity: serverTimestamp(), 
-      lastMessage: chatInput.substring(0, 50), 
-      status: 'attending' 
-    }, { merge: true });
-    addDoc(collection(db, 'chat_messages'), { 
-      chatId: selectedRequest.id, 
-      role: 'tech', 
-      content: chatInput, 
-      timestamp: serverTimestamp(), 
-      senderName: localStorage.getItem('userRfc') || 'ANALISTA' 
-    });
-    setChatInput('');
-  };
 
   const schoolSearchResults = useMemo(() => {
     if (!dialogSearchTerm || dialogSearchTerm.length < 3) return [];
@@ -599,7 +556,7 @@ export default function ProgramsPage() {
                                     </div>
                                  </TableCell>
                                  <TableCell className="text-center">
-                                    <Badge variant="outline" className={cn("text-[9px] font-black uppercase px-4 h-6 rounded-full", rec.status === 'activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200')}>{rec.status}</Badge>
+                                    <Badge variant="outline" className={cn("text-[9px] font-black uppercase px-4 h-6 rounded-full", rec.status === 'activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-200')}>{rec.status}</Badge>
                                  </TableCell>
                                  <TableCell className="text-right pr-10">
                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -766,193 +723,9 @@ export default function ProgramsPage() {
              </div>
           </div>
         ) : activeTab === 'ATRES' ? (
-          <div className="flex h-full w-full bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-slate-50 animate-in zoom-in-95 min-h-[600px] flex-1">
-             <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 border-r border-white/5">
-                <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400 shadow-inner">
-                   <ShieldCheck className="h-6 w-6" />
-                </div>
-                <div className="flex-1 flex flex-col gap-4">
-                   {[ 
-                     { id: 'chat', icon: MessageSquare }, 
-                     { id: 'remote', icon: Monitor }, 
-                     { id: 'files', icon: FileUp }, 
-                     { id: 'stats', icon: Activity } 
-                   ].map(item => (
-                     <button 
-                       key={item.id} 
-                       onClick={() => setAtresView(item.id as any)} 
-                       className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", atresView === item.id ? "bg-emerald-500 text-white shadow-lg" : "text-white/30 hover:bg-white/5")}
-                     >
-                       <item.icon className="h-5 w-5" />
-                     </button>
-                   ))}
-                </div>
-                <button className="h-11 w-11 rounded-2xl flex items-center justify-center text-white/30 hover:text-white"><Settings className="h-5 w-5" /></button>
-             </aside>
-
-             <div className="w-80 bg-slate-50 border-r flex flex-col shrink-0">
-                <div className="p-6 bg-white border-b space-y-4">
-                   <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">SESIONES</h2>
-                      <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px] px-2 h-5">{queue.length}</Badge>
-                   </div>
-                   <div className="relative">
-                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
-                      <Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[10px] font-bold uppercase" />
-                   </div>
-                </div>
-                <ScrollArea className="flex-1">
-                   <div className="p-2 space-y-1">
-                     {queue.map(req => (
-                       <button 
-                         key={req.id} 
-                         onClick={() => setSelectedRequest(req)} 
-                         className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl" : "bg-transparent border-transparent hover:bg-white/80")}
-                       >
-                          <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                             <AvatarFallback className="bg-slate-200 text-slate-500 font-bold">{req.userName?.slice(0,2).toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                             <div className="flex justify-between items-center mb-0.5">
-                                <span className="text-[12px] font-black text-slate-700 uppercase truncate">{req.userName}</span>
-                                {req.status === 'pending' && <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />}
-                             </div>
-                             <p className="text-[10px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud de soporte...'}</p>
-                          </div>
-                       </button>
-                     ))}
-                   </div>
-                </ScrollArea>
-                <div className="p-6 border-t bg-white space-y-4">
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <QrCode className="h-4 w-4" /> COMPARTIR ACCESO
-                   </h4>
-                   <div className="p-6 bg-slate-50 rounded-[2rem] flex flex-col items-center gap-4 border-2 border-dashed border-slate-200">
-                      <div className="h-24 w-24 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg">
-                         <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin + '/helpdesk' : '')}`} alt="QR" width={80} height={80} />
-                      </div>
-                      <p className="text-[7px] font-black text-slate-400 uppercase text-center tracking-[0.2em]">Escanea para iniciar soporte</p>
-                   </div>
-                </div>
-             </div>
-
-             <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
-                {selectedRequest ? (
-                  <>
-                    <header className="h-16 bg-white border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
-                       <div className="flex flex-col">
-                          <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
-                          <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> EN LÍNEA • SOPORTE ACTIVO
-                          </p>
-                       </div>
-                       <div className="flex items-center gap-4">
-                          <Button onClick={() => setAtresView('remote')} variant={atresView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2">
-                             <Monitor className="h-4 w-4" /> REMOTO
-                          </Button>
-                          <Button onClick={() => setAtresView('chat')} variant={atresView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2">
-                             <MessageSquare className="h-4 w-4" /> CHAT
-                          </Button>
-                          <div className="h-6 w-px bg-slate-200 mx-2" />
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50"><Power className="h-4 w-4" /></Button>
-                       </div>
-                    </header>
-
-                    <div className="flex-1 overflow-hidden flex">
-                       <div className="flex-1 flex flex-col overflow-hidden">
-                          {atresView === 'remote' ? (
-                            <div className="flex-1 p-6 relative">
-                               <div className="w-full h-full bg-slate-900 rounded-[2.5rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
-                                  <Image src="https://picsum.photos/seed/desktop/1200/800" alt="Remote" fill className="object-cover opacity-50 grayscale" />
-                                  <div className="z-10 text-center space-y-4">
-                                     <div className="h-16 w-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                                        <Activity className="text-emerald-400 h-8 w-8" />
-                                     </div>
-                                     <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Stream seguro de video • 256-bit AES</p>
-                                  </div>
-                               </div>
-                            </div>
-                          ) : (
-                            <>
-                              <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-                                 <div className="max-w-4xl mx-auto space-y-4 flex flex-col">
-                                    {messages.map((m, i) => (
-                                      <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                                        <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] text-sm font-semibold shadow-lg", m.role === 'tech' ? "bg-[#e7ffdb] border border-emerald-100 rounded-tr-none text-slate-800" : "bg-white border border-slate-200 rounded-tl-none text-slate-800")}>
-                                           <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                                           <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2 flex items-center justify-end gap-1">
-                                              <Clock className="h-2.5 w-2.5" />
-                                              {m.timestamp?.seconds ? format(new Date(m.timestamp.seconds * 1000), 'HH:mm') : '...'}
-                                           </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                    <div ref={scrollRef}/>
-                                 </div>
-                              </ScrollArea>
-                              <footer className="p-6 bg-white border-t flex gap-4 shrink-0">
-                                 <div className="max-w-4xl mx-auto flex w-full items-center gap-4">
-                                    <button className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-slate-100"><Paperclip className="h-5 w-5" /></button>
-                                    <Input 
-                                       value={chatInput} 
-                                       onChange={e => setChatInput(e.target.value)} 
-                                       onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                                       className="rounded-2xl bg-slate-50 border-none h-12 px-6 font-bold text-sm uppercase shadow-inner" 
-                                       placeholder="ESCRIBIR RESPUESTA TÉCNICA..." 
-                                    />
-                                    <Button onClick={handleSendMessage} className="bg-[#128c7e] hover:bg-[#075e54] h-12 w-12 rounded-2xl p-0 shadow-xl shrink-0">
-                                       <Send className="h-5 w-5" />
-                                    </Button>
-                                 </div>
-                              </footer>
-                            </>
-                          )}
-                       </div>
-                       
-                       <aside className="w-80 bg-white border-l p-6 space-y-8 overflow-y-auto shrink-0 hidden xl:block">
-                          <div className="space-y-6">
-                             <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <HardDrive className="h-4 w-4 text-primary" /> INFO DISPOSITIVO
-                             </h4>
-                             <div className="space-y-4 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
-                                <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">OS</span><span className="text-[10px] font-black text-slate-700">WINDOWS 11 PRO</span></div>
-                                <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">RAM</span><span className="text-[10px] font-black text-slate-700">16 GB DDR4</span></div>
-                                <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500 uppercase">CPU</span><span className="text-[10px] font-black text-slate-700">INTEL i7 12TH</span></div>
-                                <div className="flex justify-between items-center pt-2 border-t"><span className="text-[10px] font-bold text-slate-500 uppercase">IP</span><span className="text-[10px] font-black font-mono text-primary">192.168.1.104</span></div>
-                             </div>
-                          </div>
-
-                          <div className="space-y-6 pt-6 border-t">
-                             <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Navigation className="h-4 w-4 text-primary" /> UBICACIÓN CCT
-                             </h4>
-                             <div className="p-5 bg-slate-50 rounded-[2rem] space-y-3 border border-slate-100 shadow-inner">
-                                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><School className="h-5 w-5" /></div>
-                                <div>
-                                   <p className="text-[11px] font-black text-slate-700 uppercase leading-none">ESC. SEC. FED. 115</p>
-                                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">TOLUCA, EDOMÉX</p>
-                                </div>
-                                <Badge className="bg-primary/5 text-primary border-none text-[8px] font-black px-3 h-5 rounded-full mt-2">CCT: 15DES0001R</Badge>
-                             </div>
-                          </div>
-
-                          <div className="p-6 bg-blue-50/50 rounded-[2rem] border-2 border-dashed border-blue-100">
-                             <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed text-center">Analista, utiliza el panel remoto para diagnósticos visuales. La sesión está siendo grabada para auditoría.</p>
-                          </div>
-                       </aside>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-20 opacity-30 text-center">
-                     <div className="h-40 w-40 rounded-full bg-slate-100 border-4 border-white flex items-center justify-center mb-10 shadow-inner">
-                        <Laptop className="h-20 w-20 text-slate-300" />
-                     </div>
-                     <h3 className="text-3xl font-black uppercase text-slate-800 tracking-tighter">CENTRAL DE SOPORTE ATRES</h3>
-                     <p className="text-sm font-bold uppercase tracking-[0.4em] text-slate-500 mt-6 border-y border-slate-300 py-4 px-12">Seleccione una sesión activa para iniciar el soporte técnico</p>
-                  </div>
-                )}
-             </div>
-          </div>
+           <div className="flex-1 h-full min-h-[600px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-slate-50">
+             <HelpDeskInterface />
+           </div>
         ) : null}
       </div>
 
