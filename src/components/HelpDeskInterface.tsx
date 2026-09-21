@@ -1,8 +1,8 @@
 'use client';
 /**
- * @fileOverview Interfaz de Mesa de Ayuda ATRES con Sincronización Real.
- * - Modo Analista: Gestión de sesiones con alertas automáticas.
- * - Modo Público: Registro instantáneo y chat técnico.
+ * @fileOverview Interfaz de Mesa de Ayuda ATRES con Sincronización Real y Alertas.
+ * - Modo Analista: Gestión de sesiones con alertas visuales (Toast) y sonoras automáticas.
+ * - Modo Público: Registro instantáneo y chat técnico fluido.
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -54,7 +54,8 @@ import {
   serverTimestamp,
   orderBy,
   limit,
-  Timestamp
+  Timestamp,
+  getDoc
 } from 'firebase/firestore';
 import Image from 'next/image';
 
@@ -93,52 +94,63 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [hasJoined, setHasJoined] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const supportUrl = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '';
 
-  // ANALYST: Listen for new support requests
+  // Initialize Audio
   useEffect(() => {
     setMounted(true);
-    if (!isPublic) {
-      setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
-      
-      // Simplified query to avoid index errors, filter and sort locally
-      const q = query(collection(db, 'support_queue'), limit(50));
+    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+  }, []);
 
-      let isFirstLoad = true;
-      const unsubscribe = onSnapshot(q, (snap) => {
-        const allDocs = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequest));
-        
-        // Local Filter & Sort
-        const activeQueue = allDocs
-          .filter(req => req.status !== 'closed')
-          .sort((a, b) => {
-            const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : 0;
-            const tB = b.lastActivity instanceof Timestamp ? b.lastActivity.toMillis() : 0;
-            return tB - tA;
-          });
-        
-        // Detect new additions for notifications
-        snap.docChanges().forEach((change) => {
-          if (change.type === "added" && !isFirstLoad) {
-            const newReq = change.doc.data() as SupportRequest;
-            if (newReq.status === 'pending') {
-              toast({
-                title: "SOLICITUD DE ATENCIÓN",
-                description: `${newReq.userName} (${newReq.cct}) solicita soporte inmediato.`,
-                className: "bg-[#9f2241] text-white border-none shadow-2xl",
-              });
-              try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e) {}
+  // ANALYST: Listen for new support requests and trigger alerts
+  useEffect(() => {
+    if (!mounted || isPublic) return;
+    
+    setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
+    
+    // Listen to queue changes
+    const q = query(collection(db, 'support_queue'), limit(50));
+    let initialLoad = true;
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const allDocs = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequest));
+      
+      // Local Filter & Sort
+      const activeQueue = allDocs
+        .filter(req => req.status !== 'closed')
+        .sort((a, b) => {
+          const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : 0;
+          const tB = b.lastActivity instanceof Timestamp ? b.lastActivity.toMillis() : 0;
+          return tB - tA;
+        });
+      
+      // DETECT NEW PENDING REQUESTS FOR ALERTS
+      snap.docChanges().forEach((change) => {
+        if (change.type === "added" && !initialLoad) {
+          const newReq = change.doc.data() as SupportRequest;
+          if (newReq.status === 'pending') {
+            // Trigger Visual Alert (Toast)
+            toast({
+              title: "⚠️ NUEVA SOLICITUD DE SOPORTE",
+              description: `El Prof. ${newReq.userName} del CCT ${newReq.cct} requiere atención inmediata.`,
+              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl",
+              duration: 10000
+            });
+            // Trigger Audio Alert
+            if (audioRef.current) {
+              audioRef.current.play().catch(e => console.warn("Autoplay blocked by browser. Interaction required."));
             }
           }
-        });
-        
-        setQueue(activeQueue);
-        isFirstLoad = false;
+        }
       });
+      
+      setQueue(activeQueue);
+      initialLoad = false;
+    });
 
-      return () => unsubscribe();
-    }
-  }, [isPublic, toast]);
+    return () => unsubscribe();
+  }, [isPublic, toast, mounted]);
 
   // CHAT: Listen for messages in selected session
   useEffect(() => {
@@ -147,7 +159,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       return;
     }
     
-    // Simplified query for messages to ensure sync
     const q = query(
       collection(db, 'chat_messages'), 
       where('chatId', '==', selectedRequest.id)
@@ -155,7 +166,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     const unsubscribe = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
-      // Sort messages locally by timestamp
       const sortedMsgs = msgs.sort((a, b) => {
         const tA = a.timestamp instanceof Timestamp ? a.timestamp.toMillis() : 0;
         const tB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : 0;
@@ -188,22 +198,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         ticketNumber: ticketNum
       };
       
+      // Register Session
       const docRef = await addDoc(collection(db, 'support_queue'), requestData);
       
-      // Welcome bot message
+      // Register Initial Bot Message
       await addDoc(collection(db, 'chat_messages'), {
         chatId: docRef.id,
         role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, un analista ha sido notificado y se conectará en breve. Su folio es: ${ticketNum}.`,
+        content: `Hola ${userData.name.toUpperCase()}, un analista técnico ha sido notificado y se conectará en breve. Su folio de atención es: ${ticketNum}. Por favor, no cierre esta ventana.`,
         timestamp: serverTimestamp()
       });
 
-      setSelectedRequest({ ...requestData, id: docRef.id } as any);
+      // Transition immediately to chat
+      setSelectedRequest({ ...requestData, id: docRef.id, lastActivity: new Date() } as any);
       setHasJoined(true);
-      toast({ title: "Conectado a Mesa de Ayuda" });
+      toast({ title: "Conectado a Mesa de Ayuda ATRES" });
     } catch (e) {
       console.error(e);
-      toast({ variant: "destructive", title: "Error de conexión" });
+      toast({ variant: "destructive", title: "Error de conexión", description: "Verifique su conexión a internet e intente de nuevo." });
     } finally {
       setIsJoining(false);
     }
@@ -215,10 +227,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
-      // Update queue metadata to trigger alerts on technician side
+      // Update queue metadata
       await setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
-        lastMessage: input.substring(0, 40),
+        lastMessage: input.substring(0, 50),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
@@ -233,7 +245,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       setInput('');
     } catch (e) {
-      toast({ variant: "destructive", title: "Error al enviar" });
+      toast({ variant: "destructive", title: "Error al enviar mensaje" });
     } finally {
       setIsSending(false);
     }
@@ -319,12 +331,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       value={userData.anydeskId}
                       onChange={e => setUserData({...userData, anydeskId: e.target.value})}
                     />
-                    <Button className="w-full bg-[#B38E5D] hover:bg-[#a08252] text-white h-11 rounded-xl text-[10px] font-black shadow-lg" onClick={() => { if(userData.anydeskId) { setInput(`Mi ID de conexión es: ${userData.anydeskId}`); handleSendMessage(); } }}>ENVIAR ID A TÉCNICO</Button>
+                    <Button className="w-full bg-[#B38E5D] hover:bg-[#a08252] text-white h-11 rounded-xl text-[10px] font-black shadow-lg" onClick={() => { if(userData.anydeskId) { setInput(`Mi ID de conexión AnyDesk es: ${userData.anydeskId}`); handleSendMessage(); } }}>ENVIAR ID A TÉCNICO</Button>
                  </div>
 
                  <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3">
                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista recibirá una alerta visual. Por favor mantenga abierta esta ventana.</p>
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista recibirá una alerta visual y sonora. Por favor mantenga abierta esta ventana para recibir respuesta.</p>
                  </div>
               </div>
            </ScrollArea>
@@ -339,7 +351,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <div>
                     <h4 className="text-sm font-black text-slate-800 uppercase leading-none">Analista Técnico</h4>
                     <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conectado en tiempo real
+                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Sincronización activa
                     </p>
                  </div>
               </div>
@@ -412,7 +424,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <div className="p-6 bg-white border-b space-y-4 shadow-sm">
            <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">SESIONES ACTIVAS</h2>
-              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full shadow-sm">{queue.length}</Badge>
+              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full shadow-sm">
+                <Bell className="h-3 w-3 mr-2" /> {queue.length}
+              </Badge>
            </div>
            <div className="relative group">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
@@ -428,7 +442,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative group", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
                >
                   <Avatar className="h-12 w-12 border-2 border-white shadow-sm shrink-0">
-                    <AvatarFallback className="bg-slate-200 text-slate-500 font-black text-xs">{req.userName?.slice(0, 2) || 'U'}</AvatarFallback>
+                    <AvatarFallback className={cn("text-white font-black text-xs", req.status === 'pending' ? "bg-rose-500 animate-pulse" : "bg-slate-400")}>
+                       {req.userName?.slice(0, 2) || 'U'}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                      <div className="flex justify-between items-center mb-0.5">
@@ -451,7 +467,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              {queue.length === 0 && (
                <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
                   <MessageSquare className="h-14 w-14" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">Monitorización activa...</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">Esperando solicitudes...</p>
                </div>
              )}
            </div>
@@ -466,14 +482,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Sesión de Soporte Activa</span>
+                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Atención técnica en curso</span>
                   </div>
                </div>
                <div className="flex items-center gap-4">
                   <Button onClick={() => setActiveView('remote')} variant={activeView === 'remote' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><Monitor className="h-4 w-4" /> REMOTO</Button>
                   <Button onClick={() => setActiveView('chat')} variant={activeView === 'chat' ? 'default' : 'ghost'} className="h-9 px-4 rounded-xl text-[10px] font-black gap-2 shadow-sm"><MessageSquare className="h-4 w-4" /> CHAT</Button>
                   <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Cerrar ticket de atención?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => { if(confirm("¿Desea cerrar esta sesión de atención?")) { setDoc(doc(db, 'support_queue', selectedRequest.id), { status: 'closed' }, { merge: true }); setSelectedRequest(null); } }}><Power className="h-4 w-4" /></Button>
                </div>
             </header>
 
@@ -488,8 +504,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                                 <Activity className="text-emerald-400 h-10 w-10" />
                              </div>
                              <div className="space-y-2">
-                                <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] leading-none">Streaming Técnico Activo</p>
-                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest">AES-256 Encrypted Stream</p>
+                                <p className="text-white/60 text-[11px] font-black uppercase tracking-[0.4em] leading-none">Vínculo Técnico Establecido</p>
+                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest">Encriptación Institucional AES-256</p>
                              </div>
                           </div>
                        </div>
@@ -546,7 +562,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary"><Monitor className="h-6 w-6" /></div>
                         <div>
                            <p className="text-xs font-black text-slate-700 uppercase leading-none">{selectedRequest.cct}</p>
-                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">LOCALIZACIÓN VERIFICADA</p>
+                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">UBICACIÓN REGISTRADA</p>
                         </div>
                      </div>
                   </div>
@@ -597,7 +613,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <p className="text-[11px] font-semibold text-white/60 leading-relaxed">
                             Proporcione este código QR o la liga directa al personal para iniciar la monitorización técnica 2026.
                          </p>
-                         <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado", className: "bg-emerald-600 text-white border-none" }); }} className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all hover:scale-105 active:scale-95 border-none">
+                         <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Enlace Copiado al Portapapeles", className: "bg-emerald-600 text-white border-none" }); }} className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all hover:scale-105 active:scale-95 border-none">
                             <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
                          </Button>
                       </div>
