@@ -55,7 +55,8 @@ import {
   Settings2,
   Users,
   Laptop,
-  X
+  X,
+  FileDown
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from '@/lib/firebase'
@@ -166,9 +167,9 @@ export default function ProgramsPage() {
     const concluidos = bibliotecaRecords.filter(r => r.progress === 100).length;
     const proceso = total - concluidos;
     
-    const atenciones = bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0);
-    const evidencias = bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
-    const tecnicos = new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size;
+    const atenciones = total > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0) : 0;
+    const evidencias = total > 0 ? bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0) : 0;
+    const tecnicos = total > 0 ? new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size : 0;
 
     return { total, concluidos, proceso, visitas: total, atenciones, evidencias, tecnicos };
   }, [bibliotecaRecords]);

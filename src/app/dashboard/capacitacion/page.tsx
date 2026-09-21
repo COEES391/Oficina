@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -632,7 +631,8 @@ export default function TrainingPage() {
                         <GraduationCap className="h-16 w-16 text-slate-300" />
                         <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Sin registros operativos</p>
                       </div>
-                    </TableRow>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
