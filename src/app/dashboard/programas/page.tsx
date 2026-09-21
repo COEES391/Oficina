@@ -102,16 +102,6 @@ const BIBLIOTECA_FASES = [
   { id: 'fase9', label: 'Fase 9. Total de equipos habilitados', progress: 100, color: 'bg-emerald-600 text-white' }
 ];
 
-const visitData = [
-  { name: '15 May', visits: 12 },
-  { name: '16 May', visits: 18 },
-  { name: '17 May', visits: 20 },
-  { name: '18 May', visits: 15 },
-  { name: '19 May', visits: 17 },
-  { name: '20 May', visits: 22 },
-  { name: '21 May', visits: 24 },
-];
-
 const statusColors = ['#621132', '#B38E5D', '#94a3b8'];
 
 export default function ProgramsPage() {
@@ -131,7 +121,6 @@ export default function ProgramsPage() {
   const [accountForm, setAccountForm] = useState({
     name: '', username: '', domain: '@coees.edu.mx', area: '', notes: ''
   })
-  const [verifyEmail, setVerifyEmail] = useState('')
 
   const initialFormState: ProgramStatus = {
     name: '', progress: 0, status: 'activo', date: new Date().toISOString().split('T')[0], 
@@ -148,13 +137,6 @@ export default function ProgramsPage() {
 
   const [formData, setFormData] = useState<ProgramStatus>(initialFormState)
   const [allSchools, setAllSchools] = useState<SchoolInfo[]>([])
-  const [quickAddForm, setQuickAddForm] = useState<SchoolInfo>({
-    region: '', valle: 'MEXICO', municipio: '', subsistema: 'FEDERALIZADO', control: 'OFICIAL',
-    nivel: 'SECUNDARIA', servicioEducativo: 'SECUNDARIA GENERAL', cct: '', turno: 'MATUTINO',
-    nombre: '', domicilio: '', localidad: '', telefono: '', zonaEscolar: '', sector: '',
-    director: '', hombres: 0, mujeres: 0, alumnos: 0, grupos: 0, maestros: 0, administrativos: 0,
-    aulasExistentes: 0, aulasEnUso: 0, modalidad: 'DES'
-  })
 
   useEffect(() => {
     setMounted(true)
@@ -185,7 +167,31 @@ export default function ProgramsPage() {
     const total = bibliotecaRecords.length;
     const concluidos = bibliotecaRecords.filter(r => r.progress === 100).length;
     const proceso = total - concluidos;
-    return { total, concluidos, proceso };
+    
+    // Métricas dinámicas basadas en los registros reales
+    const visitas = bibliotecaRecords.length; // Cada auditoría es una visita
+    const atenciones = bibliotecaRecords.reduce((acc, r) => acc + (r.progress > 0 ? 1 : 0), 0);
+    const evidencias = bibliotecaRecords.reduce((acc, r) => acc + (r.evidencePhotos?.length || 0) + (r.reportPdf ? 1 : 0), 0);
+    const tecnicos = new Set(bibliotecaRecords.map(r => r.userName).filter(Boolean)).size;
+
+    return { total, concluidos, proceso, visitas, atenciones, evidencias, tecnicos };
+  }, [bibliotecaRecords]);
+
+  const recentEvidences = useMemo(() => {
+    const evs: { id: string, school: string, date: string, img: string }[] = [];
+    bibliotecaRecords.forEach(r => {
+      if (r.evidencePhotos && r.evidencePhotos.length > 0) {
+        r.evidencePhotos.slice(0, 2).forEach((img, idx) => {
+          evs.push({
+            id: `${r.id}-${idx}`,
+            school: r.schoolName || 'S/D',
+            date: r.date,
+            img: img
+          });
+        });
+      }
+    });
+    return evs.slice(0, 3);
   }, [bibliotecaRecords]);
 
   const pieData = [
@@ -352,15 +358,15 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
           <div className="space-y-8 pb-10">
-            {/* Upper Metric Cards */}
+            {/* Upper Metric Cards - Dinámicas */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
                 { label: 'CCT Registrados', value: stats.total, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Visitas Totales', value: 128, sub: 'En el periodo', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { label: 'Atenciones', value: 96, sub: 'En el periodo', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { label: 'Evidencias', value: 243, sub: 'Fotografías / Reportes', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
-                { label: 'Técnicos Activos', value: 8, sub: 'Asignados', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
-                { label: 'Proyectos Concluidos', value: stats.concluidos, sub: 'Escuelas', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' }
+                { label: 'Visitas Totales', value: stats.visitas, sub: 'Auditadas', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { label: 'Atenciones', value: stats.atenciones, sub: 'Activas', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                { label: 'Evidencias', value: stats.evidencias, sub: 'Docs/Fotos', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
+                { label: 'Técnicos Activos', value: stats.tecnicos, sub: 'Personal', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
+                { label: 'Proyectos Concluidos', value: stats.concluidos, sub: '100% Avance', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' }
               ].map((m, i) => (
                 <Card key={i} className="border-none shadow-md rounded-[1.8rem] p-5 flex items-center gap-4 bg-white transition-all hover:scale-105">
                   <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner", m.bg, m.color)}><m.icon className="h-6 w-6" /></div>
@@ -474,19 +480,19 @@ export default function ProgramsPage() {
 
             {/* Bottom Analysis Section */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-               {/* Visits Chart */}
+               {/* Gráfico de Avance - Solo visible si hay datos */}
                <Card className="md:col-span-4 border-none shadow-xl rounded-[2.5rem] bg-white p-8">
-                  <h3 className="text-sm font-black uppercase text-slate-800 mb-8">Visitas por día <span className="text-[9px] font-bold text-slate-400 ml-2">(últimos 7 días)</span></h3>
+                  <h3 className="text-sm font-black uppercase text-slate-800 mb-8">Actividad Reciente <span className="text-[9px] font-bold text-slate-400 ml-2">(Sesiones activas)</span></h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={visitData}>
+                      <LineChart data={bibliotecaRecords.slice(0, 7).reverse().map(r => ({ name: r.cct, progress: r.progress }))}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#94a3b8'}} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 8, fontWeight: 900, fill: '#94a3b8'}} />
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#94a3b8'}} />
                         <ChartTooltip 
                           contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase'}}
                         />
-                        <Line type="monotone" dataKey="visits" stroke="#9f2241" strokeWidth={4} dot={{r: 6, fill: '#9f2241', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 8, strokeWidth: 0}} />
+                        <Line type="monotone" dataKey="progress" stroke="#9f2241" strokeWidth={4} dot={{r: 6, fill: '#9f2241', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 8, strokeWidth: 0}} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -519,33 +525,30 @@ export default function ProgramsPage() {
                   </div>
                </Card>
 
-               {/* Evidencias Recientes */}
-               <Card className="md:col-span-5 border-none shadow-xl rounded-[2.5rem] bg-white p-8 overflow-hidden">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-black uppercase text-slate-800">Evidencias recientes</h3>
-                    <Button variant="link" className="text-primary font-black text-[9px] uppercase h-auto p-0">Ver todas las evidencias <ChevronRight className="h-3 w-3 ml-1" /></Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 h-full">
-                    {[
-                      { id: '1', school: 'Primaria Miguel Hidalgo', date: '20/05/2024', img: 'https://picsum.photos/seed/ev1/400/300' },
-                      { id: '2', school: 'Secundaria Técnica No. 8', date: '20/05/2024', img: 'https://picsum.photos/seed/ev2/400/300' },
-                      { id: '3', school: 'Secundaria Gral. No. 5', date: '20/05/2024', img: 'https://picsum.photos/seed/ev3/400/300' },
-                    ].map((ev) => (
-                      <div key={ev.id} className="space-y-3 group cursor-pointer">
-                        <div className="aspect-[4/3] rounded-2xl overflow-hidden relative border shadow-sm">
-                           <Image src={ev.img} alt="Evidencia" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+               {/* Evidencias Recientes - Dinámica: Solo aparece si hay evidencias reales */}
+               {recentEvidences.length > 0 && (
+                 <Card className="md:col-span-5 border-none shadow-xl rounded-[2.5rem] bg-white p-8 overflow-hidden animate-in slide-in-from-right duration-500">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-black uppercase text-slate-800">Evidencias recientes</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 h-full">
+                      {recentEvidences.map((ev) => (
+                        <div key={ev.id} className="space-y-3 group cursor-pointer">
+                          <div className="aspect-[4/3] rounded-2xl overflow-hidden relative border shadow-sm">
+                             <Image src={ev.img} alt="Evidencia" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                          </div>
+                          <div>
+                             <p className="text-[8px] font-black text-slate-800 uppercase leading-tight truncate">{ev.school}</p>
+                             <div className="flex justify-between items-center mt-1">
+                                <span className="text-[7px] font-bold text-slate-400">{ev.date}</span>
+                                <FileDown className="h-3.5 w-3.5 text-rose-500" />
+                             </div>
+                          </div>
                         </div>
-                        <div>
-                           <p className="text-[8px] font-black text-slate-800 uppercase leading-tight truncate">{ev.school}</p>
-                           <div className="flex justify-between items-center mt-1">
-                              <span className="text-[7px] font-bold text-slate-400">{ev.date}</span>
-                              <FileDown className="h-3.5 w-3.5 text-rose-500" />
-                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-               </Card>
+                      ))}
+                    </div>
+                 </Card>
+               )}
             </div>
           </div>
         ) : activeTab === 'ATRES' ? (
@@ -610,9 +613,9 @@ export default function ProgramsPage() {
                                   onCheckedChange={(val) => { 
                                      const updatedFases = { ...formData.bibliotecaFases!, [f.id]: !!val }; 
                                      const totalWeight = BIBLIOTECA_FASES.length;
-                                     const completedCount = BIBLIOTECA_FASES.filter(ph => updatedFases[ph.id as keyof typeof updatedFases]).length;
+                                     const completedCount = BIBLIOTECA_FASES.filter(ph => (updatedFases as any)[ph.id]).length;
                                      const progress = Math.round((completedCount / totalWeight) * 100); 
-                                     setFormData({ ...formData, bibliotecaFases: updatedFases, progress }); 
+                                     setFormData({ ...formData, bibliotecaFases: updatedFases as any, progress }); 
                                   }} 
                                   className="h-6 w-6 rounded-lg border-2 border-primary" 
                                 />
