@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -125,7 +124,6 @@ export default function ProgramsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCctId, setSelectedCctId] = useState<string | null>(null)
   
-  // States for the searchable select in sidebar
   const [sidebarSearchTerm, setSidebarSearchTerm] = useState('')
   const [isSidebarResultsOpen, setIsSidebarResultsOpen] = useState(false)
 
@@ -158,7 +156,7 @@ export default function ProgramsPage() {
     },
     mantenimientoFicha: {
       equipoTecnologico: { hdt: false, equipoComputo: false, otro: '' },
-      equiposList: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
+      equiposList: Array.from({ length: 10 }, () => ({ equipo: '', marca: '', serie: '', censal: '' })),
       fallaIdentificada: '',
       servicioRealizado: '',
       observaciones: ''
@@ -384,7 +382,7 @@ export default function ProgramsPage() {
   const updateMantenimientoEquipo = (index: number, field: string, value: string) => {
     if (!formData.mantenimientoFicha) return;
     const list = [...formData.mantenimientoFicha.equiposList];
-    (list[index] as any)[field] = value.toUpperCase();
+    list[index] = { ...list[index], [field]: value.toUpperCase() };
     setFormData({
       ...formData,
       mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
@@ -841,7 +839,6 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Conoce mi Escuela' ? (
           <div className="space-y-6 animate-in fade-in duration-700">
-            {/* Buscador Superior */}
             <Card className="rounded-2xl border-none shadow-sm p-4 bg-white">
                <div className="flex flex-wrap items-end gap-4">
                   <div className="space-y-2 flex-1 min-w-[200px]">
@@ -876,7 +873,6 @@ export default function ProgramsPage() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-               {/* Columna Izquierda: Mapa e Indicadores */}
                <div className="lg:col-span-6 space-y-6">
                   <Card className="rounded-[2rem] border-none shadow-xl bg-white overflow-hidden flex flex-col h-[500px]">
                      <div className="p-4 border-b flex gap-2 bg-slate-50/50">
@@ -890,12 +886,10 @@ export default function ProgramsPage() {
                            <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase px-3 text-slate-400">Satélite</Button>
                         </div>
                         
-                        {/* Marcadores Simulados */}
                         <div className="absolute top-[35%] left-[65%]"><MapPin className="h-8 w-8 text-emerald-600 fill-emerald-100" /></div>
                         <div className="absolute top-[55%] left-[30%]"><MapPin className="h-8 w-8 text-blue-600 fill-blue-100" /></div>
                         <div className="absolute top-[75%] left-[55%]"><MapPin className="h-8 w-8 text-rose-600 fill-rose-100" /></div>
                         
-                        {/* Marcador Activo con Tooltip Estilo Imagen */}
                         <div className="absolute top-[20%] left-[25%] animate-in zoom-in-95 duration-500">
                            <Card className="p-4 rounded-xl shadow-2xl border-none flex items-center gap-4 bg-white relative">
                               <div className="flex flex-col">
@@ -908,7 +902,6 @@ export default function ProgramsPage() {
                            <div className="h-4 w-4 rounded-full bg-blue-600 border-2 border-white mx-auto shadow-[0_0_15px_rgba(37,99,235,0.6)] animate-pulse" />
                         </div>
 
-                        {/* Leyenda Inferior */}
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md px-6 py-2 rounded-full shadow-2xl border flex gap-6 border-slate-200">
                            {[{l: 'En línea', c: 'text-emerald-500'}, {l: 'En movimiento', c: 'text-blue-500'}, {l: 'Sin señal', c: 'text-rose-500'}, {l: 'Desconectado', c: 'text-slate-400'}].map(i => (
                              <div key={i.l} className="flex items-center gap-2"><div className={cn("h-2.5 w-2.5 rounded-full bg-current", i.c)}/><span className="text-[8px] font-black uppercase text-slate-600 tracking-wider">{i.l}</span></div>
@@ -917,7 +910,6 @@ export default function ProgramsPage() {
                      </div>
                   </Card>
 
-                  {/* Resumen Estadístico Estilo Imagen */}
                   <div className="space-y-4">
                      <h3 className="text-[11px] font-black uppercase text-slate-700 tracking-widest pl-2">Resumen general</h3>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -944,7 +936,6 @@ export default function ProgramsPage() {
                   </div>
                </div>
 
-               {/* Columna Derecha: Formulario y Detalle */}
                <div className="lg:col-span-6 space-y-6">
                   <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-8">
                      <div className="flex items-center gap-4">
@@ -960,8 +951,8 @@ export default function ProgramsPage() {
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Nombre de la escuela *</Label><div className="relative"><FileText className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. Secundaria No. 15" className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs uppercase" /></div></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Zona *</Label><div className="relative"><MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Select><SelectTrigger className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs uppercase"><SelectValue placeholder="Selecciona una zona" /></SelectTrigger><SelectContent className="z-[500]"><SelectItem value="001">001</SelectItem><SelectItem value="002">002</SelectItem></SelectContent></Select></div></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Municipio *</Label><div className="relative"><MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Select><SelectTrigger className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs uppercase"><SelectValue placeholder="Selecciona un municipio" /></SelectTrigger><SelectContent className="z-[500]"><SelectItem value="toluca">Toluca</SelectItem><SelectItem value="metepec">Metepec</SelectItem></SelectContent></Select></div></div>
-                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Teléfono</Label><div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. 722 123 4567" className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs" /></div></div>
-                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Correo electrónico</Label><div className="relative"><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. escuela@edugem.gob.mx" className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs lowercase" /></div></div>
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Teléfono</Label><div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. 722 123 4567" className="h-10 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs" /></div></div>
+                        <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Correo electrónico</Label><div className="relative"><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. escuela@edugem.gob.mx" className="h-10 pl-10 rounded-xl bg-slate-50 border-none font-bold text-xs lowercase" /></div></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Latitud *</Label><div className="relative"><Navigation className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. 19.6289" className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-mono font-bold" /></div></div>
                         <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-500 pl-1">Longitud *</Label><div className="relative"><Navigation className="absolute left-3 top-3 h-4 w-4 text-slate-300"/><Input placeholder="Ej. -99.3128" className="h-11 pl-10 rounded-xl bg-slate-50 border-none font-mono font-bold" /></div></div>
                      </div>
@@ -972,7 +963,6 @@ export default function ProgramsPage() {
                      </div>
                   </Card>
 
-                  {/* Ficha Técnica Detallada (Datos de la Escuela) */}
                   <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col group animate-in slide-in-from-right-4 duration-500">
                      <div className="p-6 border-b bg-slate-50/80 flex items-center justify-between">
                         <div className="flex items-center gap-3">

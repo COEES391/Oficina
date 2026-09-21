@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -164,7 +163,7 @@ export default function SupportPage() {
     },
     mantenimientoFicha: {
       equipoTecnologico: { hdt: false, equipoComputo: false, otro: '' },
-      equiposList: Array(10).fill({ equipo: '', marca: '', serie: '', censal: '' }),
+      equiposList: Array.from({ length: 10 }, () => ({ equipo: '', marca: '', serie: '', censal: '' })),
       fallaIdentificada: '',
       servicioRealizado: '',
       observaciones: ''
@@ -227,7 +226,6 @@ export default function SupportPage() {
     setAllSchools(updated);
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated));
     
-    // Población automática del formulario de soporte con los nuevos datos
     setFormData(prev => ({ 
       ...prev, 
       cct: newSchool.cct,
@@ -342,7 +340,7 @@ export default function SupportPage() {
   const updateMantenimientoEquipo = (index: number, field: string, value: string) => {
     if (!formData.mantenimientoFicha) return;
     const list = [...formData.mantenimientoFicha.equiposList];
-    (list[index] as any)[field] = value.toUpperCase();
+    list[index] = { ...list[index], [field]: value.toUpperCase() };
     setFormData({
       ...formData,
       mantenimientoFicha: { ...formData.mantenimientoFicha, equiposList: list }
@@ -650,7 +648,6 @@ export default function SupportPage() {
                   </div>
                </div>
 
-               {/* Ficha Técnica de Atención Mantenimiento (F4) */}
                {formData.tipoIncidencias?.includes('mantenimiento') && (
                  <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
@@ -722,7 +719,6 @@ export default function SupportPage() {
                  </div>
                )}
 
-               {/* Ficha Técnica de Atención Red Local (F5) */}
                {formData.tipoIncidencias?.includes('red local') && (
                  <div className="space-y-8 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
@@ -881,9 +877,7 @@ export default function SupportPage() {
                  </div>
                )}
 
-               {/* Ficha Técnica de Atención Red Edusat */}
-               {formData.tipoIncidencias?.includes('red edusat') && (
-                 <div className="space-y-6 animate-in zoom-in-95 duration-500 pt-6">
+               <div className="space-y-6 animate-in zoom-in-95 duration-500 pt-6">
                     <div className="flex items-center gap-3 border-b-2 border-primary/20 pb-3">
                        <Radio className="h-6 w-6 text-primary" />
                        <h4 className="text-sm font-black text-primary uppercase tracking-widest">Ficha técnica de atención red Edusat</h4>
@@ -966,9 +960,7 @@ export default function SupportPage() {
                        </div>
                     </div>
                  </div>
-               )}
 
-               {/* Personal Responsable (Comisionados) - Dinámico */}
                <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                      <div className="flex items-center gap-3">
@@ -1029,7 +1021,6 @@ export default function SupportPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Alta Rápida de CCT */}
       <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white">
