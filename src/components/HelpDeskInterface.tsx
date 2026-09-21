@@ -1,8 +1,8 @@
 'use client';
 /**
- * @fileOverview Interfaz de Mesa de Ayuda ATRES con Sincronización Real y Alertas.
- * - Modo Analista: Gestión de sesiones con alertas visuales (Toast) y sonoras automáticas.
- * - Modo Público: Registro instantáneo y chat técnico fluido.
+ * @fileOverview Interfaz de Mesa de Ayuda ATRES con Sincronización Real y Alertas Críticas.
+ * - Analista: Monitorización agresiva con alertas visuales (Toasts) y sonoras.
+ * - Usuario: Conexión optimista e instantánea tras clic en botón.
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -38,7 +38,12 @@ import {
   QrCode,
   Globe,
   Bell,
-  Volume2
+  Volume2,
+  ChevronRight,
+  MonitorCheck,
+  Server,
+  Terminal,
+  Cpu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +58,7 @@ import {
   serverTimestamp,
   Timestamp,
   where,
+  addDoc
 } from 'firebase/firestore';
 import Image from 'next/image';
 
@@ -88,7 +94,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [soundEnabled, setSoundEnabled] = useState(false);
   
   // User Registration State
-  const [userData, setUserData] = useState({ name: '', cct: '', anydeskId: '' });
+  const [userData, setUserData] = useState({ name: '', cct: '' });
   const [hasJoined, setHasJoined] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -111,6 +117,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
+    // Simplificamos la consulta para evitar problemas de índices y asegurar que suene siempre
     const q = query(collection(db, 'support_queue'));
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -119,32 +126,36 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const activeQueue = allDocs
         .filter(req => req.status !== 'closed')
         .sort((a, b) => {
-          const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : 0;
-          const tB = b.lastActivity instanceof Timestamp ? b.lastActivity.toMillis() : 0;
+          const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : Date.now();
+          const tB = b.lastActivity instanceof Timestamp ? b.lastActivity.toMillis() : Date.now();
           return tB - tA;
         });
       
       setQueue(activeQueue);
 
-      // ALERT LOGIC
+      // LÓGICA DE ALERTA AGRESIVA
       snap.docChanges().forEach((change) => {
-        if (change.type === "added" || (change.type === "modified" && change.doc.data().status === 'pending')) {
-          const newReq = change.doc.data() as SupportRequest;
-          if (newReq.status === 'pending' && !alertedIds.current.has(change.doc.id)) {
-            alertedIds.current.add(change.doc.id);
+        const data = change.doc.data() as SupportRequest;
+        const id = change.doc.id;
+
+        if ((change.type === "added" || change.type === "modified") && data.status === 'pending') {
+          if (!alertedIds.current.has(id)) {
+            alertedIds.current.add(id);
             
-            // Notification Visual
+            // 1. Notificación Visual Institucional (Toast)
             toast({
-              title: "⚠️ ALERTA DE ATENCIÓN",
-              description: `Solicitud de: ${newReq.userName} (CCT: ${newReq.cct})`,
-              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-2xl p-6 ring-4 ring-white/20 animate-bounce",
-              duration: 15000
+              title: "⚠️ SOLICITUD DE ATENCIÓN ENTRANTE",
+              description: `DOCENTE: ${data.userName} | CCT: ${data.cct}`,
+              className: "bg-[#9f2241] text-white border-none shadow-[0_20px_50px_rgba(159,34,65,0.4)] font-black rounded-3xl p-8 ring-4 ring-white/20 animate-in slide-in-from-right duration-500",
+              duration: 20000 // Duración extendida para que el técnico lo vea
             });
 
-            // Audio Alert
+            // 2. Notificación Sonora
             if (audioRef.current && soundEnabled) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
+              audioRef.current.play().catch(e => {
+                console.warn("Audio play blocked by browser policies", e);
+              });
             }
           }
         }
@@ -154,7 +165,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     return () => unsubscribe();
   }, [isPublic, toast, mounted, soundEnabled]);
 
-  // CHAT: Listen for messages
+  // CHAT: Listen for messages in real time
   useEffect(() => {
     if (!mounted || !selectedRequest) {
       setMessages([]);
@@ -169,8 +180,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
       const sortedMsgs = msgs.sort((a, b) => {
-        const tA = a.timestamp instanceof Timestamp ? a.timestamp.toMillis() : 0;
-        const tB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : 0;
+        const tA = a.timestamp instanceof Timestamp ? a.timestamp.toMillis() : Date.now();
+        const tB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : Date.now();
         return tA - tB;
       });
       setMessages(sortedMsgs);
@@ -185,12 +196,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const handleJoinSupport = async () => {
     if (!userData.name || !userData.cct) {
-      toast({ variant: "destructive", title: "Campos técnicos obligatorios", description: "Ingrese nombre y CCT oficial." });
+      toast({ variant: "destructive", title: "Campos Técnicos Obligatorios", description: "Ingrese nombre y CCT oficial." });
       return;
     }
     
     setIsJoining(true);
-    const ticketNum = `TK-${Date.now().toString().slice(-6)}`;
+    const ticketNum = `TK-${Math.floor(100000 + Math.random() * 900000)}`;
     const requestId = `REQ-${Date.now()}`;
     
     const requestData = {
@@ -198,26 +209,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       cct: userData.cct.toUpperCase(),
       status: 'pending',
       lastActivity: serverTimestamp(),
-      lastMessage: 'Conectado a mesa de ayuda...',
+      lastMessage: 'Conectando con un técnico...',
       ticketNumber: ticketNum
     };
     
     try {
-      // 1. Create Session
+      // Registro optimista: pasamos al chat de inmediato tras la escritura
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       
-      // 2. Initial Bot Message
-      await setDoc(doc(collection(db, 'chat_messages')), {
+      // Enviamos el mensaje inicial del bot de forma asíncrona (no bloqueante)
+      addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, hemos notificado a la central de soporte con una alerta sonora y visual. Su folio es: ${ticketNum}. Mantenga esta ventana abierta.`,
+        content: `Hola ${userData.name.toUpperCase()}, bienvenido a la Mesa de Ayuda ATRES. Se ha enviado una ALERTA SONORA Y VISUAL a la Central de Soporte. Su folio es: ${ticketNum}. Mantenga esta ventana abierta.`,
         timestamp: serverTimestamp()
       });
 
       setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
       setHasJoined(true);
+      toast({ title: "Central Notificada", description: "Un analista ha recibido su alerta sonora." });
     } catch (e) {
-      toast({ variant: "destructive", title: "Falla de conexión" });
+      console.error("Error connecting to support:", e);
+      toast({ variant: "destructive", title: "Falla de Conexión en la Nube" });
     } finally {
       setIsJoining(false);
     }
@@ -229,13 +242,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const chatId = selectedRequest.id;
 
     try {
+      // Actualizamos estatus y última actividad
       setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: input.substring(0, 40) + (input.length > 40 ? '...' : ''),
         status: isPublic ? 'pending' : 'attending'
       }, { merge: true });
 
-      setDoc(doc(collection(db, 'chat_messages')), {
+      // Registramos el mensaje
+      addDoc(collection(db, 'chat_messages'), {
         chatId,
         role: isPublic ? 'user' : 'tech',
         content: input,
@@ -245,7 +260,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       setInput('');
     } catch (e) {
-      toast({ variant: "destructive", title: "Mensaje no enviado" });
+      toast({ variant: "destructive", title: "Mensaje No Enviado" });
     } finally {
       setIsSending(false);
     }
@@ -253,7 +268,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // --- PUBLIC INTERFACE ---
+  // --- INTERFAZ PÚBLICA (DOCENTE) ---
   if (isPublic) {
     if (!hasJoined) {
       return (
@@ -289,7 +304,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    />
                 </div>
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
-                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON ANALISTA"}
+                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "CONECTAR CON TÉCNICO"}
                 </Button>
              </div>
              <div className="p-6 bg-slate-50 border-t flex items-center justify-center gap-3">
@@ -317,7 +332,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     {[
                       { step: 1, text: 'Instale AnyDesk en su equipo.' },
                       { step: 2, text: 'Localice su ID de 9 dígitos.' },
-                      { step: 3, text: 'Escríbalo en el chat inferior.' },
+                      { step: 3, text: 'Envíe el ID por este chat.' },
                     ].map(s => (
                       <div key={s.step} className="flex gap-4 items-start bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                          <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-lg">{s.step}</div>
@@ -327,7 +342,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  </div>
                  <div className="p-5 bg-blue-50 border-2 border-dashed border-blue-100 rounded-[1.8rem] flex gap-3 shadow-inner">
                     <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">El analista técnico está recibiendo una alerta visual y sonora ahora mismo. Espere su respuesta.</p>
+                    <p className="text-[9px] font-bold text-blue-900 uppercase leading-relaxed mt-1">Un analista técnico está recibiendo una ALERTA SONORA en la central ahora mismo. Espere respuesta.</p>
                  </div>
               </div>
            </ScrollArea>
@@ -384,9 +399,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // --- ANALYST INTERFACE ---
+  // --- INTERFAZ ANALISTA (TÉCNICO) ---
   return (
     <div className="flex h-full w-full bg-white overflow-hidden font-sans animate-in fade-in duration-700">
+      {/* Barra Lateral Táctica */}
       <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-6 gap-6 shrink-0 z-50 border-r border-white/5 shadow-2xl">
         <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-400 shadow-inner">
           <ShieldCheck className="h-6 w-6" />
@@ -407,26 +423,28 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              </button>
            ))}
         </div>
+        {/* Botón Maestro de Alertas Sonoras (Crucial para Autoplay) */}
         <button 
-           onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) audioRef.current?.play(); }} 
-           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white shadow-lg" : "text-white/30 bg-white/5")}
-           title={soundEnabled ? "Silenciar Alertas" : "Activar Alertas Sonoras"}
+           onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) { audioRef.current?.play(); toast({title: "Alertas Sonoras Activas", className: "bg-emerald-600 text-white"}); } }} 
+           className={cn("h-11 w-11 rounded-2xl flex items-center justify-center transition-all animate-pulse", soundEnabled ? "bg-amber-500 text-white shadow-lg" : "text-white/30 bg-white/5")}
+           title={soundEnabled ? "Alertas Activas" : "Habilitar Alertas Sonoras"}
         >
           {soundEnabled ? <Volume2 className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
         </button>
       </aside>
 
+      {/* Lista de Sesiones */}
       <div className="w-80 bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 z-40">
         <div className="p-6 bg-white border-b space-y-4 shadow-sm">
            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">SESIONES ACTIVAS</h2>
-              <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 h-6 rounded-full">
+              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter leading-none">Mesa de Ayuda</h2>
+              <Badge className="bg-[#9f2241] text-white border-none font-black text-[10px] px-3 h-6 rounded-full shadow-lg">
                  {queue.length}
               </Badge>
            </div>
            <div className="relative group">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
-              <Input placeholder="FILTRAR..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[9px] font-bold uppercase" />
+              <Input placeholder="FILTRAR SESIONES..." className="h-9 pl-9 rounded-xl bg-slate-50 border-none shadow-inner text-[9px] font-bold uppercase" />
            </div>
         </div>
         <ScrollArea className="flex-1">
@@ -435,7 +453,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <button 
                  key={req.id} 
                  onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative group", selectedRequest?.id === req.id ? "bg-white border-emerald-500 shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
+                 className={cn("w-full p-4 rounded-3xl text-left transition-all flex items-center gap-4 border-2 relative group", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "bg-transparent border-transparent hover:bg-white/80")}
                >
                   <Avatar className="h-12 w-12 border-2 border-white shadow-sm shrink-0">
                     <AvatarFallback className={cn("text-white font-black text-xs", req.status === 'pending' ? "bg-rose-500 animate-pulse" : "bg-slate-400")}>
@@ -447,13 +465,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                         <span className="text-[11px] font-black text-slate-700 uppercase truncate">{req.userName}</span>
                         {req.status === 'pending' && (
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[7px] font-black text-rose-500 uppercase animate-pulse">ATENCIÓN</span>
+                            <span className="text-[7px] font-black text-rose-500 uppercase animate-pulse">ALERTA</span>
                             <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
                           </div>
                         )}
                      </div>
-                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase">{req.lastMessage || 'Solicitud entrante...'}</p>
-                     <div className="flex items-center gap-2 mt-1">
+                     <p className="text-[9px] font-semibold text-slate-400 truncate uppercase leading-none">{req.lastMessage || 'Solicitud entrante...'}</p>
+                     <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-slate-400 h-4 px-1.5 bg-slate-50">{req.cct}</Badge>
                         <span className="text-[7px] font-bold text-slate-300 uppercase">{req.ticketNumber}</span>
                      </div>
@@ -470,6 +488,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
+      {/* Panel de Operación Técnica */}
       <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
         {selectedRequest ? (
           <>
@@ -478,7 +497,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   <h3 className="text-sm font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Atención en Tiempo Real</span>
+                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">En Línea • Sincronización Nube</span>
                   </div>
                </div>
                <div className="flex items-center gap-4">
@@ -553,11 +572,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                       <p className="text-lg font-bold uppercase tracking-[0.3em] text-[#B38E5D]">Monitorización de Sesiones en Vivo</p>
                    </div>
                    <div className="p-8 bg-slate-50 rounded-[3rem] border-2 border-slate-100 flex gap-6 shadow-sm">
-                      <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-500 shrink-0">
+                      <div className="h-14 w-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-rose-600 shrink-0">
                          <Bell className="h-8 w-8" />
                       </div>
                       <p className="text-xs font-bold text-slate-600 uppercase leading-relaxed mt-1">
-                         Para recibir alertas sonoras, asegúrese de haber hecho clic en el botón de campana de la barra lateral izquierda.
+                         Para recibir alertas sonoras inmediatas, haga clic en el botón de campana de la barra lateral izquierda. El sistema le notificará automáticamente cuando un docente inicie una solicitud.
                       </p>
                    </div>
                 </div>
@@ -578,7 +597,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                          <Label className="text-[9px] font-black text-emerald-400 uppercase">Enlace Directo:</Label>
                          <p className="text-[10px] font-mono text-white/80 font-bold truncate">{supportUrl}</p>
                       </div>
-                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Copiado", className: "bg-emerald-600 text-white" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
+                      <Button onClick={() => { navigator.clipboard.writeText(supportUrl); toast({ title: "Copiado al Portapapeles", className: "bg-emerald-600 text-white rounded-2xl" }); }} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-2xl gap-3 shadow-xl transition-all">
                          <Globe className="h-4 w-4" /> COPIAR LIGA OFICIAL
                       </Button>
                    </div>
