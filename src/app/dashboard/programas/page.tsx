@@ -202,6 +202,10 @@ export default function ProgramsPage() {
     records.filter(r => r.name === 'Biblioteca Digital'), 
   [records]);
 
+  const conoceRecords = useMemo(() => 
+    records.filter(r => r.name === 'Conoce mi Escuela'), 
+  [records]);
+
   const geoRecords = useMemo(() => 
     records.filter(r => r.name === 'Geoposición'), 
   [records]);
@@ -221,6 +225,15 @@ export default function ProgramsPage() {
 
     return { total: totalBD, concluidos, proceso, visitas: totalBD, atenciones, evidencias, tecnicos };
   }, [bibliotecaRecords]);
+
+  const conoceStats = useMemo(() => {
+    return {
+      escuelas: conoceRecords.length,
+      directores: new Set(conoceRecords.map(r => r.userName).filter(Boolean)).size,
+      municipios: new Set(conoceRecords.map(r => r.municipio).filter(Boolean)).size,
+      actualizaciones: conoceRecords.length
+    }
+  }, [conoceRecords]);
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase().trim()
@@ -914,10 +927,10 @@ export default function ProgramsPage() {
                      <h3 className="text-[11px] font-black uppercase text-slate-700 tracking-widest pl-2">Resumen general</h3>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
-                          { val: '1,248', lab: 'Escuelas registradas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-                          { val: '856', lab: 'Directores / Responsables', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                          { val: '125', lab: 'Municipios', icon: MapPin, color: 'text-orange-500', bg: 'bg-orange-50' },
-                          { val: '3,482', lab: 'Datos actualizados', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                          { val: conoceStats.escuelas.toLocaleString(), lab: 'Escuelas registradas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                          { val: conoceStats.directores.toLocaleString(), lab: 'Directores / Responsables', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                          { val: conoceStats.municipios.toLocaleString(), lab: 'Municipios', icon: MapPin, color: 'text-orange-500', bg: 'bg-orange-50' },
+                          { val: conoceStats.actualizaciones.toLocaleString(), lab: 'Datos actualizados', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' }
                         ].map((item, idx) => (
                           <Card key={idx} className="p-5 rounded-[1.8rem] border-none shadow-md bg-white flex flex-col items-center text-center gap-3 group hover:scale-105 transition-all">
                              <div className={cn("h-11 w-11 rounded-2xl flex items-center justify-center shadow-inner", item.bg, item.color)}><item.icon className="h-5 w-5" /></div>
@@ -1309,7 +1322,7 @@ export default function ProgramsPage() {
         <DialogContent className="sm:max-w-[800px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-6 bg-[#B38E5D] text-white shrink-0">
             <DialogTitle className="uppercase font-black text-lg flex items-center gap-3"><PlusCircle className="h-6 w-6" /> Registro de Nuevo CCT</DialogTitle>
-            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra para futuros registros.</DialogDescription>
+            <DialogDescription className="text-white/80 text-[10px] font-bold uppercase mt-1">Sume un nuevo plantel a la base maestra para futuros reportes.</DialogDescription>
           </DialogHeader>
           <div className="p-8 space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
