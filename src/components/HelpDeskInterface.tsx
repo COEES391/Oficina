@@ -1,3 +1,4 @@
+
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES Live.
@@ -63,7 +64,8 @@ import {
   where,
   addDoc,
   orderBy,
-  deleteDoc
+  deleteDoc,
+  limit
 } from 'firebase/firestore';
 import Image from 'next/image';
 import { type SupportRequestLive } from '@/lib/planning-data';
@@ -114,6 +116,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const alertedIds = useRef(new Set<string>());
+  const isInitialLoad = useRef(true);
   
   const supportUrl = typeof window !== 'undefined' ? `${window.location.origin}/helpdesk` : '';
 
@@ -130,45 +133,49 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    const q = query(collection(db, 'support_queue'));
+    const q = query(collection(db, 'support_queue'), orderBy('lastActivity', 'desc'));
     const unsubscribe = onSnapshot(q, (snap) => {
       const activeQueue = snap.docs
         .map(d => ({ ...d.data(), id: d.id } as SupportRequestLive))
-        .filter(req => req.status !== 'closed')
-        .sort((a, b) => {
-          const tA = a.lastActivity instanceof Timestamp ? a.lastActivity.toMillis() : Date.now();
-          const tB = b.lastActivity instanceof Timestamp ? b.lastActivity.toMillis() : Date.now();
-          return tB - tA;
-        });
+        .filter(req => req.status !== 'closed');
       
       setQueue(activeQueue);
+
+      // Manejo de Alertas para el Técnico
+      if (isInitialLoad.current) {
+        snap.docs.forEach(d => alertedIds.current.add(d.id));
+        isInitialLoad.current = false;
+        return;
+      }
 
       snap.docChanges().forEach((change) => {
         const data = change.doc.data() as SupportRequestLive;
         const id = change.doc.id;
 
-        if ((change.type === "added" || change.type === "modified") && data.status === 'pending') {
+        if (change.type === "added" && data.status === 'pending') {
           if (!alertedIds.current.has(id)) {
             alertedIds.current.add(id);
             
             toast({
               title: "⚠️ SOLICITUD ENTRANTE",
               description: `${data.userName} - ${data.cct}`,
-              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-3xl p-6",
+              className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-[2rem] p-6 ring-4 ring-white/20",
               duration: 20000,
               action: (
                 <Button 
                   onClick={() => setSelectedRequest({ ...data, id } as any)} 
-                  className="bg-white text-[#9f2241] hover:bg-slate-100 font-black uppercase text-[10px]"
+                  className="bg-white text-[#9f2241] hover:bg-slate-100 font-black uppercase text-[10px] rounded-xl px-6 h-10 shadow-xl"
                 >
-                  ATENDER
+                  ATENDER AHORA
                 </Button>
               )
             });
 
             if (audioRef.current && soundEnabled) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(() => null);
+              audioRef.current.play().catch(() => {
+                console.log("Audio play blocked by browser policies.");
+              });
             }
           }
         }
@@ -220,7 +227,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const requestId = `REQ-${Date.now()}`;
     const ticketNum = `ATRES-${Math.floor(1000 + Math.random() * 9000)}`;
     
-    const requestData: Partial<SupportRequestLive> = {
+    const requestData: any = {
       userName: userData.name.toUpperCase(),
       cct: userData.cct.toUpperCase(),
       status: 'pending',
@@ -228,35 +235,33 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       category: 'atres',
       lastActivity: serverTimestamp(),
       createdAt: serverTimestamp(),
-      lastMessage: 'Iniciando conexión técnica...',
+      lastMessage: '🔔 Nueva solicitud entrante...',
       ticketNumber: ticketNum,
       slaLimit: 30
     };
     
     try {
-      // 1. Crear la solicitud en la cola
+      // Intentar una escritura pequeña para validar conexión antes de cambiar el estado de la UI
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       
-      // 2. Enviar mensaje inicial del bot
       await addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
-        content: `Hola ${userData.name.toUpperCase()}, bienvenido a ATRES Live. Su ticket es ${ticketNum}. Un analista técnico se conectará para brindarle apoyo remoto.`,
+        content: `Hola ${userData.name.toUpperCase()}, bienvenido a ATRES Live. Su ticket es ${ticketNum}. Un analista técnico ha sido notificado y se conectará en breve.`,
         timestamp: serverTimestamp()
       });
 
       setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date(), createdAt: new Date() } as any);
       setHasJoined(true);
-      toast({ title: "Conexión Establecida", description: "Un analista ha sido notificado de su solicitud." });
+      toast({ title: "Central Notificada", description: "Iniciando comunicación segura..." });
     } catch (error: any) {
       console.error("Join Support Error:", error);
+      setIsJoining(false); // Liberar spinner en caso de error
       toast({ 
         variant: "destructive", 
-        title: "Error de Conexión", 
-        description: "No se pudo iniciar la sesión técnica. Verifique su conexión a internet o intente más tarde." 
+        title: "Falla de Comunicación", 
+        description: "El sistema no pudo conectar con el servidor. Intente refrescar la página o verifique su conexión." 
       });
-    } finally {
-      setIsJoining(false);
     }
   };
 
@@ -314,7 +319,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       try {
         await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
           assignedTo: tech.toUpperCase(),
-          lastMessage: `Transferido a ${tech.toUpperCase()}`
+          lastMessage: `🔄 Transferido a ${tech.toUpperCase()}`
         }, { merge: true });
         toast({ title: "Ticket Transferido" });
         setSelectedRequest(null);
@@ -325,7 +330,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   };
 
   const statsSLA = useMemo(() => {
-    if (queue.length === 0) return { avg: 0, pending: 0, critical: 0 };
+    if (queue.length === 0) return { pending: 0, critical: 0 };
     return {
       pending: queue.filter(r => r.status === 'pending').length,
       critical: queue.filter(r => r.priority === 'critical').length
@@ -352,14 +357,32 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="p-10 bg-white space-y-6">
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
-                   <Input placeholder="EJ. JUAN PÉREZ..." className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" value={userData.name} onChange={e => setUserData({...userData, name: e.target.value})} disabled={isJoining} />
+                   <Input 
+                      placeholder="EJ. JUAN PÉREZ..." 
+                      className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase focus:ring-2 focus:ring-primary/20 transition-all" 
+                      value={userData.name} 
+                      onChange={e => setUserData({...userData, name: e.target.value})} 
+                      disabled={isJoining} 
+                   />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
-                   <Input placeholder="15DESXXXXX" className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={userData.cct} onChange={e => setUserData({...userData, cct: e.target.value})} maxLength={10} disabled={isJoining} />
+                   <Input 
+                      placeholder="15DESXXXXX" 
+                      className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary focus:ring-2 focus:ring-primary/20 transition-all" 
+                      value={userData.cct} 
+                      onChange={e => setUserData({...userData, cct: e.target.value})} 
+                      maxLength={10} 
+                      disabled={isJoining} 
+                   />
                 </div>
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
-                   {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "INICIAR SOPORTE EN VIVO"}
+                   {isJoining ? (
+                     <div className="flex items-center gap-3">
+                        <Loader2 className="animate-spin h-5 w-5" />
+                        <span>SINCRONIZANDO...</span>
+                     </div>
+                   ) : "INICIAR SOPORTE EN VIVO"}
                 </Button>
                 <p className="text-[8px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">Conexión cifrada de extremo a extremo • Central de Soporte COEES</p>
              </div>
@@ -398,7 +421,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <h3 className="text-lg font-black text-[#9f2241] uppercase leading-none">Ticket Activo</h3>
                  <p className="text-[10px] font-black text-primary/40 mt-1 uppercase tracking-widest">{selectedRequest?.ticketNumber}</p>
               </div>
-              <Badge className="bg-emerald-500 text-white w-fit px-3 h-5 rounded-full animate-pulse border-none">Conectado</Badge>
+              <Badge className="bg-emerald-500 text-white w-fit px-3 h-5 rounded-full animate-pulse border-none shadow-md">En línea</Badge>
            </div>
            <div className="p-8 space-y-6">
               <div className="space-y-4">
@@ -422,7 +445,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         <div className="flex-1 flex flex-col overflow-hidden">
            <header className="h-16 bg-white/95 backdrop-blur-md border-b px-8 flex items-center justify-between shrink-0 shadow-sm">
               <div className="flex items-center gap-4">
-                 <Avatar className="h-10 w-10 border-2 border-emerald-500">
+                 <Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-sm">
                     <AvatarFallback className="bg-slate-100 text-slate-400"><Bot /></AvatarFallback>
                  </Avatar>
                  <div>
@@ -459,7 +482,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    onChange={e => setInput(e.target.value)} 
                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                    placeholder="Escriba su duda técnica o pegue su ID..." 
-                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase"
+                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase focus:bg-white"
                  />
                  <button className="absolute right-4 top-4 text-slate-300 hover:text-primary transition-colors"><Paperclip className="h-6 w-6" /></button>
               </div>
@@ -497,7 +520,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
            ))}
         </div>
         <button 
-           onClick={() => { setSoundEnabled(!soundEnabled); }} 
+           onClick={() => { 
+             setSoundEnabled(!soundEnabled); 
+             if (!soundEnabled) {
+               audioRef.current?.play().catch(() => null); // Force unlock on interaction
+             }
+           }} 
            className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white animate-pulse" : "text-white/20 bg-white/5")}
         >
           {soundEnabled ? <Volume2 className="h-6 w-6" /> : <Bell className="h-6 w-6" />}
@@ -523,7 +551,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              {queue.map((req) => (
                <button 
                  key={req.id} 
-                 onClick={() => setSelectedRequest(req)}
+                 onClick={() => { setSelectedRequest(req); if (alertedIds.current.has(req.id)) alertedIds.current.add(req.id); }}
                  className={cn("w-full p-5 rounded-[2.5rem] text-left transition-all flex items-center gap-5 border-2 group", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-2xl scale-[1.02]" : "border-transparent hover:bg-white hover:shadow-xl")}
                >
                   <div className="relative">
@@ -593,7 +621,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                     <div className="flex justify-center mb-8"><Badge className="bg-white/50 text-slate-500 border-none font-bold text-[9px] uppercase px-6 h-6 rounded-full shadow-sm">Sesión técnica iniciada • {format(new Date(), "d 'de' MMMM", { locale: es })}</Badge></div>
                     {messages.map((m, i) => (
                       <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                         <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative group", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none border-emerald-100" : "bg-white rounded-tl-none border-slate-200")}>
+                         <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative group", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border-slate-200")}>
                             {m.fileUrl ? (
                               <div className="space-y-4">
                                  <div className="aspect-video w-full relative rounded-2xl overflow-hidden shadow-inner group-hover:scale-[1.02] transition-transform duration-500"><Image src={m.fileUrl} alt="Evidencia" fill className="object-cover" /></div>
