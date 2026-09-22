@@ -294,7 +294,7 @@ export default function ProgramsPage() {
     toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido y cargado en el formulario." });
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!formData.cct && activeTab !== 'Cuentas Institucionales') {
       toast({ variant: "destructive", title: "CCT Requerido", description: "Debe ingresar un CCT válido." });
       return;
@@ -331,31 +331,28 @@ export default function ProgramsPage() {
       asistentes: validAssistants
     };
 
-    try {
-      if (editingId) {
-        await updateDoc(doc(db, 'programs', editingId), body);
-      } else {
-        await addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() });
-      }
-      
-      toast({ title: editingId ? "Registro Actualizado" : "Registro Guardado" });
-      
-      // CIERRE GARANTIZADO DE INTERFAZ
-      setIsDialogOpen(false);
-      setTimeout(() => {
-        setIsSaving(false);
-        resetForm();
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error saving program:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "Error al guardar", 
-        description: "No se pudo conectar con la base de datos o hubo un fallo en el servidor." 
-      });
-      setIsSaving(false);
+    if (editingId) {
+      updateDoc(doc(db, 'programs', editingId), body)
+        .catch(err => {
+          console.error("Save error:", err);
+          toast({ variant: "destructive", title: "Error al actualizar" });
+        });
+    } else {
+      addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() })
+        .catch(err => {
+          console.error("Save error:", err);
+          toast({ variant: "destructive", title: "Error al registrar" });
+        });
     }
+
+    // CIERRE INSTANTÁNEO Y LIMPIEZA
+    toast({ title: editingId ? "Registro Actualizado" : "Registro Guardado" });
+    setIsDialogOpen(false);
+    
+    setTimeout(() => {
+      resetForm();
+      setIsSaving(false);
+    }, 400);
   }
 
   const handleVerifyEmail = () => {
@@ -578,7 +575,7 @@ export default function ProgramsPage() {
 
                     {verificationResult ? (
                       <div className="p-8 bg-blue-50/50 border-2 border-blue-100 rounded-[2.5rem] flex items-center gap-8 animate-in zoom-in-95 duration-500 shadow-sm">
-                         <div className="h-16 w-16 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-xl"><CheckCircle2 className="h-10 w-10" /></div>
+                         <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-white shadow-xl"><CheckCircle2 className="h-10 w-10" /></div>
                          <div className="space-y-3 flex-1">
                             <h4 className="text-[9px] font-black text-blue-800 uppercase tracking-[0.2em]">Resultado de la verificación</h4>
                             <div className="flex items-center gap-3">
