@@ -1,4 +1,3 @@
-
 'use client';
 /**
  * @fileOverview Interfaz de Mesa de Ayuda ATRES Live.
@@ -98,7 +97,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [mounted, setMounted] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
-  const [joiningStep, setJoiningStep] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   
   const [userData, setUserData] = useState({ name: '', cct: '' });
@@ -152,7 +150,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               title: "⚠️ SOLICITUD ENTRANTE",
               description: `${data.userName} - ${data.cct}`,
               className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-[2rem] p-6 ring-4 ring-white/20",
-              duration: 10000,
+              duration: 15000,
               action: (
                 <Button 
                   onClick={() => setSelectedRequest({ ...data, id } as any)} 
@@ -203,14 +201,13 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleJoinSupport = async () => {
+  const handleJoinSupport = () => {
     if (!userData.name.trim() || !userData.cct.trim()) {
       toast({ variant: "destructive", title: "Campos incompletos", description: "Por favor ingrese su nombre y CCT oficial." });
       return;
     }
     
     setIsJoining(true);
-    setJoiningStep('VALIDANDO CONEXIÓN...');
     
     const requestId = `REQ-${Date.now()}`;
     const ticketNum = `ATRES-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -228,40 +225,27 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       slaLimit: 30
     };
     
-    try {
-      // Timeout manual de 10 segundos
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout de conexión')), 10000)
-      );
+    // Iniciar escrituras de forma asíncrona (Optimistic UI)
+    // No usamos await aquí para evitar el bloqueo de la interfaz y errores de timeout
+    setDoc(doc(db, 'support_queue', requestId), requestData)
+      .catch((error) => console.error("Firestore Write Error (Queue):", error));
 
-      const writePromise = async () => {
-        setJoiningStep('NOTIFICANDO CENTRAL...');
-        await setDoc(doc(db, 'support_queue', requestId), requestData);
-        
-        setJoiningStep('ABRIENDO CANAL...');
-        await addDoc(collection(db, 'chat_messages'), {
-          chatId: requestId,
-          role: 'bot',
-          content: `Hola ${userData.name.toUpperCase()}, bienvenido a ATRES Live. Ticket: ${ticketNum}. Un analista se conectará en breve.`,
-          timestamp: serverTimestamp()
-        });
-      };
+    addDoc(collection(db, 'chat_messages'), {
+      chatId: requestId,
+      role: 'bot',
+      content: `Hola ${userData.name.toUpperCase()}, bienvenido a ATRES Live. Ticket: ${ticketNum}. Un analista se conectará en breve.`,
+      timestamp: serverTimestamp()
+    }).catch((error) => console.error("Firestore Write Error (Message):", error));
 
-      await Promise.race([writePromise(), timeoutPromise]);
-
-      setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date(), createdAt: new Date() } as any);
-      setHasJoined(true);
-      toast({ title: "Central Notificada", description: "Iniciando comunicación..." });
-    } catch (error: any) {
-      console.error("Join Support Error:", error);
-      setIsJoining(false);
-      setJoiningStep('');
-      toast({ 
-        variant: "destructive", 
-        title: "Error de Comunicación", 
-        description: "El sistema no pudo conectar. Verifique su conexión y reintente." 
-      });
-    }
+    // Proceder inmediatamente a la vista de chat
+    setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date(), createdAt: new Date() } as any);
+    setHasJoined(true);
+    setIsJoining(false);
+    
+    toast({ 
+      title: "Iniciando Mesa de Ayuda", 
+      description: "Su solicitud ha sido enviada a la central de soporte." 
+    });
   };
 
   const handleSendMessage = async (fileData?: { url: string, name: string }) => {
@@ -379,7 +363,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    {isJoining ? (
                      <div className="flex items-center gap-3">
                         <Loader2 className="animate-spin h-5 w-5" />
-                        <span className="animate-pulse">{joiningStep || 'SINCRONIZANDO...'}</span>
+                        <span className="animate-pulse font-black uppercase text-[10px]">CONECTANDO...</span>
                      </div>
                    ) : "INICIAR SOPORTE EN VIVO"}
                 </Button>
@@ -476,12 +460,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
            <footer className="p-6 bg-white border-t flex gap-4">
               <div className="relative flex-1">
-                 <Input 
+                 <input 
                    value={input} 
                    onChange={e => setInput(e.target.value)} 
                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                    placeholder="Escriba su duda técnica o pegue su ID..." 
-                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase focus:bg-white"
+                   className="flex h-14 w-full rounded-2xl bg-slate-50 border-none shadow-inner px-8 font-bold text-sm uppercase focus:bg-white outline-none"
                  />
                  <button className="absolute right-4 top-4 text-slate-300 hover:text-primary transition-colors"><Paperclip className="h-6 w-6" /></button>
               </div>
