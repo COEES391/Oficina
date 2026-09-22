@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -338,6 +339,8 @@ export default function ProgramsPage() {
         await addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() });
         toast({ title: "Registro Guardado" });
       }
+      
+      // Cerrar y resetear inmediatamente tras éxito
       setIsSaving(false); 
       setIsDialogOpen(false); 
       resetForm();
