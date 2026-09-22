@@ -89,6 +89,23 @@ export type ProgramStatus = {
   };
 };
 
+export type SupportRequestLive = {
+  id: string;
+  ticketNumber: string;
+  status: 'pending' | 'attending' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  category: 'atres' | 'accounts' | 'network' | 'hardware';
+  userName?: string;
+  cct?: string;
+  lastMessage?: string;
+  lastActivity: any;
+  createdAt: any;
+  assignedTo?: string;
+  office?: string;
+  slaLimit?: number; // Minutes
+  satisfaction?: number;
+};
+
 export const programsData: any[] = [];
 export const supportData: SupportTicket[] = [];
 export const trainingRecords: any[] = [];
