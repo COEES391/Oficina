@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -6,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Send, 
   Bot, 
@@ -25,7 +25,23 @@ import {
   Users,
   Star,
   RotateCcw,
-  X
+  X,
+  Paperclip,
+  Clock,
+  LayoutDashboard,
+  FileText,
+  HelpCircle,
+  User,
+  LogOut,
+  Plus,
+  Filter,
+  MoreVertical,
+  Activity,
+  History,
+  MoreHorizontal,
+  Calendar,
+  Settings,
+  Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +58,8 @@ import {
   where,
   addDoc,
   orderBy,
-  limit
+  limit,
+  updateDoc
 } from 'firebase/firestore';
 import { type SupportRequestLive } from '@/lib/planning-data';
 
@@ -61,8 +78,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const [input, setInput] = useState('');
   const [queue, setQueue] = useState<SupportRequestLive[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<SupportRequestLive | null>(null);
-  const [activeView, setActiveView] = useState<'chat' | 'dashboard'>('chat');
-  const [techName, setTechName] = useState('');
+  const [activeSidebar, setActiveSidebar] = useState('tickets');
   const [mounted, setMounted] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -75,8 +91,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const alertedIds = useRef(new Set<string>());
-  const lastUpdateRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     setMounted(true);
@@ -85,11 +99,9 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     audioRef.current = audio;
   }, []);
 
-  // ANALISTA: Monitor de solicitudes y mensajes
+  // ANALISTA: Monitor de solicitudes
   useEffect(() => {
     if (!mounted || isPublic) return;
-    
-    setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
     const q = query(
       collection(db, 'support_queue'), 
@@ -101,50 +113,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snap) => {
       const activeQueue = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequestLive));
       setQueue(activeQueue);
-
-      snap.docChanges().forEach((change) => {
-        const data = change.doc.data() as SupportRequestLive;
-        const id = change.doc.id;
-        
-        // Alerta Sonora y Visual para Solicitudes Nuevas
-        if (change.type === "added" && !alertedIds.current.has(id)) {
-          alertedIds.current.add(id);
-          playAlertSound();
-          toast({
-            title: "🔔 NUEVA SOLICITUD",
-            description: `${data.userName} - ${data.cct}`,
-            className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-[2rem] p-6",
-            duration: 8000,
-          });
-        }
-
-        // Alerta para mensajes nuevos del usuario en chats abiertos o cerrados
-        if (change.type === "modified" && data.lastSenderRole === 'user') {
-          const currentTime = data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now();
-          const lastTime = lastUpdateRef.current.get(id) || 0;
-          
-          if (currentTime > lastTime) {
-            playAlertSound();
-            if (selectedRequest?.id !== id) {
-              toast({
-                title: `💬 MENSAJE DE ${data.userName}`,
-                description: data.lastMessage,
-                className: "bg-emerald-600 text-white border-none shadow-2xl font-black rounded-3xl",
-              });
-            }
-          }
-        }
-        
-        lastUpdateRef.current.set(id, data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now());
-      });
-    }, (err) => {
-      console.error("Queue listener error:", err);
     });
 
     return () => unsubscribe();
-  }, [isPublic, mounted, soundEnabled, selectedRequest]);
+  }, [isPublic, mounted]);
 
-  // ESCUCHA DE MENSAJES (Ambos lados)
+  // ESCUCHA DE MENSAJES
   useEffect(() => {
     if (!mounted || !selectedRequest?.id) {
       setMessages([]);
@@ -160,29 +134,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
       setMessages(msgs);
-      // Auto-scroll al final
       setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
 
     return () => unsubscribe();
   }, [mounted, selectedRequest?.id]);
 
-  const playAlertSound = () => {
-    if (audioRef.current && soundEnabled) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => null);
-    }
-  };
-
   const handleJoinSupport = async () => {
     if (!userData.name.trim() || !userData.cct.trim()) {
-      toast({ variant: "destructive", title: "Faltan datos", description: "Ingrese su nombre y CCT oficial." });
+      toast({ variant: "destructive", title: "Faltan datos" });
       return;
     }
     
     setIsJoining(true);
     const requestId = `REQ-${Date.now()}`;
-    const ticketNum = `ATRES-${Math.floor(1000 + Math.random() * 9000)}`;
+    const ticketNum = `TK-2026-${Math.floor(10000 + Math.random() * 90000)}`;
     
     try {
       const requestData = {
@@ -190,21 +156,21 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         cct: userData.cct.toUpperCase(),
         status: 'pending',
         priority: 'medium',
-        category: 'atres',
+        category: 'Correo Institucional',
+        department: 'Soporte Técnico',
         lastActivity: serverTimestamp(),
         createdAt: serverTimestamp(),
         lastMessage: '🔔 Usuario inició sesión...',
         lastSenderRole: 'bot',
         ticketNumber: ticketNum,
-        slaLimit: 30
+        assignedTo: 'Por asignar'
       };
       
-      // Escritura persistente
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       await addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
-        content: `Bienvenido(a) ${userData.name.toUpperCase()}. Tu folio es: ${ticketNum}. Un analista te atenderá en breve.`,
+        content: `Hola ${userData.name.toUpperCase()}. Tu folio es: ${ticketNum}. Un analista te atenderá pronto.`,
         timestamp: serverTimestamp()
       });
 
@@ -226,79 +192,60 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     setInput('');
 
     try {
-      // 1. Guardar mensaje
       await addDoc(collection(db, 'chat_messages'), {
         chatId: chatId,
         role: isPublic ? 'user' : 'tech',
         content: msgContent,
-        senderName: isPublic ? userData.name : techName,
+        senderName: isPublic ? userData.name : 'Analista',
         timestamp: serverTimestamp()
       });
 
-      // 2. Actualizar el documento de la cola para notificar al otro lado
-      await setDoc(doc(db, 'support_queue', chatId), { 
+      await updateDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
         lastMessage: msgContent.substring(0, 80),
-        lastSenderRole: isPublic ? 'user' : 'tech',
-        status: !isPublic ? 'attending' : selectedRequest.status
-      }, { merge: true });
+        lastSenderRole: isPublic ? 'user' : 'tech'
+      });
 
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Mensaje no enviado" });
-      setInput(msgContent); // Restaurar input si falla
+    } catch (error) {
+      setInput(msgContent);
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleCloseTicket = async () => {
+  const updateTicketMeta = async (field: string, value: string) => {
     if (!selectedRequest?.id) return;
-    if (!confirm("¿Deseas dar por finalizada esta sesión de soporte?")) return;
-    
     try {
-      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-        status: 'closed',
-        lastActivity: serverTimestamp()
-      }, { merge: true });
-      
-      if (isPublic) setShowSurvey(true);
-      else setSelectedRequest(null);
-      toast({ title: "Servicio Finalizado" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error al cerrar ticket" });
+      await updateDoc(doc(db, 'support_queue', selectedRequest.id), { [field]: value });
+      toast({ title: "Cambio guardado" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error al actualizar" });
     }
   };
 
-  const statsSLA = useMemo(() => {
-    return {
-      pending: queue.filter(r => r.status === 'pending').length,
-      attending: queue.filter(r => r.status === 'attending').length
-    };
-  }, [queue]);
-
   if (!mounted) return null;
 
-  // --- INTERFAZ USUARIO (PUBLIC) ---
+  // --- VISTA USUARIO FINAL ---
   if (isPublic) {
     if (!hasJoined) {
       return (
         <div className="h-full w-full bg-slate-100 flex items-center justify-center p-6">
-          <Card className="w-full max-w-[450px] rounded-[3rem] border-none shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+          <Card className="w-full max-w-[450px] rounded-[2.5rem] border-none shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
              <div className="p-10 bg-[#9f2241] text-white text-center space-y-4">
-                <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto border border-white/10 shadow-inner">
+                <div className="h-20 w-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto border border-white/10">
                    <Monitor className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">ATRES LIVE</h2>
-                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Mesa de Ayuda • Edoméx 2026</p>
+                   <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">Mesa de Ayuda ATRES</h2>
+                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-2">Plataforma Oficial de Soporte</p>
                 </div>
              </div>
              <div className="p-10 bg-white space-y-6">
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Tu Nombre Completo</Label>
                    <Input 
-                      placeholder="ESCRIBE AQUÍ..." 
-                      className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" 
+                      placeholder="ESCRIBA AQUÍ..." 
+                      className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase shadow-inner" 
                       value={userData.name} 
                       onChange={e => setUserData({...userData, name: e.target.value})} 
                       disabled={isJoining} 
@@ -308,7 +255,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
                    <Input 
                       placeholder="15DESXXXXX" 
-                      className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" 
+                      className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary shadow-inner" 
                       value={userData.cct} 
                       onChange={e => setUserData({...userData, cct: e.target.value})} 
                       maxLength={10} 
@@ -324,56 +271,78 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       );
     }
 
-    if (showSurvey) {
-      return (
-        <div className="h-full w-full bg-white flex flex-col items-center justify-center p-10 text-center space-y-8 animate-in zoom-in-95 duration-500">
-           <div className="h-24 w-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-xl"><CheckCircle2 className="h-14 w-14" /></div>
-           <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Soporte Concluido</h2>
-           <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Tu opinión es vital para mejorar el servicio técnico</p>
-           <div className="flex gap-4 justify-center">
-              {[1,2,3,4,5].map(s => (
-                <button key={s} onClick={() => setRating(s)} className={cn("h-16 w-16 rounded-2xl flex items-center justify-center transition-all shadow-lg", rating >= s ? "bg-amber-400 text-white scale-110" : "bg-slate-100 text-slate-300 hover:bg-slate-200")}>
-                   <Star className={cn("h-8 w-8", rating >= s ? "fill-current" : "")} />
+    return (
+      <div className="h-full w-full bg-[#f4f7fe] flex overflow-hidden font-sans">
+        {/* Sidebar Usuario */}
+        <aside className="w-[280px] bg-white border-r flex flex-col shrink-0 z-40">
+           <div className="p-8 pb-4 flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg"><Bot className="h-6 w-6" /></div>
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">HelpDesk</h2>
+           </div>
+           <nav className="flex-1 px-4 py-6 space-y-2">
+              {[
+                { id: 'inicio', label: 'Inicio', icon: LayoutDashboard },
+                { id: 'tickets', label: 'Mis Tickets', icon: FileText },
+                { id: 'nuevo', label: 'Nuevo Ticket', icon: Plus },
+                { id: 'chat', label: 'Conversaciones', icon: MessageSquare },
+                { id: 'notif', label: 'Notificaciones', icon: Bell, badge: '2' },
+                { id: 'base', label: 'Base de conocimiento', icon: HelpCircle },
+                { id: 'perfil', label: 'Perfil', icon: User },
+              ].map(item => (
+                <button 
+                  key={item.id} 
+                  className={cn(
+                    "w-full h-11 px-4 rounded-xl flex items-center justify-between text-xs font-bold uppercase transition-all",
+                    activeSidebar === item.id ? "bg-primary/5 text-primary" : "text-slate-400 hover:bg-slate-50"
+                  )}
+                  onClick={() => setActiveSidebar(item.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && <Badge className="bg-rose-500 h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px]">{item.badge}</Badge>}
                 </button>
               ))}
-           </div>
-           {rating > 0 && <Button onClick={() => window.location.reload()} className="btn-institutional h-14 px-12">FINALIZAR SESIÓN</Button>}
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex h-full w-full bg-[#efe7dd] overflow-hidden">
-        <aside className="w-72 bg-white border-r flex flex-col shrink-0">
-           <div className="p-6 bg-slate-50 border-b flex flex-col gap-4">
-              <h3 className="text-lg font-black text-[#9f2241] uppercase leading-none">Canal Activo</h3>
-              <Badge className="bg-emerald-500 text-white w-fit px-3 h-5 rounded-full animate-pulse border-none shadow-md uppercase text-[9px] font-black">En Línea</Badge>
-              <p className="text-[10px] font-black text-primary/40 uppercase tracking-widest">{selectedRequest?.ticketNumber}</p>
-           </div>
-           <div className="p-6 space-y-4">
-              <Label className="text-[10px] font-black uppercase text-slate-400">Estado del servicio</Label>
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                 <p className="text-[11px] font-bold text-slate-600 uppercase">Analista conectado y listo para asistirle en su duda sobre ATRES.</p>
-              </div>
-              <Button onClick={handleCloseTicket} variant="outline" className="w-full h-12 border-rose-200 text-rose-600 font-black rounded-xl uppercase text-[10px] mt-6 hover:bg-rose-50">Cerrar Sesión</Button>
+           </nav>
+           <div className="p-8 border-t">
+              <button className="w-full flex items-center gap-3 text-rose-500 font-bold text-xs uppercase" onClick={() => window.location.reload()}><LogOut className="h-4 w-4" /> Cerrar sesión</button>
            </div>
         </aside>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-           <header className="h-16 bg-white/95 backdrop-blur-md border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
+        {/* Central Chat */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-white border-x">
+           <header className="h-20 bg-white border-b px-8 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
-                 <Avatar className="h-10 w-10 border-2 border-emerald-500"><AvatarFallback className="bg-emerald-50 text-emerald-600"><Bot className="h-6 w-6" /></AvatarFallback></Avatar>
-                 <div><h4 className="text-sm font-black text-slate-800 uppercase leading-none">Mesa de Ayuda ATRES</h4><span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Atención en tiempo real</span></div>
+                 <div className="space-y-0.5">
+                    <div className="flex items-center gap-3">
+                       <h3 className="text-lg font-black text-slate-800 uppercase">{selectedRequest?.ticketNumber}</h3>
+                       <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[9px] uppercase px-3 h-5">En Proceso</Badge>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duda técnica ATRES live</p>
+                 </div>
               </div>
+              <Button variant="outline" className="h-10 rounded-xl text-[10px] font-black uppercase gap-2 border-slate-100">Ver detalles <MoreVertical className="h-4 w-4" /></Button>
            </header>
 
-           <ScrollArea className="flex-1 px-8 py-8">
+           <ScrollArea className="flex-1 p-8 bg-[#f8fafc]">
               <div className="max-w-4xl mx-auto space-y-6">
                  {messages.map((m, i) => (
-                   <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", m.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-[80%] p-5 rounded-[2rem] shadow-lg relative", m.role === 'user' ? "bg-[#dcf8c6] rounded-tr-none" : "bg-white rounded-tl-none border border-slate-100")}>
-                         <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{m.content}</p>
-                         <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2">{m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}</div>
+                   <div key={i} className={cn("flex w-full", m.role === 'user' ? "justify-end" : "justify-start")}>
+                      {m.role !== 'user' && (
+                        <Avatar className="h-9 w-9 mr-3 mt-1 shadow-sm">
+                           <AvatarFallback className="bg-slate-200 text-slate-500"><Bot className="h-5 w-5" /></AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={cn(
+                        "max-w-[75%] p-5 rounded-[1.8rem] shadow-sm relative",
+                        m.role === 'user' ? "bg-emerald-50 text-emerald-900 rounded-tr-none" : "bg-white text-slate-700 rounded-tl-none border"
+                      )}>
+                         <p className="text-sm font-semibold leading-relaxed">{m.content}</p>
+                         <div className="flex items-center justify-end gap-2 mt-2 opacity-30">
+                            <span className="text-[8px] font-black uppercase">{m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}</span>
+                            {m.role === 'user' && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />}
+                         </div>
                       </div>
                    </div>
                  ))}
@@ -381,174 +350,327 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </div>
            </ScrollArea>
 
-           <footer className="p-6 bg-white border-t flex gap-4 shadow-2xl z-30">
-              <input 
-                value={input} 
-                onChange={e => setInput(e.target.value)} 
-                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Escriba su duda aquí..." 
-                className="flex h-14 flex-1 rounded-2xl bg-slate-50 border-none px-8 font-bold text-sm uppercase focus:bg-white outline-none shadow-inner"
-              />
-              <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] p-0 shadow-xl transition-all active:scale-90">
-                 {isSending ? <Loader2 className="animate-spin h-6 w-6" /> : <Send className="h-6 w-6 text-white" />}
-              </Button>
+           <footer className="p-6 bg-white border-t space-y-4">
+              <div className="flex gap-4 items-center">
+                 <Button variant="ghost" size="icon" className="text-slate-400 hover:bg-slate-50 rounded-xl"><Paperclip className="h-5 w-5" /></Button>
+                 <Input 
+                   value={input} 
+                   onChange={e => setInput(e.target.value)} 
+                   onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                   placeholder="Escribe un mensaje..." 
+                   className="flex-1 h-12 bg-slate-50 border-none rounded-2xl px-6 font-bold text-sm shadow-inner"
+                 />
+                 <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-12 w-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-xl">
+                    <Send className="h-5 w-5 text-white" />
+                 </Button>
+              </div>
            </footer>
-        </div>
+        </main>
+
+        {/* Sidebar Detalles */}
+        <aside className="w-[320px] bg-white flex flex-col shrink-0 p-8 space-y-8 animate-in slide-in-from-right duration-500">
+           <div>
+              <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Detalles del Ticket</h3>
+           </div>
+
+           <div className="space-y-6">
+              <div className="space-y-1">
+                 <Label className="text-[10px] font-black text-slate-400 uppercase">ID del Ticket</Label>
+                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <span className="font-mono font-black text-xs text-primary">{selectedRequest?.ticketNumber}</span>
+                    <RotateCcw className="h-3 w-3 text-slate-300" />
+                 </div>
+              </div>
+
+              <div className="space-y-1">
+                 <Label className="text-[10px] font-black text-slate-400 uppercase">Estado</Label>
+                 <div className="p-3 bg-amber-50 rounded-xl flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[10px] font-black text-amber-700 uppercase">En Proceso</span>
+                 </div>
+              </div>
+
+              <div className="space-y-1">
+                 <Label className="text-[10px] font-black text-slate-400 uppercase">Prioridad</Label>
+                 <Badge className="w-full justify-center h-9 bg-rose-50 text-rose-600 font-black uppercase text-[10px] rounded-xl border-none">Media</Badge>
+              </div>
+
+              <div className="space-y-1">
+                 <Label className="text-[10px] font-black text-slate-400 uppercase">Categoría</Label>
+                 <div className="p-3 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold uppercase">{selectedRequest?.category}</div>
+              </div>
+
+              <div className="pt-6 border-t space-y-4">
+                 <div className="flex items-center justify-between text-[10px] font-black uppercase">
+                    <span className="text-slate-400">Creado el</span>
+                    <span className="text-slate-700">24/05/2026 10:24 AM</span>
+                 </div>
+                 <div className="space-y-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase">Asignado a</span>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                       <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary text-white text-[10px] font-black">CT</AvatarFallback></Avatar>
+                       <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-slate-700 uppercase">Carlos Técnico</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">Técnico Soporte</span>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </aside>
       </div>
     );
   }
 
-  // --- INTERFAZ ANALISTA (DASHBOARD) ---
+  // --- VISTA TÉCNICO AGENTE ---
   return (
-    <div className="flex h-full w-full bg-white overflow-hidden font-sans">
-      {/* Sidebar de Estado */}
-      <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-8 gap-6 shrink-0 z-50 shadow-2xl">
-        <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 border border-white/10 shadow-inner">
-           <ShieldCheck className="h-7 w-7" />
-        </div>
-        <div className="flex-1 flex flex-col gap-4">
-           {[ 
-             { id: 'chat', icon: MessageSquare }, 
-             { id: 'dashboard', icon: BarChart3 }
-           ].map(item => (
-             <button 
-               key={item.id} 
-               onClick={() => setActiveView(item.id as any)}
-               className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-all", activeView === item.id ? "bg-emerald-500 text-white" : "text-white/30 hover:bg-white/5")}
-             >
-               <item.icon className="h-6 w-6" />
-             </button>
-           ))}
-        </div>
-        <button 
-           onClick={() => setSoundEnabled(!soundEnabled)} 
-           className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-all", soundEnabled ? "bg-amber-500 text-white" : "text-white/20")}
-        >
-          {soundEnabled ? <Volume2 className="h-6 w-6" /> : <Bell className="h-6 w-6" />}
-        </button>
-      </aside>
-
-      {/* Listado de Solicitudes */}
-      <div className="w-[380px] bg-slate-50 border-r flex flex-col shrink-0">
-        <div className="p-8 bg-white border-b flex items-center justify-between shrink-0">
-           <div><h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter leading-none">Bandeja ATRES</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Solicitudes Activas</p></div>
-           <Badge className="bg-[#9f2241] text-white text-[11px] font-black h-7 px-3 rounded-xl shadow-lg">{queue.length}</Badge>
-        </div>
-        <ScrollArea className="flex-1">
-           <div className="p-3 space-y-2">
-             {queue.map((req) => (
+    <div className="h-full w-full bg-[#111827] flex overflow-hidden font-sans">
+       {/* Sidebar Agente */}
+       <aside className="w-[280px] bg-[#1a2234] border-r border-white/5 flex flex-col shrink-0 z-40">
+          <div className="p-8 pb-4 flex items-center gap-3">
+             <div className="h-10 w-10 bg-[#3b82f6] rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20"><Bot className="h-6 w-6" /></div>
+             <h2 className="text-xl font-black text-white uppercase tracking-tighter">HelpDesk</h2>
+          </div>
+          <nav className="flex-1 px-4 py-6 space-y-1">
+             {[
+               { id: 'dash', label: 'Dashboard', icon: BarChart3 },
+               { id: 'tickets', label: 'Tickets', icon: FileText, badge: '8' },
+               { id: 'convs', label: 'Conversaciones', icon: MessageSquare, badge: '3' },
+               { id: 'cal', label: 'Calendario', icon: Calendar },
+               { id: 'base', label: 'Base de conocimiento', icon: HelpCircle },
+               { id: 'reps', label: 'Reportes', icon: BarChart3 },
+               { id: 'usrs', label: 'Usuarios', icon: Users },
+               { id: 'conf', label: 'Configuración', icon: Settings },
+             ].map(item => (
                <button 
-                 key={req.id} 
-                 onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-5 rounded-[2.5rem] text-left transition-all flex items-center gap-5 border-2", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "border-transparent hover:bg-white")}
+                 key={item.id} 
+                 className={cn(
+                   "w-full h-11 px-4 rounded-xl flex items-center justify-between text-xs font-bold uppercase transition-all",
+                   activeSidebar === item.id ? "bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20" : "text-slate-500 hover:bg-white/5 hover:text-white"
+                 )}
+                 onClick={() => setActiveSidebar(item.id)}
                >
-                  <div className="relative">
-                    <Avatar className="h-14 w-14 border-4 border-white shadow-lg">
-                      <AvatarFallback className={cn("text-white font-black text-sm", req.status === 'pending' ? "bg-rose-500 animate-pulse" : "bg-slate-400")}>
-                         {req.userName?.slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className={cn("absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white", req.status === 'pending' ? "bg-rose-500" : "bg-emerald-500")} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                     <span className="text-xs font-black text-slate-700 uppercase truncate block">{req.userName}</span>
-                     <p className={cn("text-[10px] font-bold truncate uppercase mt-1", req.lastSenderRole === 'user' ? "text-primary font-black" : "text-slate-400")}>{req.lastMessage}</p>
-                     <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-primary h-4 px-1.5 uppercase">{req.cct}</Badge>
-                        <span className="text-[8px] font-bold text-slate-300 ml-auto">{req.lastActivity instanceof Timestamp ? format(req.lastActivity.toDate(), 'HH:mm') : ''}</span>
-                     </div>
-                  </div>
+                 <div className="flex items-center gap-3">
+                   <item.icon className="h-4 w-4" />
+                   <span>{item.label}</span>
+                 </div>
+                 {item.badge && <Badge className="bg-[#6366f1] text-white h-5 px-2 rounded-full text-[10px]">{item.badge}</Badge>}
                </button>
              ))}
-             {queue.length === 0 && (
-                <div className="py-20 text-center opacity-30">
-                   <RotateCcw className="h-10 w-10 mx-auto mb-4" />
-                   <p className="text-[10px] font-black uppercase tracking-widest">Esperando solicitudes...</p>
+          </nav>
+          <div className="p-8 border-t border-white/5 space-y-6">
+             <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">En línea</span>
+             </div>
+             <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 border-2 border-white/10"><AvatarFallback className="bg-slate-700 text-white text-[10px] font-black">CT</AvatarFallback></Avatar>
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-black text-white uppercase">Carlos Técnico</span>
+                   <span className="text-[8px] font-bold text-slate-500 uppercase">Técnico Soporte</span>
                 </div>
-             )}
-           </div>
-        </ScrollArea>
-      </div>
+                <ChevronRight className="h-4 w-4 text-slate-600 ml-auto" />
+             </div>
+          </div>
+       </aside>
 
-      {/* Panel de Chat / Dashboard Central */}
-      <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
-        {selectedRequest ? (
-          activeView === 'chat' ? (
+       {/* Listado Tickets Agente */}
+       <div className="w-[360px] bg-[#1a2234] border-r border-white/5 flex flex-col shrink-0">
+          <header className="p-8 bg-[#1f2937] border-b border-white/5 flex flex-col gap-6">
+             <div>
+                <h3 className="text-xl font-black text-white uppercase">Tickets</h3>
+                <div className="flex gap-4 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                   {['Todos 16', 'Abiertos 6', 'En Proceso 5', 'Pendientes 2', 'Cerrados 3'].map((f, i) => (
+                     <button key={i} className={cn("whitespace-nowrap text-[9px] font-black uppercase transition-all px-1", i === 0 ? "text-blue-400 border-b-2 border-blue-400 pb-1" : "text-slate-500 hover:text-slate-300")}>{f}</button>
+                   ))}
+                </div>
+             </div>
+             <div className="relative group">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-600 group-focus-within:text-blue-400 transition-colors" />
+                <Input placeholder="BUSCAR TICKET..." className="h-9 bg-[#111827] border-none rounded-xl pl-9 text-[10px] font-bold text-white shadow-inner uppercase" />
+                <Filter className="absolute right-3 top-2.5 h-4 w-4 text-slate-600 hover:text-white cursor-pointer" />
+             </div>
+          </header>
+          <ScrollArea className="flex-1 bg-[#111827]">
+             <div className="p-3 space-y-2">
+                {queue.map(req => (
+                  <button 
+                    key={req.id} 
+                    onClick={() => setSelectedRequest(req)}
+                    className={cn(
+                      "w-full p-5 rounded-[2.2rem] text-left transition-all border-2 flex flex-col gap-3 group relative overflow-hidden",
+                      selectedRequest?.id === req.id ? "bg-[#1f2937] border-blue-500 shadow-2xl" : "border-transparent hover:bg-white/5"
+                    )}
+                  >
+                     {selectedRequest?.id === req.id && <div className="absolute left-0 top-0 w-2 h-full bg-blue-500" />}
+                     <div className="flex justify-between items-start">
+                        <span className="font-mono text-[10px] font-black text-blue-400 uppercase tracking-tighter">#{req.ticketNumber}</span>
+                        <span className="text-[8px] font-bold text-slate-500 uppercase">{req.lastActivity instanceof Timestamp ? format(req.lastActivity.toDate(), 'HH:mm') : ''}</span>
+                     </div>
+                     <p className="text-xs font-bold text-slate-300 uppercase leading-tight line-clamp-2">{req.lastMessage || 'SIN MENSAJES'}</p>
+                     <div className="flex items-center justify-between mt-1">
+                        <Badge className={cn("text-[7px] font-black border-none px-2 h-4 uppercase", req.status === 'attending' ? "bg-amber-500/20 text-amber-500" : "bg-blue-500/20 text-blue-500")}>{req.status === 'attending' ? 'En Proceso' : 'Abierto'}</Badge>
+                        <Avatar className="h-6 w-6"><AvatarFallback className="bg-slate-700 text-white text-[8px]">{req.userName?.slice(0, 2)}</AvatarFallback></Avatar>
+                     </div>
+                  </button>
+                ))}
+             </div>
+          </ScrollArea>
+       </div>
+
+       {/* Chat Central Agente */}
+       <main className="flex-1 flex flex-col overflow-hidden bg-[#f4f7fe]">
+          {selectedRequest ? (
             <>
-              <header className="h-20 bg-white/95 backdrop-blur-md border-b px-10 flex items-center justify-between shrink-0 shadow-sm z-30">
-                 <div className="flex items-center gap-6">
-                    <Avatar className="h-12 w-12 shadow-xl border-2 border-emerald-500"><AvatarFallback className="bg-slate-100 text-slate-400">{selectedRequest.userName?.at(0)}</AvatarFallback></Avatar>
-                    <div className="flex flex-col">
-                       <h3 className="text-base font-black text-slate-800 uppercase leading-none">{selectedRequest.userName}</h3>
-                       <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5 mt-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Atendiendo • {selectedRequest.ticketNumber}</span>
-                    </div>
+              <header className="h-20 bg-white border-b px-10 flex items-center justify-between shrink-0 shadow-sm z-30">
+                 <div className="flex items-center gap-4">
+                    <h3 className="text-lg font-black text-slate-800 uppercase">{selectedRequest.ticketNumber}</h3>
+                    <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[9px] uppercase px-3 h-5">En Proceso</Badge>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-tight ml-4">{selectedRequest.lastMessage}</p>
                  </div>
-                 <Button onClick={handleCloseTicket} className="btn-institutional h-11 px-8 rounded-2xl text-[10px] shadow-xl">RESOLVER Y CERRAR</Button>
+                 <div className="flex gap-2">
+                    <Select defaultValue="acciones">
+                       <SelectTrigger className="h-10 w-36 bg-primary/5 border-none rounded-xl text-[10px] font-black text-primary uppercase shadow-sm"><SelectValue placeholder="ACCIONES" /></SelectTrigger>
+                       <SelectContent className="rounded-xl"><SelectItem value="trans" className="text-[10px] font-bold">TRANSFERIR</SelectItem><SelectItem value="close" className="text-[10px] font-bold">RESOLVER</SelectItem></SelectContent>
+                    </Select>
+                 </div>
               </header>
 
-              <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] shadow-inner relative">
-                 <div className="max-w-5xl mx-auto space-y-4">
+              <ScrollArea className="flex-1 p-10 bg-[#f8fafc] relative">
+                 <div className="max-w-4xl mx-auto space-y-6">
                     {messages.map((m, i) => (
                       <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                         <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none" : "bg-white rounded-tl-none border border-slate-100")}>
-                            <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{m.content}</p>
-                            <div className="text-[8px] font-black uppercase opacity-30 text-right mt-3">
+                         {m.role !== 'tech' && (
+                           <Avatar className="h-10 w-10 mr-4 mt-1 border-2 border-white shadow-md">
+                              <AvatarFallback className="bg-slate-100 text-slate-400 text-xs font-bold">{selectedRequest.userName?.at(0)}</AvatarFallback>
+                           </Avatar>
+                         )}
+                         <div className={cn(
+                           "max-w-[70%] p-6 rounded-[2.2rem] shadow-sm relative",
+                           m.role === 'tech' ? "bg-blue-600 text-white rounded-tr-none shadow-blue-500/10" : "bg-white text-slate-700 rounded-tl-none border border-slate-100"
+                         )}>
+                            {m.role === 'tech' && <p className="text-[9px] font-black uppercase opacity-60 mb-2">Carlos Técnico</p>}
+                            <p className="text-sm font-semibold leading-relaxed whitespace-pre-wrap">{m.content}</p>
+                            <div className="text-[8px] font-black uppercase opacity-40 text-right mt-3">
                                {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}
                             </div>
                          </div>
+                         {m.role === 'tech' && (
+                            <Avatar className="h-10 w-10 ml-4 mt-1 border-2 border-white shadow-md">
+                               <AvatarFallback className="bg-primary text-white text-xs font-black">CT</AvatarFallback>
+                            </Avatar>
+                         )}
                       </div>
                     ))}
                     <div ref={scrollRef}/>
                  </div>
               </ScrollArea>
               
-              <footer className="p-8 bg-white border-t flex gap-5 shadow-2xl relative z-30">
+              <footer className="p-8 bg-white border-t flex gap-5 z-30 shadow-2xl">
+                 <Button variant="ghost" size="icon" className="h-14 w-14 rounded-3xl text-slate-400 hover:bg-slate-50"><Paperclip className="h-6 w-6" /></Button>
+                 <Button variant="ghost" size="icon" className="h-14 w-14 rounded-3xl text-slate-400 hover:bg-slate-50"><Star className="h-6 w-6" /></Button>
                  <Input 
                    value={input} 
                    onChange={e => setInput(e.target.value)} 
                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                   className="rounded-3xl bg-slate-50 border-none h-16 px-10 font-bold text-base shadow-inner focus:bg-white flex-1" 
-                   placeholder="Responder a usuario..." 
+                   className="rounded-[1.8rem] bg-slate-50 border-none h-14 px-10 font-bold text-sm shadow-inner focus:bg-white flex-1" 
+                   placeholder="Escribe un mensaje..." 
                  />
-                 <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-16 w-16 rounded-3xl shadow-2xl p-0 transition-transform active:scale-90">
-                    {isSending ? <Loader2 className="animate-spin h-7 w-7" /> : <Send className="h-7 w-7 text-white" />}
+                 <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-blue-600 hover:bg-blue-700 h-14 w-14 rounded-3xl shadow-xl transition-all active:scale-90 shadow-blue-500/30">
+                    <Send className="h-6 w-6 text-white" />
                  </Button>
               </footer>
             </>
           ) : (
-            <div className="flex-1 p-10 bg-slate-50 space-y-10">
-               <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">Métricas de Soporte Live</h2>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <Card className="p-8 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center gap-4">
-                     <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600"><Bell className="h-8 w-8" /></div>
-                     <h4 className="text-4xl font-black text-slate-800">{statsSLA.pending}</h4>
-                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tickets Pendientes</p>
-                  </Card>
-                  <Card className="p-8 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center gap-4">
-                     <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600"><Users className="h-8 w-8" /></div>
-                     <h4 className="text-4xl font-black text-slate-800">{statsSLA.attending}</h4>
-                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sesiones Activas</p>
-                  </Card>
+            <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white text-center space-y-8 animate-in fade-in duration-1000">
+               <div className="h-32 w-32 rounded-[3.5rem] bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner mb-4">
+                  <MonitorCheck className="h-16 w-16" />
                </div>
+               <h3 className="text-5xl font-black uppercase text-slate-800 tracking-tighter leading-none">Mesa de Ayuda ATRES</h3>
+               <p className="text-lg font-bold uppercase tracking-[0.3em] text-slate-400">Seleccione un ticket para comenzar</p>
             </div>
-          )
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white text-center space-y-8 animate-in fade-in duration-1000">
-             <div className="h-24 w-24 rounded-[2.5rem] bg-[#9f2241]/10 flex items-center justify-center text-[#9f2241] shadow-inner mb-4">
-                <MonitorCheck className="h-12 w-12" />
-             </div>
-             <h3 className="text-6xl font-black uppercase text-slate-800 tracking-tighter leading-none">ATRES LIVE</h3>
-             <p className="text-xl font-bold uppercase tracking-[0.3em] text-[#B38E5D]">Central de Soporte Técnico</p>
-             <div className="p-8 bg-slate-50 rounded-[3rem] border-2 border-slate-100 flex gap-6 shadow-xl max-w-xl text-left">
-                <div className="h-16 w-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-500 shrink-0 border border-emerald-50 animate-pulse"><Volume2 className="h-9 w-9" /></div>
+          )}
+       </main>
+
+       {/* Sidebar Info Agente */}
+       <aside className="w-[340px] bg-white flex flex-col shrink-0 overflow-hidden border-l">
+          <ScrollArea className="flex-1">
+             <div className="p-8 space-y-10">
                 <div>
-                   <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Sistema de Monitoreo Activo</p>
-                   <p className="text-xs font-bold text-slate-400 uppercase leading-relaxed mt-2">Recibirás alertas instantáneas visuales y sonoras en cuanto un docente envíe una nueva consulta desde el helpdesk.</p>
+                   <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Información del Ticket</h3>
+                </div>
+
+                <div className="space-y-6">
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</Label>
+                      <Select defaultValue={selectedRequest?.status} onValueChange={v => updateTicketMeta('status', v)}>
+                        <SelectTrigger className="h-12 rounded-2xl bg-amber-50 border-none font-black text-amber-700 text-xs uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-2xl z-[500]"><SelectItem value="pending">Abierto</SelectItem><SelectItem value="attending">En Proceso</SelectItem><SelectItem value="closed">Cerrado</SelectItem></SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prioridad</Label>
+                      <Select defaultValue={selectedRequest?.priority} onValueChange={v => updateTicketMeta('priority', v)}>
+                        <SelectTrigger className="h-12 rounded-2xl bg-rose-50 border-none font-black text-rose-600 text-xs uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-2xl z-[500]"><SelectItem value="low">Baja</SelectItem><SelectItem value="medium">Media</SelectItem><SelectItem value="high">Alta</SelectItem><SelectItem value="critical">Crítica</SelectItem></SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoría</Label>
+                      <Select defaultValue={selectedRequest?.category} onValueChange={v => updateTicketMeta('category', v)}>
+                        <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-black text-slate-700 text-xs uppercase"><SelectValue /></SelectTrigger>
+                        <SelectContent className="rounded-2xl z-[500]"><SelectItem value="atres">Sistema ATRES</SelectItem><SelectItem value="accounts">Cuentas Institucionales</SelectItem><SelectItem value="network">Redes</SelectItem></SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Departamento</Label>
+                      <Select defaultValue="tech">
+                        <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-black text-slate-700 text-xs uppercase"><SelectValue placeholder="Soporte Técnico" /></SelectTrigger>
+                        <SelectContent className="rounded-2xl z-[500]"><SelectItem value="tech">Soporte Técnico</SelectItem><SelectItem value="cap">Capacitación</SelectItem><SelectItem value="progs">Programas</SelectItem></SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-3 pt-6 border-t border-slate-100">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</Label>
+                      <div className="flex items-center gap-4 p-4 rounded-3xl bg-[#f8fafc] border border-slate-100">
+                         <Avatar className="h-12 w-12 shadow-md border-2 border-white"><AvatarFallback className="bg-blue-600 text-white font-black">{selectedRequest?.userName?.at(0)}</AvatarFallback></Avatar>
+                         <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-black text-slate-800 uppercase truncate">{selectedRequest?.userName}</span>
+                            <span className="text-[9px] font-bold text-slate-400 truncate">{selectedRequest?.cct}@desysa.edu.mx</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-3 pt-6 border-t border-slate-100">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actividad del Ticket</Label>
+                      <div className="space-y-6 pl-4 border-l-2 border-slate-100 py-2">
+                         {[
+                           { t: 'Ticket creado', u: 'Por Juan Pérez', d: '24/05/2026 10:24 AM', icon: CheckCircle2, c: 'text-blue-500' },
+                           { t: 'Asignado a técnico', u: 'Por Sistema', d: '24/05/2026 10:24 AM', icon: Users, c: 'text-indigo-500' },
+                           { t: 'Estado cambiado a En Proceso', u: 'Por Carlos Técnico', d: '24/05/2026 10:25 AM', icon: Activity, c: 'text-amber-500' },
+                           { t: 'Mensaje enviado', u: 'Por Juan Pérez', d: '24/05/2026 10:28 AM', icon: MessageSquare, c: 'text-emerald-500' },
+                         ].map((act, idx) => (
+                           <div key={idx} className="relative">
+                              <div className={cn("absolute -left-[25px] top-0 h-4 w-4 rounded-full bg-white border-2 flex items-center justify-center shadow-sm", act.c)}>
+                                 <act.icon className="h-2 w-2" />
+                              </div>
+                              <div className="space-y-1">
+                                 <h5 className="text-[10px] font-black text-slate-800 leading-none">{act.t}</h5>
+                                 <p className="text-[8px] font-bold text-slate-400 uppercase">{act.u}</p>
+                                 <p className="text-[8px] font-black text-slate-300">{act.d}</p>
+                              </div>
+                           </div>
+                         ))}
+                      </div>
+                      <Button className="w-full h-11 rounded-2xl bg-primary text-white font-black uppercase text-[10px] shadow-xl shadow-primary/20 mt-6">Ver historial completo</Button>
+                   </div>
                 </div>
              </div>
-          </div>
-        )}
-      </div>
+          </ScrollArea>
+       </aside>
     </div>
   );
 }
