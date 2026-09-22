@@ -4,7 +4,7 @@
  * - Chat en tiempo real, Transferencia de técnicos, SLA, Gestión de evidencias y Reportes.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -49,7 +49,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { format, differenceInMinutes } from 'date-fns';
+import { format } from 'date-fns';
 import { db } from '@/lib/firebase';
 import { 
   collection, 
@@ -300,7 +300,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   };
 
   const statsSLA = useMemo(() => {
-    if (queue.length === 0) return { avg: 0, pending: 0 };
+    if (queue.length === 0) return { avg: 0, pending: 0, critical: 0 };
     return {
       pending: queue.filter(r => r.status === 'pending').length,
       critical: queue.filter(r => r.priority === 'critical').length
