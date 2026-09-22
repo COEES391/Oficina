@@ -334,16 +334,19 @@ export default function ProgramsPage() {
     try {
       if (editingId) {
         await updateDoc(doc(db, 'programs', editingId), body);
-        toast({ title: "Registro Actualizado" });
       } else {
         await addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() });
-        toast({ title: "Registro Guardado" });
       }
       
-      // Cerrar y resetear inmediatamente tras éxito
-      setIsSaving(false); 
-      setIsDialogOpen(false); 
-      resetForm();
+      toast({ title: editingId ? "Registro Actualizado" : "Registro Guardado" });
+      
+      // CIERRE GARANTIZADO DE INTERFAZ
+      setIsDialogOpen(false);
+      setTimeout(() => {
+        setIsSaving(false);
+        resetForm();
+      }, 100);
+      
     } catch (error) {
       console.error("Error saving program:", error);
       toast({ 
@@ -1039,7 +1042,7 @@ export default function ProgramsPage() {
         ) : null}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!open && !isSaving) { setIsDialogOpen(false); resetForm(); } }}>
         <DialogContent className="sm:max-w-[1300px] h-[95vh] rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden flex flex-col bg-white">
           <DialogHeader className="p-8 bg-[#9f2241] text-white shrink-0">
              <DialogTitle className="uppercase font-black text-xl flex items-center gap-3">
@@ -1333,7 +1336,7 @@ export default function ProgramsPage() {
                 <span className="text-sm font-black text-primary">{formData.progress}%</span>
              </div>
              <div className="flex gap-4">
-               <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-12 px-8 font-black uppercase text-xs">Cancelar</Button>
+               <Button variant="ghost" onClick={() => setIsDialogOpen(false)} disabled={isSaving} className="h-12 px-8 font-black uppercase text-xs">Cancelar</Button>
                <Button onClick={handleSave} disabled={isSaving || !formData.cct} className="btn-institutional h-12 px-14 shadow-2xl">
                   {isSaving ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5 mr-2" />} GUARDAR AUDITORÍA
                </Button>
