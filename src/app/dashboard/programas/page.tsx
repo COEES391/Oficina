@@ -633,7 +633,8 @@ export default function ProgramsPage() {
             </div>
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
-          <div className="space-y-6 pb-10">
+          <div className="space-y-8 pb-10">
+            {/* Tarjetas de Métricas */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
                 { label: 'CCT REGISTRADOS', value: stats.total, sub: 'ESCUELAS', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -643,13 +644,13 @@ export default function ProgramsPage() {
                 { label: 'TÉCNICOS ACTIVOS', value: stats.tecnicos, sub: 'PERSONAL', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
                 { label: 'PROYECTOS CONCLUIDOS', value: stats.concluidos, sub: '100% AVANCE', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' }
               ].map((m, i) => (
-                <Card key={i} className="border-none shadow-xl rounded-[2.5rem] p-6 flex flex-col items-center text-center gap-4 bg-white transition-all hover:scale-105 border border-slate-100">
+                <Card key={i} className="border-none shadow-xl rounded-[2.5rem] p-6 flex flex-col items-center text-center gap-4 bg-white transition-all hover:scale-105 border border-slate-100 min-h-[180px]">
                   <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner", m.bg, m.color)}>
                     <m.icon className="h-6 w-6" />
                   </div>
                   <div className="flex flex-col items-center min-w-0 w-full space-y-1">
                     <h4 className="text-3xl font-black leading-none text-slate-800">{m.value}</h4>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-tight h-10 flex items-center justify-center px-1">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-tight h-10 flex items-center justify-center px-1">
                       {m.label}
                     </p>
                     <p className="text-[8px] font-bold text-primary/40 uppercase tracking-[0.2em]">{m.sub}</p>
@@ -658,183 +659,201 @@ export default function ProgramsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] bg-white overflow-hidden flex flex-col border border-slate-100">
-                <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-                         <Layers className="h-6 w-6" />
-                      </div>
-                      <h3 className="text-xl font-black uppercase text-slate-700 tracking-tight">Fases del Proyecto por CCT</h3>
-                   </div>
-                   <div className="flex items-center gap-3">
-                      <Badge className="bg-primary/5 text-primary border-none font-black text-[10px] px-4 h-8 rounded-full uppercase">Total: {bibliotecaRecords.length}</Badge>
-                   </div>
-                </div>
-                <ScrollArea className="flex-1 min-h-[600px]">
-                  <Table>
-                    <TableHeader className="bg-slate-50/50">
-                      <TableRow className="h-14">
-                        <TableHead className="pl-10 text-[10px] font-black uppercase w-32">CCT</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase">Escuela</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-56">Fase Actual</TableHead>
-                        <TableHead className="text-[10px] font-black uppercase w-28 text-center">Avance</TableHead>
-                        <TableHead className="text-right pr-12 text-[10px] font-black uppercase w-32">Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {bibliotecaRecords.map((rec) => {
-                        const faseActual = getFaseActual(rec.bibliotecaFases);
-                        return (
-                          <TableRow key={rec.id} onClick={() => { setSelectedCctId(rec.id!); setSidebarSearchTerm(rec.cct); }} className={cn("h-20 hover:bg-primary/[0.02] transition-colors cursor-pointer group", selectedCctId === rec.id && "bg-primary/[0.04] shadow-inner")}>
-                            <TableCell className="pl-10 font-mono text-[11px] font-black text-primary group-hover:scale-110 transition-transform origin-left">{rec.cct}</TableCell>
-                            <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[220px]">{rec.schoolName}</TableCell>
-                            <TableCell className="text-[10px] font-bold text-slate-400 uppercase">{rec.municipio}</TableCell>
-                            <TableCell>
-                              <Badge className={cn("text-[9px] font-black border-none px-4 h-10 flex flex-col items-start justify-center leading-tight w-full max-w-[200px] rounded-xl shadow-sm", faseActual.color)}>
-                                <span className="uppercase">{faseActual.label.split('.')[0]}</span>
-                                <span className="text-[7.5px] opacity-70 truncate w-full mt-0.5">{faseActual.label.split('.')[1]}</span>
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                               <div className="flex flex-col items-center gap-1.5">
-                                  <Progress value={rec.progress} className="h-1.5 w-24 bg-slate-100" />
-                                  <span className="text-[11px] font-black text-slate-600">{rec.progress}%</span>
-                               </div>
-                            </TableCell>
-                            <TableCell className="text-right pr-10">
-                               <div className="flex justify-end gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-10 w-10 text-primary hover:bg-primary/10 rounded-xl transition-all active:scale-90"
-                                    onClick={(e) => { e.stopPropagation(); handleEdit(rec); }}
-                                  >
-                                    <Pencil className="h-5 w-5" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }}
-                                  >
-                                    <Trash2 className="h-5 w-5" />
-                                  </Button>
-                               </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                      {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-32 opacity-30 uppercase font-black text-sm tracking-[0.3em]">Sin registros de auditoría</TableCell></TableRow>}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </Card>
-
-              <Card className="lg:col-span-4 border-none shadow-2xl rounded-[3rem] bg-white p-8 flex flex-col gap-8 border border-slate-100">
-                 <div className="bg-slate-900 p-6 rounded-[2.2rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-                   <h3 className="text-sm font-black uppercase text-white tracking-widest relative z-10">Monitor de Fases</h3>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase mt-2 relative z-10 flex items-center gap-2">
-                     <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Sincronización Live
-                   </p>
-                 </div>
-                 
-                 <div className="space-y-3 relative">
-                    <Label className="text-[10px] font-black uppercase text-primary ml-2 flex items-center gap-2">
-                      <SearchCode className="h-4 w-4" /> Localizar Plantel:
-                    </Label>
-                    <div className="relative group">
-                       <Input 
-                          placeholder="CCT O NOMBRE..." 
-                          className="h-14 rounded-2xl border-slate-200 font-black text-xs uppercase pl-12 pr-12 shadow-inner focus:ring-4 focus:ring-primary/5 transition-all bg-slate-50/50"
-                          value={sidebarSearchTerm}
-                          onChange={(e) => {
-                             setSidebarSearchTerm(e.target.value.toUpperCase());
-                             setIsSidebarResultsOpen(true);
-                          }}
-                          onFocus={() => setIsSidebarResultsOpen(true)}
-                       />
-                       <Search className="absolute left-4 top-4.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                       
-                       {isSidebarResultsOpen && sidebarSearchTerm.length > 0 && (
-                          <div className="absolute top-15 left-0 right-0 max-h-72 overflow-auto bg-white border-2 border-primary/10 rounded-2xl shadow-2xl z-[400] divide-y animate-in fade-in slide-in-from-top-2 duration-300">
-                             {bibliotecaRecords
-                                .filter(r => 
-                                   (r.cct || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase()) || 
-                                   (r.schoolName || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase())
-                                )
-                                .map(r => (
-                                   <div 
-                                      key={r.id} 
-                                      className="p-4 hover:bg-primary/[0.03] cursor-pointer flex justify-between items-center group transition-all" 
-                                      onClick={() => { 
-                                         setSelectedCctId(r.id!); 
-                                         setSidebarSearchTerm(r.cct); 
-                                         setIsSidebarResultsOpen(false); 
-                                      }}
-                                   >
-                                      <div className="flex flex-col min-w-0">
-                                         <span className="text-[11px] font-black uppercase truncate group-hover:text-primary transition-colors">{r.schoolName}</span>
-                                         <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{r.cct}</span>
-                                      </div>
-                                      <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                                   </div>
-                                ))
-                             }
-                          </div>
-                       )}
+            {/* Fases del Proyecto por CCT (Tabla Ancha) */}
+            <Card className="w-full border-none shadow-2xl rounded-[3rem] bg-white overflow-hidden flex flex-col border border-slate-100">
+              <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                       <Layers className="h-6 w-6" />
                     </div>
+                    <h3 className="text-xl font-black uppercase text-slate-700 tracking-tight">Fases del Proyecto por CCT</h3>
                  </div>
-
-                 <ScrollArea className="flex-1 pr-4">
-                    {selectedRecord ? (
-                      <div className="space-y-4">
-                         {BIBLIOTECA_FASES.map((f, i) => {
-                           const isCompleted = selectedRecord?.bibliotecaFases?.[f.id as keyof typeof selectedRecord.bibliotecaFases];
-                           const isCurrent = getFaseActual(selectedRecord?.bibliotecaFases).id === f.id;
-                           
-                           return (
-                             <div key={f.id} className={cn(
-                               "flex items-start gap-4 p-4 rounded-[1.8rem] border transition-all duration-500",
-                               isCompleted ? "bg-emerald-50/50 border-emerald-200" : isCurrent ? "bg-blue-50 border-blue-200 ring-4 ring-blue-100 shadow-xl" : "bg-white border-slate-100 opacity-60"
-                             )}>
-                                <div className={cn(
-                                  "h-7 w-7 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 border-2 transition-all",
-                                  isCompleted ? "bg-emerald-500 border-emerald-500 text-white rotate-[360deg]" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
-                                )}>
-                                   {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                   <p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
-                                </div>
+                 <div className="flex items-center gap-3">
+                    <Badge className="bg-primary/5 text-primary border-none font-black text-[10px] px-4 h-8 rounded-full uppercase">Total: {bibliotecaRecords.length} Registros</Badge>
+                 </div>
+              </div>
+              <ScrollArea className="w-full min-h-[400px]">
+                <Table>
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="h-14">
+                      <TableHead className="pl-10 text-[10px] font-black uppercase w-32">CCT</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Escuela / Plantel</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase w-64">Fase Técnica Actual</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase w-32 text-center">Progreso</TableHead>
+                      <TableHead className="text-right pr-12 text-[10px] font-black uppercase w-40">Acción</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bibliotecaRecords.map((rec) => {
+                      const faseActual = getFaseActual(rec.bibliotecaFases);
+                      return (
+                        <TableRow key={rec.id} onClick={() => { setSelectedCctId(rec.id!); setSidebarSearchTerm(rec.cct); }} className={cn("h-20 hover:bg-primary/[0.02] transition-colors cursor-pointer group", selectedCctId === rec.id && "bg-primary/[0.04] shadow-inner")}>
+                          <TableCell className="pl-10 font-mono text-[11px] font-black text-primary group-hover:scale-110 transition-transform origin-left">{rec.cct}</TableCell>
+                          <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[300px]">{rec.schoolName}</TableCell>
+                          <TableCell className="text-[10px] font-bold text-slate-400 uppercase">{rec.municipio}</TableCell>
+                          <TableCell>
+                            <Badge className={cn("text-[9px] font-black border-none px-4 h-10 flex flex-col items-start justify-center leading-tight w-full max-w-[240px] rounded-xl shadow-sm", faseActual.color)}>
+                              <span className="uppercase">{faseActual.label.split('.')[0]}</span>
+                              <span className="text-[7.5px] opacity-70 truncate w-full mt-0.5">{faseActual.label.split('.')[1]}</span>
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                             <div className="flex flex-col items-center gap-1.5">
+                                <Progress value={rec.progress} className="h-2 w-28 bg-slate-100" />
+                                <span className="text-[11px] font-black text-slate-600">{rec.progress}%</span>
                              </div>
-                           )
-                         })}
+                          </TableCell>
+                          <TableCell className="text-right pr-10">
+                             <div className="flex justify-end gap-3">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-10 w-10 text-primary hover:bg-primary/10 rounded-xl transition-all active:scale-90"
+                                  onClick={(e) => { e.stopPropagation(); handleEdit(rec); }}
+                                >
+                                  <Pencil className="h-5 w-5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }}
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                             </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                    {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-32 opacity-30 uppercase font-black text-sm tracking-[0.3em]">Sin registros de auditoría</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </Card>
+
+            {/* Monitor de Fases (Debajo de la tabla) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <Card className="lg:col-span-12 border-none shadow-2xl rounded-[3rem] bg-white p-8 flex flex-col gap-8 border border-slate-100">
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Buscador y Resumen lateral en el monitor */}
+                  <div className="w-full md:w-[400px] space-y-8 shrink-0">
+                    <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+                      <h3 className="text-base font-black uppercase text-white tracking-widest relative z-10 flex items-center gap-3">
+                        <MonitorCheck className="h-6 w-6 text-emerald-500" /> MONITOR DE FASES
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mt-4 relative z-10 flex items-center gap-2">
+                        <Activity className="h-3.5 w-3.5 text-emerald-500 animate-pulse" /> Auditoría Técnica en Vivo
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4 relative">
+                      <Label className="text-[11px] font-black uppercase text-primary ml-2 flex items-center gap-2">
+                        <SearchCode className="h-5 w-5" /> Localizar Plantel para Auditoría:
+                      </Label>
+                      <div className="relative group">
+                         <Input 
+                            placeholder="ESCRIBIR CCT O NOMBRE..." 
+                            className="h-16 rounded-[1.8rem] border-slate-200 font-black text-sm uppercase pl-14 pr-14 shadow-inner focus:ring-4 focus:ring-primary/5 transition-all bg-slate-50/50"
+                            value={sidebarSearchTerm}
+                            onChange={(e) => {
+                               setSidebarSearchTerm(e.target.value.toUpperCase());
+                               setIsSidebarResultsOpen(true);
+                            }}
+                            onFocus={() => setIsSidebarResultsOpen(true)}
+                         />
+                         <Search className="absolute left-5 top-5 h-6 w-6 text-slate-300 group-focus-within:text-primary transition-colors" />
+                         
+                         {isSidebarResultsOpen && sidebarSearchTerm.length > 0 && (
+                            <div className="absolute top-18 left-0 right-0 max-h-72 overflow-auto bg-white border-2 border-primary/10 rounded-[1.8rem] shadow-2xl z-[400] divide-y animate-in fade-in slide-in-from-top-2 duration-300">
+                               {bibliotecaRecords
+                                  .filter(r => 
+                                     (r.cct || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase()) || 
+                                     (r.schoolName || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase())
+                                  )
+                                  .map(r => (
+                                     <div 
+                                        key={r.id} 
+                                        className="p-5 hover:bg-primary/[0.03] cursor-pointer flex justify-between items-center group transition-all" 
+                                        onClick={() => { 
+                                           setSelectedCctId(r.id!); 
+                                           setSidebarSearchTerm(r.cct); 
+                                           setIsSidebarResultsOpen(false); 
+                                        }}
+                                     >
+                                        <div className="flex flex-col min-w-0">
+                                           <span className="text-[12px] font-black uppercase truncate group-hover:text-primary transition-colors">{r.schoolName}</span>
+                                           <span className="text-[10px] font-mono text-slate-400 uppercase mt-1">{r.cct}</span>
+                                        </div>
+                                        <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                     </div>
+                                  ))
+                               }
+                            </div>
+                         )}
                       </div>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center opacity-20 text-center gap-6 py-32 grayscale">
-                         <SearchCode className="h-24 w-24" />
-                         <p className="text-[11px] font-black uppercase tracking-[0.3em] px-10 leading-relaxed">Seleccione un plantel en la lista para auditar sus fases técnicas</p>
+                    </div>
+
+                    {selectedRecord && (
+                      <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-left-4 duration-700">
+                         <div className="bg-slate-50 p-6 rounded-[2.2rem] border border-slate-100 flex flex-col items-center gap-3 shadow-inner group hover:bg-white transition-colors">
+                            <Laptop className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
+                            <span className="text-3xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Equipos Habilitados</span>
+                         </div>
+                         <div className="bg-slate-50 p-6 rounded-[2.2rem] border border-slate-100 flex flex-col items-center gap-3 shadow-inner group hover:bg-white transition-colors">
+                            <Users className="h-8 w-8 text-emerald-600 group-hover:scale-110 transition-transform" />
+                            <span className="text-3xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.personalCapacitado || 0}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Personal Capacitado</span>
+                         </div>
                       </div>
                     )}
-                 </ScrollArea>
-                 
-                 {selectedRecord && (
-                    <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100 animate-in slide-in-from-bottom-4 duration-700">
-                       <div className="bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 shadow-inner group hover:bg-white transition-colors">
-                          <Laptop className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-                          <span className="text-2xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Equipos Habilitados</span>
-                       </div>
-                       <div className="bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 shadow-inner group hover:bg-white transition-colors">
-                          <Users className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform" />
-                          <span className="text-2xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.personalCapacitado || 0}</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Personal Capacitado</span>
-                       </div>
+                  </div>
+
+                  {/* Listado de Fases Expandido */}
+                  <div className="flex-1 min-h-[500px] flex flex-col">
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 mb-6">
+                      <p className="text-[11px] font-black text-primary uppercase text-center tracking-widest">Seguimiento Técnico por Fases</p>
                     </div>
-                 )}
+                    <ScrollArea className="flex-1 pr-4">
+                      {selectedRecord ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {BIBLIOTECA_FASES.map((f, i) => {
+                             const isCompleted = selectedRecord?.bibliotecaFases?.[f.id as keyof typeof selectedRecord.bibliotecaFases];
+                             const isCurrent = getFaseActual(selectedRecord?.bibliotecaFases).id === f.id;
+                             
+                             return (
+                               <div key={f.id} className={cn(
+                                 "flex items-start gap-4 p-6 rounded-[2rem] border transition-all duration-500",
+                                 isCompleted ? "bg-emerald-50/80 border-emerald-200 shadow-sm" : isCurrent ? "bg-blue-50 border-blue-200 ring-8 ring-blue-50/50 shadow-2xl" : "bg-white border-slate-100 opacity-60"
+                               )}>
+                                  <div className={cn(
+                                    "h-10 w-10 rounded-2xl flex items-center justify-center text-[12px] font-black shrink-0 border-2 transition-all shadow-md",
+                                    isCompleted ? "bg-emerald-500 border-emerald-500 text-white rotate-[360deg]" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
+                                  )}>
+                                     {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : i + 1}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                     <p className={cn("text-[11px] font-black uppercase leading-tight tracking-wide", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
+                                     {isCurrent && (
+                                       <Badge className="mt-3 bg-blue-600 text-white font-black text-[8px] px-3 h-5 border-none uppercase animate-pulse">En curso</Badge>
+                                     )}
+                                  </div>
+                               </div>
+                             )
+                           })}
+                        </div>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center opacity-20 text-center gap-10 py-20 grayscale">
+                           <div className="h-32 w-32 rounded-[3.5rem] bg-slate-100 flex items-center justify-center"><SearchCode className="h-20 w-24" /></div>
+                           <p className="text-[14px] font-black uppercase tracking-[0.4em] px-20 leading-relaxed max-w-xl">Seleccione un plantel en la tabla superior para visualizar su monitor de auditoría</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </div>
               </Card>
             </div>
           </div>
