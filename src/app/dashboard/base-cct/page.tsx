@@ -1,3 +1,4 @@
+
 'use client'
 import { useState, useMemo, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -54,12 +55,12 @@ export default function BaseCctPage() {
 
   useEffect(() => {
     setMounted(true)
-    const stored = JSON.parse(localStorage.getItem('schools_master_full_v21') || '[]')
-    if (stored.length === 0 || stored.length < 500) {
+    const stored = localStorage.getItem('schools_master_full_v21')
+    if (!stored) {
       setSchools(schoolsDirectory)
       localStorage.setItem('schools_master_full_v21', JSON.stringify(schoolsDirectory))
     } else {
-      setSchools(stored)
+      setSchools(JSON.parse(stored))
     }
   }, [])
 
@@ -123,6 +124,7 @@ export default function BaseCctPage() {
   }
 
   const handleDelete = (cct: string, turno: string) => {
+    if(!confirm("¿Desea eliminar permanentemente este CCT de la base maestra?")) return;
     const updated = schools.filter(s => !(s.cct === cct && s.turno === turno))
     setSchools(updated)
     localStorage.setItem('schools_master_full_v21', JSON.stringify(updated))
