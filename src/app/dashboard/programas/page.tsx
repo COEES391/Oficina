@@ -237,17 +237,22 @@ export default function ProgramsPage() {
 
   const handleCctChange = (value: string) => {
     const cleanValue = value.toUpperCase().trim()
-    setFormData(prev => ({ ...prev, cct: cleanValue }))
+    
     const match = allSchools.find(s => s.cct.toUpperCase() === cleanValue)
     if (match) {
       setFormData(prev => ({ 
         ...prev, 
-        cct: match.cct, schoolName: match.nombre, municipio: match.municipio, 
-        valle: match.valle, region: match.region, zonaEscolar: match.zonaEscolar, 
-        sector: match.sector, modalidad: match.modalidad 
+        cct: match.cct, 
+        schoolName: match.nombre, 
+        municipio: match.municipio, 
+        valle: match.valle, 
+        region: match.region, 
+        zonaEscolar: match.zonaEscolar, 
+        sector: match.sector, 
+        modalidad: match.modalidad 
       }))
     } else {
-      setFormData(prev => ({ ...prev, schoolName: 'NOMBRE DEL PLANTEL' }))
+      setFormData(prev => ({ ...prev, cct: cleanValue, schoolName: 'NOMBRE DEL PLANTEL' }))
     }
   }
 
@@ -261,11 +266,11 @@ export default function ProgramsPage() {
       cct: quickAddForm.cct.toUpperCase(), 
       nombre: quickAddForm.nombre.toUpperCase(), 
       municipio: quickAddForm.municipio.toUpperCase(),
-      valle: quickAddForm.valle.toUpperCase(),
-      region: quickAddForm.region.toUpperCase(),
-      zonaEscolar: quickAddForm.zonaEscolar.toUpperCase(),
-      sector: quickAddForm.sector.toUpperCase(),
-      modalidad: quickAddForm.modalidad.toUpperCase()
+      valle: (quickAddForm.valle || '').toUpperCase(),
+      region: (quickAddForm.region || '').toUpperCase(),
+      zonaEscolar: (quickAddForm.zonaEscolar || '').toUpperCase(),
+      sector: (quickAddForm.sector || '').toUpperCase(),
+      modalidad: (quickAddForm.modalidad || 'DES').toUpperCase()
     };
     const updated = [newSchool, ...allSchools];
     setAllSchools(updated);
@@ -288,7 +293,12 @@ export default function ProgramsPage() {
     toast({ title: "Plantel Registrado", description: "El CCT ha sido añadido y cargado en el formulario." });
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!formData.cct && activeTab !== 'Cuentas Institucionales') {
+      toast({ variant: "destructive", title: "CCT Requerido", description: "Debe ingresar un CCT válido." });
+      return;
+    }
+
     setIsSaving(true);
     const isAccounts = activeTab === 'Cuentas Institucionales';
     const isGeo = activeTab === 'Geoposición';
@@ -320,16 +330,25 @@ export default function ProgramsPage() {
       asistentes: validAssistants
     };
 
-    if (editingId) {
-      updateDoc(doc(db, 'programs', editingId), body).then(() => {
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, 'programs', editingId), body);
         toast({ title: "Registro Actualizado" });
-        setIsSaving(false); setIsDialogOpen(false); resetForm();
-      });
-    } else {
-      addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() }).then(() => {
+      } else {
+        await addDoc(collection(db, 'programs'), { ...body, createdAt: serverTimestamp() });
         toast({ title: "Registro Guardado" });
-        setIsSaving(false); setIsDialogOpen(false); resetForm();
+      }
+      setIsSaving(false); 
+      setIsDialogOpen(false); 
+      resetForm();
+    } catch (error) {
+      console.error("Error saving program:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "Error al guardar", 
+        description: "No se pudo conectar con la base de datos o hubo un fallo en el servidor." 
       });
+      setIsSaving(false);
     }
   }
 
@@ -353,6 +372,7 @@ export default function ProgramsPage() {
     setDialogSearchTerm('');
     setVerifyInput('');
     setVerificationResult(null);
+    setIsSaving(false);
   }
 
   const handleEdit = (rec: ProgramStatus) => { 
@@ -522,7 +542,9 @@ export default function ProgramsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-4">
-                       <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white font-black h-12 rounded-xl shadow-xl transition-all active:scale-95 flex items-center gap-2"><Save className="h-5 w-5" /> Guardar</Button>
+                       <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white font-black h-12 rounded-xl shadow-xl transition-all active:scale-95 flex items-center gap-2">
+                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Guardar
+                       </Button>
                        <Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-100 text-slate-600 font-black flex items-center gap-2 hover:bg-slate-50"><RotateCcw className="h-4 w-4" /> Limpiar</Button>
                     </div>
                  </div>
@@ -836,12 +858,12 @@ export default function ProgramsPage() {
                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-6">
                   <div className="flex items-center gap-4"><div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><MapPin className="h-6 w-6" /></div><h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Registrar coordenadas</h3></div>
                   <div className="space-y-6">
-                     <div className="space-y-2 relative"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">CCT *</Label><Input placeholder="15DESXXXXX" className="h-11 pl-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={formData.cct} onChange={e => { const val = e.target.value.toUpperCase(); setFormData({...formData, cct: val}); setDialogSearchTerm(val); handleCctChange(val); }} /><Search className="absolute left-4 top-10 h-4 w-4 text-slate-300" /></div>
+                     <div className="space-y-2 relative"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">CCT *</Label><Input placeholder="15DESXXXXX" className="h-11 pl-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={formData.cct} onChange={e => { const val = e.target.value.toUpperCase(); setDialogSearchTerm(val); handleCctChange(val); }} /><Search className="absolute left-4 top-10 h-4 w-4 text-slate-300" /></div>
                      <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">Latitud *</Label><Input placeholder="Ej. 19.6289" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
                         <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">Longitud *</Label><Input placeholder="Ej. -99.3128" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                      </div>
-                     <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} className="btn-institutional h-12 rounded-xl shadow-xl flex items-center gap-3"><Save className="h-5 w-5" /> Guardar ubicación</Button><Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-100 text-slate-600 font-black flex items-center gap-2"><RotateCcw className="h-4 w-4" /> Limpiar</Button></div>
+                     <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 rounded-xl shadow-xl flex items-center gap-3">{isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Guardar ubicación</Button><Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-100 text-slate-600 font-black flex items-center gap-2"><RotateCcw className="h-4 w-4" /> Limpiar</Button></div>
                   </div>
                </Card>
                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden flex flex-col flex-1">
@@ -1050,7 +1072,6 @@ export default function ProgramsPage() {
                                    value={formData.cct} 
                                    onChange={e => {
                                      const val = e.target.value.toUpperCase();
-                                     setFormData({...formData, cct: val});
                                      setDialogSearchTerm(val);
                                      handleCctChange(val);
                                    }} 
@@ -1060,7 +1081,7 @@ export default function ProgramsPage() {
                                  <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-300" />
                                  
                                  {dialogSearchTerm.length > 2 && (
-                                   <div className="absolute top-14 left-0 right-0 max-h-48 overflow-auto bg-white border rounded-xl shadow-2xl z-50 divide-y animate-in fade-in zoom-in-95">
+                                   <div className="absolute top-14 left-0 right-0 max-h-48 overflow-auto bg-white border rounded-xl shadow-2xl z-50 divide-y animate-in fade-in zoom-in-95 duration-200">
                                      {schoolSearchResults.map(s => (
                                        <div 
                                          key={`${s.cct}-${s.turno}`} 
