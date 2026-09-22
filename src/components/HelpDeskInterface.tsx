@@ -1,10 +1,5 @@
 
 'use client';
-/**
- * @fileOverview Interfaz de Mesa de Ayuda ATRES Live.
- * - Chat en tiempo real, Transferencia de técnicos, SLA, Gestión de evidencias y Reportes.
- * - Optimizado para alta disponibilidad y alertas instantáneas ante mensajes del usuario.
- */
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -18,15 +13,9 @@ import {
   Send, 
   Bot, 
   MessageSquare,
-  Clock,
   Loader2,
   Monitor,
-  Paperclip,
-  X,
   ShieldCheck,
-  AlertCircle,
-  Download,
-  Globe,
   Bell,
   Volume2,
   ChevronRight,
@@ -34,9 +23,9 @@ import {
   CheckCircle2,
   BarChart3,
   Users,
-  FileText,
   Star,
-  RotateCcw
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -55,17 +44,15 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
-import Image from 'next/image';
 import { type SupportRequestLive } from '@/lib/planning-data';
 
 type Message = {
   id?: string;
+  chatId: string;
   role: 'user' | 'tech' | 'bot';
   content: string;
   timestamp: any;
   senderName?: string;
-  fileUrl?: string;
-  fileName?: string;
 };
 
 export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) {
@@ -90,9 +77,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const alertedIds = useRef(new Set<string>());
   const lastUpdateRef = useRef<Map<string, number>>(new Map());
-  const isInitialLoad = useRef(true);
 
-  // Inicialización de Audio y Montaje
   useEffect(() => {
     setMounted(true);
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -100,13 +85,12 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     audioRef.current = audio;
   }, []);
 
-  // ANALISTA: Escucha de solicitudes y mensajes nuevos
+  // ANALISTA: Monitor de solicitudes y mensajes
   useEffect(() => {
     if (!mounted || isPublic) return;
     
     setTechName(localStorage.getItem('userRfc') || 'ANALISTA TÉCNICO');
     
-    // Consulta optimizada para tiempo real
     const q = query(
       collection(db, 'support_queue'), 
       where('status', 'in', ['pending', 'attending']),
@@ -118,74 +102,51 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       const activeQueue = snap.docs.map(d => ({ ...d.data(), id: d.id } as SupportRequestLive));
       setQueue(activeQueue);
 
-      if (isInitialLoad.current) {
-        snap.docs.forEach(d => {
-          const data = d.data();
-          const time = data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now();
-          lastUpdateRef.current.set(d.id, time);
-          alertedIds.current.add(d.id);
-        });
-        isInitialLoad.current = false;
-        return;
-      }
-
       snap.docChanges().forEach((change) => {
         const data = change.doc.data() as SupportRequestLive;
         const id = change.doc.id;
-        const currentTime = data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now();
-        const lastKnownTime = lastUpdateRef.current.get(id) || 0;
-
-        // Caso 1: Solicitud Nueva
+        
+        // Alerta Sonora y Visual para Solicitudes Nuevas
         if (change.type === "added" && !alertedIds.current.has(id)) {
           alertedIds.current.add(id);
-          triggerNotification("🔔 NUEVA SOLICITUD", `${data.userName} - ${data.cct}`, data, id);
+          playAlertSound();
+          toast({
+            title: "🔔 NUEVA SOLICITUD",
+            description: `${data.userName} - ${data.cct}`,
+            className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-[2rem] p-6",
+            duration: 8000,
+          });
         }
 
-        // Caso 2: Mensaje nuevo del usuario
-        if (change.type === "modified" && data.lastSenderRole === 'user' && currentTime > lastKnownTime) {
-          // Solo alertar si el chat no está abierto actualmente por el técnico
-          if (selectedRequest?.id !== id) {
-            triggerNotification("💬 MENSAJE NUEVO", `${data.userName}: ${data.lastMessage}`, data, id);
-          } else if (audioRef.current && soundEnabled) {
+        // Alerta para mensajes nuevos del usuario en chats abiertos o cerrados
+        if (change.type === "modified" && data.lastSenderRole === 'user') {
+          const currentTime = data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now();
+          const lastTime = lastUpdateRef.current.get(id) || 0;
+          
+          if (currentTime > lastTime) {
             playAlertSound();
+            if (selectedRequest?.id !== id) {
+              toast({
+                title: `💬 MENSAJE DE ${data.userName}`,
+                description: data.lastMessage,
+                className: "bg-emerald-600 text-white border-none shadow-2xl font-black rounded-3xl",
+              });
+            }
           }
         }
-
-        lastUpdateRef.current.set(id, currentTime);
+        
+        lastUpdateRef.current.set(id, data.lastActivity instanceof Timestamp ? data.lastActivity.toMillis() : Date.now());
       });
+    }, (err) => {
+      console.error("Queue listener error:", err);
     });
 
     return () => unsubscribe();
   }, [isPublic, mounted, soundEnabled, selectedRequest]);
 
-  const playAlertSound = () => {
-    if (audioRef.current && soundEnabled) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => null);
-    }
-  };
-
-  const triggerNotification = (title: string, desc: string, data: any, id: string) => {
-    toast({
-      title,
-      description: desc,
-      className: "bg-[#9f2241] text-white border-none shadow-2xl font-black rounded-[2rem] p-6 ring-4 ring-white/20",
-      duration: 10000,
-      action: (
-        <Button 
-          onClick={() => setSelectedRequest({ ...data, id } as any)} 
-          className="bg-white text-[#9f2241] hover:bg-slate-100 font-black uppercase text-[10px] rounded-xl px-6 h-10 shadow-xl"
-        >
-          ATENDER
-        </Button>
-      )
-    });
-    playAlertSound();
-  };
-
-  // CHAT: Escucha de mensajes del hilo seleccionado
+  // ESCUCHA DE MENSAJES (Ambos lados)
   useEffect(() => {
-    if (!mounted || !selectedRequest) {
+    if (!mounted || !selectedRequest?.id) {
       setMessages([]);
       return;
     }
@@ -199,14 +160,19 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const unsubscribe = onSnapshot(q, (snap) => {
       const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
       setMessages(msgs);
+      // Auto-scroll al final
+      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
 
     return () => unsubscribe();
-  }, [mounted, selectedRequest]);
+  }, [mounted, selectedRequest?.id]);
 
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const playAlertSound = () => {
+    if (audioRef.current && soundEnabled) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => null);
+    }
+  };
 
   const handleJoinSupport = async () => {
     if (!userData.name.trim() || !userData.cct.trim()) {
@@ -219,7 +185,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     const ticketNum = `ATRES-${Math.floor(1000 + Math.random() * 9000)}`;
     
     try {
-      const requestData: any = {
+      const requestData = {
         userName: userData.name.toUpperCase(),
         cct: userData.cct.toUpperCase(),
         status: 'pending',
@@ -227,78 +193,79 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         category: 'atres',
         lastActivity: serverTimestamp(),
         createdAt: serverTimestamp(),
-        lastMessage: '🔔 Usuario esperando analista...',
-        lastSenderRole: 'user',
+        lastMessage: '🔔 Usuario inició sesión...',
+        lastSenderRole: 'bot',
         ticketNumber: ticketNum,
         slaLimit: 30
       };
       
-      // Escritura en lote para consistencia
+      // Escritura persistente
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       await addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
-        content: `Bienvenido(a) ${userData.name.toUpperCase()}. Tu folio de atención es: ${ticketNum}. En un momento un analista técnico te atenderá.`,
+        content: `Bienvenido(a) ${userData.name.toUpperCase()}. Tu folio es: ${ticketNum}. Un analista te atenderá en breve.`,
         timestamp: serverTimestamp()
       });
 
-      setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date() } as any);
+      setSelectedRequest({ ...requestData, id: requestId } as any);
       setHasJoined(true);
-      toast({ title: "Conectado", description: "Tu solicitud ha sido enviada a central." });
     } catch (error) {
-      console.error(error);
-      toast({ variant: "destructive", title: "Error de red", description: "No se pudo establecer conexión con central." });
+      toast({ variant: "destructive", title: "Error de conexión" });
     } finally {
       setIsJoining(false);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !selectedRequest) return;
+    if (!input.trim() || !selectedRequest?.id) return;
     setIsSending(true);
 
-    try {
-      const content = input;
-      setInput('');
+    const msgContent = input;
+    const chatId = selectedRequest.id;
+    setInput('');
 
-      // 1. Actualizar estado de la cola (para que el técnico reciba la alerta)
-      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
+    try {
+      // 1. Guardar mensaje
+      await addDoc(collection(db, 'chat_messages'), {
+        chatId: chatId,
+        role: isPublic ? 'user' : 'tech',
+        content: msgContent,
+        senderName: isPublic ? userData.name : techName,
+        timestamp: serverTimestamp()
+      });
+
+      // 2. Actualizar el documento de la cola para notificar al otro lado
+      await setDoc(doc(db, 'support_queue', chatId), { 
         lastActivity: serverTimestamp(), 
-        lastMessage: content.substring(0, 60),
+        lastMessage: msgContent.substring(0, 80),
         lastSenderRole: isPublic ? 'user' : 'tech',
-        status: isPublic && selectedRequest.status === 'pending' ? 'pending' : 'attending'
+        status: !isPublic ? 'attending' : selectedRequest.status
       }, { merge: true });
 
-      // 2. Registrar el mensaje en el historial
-      await addDoc(collection(db, 'chat_messages'), {
-        chatId: selectedRequest.id,
-        role: isPublic ? 'user' : 'tech',
-        content: content,
-        timestamp: serverTimestamp(),
-        senderName: isPublic ? userData.name : techName
-      });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Mensaje no enviado" });
+      setInput(msgContent); // Restaurar input si falla
     } finally {
       setIsSending(false);
     }
   };
 
   const handleCloseTicket = async () => {
-    if (!selectedRequest) return;
-    if (confirm("¿Confirmas la resolución de este ticket?")) {
-      try {
-        await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-          status: 'closed',
-          lastActivity: serverTimestamp()
-        }, { merge: true });
-        
-        if (isPublic) setShowSurvey(true);
-        else setSelectedRequest(null);
-        toast({ title: "Servicio Finalizado" });
-      } catch (error) {
-        toast({ variant: "destructive", title: "Error al cerrar" });
-      }
+    if (!selectedRequest?.id) return;
+    if (!confirm("¿Deseas dar por finalizada esta sesión de soporte?")) return;
+    
+    try {
+      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
+        status: 'closed',
+        lastActivity: serverTimestamp()
+      }, { merge: true });
+      
+      if (isPublic) setShowSurvey(true);
+      else setSelectedRequest(null);
+      toast({ title: "Servicio Finalizado" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error al cerrar ticket" });
     }
   };
 
@@ -311,7 +278,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
   if (!mounted) return null;
 
-  // --- VISTA PÚBLICA (USUARIO) ---
+  // --- INTERFAZ USUARIO (PUBLIC) ---
   if (isPublic) {
     if (!hasJoined) {
       return (
@@ -351,7 +318,6 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
                    {isJoining ? <><Loader2 className="animate-spin h-5 w-5 mr-2" /> CONECTANDO...</> : "INICIAR SOPORTE EN VIVO"}
                 </Button>
-                <p className="text-[8px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">Conexión cifrada segura • Central COEES</p>
              </div>
           </Card>
         </div>
@@ -378,37 +344,34 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
     return (
       <div className="flex h-full w-full bg-[#efe7dd] overflow-hidden">
-        <aside className="w-80 bg-white border-r flex flex-col shrink-0">
-           <div className="p-8 bg-slate-50 border-b flex flex-col gap-4">
-              <h3 className="text-lg font-black text-[#9f2241] uppercase leading-none">Ticket Activo</h3>
-              <Badge className="bg-emerald-500 text-white w-fit px-3 h-5 rounded-full animate-pulse border-none shadow-md uppercase text-[9px] font-black">Conectado</Badge>
+        <aside className="w-72 bg-white border-r flex flex-col shrink-0">
+           <div className="p-6 bg-slate-50 border-b flex flex-col gap-4">
+              <h3 className="text-lg font-black text-[#9f2241] uppercase leading-none">Canal Activo</h3>
+              <Badge className="bg-emerald-500 text-white w-fit px-3 h-5 rounded-full animate-pulse border-none shadow-md uppercase text-[9px] font-black">En Línea</Badge>
               <p className="text-[10px] font-black text-primary/40 uppercase tracking-widest">{selectedRequest?.ticketNumber}</p>
            </div>
-           <div className="p-8 space-y-4">
-              <Label className="text-[10px] font-black uppercase text-slate-400">Instrucciones</Label>
-              {["Explique su duda técnica", "Mantenga esta ventana abierta", "Espere confirmación del analista"].map((t, i) => (
-                <div key={i} className="flex gap-3 items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
-                   <div className="h-6 w-6 rounded-lg bg-[#9f2241] text-white flex items-center justify-center text-[10px] font-black">{i+1}</div>
-                   <p className="text-[11px] font-bold text-slate-600 uppercase">{t}</p>
-                </div>
-              ))}
+           <div className="p-6 space-y-4">
+              <Label className="text-[10px] font-black uppercase text-slate-400">Estado del servicio</Label>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                 <p className="text-[11px] font-bold text-slate-600 uppercase">Analista conectado y listo para asistirle en su duda sobre ATRES.</p>
+              </div>
               <Button onClick={handleCloseTicket} variant="outline" className="w-full h-12 border-rose-200 text-rose-600 font-black rounded-xl uppercase text-[10px] mt-6 hover:bg-rose-50">Cerrar Sesión</Button>
            </div>
         </aside>
 
         <div className="flex-1 flex flex-col overflow-hidden">
-           <header className="h-16 bg-white/95 backdrop-blur-md border-b px-8 flex items-center justify-between shrink-0 shadow-sm">
+           <header className="h-16 bg-white/95 backdrop-blur-md border-b px-8 flex items-center justify-between shrink-0 shadow-sm z-30">
               <div className="flex items-center gap-4">
-                 <Avatar className="h-10 w-10 border-2 border-emerald-500 shadow-sm"><AvatarFallback className="bg-emerald-50 text-emerald-600"><Bot className="h-6 w-6" /></AvatarFallback></Avatar>
-                 <div><h4 className="text-sm font-black text-slate-800 uppercase leading-none">Mesa de Ayuda</h4><span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Soporte en línea disponible</span></div>
+                 <Avatar className="h-10 w-10 border-2 border-emerald-500"><AvatarFallback className="bg-emerald-50 text-emerald-600"><Bot className="h-6 w-6" /></AvatarFallback></Avatar>
+                 <div><h4 className="text-sm font-black text-slate-800 uppercase leading-none">Mesa de Ayuda ATRES</h4><span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Atención en tiempo real</span></div>
               </div>
            </header>
 
            <ScrollArea className="flex-1 px-8 py-8">
-              <div className="max-w-4xl mx-auto space-y-4">
+              <div className="max-w-4xl mx-auto space-y-6">
                  {messages.map((m, i) => (
-                   <div key={i} className={cn("flex w-full animate-in fade-in", m.role === 'user' ? "justify-end" : "justify-start")}>
-                      <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] shadow-lg relative", m.role === 'user' ? "bg-[#dcf8c6] rounded-tr-none" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none" : "bg-white rounded-tl-none border border-slate-100")}>
+                   <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", m.role === 'user' ? "justify-end" : "justify-start")}>
+                      <div className={cn("max-w-[80%] p-5 rounded-[2rem] shadow-lg relative", m.role === 'user' ? "bg-[#dcf8c6] rounded-tr-none" : "bg-white rounded-tl-none border border-slate-100")}>
                          <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{m.content}</p>
                          <div className="text-[8px] font-black uppercase opacity-30 text-right mt-2">{m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}</div>
                       </div>
@@ -418,15 +381,15 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
               </div>
            </ScrollArea>
 
-           <footer className="p-6 bg-white border-t flex gap-4">
+           <footer className="p-6 bg-white border-t flex gap-4 shadow-2xl z-30">
               <input 
                 value={input} 
                 onChange={e => setInput(e.target.value)} 
                 onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Escriba su duda técnica aquí..." 
+                placeholder="Escriba su duda aquí..." 
                 className="flex h-14 flex-1 rounded-2xl bg-slate-50 border-none px-8 font-bold text-sm uppercase focus:bg-white outline-none shadow-inner"
               />
-              <Button onClick={() => handleSendMessage()} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] p-0 shadow-xl transition-transform active:scale-90">
+              <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] p-0 shadow-xl transition-all active:scale-90">
                  {isSending ? <Loader2 className="animate-spin h-6 w-6" /> : <Send className="h-6 w-6 text-white" />}
               </Button>
            </footer>
@@ -435,10 +398,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     );
   }
 
-  // --- VISTA ANALISTA (TÉCNICO) ---
+  // --- INTERFAZ ANALISTA (DASHBOARD) ---
   return (
     <div className="flex h-full w-full bg-white overflow-hidden font-sans">
-      {/* Sidebar de Iconos */}
+      {/* Sidebar de Estado */}
       <aside className="w-16 bg-[#0b4135] flex flex-col items-center py-8 gap-6 shrink-0 z-50 shadow-2xl">
         <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 border border-white/10 shadow-inner">
            <ShieldCheck className="h-7 w-7" />
@@ -465,11 +428,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </button>
       </aside>
 
-      {/* Bandeja de Solicitudes */}
+      {/* Listado de Solicitudes */}
       <div className="w-[380px] bg-slate-50 border-r flex flex-col shrink-0">
         <div className="p-8 bg-white border-b flex items-center justify-between shrink-0">
            <div><h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter leading-none">Bandeja ATRES</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Solicitudes Activas</p></div>
-           <Badge className="bg-[#9f2241] text-white text-[11px] font-black h-7 px-3 rounded-xl shadow-lg shadow-[#9f2241]/20">{queue.length}</Badge>
+           <Badge className="bg-[#9f2241] text-white text-[11px] font-black h-7 px-3 rounded-xl shadow-lg">{queue.length}</Badge>
         </div>
         <ScrollArea className="flex-1">
            <div className="p-3 space-y-2">
@@ -477,7 +440,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                <button 
                  key={req.id} 
                  onClick={() => setSelectedRequest(req)}
-                 className={cn("w-full p-5 rounded-[2.5rem] text-left transition-all flex items-center gap-5 border-2", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "border-transparent hover:bg-white hover:shadow-md")}
+                 className={cn("w-full p-5 rounded-[2.5rem] text-left transition-all flex items-center gap-5 border-2", selectedRequest?.id === req.id ? "bg-white border-[#9f2241] shadow-xl scale-[1.02]" : "border-transparent hover:bg-white")}
                >
                   <div className="relative">
                     <Avatar className="h-14 w-14 border-4 border-white shadow-lg">
@@ -489,7 +452,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                   </div>
                   <div className="flex-1 min-w-0">
                      <span className="text-xs font-black text-slate-700 uppercase truncate block">{req.userName}</span>
-                     <p className={cn("text-[10px] font-bold truncate uppercase mt-1", req.lastSenderRole === 'user' ? "text-primary font-black" : "text-slate-400")}>{req.lastMessage || 'Nueva solicitud...'}</p>
+                     <p className={cn("text-[10px] font-bold truncate uppercase mt-1", req.lastSenderRole === 'user' ? "text-primary font-black" : "text-slate-400")}>{req.lastMessage}</p>
                      <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-[7px] font-black border-slate-200 text-primary h-4 px-1.5 uppercase">{req.cct}</Badge>
                         <span className="text-[8px] font-bold text-slate-300 ml-auto">{req.lastActivity instanceof Timestamp ? format(req.lastActivity.toDate(), 'HH:mm') : ''}</span>
@@ -507,7 +470,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         </ScrollArea>
       </div>
 
-      {/* Área de Chat o Dashboard */}
+      {/* Panel de Chat / Dashboard Central */}
       <div className="flex-1 flex flex-col bg-[#f0f2f5] overflow-hidden">
         {selectedRequest ? (
           activeView === 'chat' ? (
@@ -520,20 +483,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5 mt-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Atendiendo • {selectedRequest.ticketNumber}</span>
                     </div>
                  </div>
-                 <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">CCT Origen</p>
-                       <p className="text-xs font-black text-primary uppercase">{selectedRequest.cct}</p>
-                    </div>
-                    <Button onClick={handleCloseTicket} className="btn-institutional h-11 px-8 rounded-2xl text-[10px] shadow-xl">RESOLVER Y CERRAR</Button>
-                 </div>
+                 <Button onClick={handleCloseTicket} className="btn-institutional h-11 px-8 rounded-2xl text-[10px] shadow-xl">RESOLVER Y CERRAR</Button>
               </header>
 
               <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] shadow-inner relative">
                  <div className="max-w-5xl mx-auto space-y-4">
                     {messages.map((m, i) => (
                       <div key={i} className={cn("flex w-full animate-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
-                         <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none" : "bg-white rounded-tl-none border border-slate-100")}>
+                         <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none" : "bg-white rounded-tl-none border border-slate-100")}>
                             <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap">{m.content}</p>
                             <div className="text-[8px] font-black uppercase opacity-30 text-right mt-3">
                                {m.timestamp instanceof Timestamp ? format(m.timestamp.toDate(), 'HH:mm') : '...'}
@@ -553,24 +510,24 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                    className="rounded-3xl bg-slate-50 border-none h-16 px-10 font-bold text-base shadow-inner focus:bg-white flex-1" 
                    placeholder="Responder a usuario..." 
                  />
-                 <Button onClick={() => handleSendMessage()} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-16 w-16 rounded-3xl shadow-2xl p-0 transition-transform active:scale-90">
+                 <Button onClick={handleSendMessage} disabled={isSending || !input.trim()} className="bg-[#128c7e] hover:bg-[#075e54] h-16 w-16 rounded-3xl shadow-2xl p-0 transition-transform active:scale-90">
                     {isSending ? <Loader2 className="animate-spin h-7 w-7" /> : <Send className="h-7 w-7 text-white" />}
                  </Button>
               </footer>
             </>
           ) : (
-            <div className="flex-1 p-10 bg-slate-50 space-y-10 animate-in fade-in">
-               <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">Resumen Operativo</h2>
+            <div className="flex-1 p-10 bg-slate-50 space-y-10">
+               <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">Métricas de Soporte Live</h2>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Card className="p-8 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center gap-4">
                      <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600"><Bell className="h-8 w-8" /></div>
                      <h4 className="text-4xl font-black text-slate-800">{statsSLA.pending}</h4>
-                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Solicitudes Pendientes</p>
+                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tickets Pendientes</p>
                   </Card>
                   <Card className="p-8 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center gap-4">
                      <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600"><Users className="h-8 w-8" /></div>
                      <h4 className="text-4xl font-black text-slate-800">{statsSLA.attending}</h4>
-                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">En Atención Ahora</p>
+                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Sesiones Activas</p>
                   </Card>
                </div>
             </div>
@@ -586,7 +543,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                 <div className="h-16 w-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-emerald-500 shrink-0 border border-emerald-50 animate-pulse"><Volume2 className="h-9 w-9" /></div>
                 <div>
                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Sistema de Monitoreo Activo</p>
-                   <p className="text-xs font-bold text-slate-400 uppercase leading-relaxed mt-2">Las notificaciones están configuradas para alertar instantáneamente ante cada duda que un docente envíe.</p>
+                   <p className="text-xs font-bold text-slate-400 uppercase leading-relaxed mt-2">Recibirás alertas instantáneas visuales y sonoras en cuanto un docente envíe una nueva consulta desde el helpdesk.</p>
                 </div>
              </div>
           </div>
