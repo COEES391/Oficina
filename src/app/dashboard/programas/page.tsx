@@ -117,7 +117,7 @@ export default function ProgramsPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [records, setRecords] = useState<ProgramStatus[]>([])
-  const [activeTab, setActiveTab] = useState('Cuentas Institucionales')
+  const [activeTab, setActiveTab] = useState('Biblioteca Digital')
   const [isSaving, setIsSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -634,108 +634,121 @@ export default function ProgramsPage() {
           </div>
         ) : activeTab === 'Biblioteca Digital' ? (
           <div className="space-y-6 pb-10">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {[
-                { label: 'CCT Registrados', value: stats.total, sub: 'Escuelas', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'Visitas Totales', value: stats.visitas, sub: 'Auditadas', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { label: 'Atenciones', value: stats.atenciones, sub: 'Activas', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { label: 'Evidencias', value: stats.evidencias, sub: 'Docs/Fotos', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
-                { label: 'Técnicos Activos', value: stats.tecnicos, sub: 'Personal', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
-                { label: 'Proyectos Concluidos', value: stats.concluidos, sub: '100% Avance', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' }
+                { label: 'CCT REGISTRADOS', value: stats.total, sub: 'ESCUELAS', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: 'VISITAS TOTALES', value: stats.visitas, sub: 'AUDITADAS', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { label: 'ATENCIONES', value: stats.atenciones, sub: 'ACTIVAS', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                { label: 'EVIDENCIAS', value: stats.evidencias, sub: 'DOCS/FOTOS', icon: ImageIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
+                { label: 'TÉCNICOS ACTIVOS', value: stats.tecnicos, sub: 'PERSONAL', icon: User, color: 'text-teal-600', bg: 'bg-teal-50' },
+                { label: 'PROYECTOS CONCLUIDOS', value: stats.concluidos, sub: '100% AVANCE', icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-50' }
               ].map((m, i) => (
-                <Card key={i} className="border-none shadow-sm rounded-[2rem] p-4 flex flex-col items-center text-center gap-2 bg-white transition-all hover:scale-105 hover:shadow-lg border border-slate-100/50">
-                  <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shadow-inner", m.bg, m.color)}>
-                    <m.icon className="h-5 w-5" />
+                <Card key={i} className="border-none shadow-xl rounded-[2.5rem] p-6 flex flex-col items-center text-center gap-4 bg-white transition-all hover:scale-105 border border-slate-100">
+                  <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner", m.bg, m.color)}>
+                    <m.icon className="h-6 w-6" />
                   </div>
-                  <div className="flex flex-col items-center min-w-0 w-full">
-                    <h4 className="text-xl font-black leading-none text-slate-800">{m.value}</h4>
-                    <p className="text-[7.5px] font-black uppercase text-slate-400 tracking-tight mt-1.5 leading-tight line-clamp-2 h-10 w-full px-1 flex items-center justify-center">{m.label}</p>
-                    <p className="text-[6.5px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">{m.sub}</p>
+                  <div className="flex flex-col items-center min-w-0 w-full space-y-1">
+                    <h4 className="text-3xl font-black leading-none text-slate-800">{m.value}</h4>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-tight h-10 flex items-center justify-center px-1">
+                      {m.label}
+                    </p>
+                    <p className="text-[8px] font-bold text-primary/40 uppercase tracking-[0.2em]">{m.sub}</p>
                   </div>
                 </Card>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <Card className="lg:col-span-8 border-none shadow-2xl rounded-[2.5rem] bg-white overflow-hidden flex flex-col border border-slate-100">
-                <div className="p-6 border-b bg-slate-50 flex items-center justify-between">
-                   <h3 className="text-lg font-black uppercase text-slate-700 flex items-center gap-3">
-                     <Layers className="h-5 w-5 text-primary" /> Fases del Proyecto por CCT
-                   </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <Card className="lg:col-span-8 border-none shadow-2xl rounded-[3rem] bg-white overflow-hidden flex flex-col border border-slate-100">
+                <div className="p-8 border-b bg-slate-50 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                         <Layers className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-xl font-black uppercase text-slate-700 tracking-tight">Fases del Proyecto por CCT</h3>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <Badge className="bg-primary/5 text-primary border-none font-black text-[10px] px-4 h-8 rounded-full uppercase">Total: {bibliotecaRecords.length}</Badge>
+                   </div>
                 </div>
-                <ScrollArea className="flex-1 min-h-[500px]">
+                <ScrollArea className="flex-1 min-h-[600px]">
                   <Table>
                     <TableHeader className="bg-slate-50/50">
-                      <TableRow className="h-12">
-                        <TableHead className="pl-6 text-[9px] font-black uppercase w-32">CCT</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase">Escuela</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase">Municipio</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-48">Fase Actual</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-24 text-center">Avance</TableHead>
-                        <TableHead className="text-right pr-10 text-[9px] font-black uppercase w-24">Acción</TableHead>
+                      <TableRow className="h-14">
+                        <TableHead className="pl-10 text-[10px] font-black uppercase w-32">CCT</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Escuela</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase">Municipio</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-56">Fase Actual</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase w-28 text-center">Avance</TableHead>
+                        <TableHead className="text-right pr-12 text-[10px] font-black uppercase w-32">Acción</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {bibliotecaRecords.map((rec) => {
                         const faseActual = getFaseActual(rec.bibliotecaFases);
                         return (
-                          <TableRow key={rec.id} onClick={() => { setSelectedCctId(rec.id!); setSidebarSearchTerm(rec.cct); }} className={cn("h-16 hover:bg-primary/5 transition-colors cursor-pointer group", selectedCctId === rec.id && "bg-primary/[0.03]")}>
-                            <TableCell className="pl-6 font-mono text-[10px] font-black text-primary">{rec.cct}</TableCell>
-                            <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[200px]">{rec.schoolName}</TableCell>
+                          <TableRow key={rec.id} onClick={() => { setSelectedCctId(rec.id!); setSidebarSearchTerm(rec.cct); }} className={cn("h-20 hover:bg-primary/[0.02] transition-colors cursor-pointer group", selectedCctId === rec.id && "bg-primary/[0.04] shadow-inner")}>
+                            <TableCell className="pl-10 font-mono text-[11px] font-black text-primary group-hover:scale-110 transition-transform origin-left">{rec.cct}</TableCell>
+                            <TableCell className="text-[11px] font-bold text-slate-700 uppercase truncate max-w-[220px]">{rec.schoolName}</TableCell>
                             <TableCell className="text-[10px] font-bold text-slate-400 uppercase">{rec.municipio}</TableCell>
                             <TableCell>
-                              <Badge className={cn("text-[8px] font-black border-none px-3 h-8 flex flex-col items-start justify-center leading-tight w-full max-w-[160px]", faseActual.color)}>
+                              <Badge className={cn("text-[9px] font-black border-none px-4 h-10 flex flex-col items-start justify-center leading-tight w-full max-w-[200px] rounded-xl shadow-sm", faseActual.color)}>
                                 <span className="uppercase">{faseActual.label.split('.')[0]}</span>
-                                <span className="text-[6.5px] opacity-80 truncate w-full">{faseActual.label.split('.')[1]}</span>
+                                <span className="text-[7.5px] opacity-70 truncate w-full mt-0.5">{faseActual.label.split('.')[1]}</span>
                               </Badge>
                             </TableCell>
                             <TableCell>
-                               <div className="flex flex-col items-center gap-1">
-                                  <Progress value={rec.progress} className="h-1 w-20" />
-                                  <span className="text-[10px] font-black text-slate-500">{rec.progress}%</span>
+                               <div className="flex flex-col items-center gap-1.5">
+                                  <Progress value={rec.progress} className="h-1.5 w-24 bg-slate-100" />
+                                  <span className="text-[11px] font-black text-slate-600">{rec.progress}%</span>
                                </div>
                             </TableCell>
-                            <TableCell className="text-right pr-8">
-                               <div className="flex justify-end gap-1">
+                            <TableCell className="text-right pr-10">
+                               <div className="flex justify-end gap-2">
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                                    className="h-10 w-10 text-primary hover:bg-primary/10 rounded-xl transition-all active:scale-90"
                                     onClick={(e) => { e.stopPropagation(); handleEdit(rec); }}
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="h-5 w-5" />
                                   </Button>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                                    className="h-10 w-10 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
                                     onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-5 w-5" />
                                   </Button>
                                </div>
                             </TableCell>
                           </TableRow>
                         )
                       })}
-                      {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 uppercase font-black text-xs">Sin registros de auditoría</TableCell></TableRow>}
+                      {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-32 opacity-30 uppercase font-black text-sm tracking-[0.3em]">Sin registros de auditoría</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </ScrollArea>
               </Card>
 
-              <Card className="lg:col-span-4 border-none shadow-2xl rounded-[2.5rem] bg-white p-6 flex flex-col gap-6 border border-slate-100">
-                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                   <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Detalle de Auditoría</h3>
-                   <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Sincronización en tiempo real</p>
+              <Card className="lg:col-span-4 border-none shadow-2xl rounded-[3rem] bg-white p-8 flex flex-col gap-8 border border-slate-100">
+                 <div className="bg-slate-900 p-6 rounded-[2.2rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+                   <h3 className="text-sm font-black uppercase text-white tracking-widest relative z-10">Monitor de Fases</h3>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase mt-2 relative z-10 flex items-center gap-2">
+                     <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Sincronización Live
+                   </p>
                  </div>
                  
-                 <div className="space-y-2 relative">
-                    <Label className="text-[9px] font-black uppercase text-primary ml-1">CCT o Nombre:</Label>
+                 <div className="space-y-3 relative">
+                    <Label className="text-[10px] font-black uppercase text-primary ml-2 flex items-center gap-2">
+                      <SearchCode className="h-4 w-4" /> Localizar Plantel:
+                    </Label>
                     <div className="relative group">
                        <Input 
-                          placeholder="BUSCAR EN LA LISTA..." 
-                          className="h-11 rounded-xl border-slate-200 font-black text-[10px] uppercase pl-10 pr-10 shadow-sm focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50"
+                          placeholder="CCT O NOMBRE..." 
+                          className="h-14 rounded-2xl border-slate-200 font-black text-xs uppercase pl-12 pr-12 shadow-inner focus:ring-4 focus:ring-primary/5 transition-all bg-slate-50/50"
                           value={sidebarSearchTerm}
                           onChange={(e) => {
                              setSidebarSearchTerm(e.target.value.toUpperCase());
@@ -743,10 +756,10 @@ export default function ProgramsPage() {
                           }}
                           onFocus={() => setIsSidebarResultsOpen(true)}
                        />
-                       <Search className="absolute left-3 top-3 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
+                       <Search className="absolute left-4 top-4.5 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                        
                        {isSidebarResultsOpen && sidebarSearchTerm.length > 0 && (
-                          <div className="absolute top-13 left-0 right-0 max-h-60 overflow-auto bg-white border rounded-xl shadow-2xl z-[400] divide-y animate-in fade-in zoom-in-95">
+                          <div className="absolute top-15 left-0 right-0 max-h-72 overflow-auto bg-white border-2 border-primary/10 rounded-2xl shadow-2xl z-[400] divide-y animate-in fade-in slide-in-from-top-2 duration-300">
                              {bibliotecaRecords
                                 .filter(r => 
                                    (r.cct || '').toUpperCase().includes(sidebarSearchTerm.toUpperCase()) || 
@@ -755,7 +768,7 @@ export default function ProgramsPage() {
                                 .map(r => (
                                    <div 
                                       key={r.id} 
-                                      className="p-3 hover:bg-primary/5 cursor-pointer flex justify-between items-center group transition-all" 
+                                      className="p-4 hover:bg-primary/[0.03] cursor-pointer flex justify-between items-center group transition-all" 
                                       onClick={() => { 
                                          setSelectedCctId(r.id!); 
                                          setSidebarSearchTerm(r.cct); 
@@ -763,10 +776,10 @@ export default function ProgramsPage() {
                                       }}
                                    >
                                       <div className="flex flex-col min-w-0">
-                                         <span className="text-[10px] font-black uppercase truncate group-hover:text-primary transition-colors">{r.schoolName}</span>
-                                         <span className="text-[8px] font-bold text-slate-400 uppercase">{r.cct}</span>
+                                         <span className="text-[11px] font-black uppercase truncate group-hover:text-primary transition-colors">{r.schoolName}</span>
+                                         <span className="text-[9px] font-bold text-slate-400 uppercase mt-1">{r.cct}</span>
                                       </div>
-                                      <ChevronRight className="h-4 w-4 text-slate-300" />
+                                      <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                    </div>
                                 ))
                              }
@@ -775,50 +788,50 @@ export default function ProgramsPage() {
                     </div>
                  </div>
 
-                 <ScrollArea className="flex-1 pr-2">
+                 <ScrollArea className="flex-1 pr-4">
                     {selectedRecord ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                          {BIBLIOTECA_FASES.map((f, i) => {
                            const isCompleted = selectedRecord?.bibliotecaFases?.[f.id as keyof typeof selectedRecord.bibliotecaFases];
                            const isCurrent = getFaseActual(selectedRecord?.bibliotecaFases).id === f.id;
                            
                            return (
                              <div key={f.id} className={cn(
-                               "flex items-start gap-3 p-3 rounded-2xl border transition-all",
-                               isCompleted ? "bg-emerald-50 border-emerald-100" : isCurrent ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100" : "bg-white border-slate-100"
+                               "flex items-start gap-4 p-4 rounded-[1.8rem] border transition-all duration-500",
+                               isCompleted ? "bg-emerald-50/50 border-emerald-200" : isCurrent ? "bg-blue-50 border-blue-200 ring-4 ring-blue-100 shadow-xl" : "bg-white border-slate-100 opacity-60"
                              )}>
                                 <div className={cn(
-                                  "h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 border-2",
-                                  isCompleted ? "bg-emerald-500 border-emerald-500 text-white" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
+                                  "h-7 w-7 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 border-2 transition-all",
+                                  isCompleted ? "bg-emerald-500 border-emerald-500 text-white rotate-[360deg]" : i === 0 || isCurrent ? "bg-blue-600 border-blue-600 text-white" : "border-slate-200 text-slate-300"
                                 )}>
-                                   {isCompleted ? <CheckCircle2 className="h-3 w-3" /> : i + 1}
+                                   {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                   <p className={cn("text-[9px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
+                                   <p className={cn("text-[10px] font-black uppercase leading-tight", isCompleted ? "text-emerald-700" : isCurrent ? "text-blue-800" : "text-slate-400")}>{f.label}</p>
                                 </div>
                              </div>
                            )
                          })}
                       </div>
                     ) : (
-                      <div className="h-full flex flex-col items-center justify-center opacity-20 text-center gap-4 py-20">
-                         <SearchCode className="h-16 w-16" />
-                         <p className="text-[10px] font-black uppercase tracking-widest px-6">Seleccione un plantel en la lista para ver sus fases técnicas</p>
+                      <div className="h-full flex flex-col items-center justify-center opacity-20 text-center gap-6 py-32 grayscale">
+                         <SearchCode className="h-24 w-24" />
+                         <p className="text-[11px] font-black uppercase tracking-[0.3em] px-10 leading-relaxed">Seleccione un plantel en la lista para auditar sus fases técnicas</p>
                       </div>
                     )}
                  </ScrollArea>
                  
                  {selectedRecord && (
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 animate-in slide-in-from-bottom-2 duration-500">
-                       <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 shadow-inner">
-                          <Laptop className="h-4 w-4 text-primary" />
-                          <span className="text-lg font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Equipos</span>
+                    <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100 animate-in slide-in-from-bottom-4 duration-700">
+                       <div className="bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 shadow-inner group hover:bg-white transition-colors">
+                          <Laptop className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+                          <span className="text-2xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.equiposHabilitados || 0}</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Equipos Habilitados</span>
                        </div>
-                       <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 shadow-inner">
-                          <Users className="h-4 w-4 text-emerald-600" />
-                          <span className="text-lg font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.personalCapacitado || 0}</span>
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Capacitados</span>
+                       <div className="bg-slate-50 p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 shadow-inner group hover:bg-white transition-colors">
+                          <Users className="h-6 w-6 text-emerald-600 group-hover:scale-110 transition-transform" />
+                          <span className="text-2xl font-black text-slate-800 leading-none">{selectedRecord.bibliotecaFases?.personalCapacitado || 0}</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Personal Capacitado</span>
                        </div>
                     </div>
                  )}
@@ -921,7 +934,7 @@ export default function ProgramsPage() {
                         <Button variant="ghost" className="text-slate-400 rounded-xl text-[10px] font-black h-9 px-6"><TableIcon className="h-4 w-4 mr-2" /> Lista</Button>
                      </div>
                      <div className="flex-1 relative bg-slate-100">
-                        <Image src="https://picsum.photos/seed/edomex-map/1200/800" alt="Mapa" fill className="object-cover opacity-60 grayscale-[0.3]" />
+                        <Image src="https://picsum.photos/seed/edomex-school/1200/800" alt="Mapa" fill className="object-cover opacity-60 grayscale-[0.3]" />
                         <div className="absolute top-4 left-4 flex gap-1 bg-white p-1 rounded-lg shadow-md border">
                            <Button variant="secondary" size="sm" className="h-7 text-[8px] font-black uppercase px-3 rounded-md">Mapa</Button>
                            <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase px-3 text-slate-400">Satélite</Button>
