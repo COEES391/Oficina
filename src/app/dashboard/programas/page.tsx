@@ -331,7 +331,6 @@ export default function ProgramsPage() {
       asistentes: validAssistants
     };
 
-    // CIERRE INSTANTÁNEO Y NOTIFICACIÓN
     setIsDialogOpen(false);
     toast({ title: editingId ? "Registro Actualizado" : "Registro Guardado" });
 
@@ -347,7 +346,6 @@ export default function ProgramsPage() {
         });
     }
 
-    // LIMPIEZA EN SEGUNDO PLANO
     setTimeout(() => {
       resetForm();
       setIsSaving(false);
@@ -651,7 +649,7 @@ export default function ProgramsPage() {
                   </div>
                   <div className="flex flex-col items-center min-w-0 w-full">
                     <h4 className="text-xl font-black leading-none text-slate-800">{m.value}</h4>
-                    <p className="text-[7.5px] font-black uppercase text-slate-400 tracking-tight mt-1.5 leading-tight line-clamp-2 h-5 w-full px-1">{m.label}</p>
+                    <p className="text-[7.5px] font-black uppercase text-slate-400 tracking-tight mt-1.5 leading-tight line-clamp-2 h-10 w-full px-1 flex items-center justify-center">{m.label}</p>
                     <p className="text-[6.5px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">{m.sub}</p>
                   </div>
                 </Card>
@@ -673,7 +671,8 @@ export default function ProgramsPage() {
                         <TableHead className="text-[9px] font-black uppercase">Escuela</TableHead>
                         <TableHead className="text-[9px] font-black uppercase">Municipio</TableHead>
                         <TableHead className="text-[9px] font-black uppercase w-48">Fase Actual</TableHead>
-                        <TableHead className="text-[9px] font-black uppercase w-32 text-center">Avance</TableHead>
+                        <TableHead className="text-[9px] font-black uppercase w-24 text-center">Avance</TableHead>
+                        <TableHead className="text-right pr-10 text-[9px] font-black uppercase w-24">Acción</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -692,14 +691,34 @@ export default function ProgramsPage() {
                             </TableCell>
                             <TableCell>
                                <div className="flex flex-col items-center gap-1">
-                                  <Progress value={rec.progress} className="h-1 w-24" />
+                                  <Progress value={rec.progress} className="h-1 w-20" />
                                   <span className="text-[10px] font-black text-slate-500">{rec.progress}%</span>
+                               </div>
+                            </TableCell>
+                            <TableCell className="text-right pr-8">
+                               <div className="flex justify-end gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                                    onClick={(e) => { e.stopPropagation(); handleEdit(rec); }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(rec.id!); }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                </div>
                             </TableCell>
                           </TableRow>
                         )
                       })}
-                      {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-20 opacity-30 uppercase font-black text-xs">Sin registros de auditoría</TableCell></TableRow>}
+                      {bibliotecaRecords.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-20 opacity-30 uppercase font-black text-xs">Sin registros de auditoría</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </ScrollArea>
@@ -845,10 +864,10 @@ export default function ProgramsPage() {
                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8 space-y-6">
                   <div className="flex items-center gap-4"><div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><MapPin className="h-6 w-6" /></div><h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Registrar coordenadas</h3></div>
                   <div className="space-y-6">
-                     <div className="space-y-2 relative"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">CCT *</Label><Input placeholder="15DESXXXXX" className="h-11 pl-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={formData.cct} onChange={e => { const val = e.target.value.toUpperCase(); setDialogSearchTerm(val); handleCctChange(val); }} /><Search className="absolute left-4 top-10 h-4 w-4 text-slate-300" /></div>
+                     <div className="space-y-2 relative"><Label className="text-[10px] font-black text-slate-600 pl-1">CCT *</Label><Input placeholder="15DESXXXXX" className="h-11 pl-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={formData.cct} onChange={e => { const val = e.target.value.toUpperCase(); setDialogSearchTerm(val); handleCctChange(val); }} /><Search className="absolute left-4 top-10 h-4 w-4 text-slate-300" /></div>
                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">Latitud *</Label><Input placeholder="Ej. 19.6289" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
-                        <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-600 pl-1">Longitud *</Label><Input placeholder="Ej. -99.3128" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-600 pl-1">Latitud *</Label><Input placeholder="Ej. 19.6289" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.latitud} onChange={e => setFormData({...formData, latitud: e.target.value})} /></div>
+                        <div className="space-y-2"><Label className="text-[10px] font-black text-slate-600 pl-1">Longitud *</Label><Input placeholder="Ej. -99.3128" className="h-11 rounded-xl bg-slate-50 border-none font-bold" value={formData.longitud} onChange={e => setFormData({...formData, longitud: e.target.value})} /></div>
                      </div>
                      <div className="grid grid-cols-2 gap-4"><Button onClick={handleSave} disabled={isSaving} className="btn-institutional h-12 rounded-xl shadow-xl flex items-center gap-3">{isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Guardar ubicación</Button><Button variant="outline" onClick={resetForm} className="h-12 rounded-xl border-slate-100 text-slate-600 font-black flex items-center gap-2"><RotateCcw className="h-4 w-4" /> Limpiar</Button></div>
                   </div>
