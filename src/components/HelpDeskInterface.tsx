@@ -50,6 +50,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { db } from '@/lib/firebase';
 import { 
   collection, 
@@ -172,6 +173,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
           }
         }
       });
+    }, (error) => {
+      console.error("Queue listen error:", error);
     });
 
     return () => unsubscribe();
@@ -196,6 +199,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
         const tB = b.timestamp instanceof Timestamp ? b.timestamp.toMillis() : Date.now();
         return tA - tB;
       }));
+    }, (error) => {
+      console.error("Messages listen error:", error);
     });
 
     return () => unsubscribe();
@@ -206,8 +211,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   }, [messages]);
 
   const handleJoinSupport = async () => {
-    if (!userData.name || !userData.cct) {
-      toast({ variant: "destructive", title: "Datos incompletos" });
+    if (!userData.name.trim() || !userData.cct.trim()) {
+      toast({ variant: "destructive", title: "Campos incompletos", description: "Por favor ingrese su nombre y CCT oficial." });
       return;
     }
     
@@ -229,8 +234,10 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
     };
     
     try {
+      // 1. Crear la solicitud en la cola
       await setDoc(doc(db, 'support_queue', requestId), requestData);
       
+      // 2. Enviar mensaje inicial del bot
       await addDoc(collection(db, 'chat_messages'), {
         chatId: requestId,
         role: 'bot',
@@ -240,6 +247,14 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
       setSelectedRequest({ ...requestData, id: requestId, lastActivity: new Date(), createdAt: new Date() } as any);
       setHasJoined(true);
+      toast({ title: "Conexión Establecida", description: "Un analista ha sido notificado de su solicitud." });
+    } catch (error: any) {
+      console.error("Join Support Error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "Error de Conexión", 
+        description: "No se pudo iniciar la sesión técnica. Verifique su conexión a internet o intente más tarde." 
+      });
     } finally {
       setIsJoining(false);
     }
@@ -267,6 +282,8 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
       });
 
       setInput('');
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error al enviar mensaje" });
     } finally {
       setIsSending(false);
     }
@@ -275,27 +292,35 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
   const handleCloseTicket = async () => {
     if (!selectedRequest) return;
     if (confirm("¿Confirmar resolución del ticket?")) {
-      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-        status: 'closed',
-        lastActivity: serverTimestamp()
-      }, { merge: true });
-      
-      if (isPublic) setShowSurvey(true);
-      else setSelectedRequest(null);
-      
-      toast({ title: "Ticket Cerrado Correctamente" });
+      try {
+        await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
+          status: 'closed',
+          lastActivity: serverTimestamp()
+        }, { merge: true });
+        
+        if (isPublic) setShowSurvey(true);
+        else setSelectedRequest(null);
+        
+        toast({ title: "Ticket Cerrado Correctamente" });
+      } catch (error: any) {
+        toast({ variant: "destructive", title: "Error al cerrar ticket" });
+      }
     }
   };
 
   const handleTransfer = async () => {
     const tech = prompt("Ingrese RFC del técnico a transferir:");
     if (tech && selectedRequest) {
-      await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
-        assignedTo: tech.toUpperCase(),
-        lastMessage: `Transferido a ${tech.toUpperCase()}`
-      }, { merge: true });
-      toast({ title: "Ticket Transferido" });
-      setSelectedRequest(null);
+      try {
+        await setDoc(doc(db, 'support_queue', selectedRequest.id), { 
+          assignedTo: tech.toUpperCase(),
+          lastMessage: `Transferido a ${tech.toUpperCase()}`
+        }, { merge: true });
+        toast({ title: "Ticket Transferido" });
+        setSelectedRequest(null);
+      } catch (error: any) {
+        toast({ variant: "destructive", title: "Error en la transferencia" });
+      }
     }
   };
 
@@ -327,11 +352,11 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
              <div className="p-10 bg-white space-y-6">
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">Nombre Completo</Label>
-                   <Input placeholder="EJ. JUAN PÉREZ..." className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" value={userData.name} onChange={e => setUserData({...userData, name: e.target.value})} />
+                   <Input placeholder="EJ. JUAN PÉREZ..." className="h-12 rounded-xl bg-slate-50 border-none font-bold uppercase" value={userData.name} onChange={e => setUserData({...userData, name: e.target.value})} disabled={isJoining} />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase text-slate-400 pl-1">CCT del Plantel</Label>
-                   <Input placeholder="15DESXXXXX" className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={userData.cct} onChange={e => setUserData({...userData, cct: e.target.value})} maxLength={10} />
+                   <Input placeholder="15DESXXXXX" className="h-12 rounded-xl bg-slate-50 border-none font-mono font-black uppercase text-primary" value={userData.cct} onChange={e => setUserData({...userData, cct: e.target.value})} maxLength={10} disabled={isJoining} />
                 </div>
                 <Button onClick={handleJoinSupport} disabled={isJoining} className="w-full btn-institutional h-14 shadow-2xl mt-4">
                    {isJoining ? <Loader2 className="animate-spin h-5 w-5" /> : "INICIAR SOPORTE EN VIVO"}
@@ -409,6 +434,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
            <ScrollArea className="flex-1 px-8 py-8">
               <div className="max-w-4xl mx-auto space-y-4">
+                 <div className="flex justify-center mb-8"><Badge className="bg-white/50 text-slate-500 border-none font-bold text-[9px] uppercase px-6 h-6 rounded-full shadow-sm">Sesión técnica iniciada • {format(new Date(), "d 'de' MMMM", { locale: es })}</Badge></div>
                  {messages.map((m, i) => (
                    <div key={i} className={cn("flex w-full animate-in fade-in", m.role === 'user' ? "justify-end" : "justify-start")}>
                       <div className={cn("max-w-[75%] p-5 rounded-[1.8rem] shadow-lg relative", m.role === 'user' ? "bg-[#dcf8c6] rounded-tr-none border-emerald-100" : m.role === 'bot' ? "bg-slate-800 text-white rounded-tl-none border-none" : "bg-white rounded-tl-none border-slate-200")}>
@@ -438,7 +464,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
                  <button className="absolute right-4 top-4 text-slate-300 hover:text-primary transition-colors"><Paperclip className="h-6 w-6" /></button>
               </div>
               <Button onClick={() => handleSendMessage()} disabled={isSending || !input.trim()} className="h-14 w-14 rounded-2xl bg-[#128c7e] hover:bg-[#075e54] shadow-xl p-0 transition-transform active:scale-90">
-                 {isSending ? <Loader2 className="animate-spin" /> : <Send className="h-6 w-6 text-white" />}
+                 {isSending ? <Loader2 className="animate-spin h-6 w-6" /> : <Send className="h-6 w-6 text-white" />}
               </Button>
            </footer>
         </div>
@@ -564,7 +590,7 @@ export function HelpDeskInterface({ isPublic = false }: { isPublic?: boolean }) 
 
               <ScrollArea className="flex-1 px-10 py-10 bg-[#efe7dd] shadow-inner relative">
                  <div className="max-w-5xl mx-auto space-y-4">
-                    <div className="flex justify-center mb-8"><Badge className="bg-white/50 text-slate-500 border-none font-bold text-[9px] uppercase px-6 h-6 rounded-full shadow-sm">Sesión técnica iniciada • {format(new Date(), "d 'de' MMMM", { locale: require('date-fns/locale/es') })}</Badge></div>
+                    <div className="flex justify-center mb-8"><Badge className="bg-white/50 text-slate-500 border-none font-bold text-[9px] uppercase px-6 h-6 rounded-full shadow-sm">Sesión técnica iniciada • {format(new Date(), "d 'de' MMMM", { locale: es })}</Badge></div>
                     {messages.map((m, i) => (
                       <div key={i} className={cn("flex w-full animate-in fade-in slide-in-from-bottom-2", m.role === 'tech' ? "justify-end" : "justify-start")}>
                          <div className={cn("max-w-[70%] p-6 rounded-[2.2rem] shadow-xl relative group", m.role === 'tech' ? "bg-[#e1ffc7] rounded-tr-none border-emerald-100" : "bg-white rounded-tl-none border-slate-200")}>
