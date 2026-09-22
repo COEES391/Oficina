@@ -98,6 +98,7 @@ export type SupportRequestLive = {
   userName?: string;
   cct?: string;
   lastMessage?: string;
+  lastSenderRole?: 'user' | 'tech' | 'bot';
   lastActivity: any;
   createdAt: any;
   assignedTo?: string;
